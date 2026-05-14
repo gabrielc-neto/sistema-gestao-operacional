@@ -1,0 +1,205 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================================
+    // RBAC v2 — Usuário → Setor → Cargo → Permissões
+    // ============================================================
+
+    function logado() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      // Super admin: ignora qualquer validação de permissão
+      return logado() && (
+        userDoc().is_super_admin == true
+        // Compatibilidade com sistema legado durante migração
+        || userDoc().role in ['master','admin']
+      );
+    }
+
+    function isAtivo() {
+      // Default ativo: documentos antigos sem campo `ativo` continuam funcionando
+      return logado() && userDoc().get('ativo', true) == true;
+    }
+
+    function cargoPermissoes() {
+      // Lê o array `permissoes` do cargo do usuário (denormalizado dentro do cargo)
+      return get(/databases/$(database)/documents/cargos/$(userDoc().cargo_id)).data.get('permissoes', []);
+    }
+
+    function temPermissao(p) {
+      return isSuperAdmin()
+        || (isAtivo()
+            && userDoc().cargo_id is string
+            && p in cargoPermissoes());
+    }
+
+    // Helpers legados — manter durante migração
+    function role()       { return userDoc().get('role', ''); }
+    function isAdmin()    { return isSuperAdmin(); }
+    function isDesp()     { return isSuperAdmin() || logado() && role() in ['despachante']; }
+    function isFuncio()   { return isAtivo(); }
+
+    // ============================================================
+    // RBAC — coleções administrativas
+    // ============================================================
+
+    match /setores/{id} {
+      allow read:   if isAtivo();
+      allow create: if temPermissao('setores.criar');
+      allow update: if temPermissao('setores.editar');
+      allow delete: if temPermissao('setores.excluir');
+    }
+
+    match /cargos/{id} {
+      allow read:   if isAtivo();
+      allow create: if temPermissao('cargos.criar');
+      allow update: if temPermissao('cargos.editar') || temPermissao('permissoes.editar');
+      allow delete: if temPermissao('cargos.excluir');
+    }
+
+    // Catálogo de permissões — só super admin escreve, todos logados leem
+    match /permissoes_catalogo/{id} {
+      allow read:  if isAtivo();
+      allow write: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // Usuários
+    // ============================================================
+
+    match /usuarios/{uid} {
+      // Cada usuário lê o próprio doc; quem tem usuarios.ver lê todos
+      allow read: if logado() && (request.auth.uid == uid || temPermissao('usuarios.ver') || isSuperAdmin());
+      allow create: if temPermissao('usuarios.criar');
+      allow update: if temPermissao('usuarios.editar') || (request.auth.uid == uid);
+      allow delete: if temPermissao('usuarios.excluir');
+    }
+
+    // ============================================================
+    // Coleções operacionais — protegidas por permissão granular
+    // ============================================================
+
+    match /veiculos/{id} {
+      allow read:   if temPermissao('frota.ver');
+      allow create: if temPermissao('frota.criar');
+      allow update: if temPermissao('frota.editar');
+      allow delete: if temPermissao('frota.excluir');
+    }
+
+    match /motoristas/{id} {
+      allow read:   if temPermissao('motoristas.ver');
+      allow create: if temPermissao('motoristas.criar');
+      allow update: if temPermissao('motoristas.editar');
+      allow delete: if temPermissao('motoristas.excluir');
+    }
+
+    match /clientes/{id} {
+      allow read:   if temPermissao('frota.ver') || temPermissao('oc.ver');
+      allow write:  if temPermissao('frota.editar') || temPermissao('oc.editar');
+    }
+
+    match /produtos/{id} {
+      allow read:   if isAtivo();
+      allow write:  if isSuperAdmin();
+    }
+
+    match /usinas/{id} {
+      allow read:   if isAtivo();
+      allow write:  if isSuperAdmin();
+    }
+
+    match /ordens_carregamento/{id} {
+      allow read:   if temPermissao('oc.ver');
+      allow create: if temPermissao('oc.criar');
+      allow update: if temPermissao('oc.editar') || temPermissao('oc.aprovar');
+      allow delete: if temPermissao('oc.excluir');
+    }
+
+    match /pedidos/{id} {
+      allow read:   if temPermissao('oc.ver');
+      allow create: if temPermissao('oc.criar');
+      allow update: if temPermissao('oc.editar');
+      allow delete: if temPermissao('oc.excluir');
+    }
+
+    match /viagens/{id} {
+      allow read:   if isAtivo();
+      allow create: if temPermissao('oc.criar');
+      allow update: if temPermissao('oc.editar')
+                    || (logado() && resource.data.get('motorista_id', '') == request.auth.uid);
+      allow delete: if temPermissao('oc.excluir');
+    }
+
+    match /manutencoes/{id} {
+      allow read:   if temPermissao('manutencao.ver');
+      allow create: if temPermissao('manutencao.criar');
+      allow update: if temPermissao('manutencao.editar');
+      allow delete: if temPermissao('manutencao.excluir');
+    }
+
+    match /ferias/{id} {
+      allow read:   if temPermissao('ferias.ver');
+      allow create: if temPermissao('ferias.criar');
+      allow update: if temPermissao('ferias.editar');
+      allow delete: if temPermissao('ferias.excluir');
+    }
+
+    match /atrelamentos/{id} {
+      allow read:   if temPermissao('atrelamento.ver');
+      allow create: if temPermissao('atrelamento.criar');
+      allow update: if temPermissao('atrelamento.editar');
+      allow delete: if temPermissao('atrelamento.excluir');
+    }
+
+    match /historico/{id} {
+      allow read:   if temPermissao('historico.ver');
+      allow create: if isAtivo();  // qualquer ação loga
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============================================================
+    // Config global
+    // ============================================================
+
+    match /permissoes/{id} {
+      // Coleção legada de matriz role→módulo (mantida durante migração)
+      allow read:  if logado();
+      allow write: if isSuperAdmin();
+    }
+
+    match /config/{id} {
+      allow read:  if logado();
+      allow write: if isSuperAdmin();
+    }
+
+    // Rastreamento SASCAR — gravado pela Cloud Function (admin), lido pelo frontend
+    match /sascar_posicoes/{id} {
+      allow read:  if logado();
+      allow write: if false; // só Functions admin SDK escreve
+    }
+
+    // Cercas eletrônicas — qualquer logado pode criar/editar/excluir
+    match /cercas_eletronicas/{id} {
+      allow read:   if logado();
+      allow create: if isAtivo();
+      allow update: if isAtivo();
+      allow delete: if isAtivo();
+    }
+
+    // Ordens de Serviço (manutenção)
+    match /ordens_servico/{id} {
+      allow read:   if temPermissao('manutencao.ver');
+      allow create: if temPermissao('manutencao.criar') || isAtivo();
+      allow update: if temPermissao('manutencao.editar') || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+  }
+}

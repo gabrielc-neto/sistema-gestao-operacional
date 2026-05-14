@@ -1,0 +1,677 @@
+[
+  {
+    "placa": "ATZ0445",
+    "tipo_documento": "tacografo",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "VALDEREI ALELUIA",
+    "obs": null
+  },
+  {
+    "placa": "AKC4906",
+    "tipo_documento": "tacografo",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": null,
+    "obs": null
+  },
+  {
+    "placa": "AVS9H13",
+    "tipo_documento": "tacografo",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "HELIO GALDINO",
+    "obs": null
+  },
+  {
+    "placa": "AWA6093",
+    "tipo_documento": "tacografo",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "EDINEY ERNESTO",
+    "obs": null
+  },
+  {
+    "placa": "AKC4899",
+    "tipo_documento": "tacografo",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": null,
+    "obs": "Carreta tanque reserva"
+  },
+  {
+    "placa": "AKC4903",
+    "tipo_documento": "tacografo",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "ANGELO MARCHINI NETO",
+    "obs": null
+  },
+  {
+    "placa": "AMX5181",
+    "tipo_documento": "tacografo",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "ROGERIO SILVA",
+    "obs": null
+  },
+  {
+    "placa": "AMX5183",
+    "tipo_documento": "tacografo",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "ROGERIO SILVA",
+    "obs": null
+  },
+  {
+    "placa": "AWA6090",
+    "tipo_documento": "tacografo",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "ADAM MOREIRA",
+    "obs": null
+  },
+  {
+    "placa": "TBB3E69",
+    "tipo_documento": "tacografo",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "LUIS FERNANDO R. DE LIMA",
+    "obs": null
+  },
+  {
+    "placa": "BBE9594",
+    "tipo_documento": "civ",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": null,
+    "obs": null
+  },
+  {
+    "placa": "CPI3A61",
+    "tipo_documento": "crlv",
+    "data_realiz": null,
+    "venc": "2025-12-31",
+    "numero_doc": null,
+    "resp": null,
+    "obs": null
+  },
+  {
+    "placa": "ATR7723",
+    "tipo_documento": "crlv",
+    "data_realiz": null,
+    "venc": "2025-12-31",
+    "numero_doc": null,
+    "resp": "WEBERSON PELIGRINI",
+    "obs": null
+  },
+  {
+    "placa": "SEF1H28",
+    "tipo_documento": "crlv",
+    "data_realiz": null,
+    "venc": "2025-12-31",
+    "numero_doc": null,
+    "resp": "GUSTAVO DOMINGUES",
+    "obs": "Motorista desligado"
+  },
+  {
+    "placa": "SFL4G38",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "VALDEREI DE ALELUIA",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G35",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "LUCIO SCHUARTZ",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G42",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "JULIO ALCIONE GONÇALVES",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G89",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "ELIAZER DE OLIVEIRA",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G90",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "EVERSON MUNIS GADONSKI",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G80",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "VALDINEI DO CARMO ANDRADE",
+    "obs": null
+  },
+  {
+    "placa": "SES9I77",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "CLAUDINOR DE SOUZA",
+    "obs": null
+  },
+  {
+    "placa": "SES9I46",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "RONALDO SANTOS",
+    "obs": null
+  },
+  {
+    "placa": "SES9I83",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "VALDECIR ZORECK",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G37",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "LAURECI FERREIRA SOARES",
+    "obs": null
+  },
+  {
+    "placa": "SEF1H27",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "MAURO SANTOS",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G43",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "EDSON ROBERTO",
+    "obs": null
+  },
+  {
+    "placa": null,
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "MAIGER LOURENÇO COSTA",
+    "obs": "Sem placa no nome da pasta"
+  },
+  {
+    "placa": null,
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "WILLIAN GONÇALVES",
+    "obs": "Motorista operacional sem placa atribuída"
+  },
+  {
+    "placa": null,
+    "tipo_documento": "cnh_venc",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "LUCIANO SZYCHTA",
+    "obs": "Motorista operacional sem placa atribuída"
+  },
+  {
+    "placa": "SFL4G83",
+    "tipo_documento": "cnh_venc",
+    "data_realiz": "2023-06-01",
+    "venc": "2033-05-29",
+    "numero_doc": null,
+    "resp": "VANDERSON LUIZ SOARES",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G38",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "VALDEREI ALELUIA",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G35",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "LUCIO SCHUARTZ",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G42",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "JULIO ALCIONE GONÇALVES",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G39",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "WEBERSON PELIGRINI",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G51",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "AGADIR MACHADO",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G49",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "IDINEI FRANCA DE SOUZA",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G89",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "ELIAZER DE OLIVEIRA",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G86",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "VANDERLEI TEIXEIRA",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G85",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "MARCIO ALBERTO MACHADO",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G90",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "EVERSON MUNIS GADONSKI",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G80",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "VALDINEI DO CARMO ANDRADE",
+    "obs": null
+  },
+  {
+    "placa": "SES9I77",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "CLAUDINOR DE SOUZA",
+    "obs": null
+  },
+  {
+    "placa": "SES9I46",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "RONALDO SANTOS",
+    "obs": null
+  },
+  {
+    "placa": "SES9I83",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "VALDECIR ZORECK",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G37",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "LAURECI FERREIRA SOARES",
+    "obs": null
+  },
+  {
+    "placa": null,
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "MAIGER LOURENÇO COSTA",
+    "obs": "Sem placa no nome da pasta"
+  },
+  {
+    "placa": "SES9I76",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "ODAIR VIEIRA",
+    "obs": null
+  },
+  {
+    "placa": null,
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "WILLIAN GONÇALVES RODRIGUES",
+    "obs": "Motorista operacional sem placa atribuída"
+  },
+  {
+    "placa": null,
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "LUCIANO",
+    "obs": "Motorista operacional sem placa atribuída"
+  },
+  {
+    "placa": "SFL4G90",
+    "tipo_documento": "mopp",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "LEONARDO DE OLIVEIRA LIMA",
+    "obs": null
+  },
+  {
+    "placa": null,
+    "tipo_documento": "nr20",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "MAIGER LOURENÇO COSTA",
+    "obs": "NR 20 e 35 em único PDF"
+  },
+  {
+    "placa": null,
+    "tipo_documento": "nr35",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "MAIGER LOURENÇO COSTA",
+    "obs": "NR 20 e 35 em único PDF"
+  },
+  {
+    "placa": "SFL4G83",
+    "tipo_documento": "nr20",
+    "data_realiz": "2024-04-26",
+    "venc": null,
+    "numero_doc": "367492",
+    "resp": "VANDERSON LUIZ SOARES",
+    "obs": "NF-e NORDICA VEICULOS - Volvo FH460 chassi 9BVRTY0C9RE603276"
+  },
+  {
+    "placa": "SES9I57",
+    "tipo_documento": "nr20",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": "367488",
+    "resp": "LORINALDO SILVA",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G86",
+    "tipo_documento": "nr20",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": "367488",
+    "resp": "VANDERLEI TEIXEIRA",
+    "obs": "Mesmo número NF-e que LORINALDO - documentos distintos"
+  },
+  {
+    "placa": "SFL4G80",
+    "tipo_documento": "nr20",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": "367489",
+    "resp": "VALDINEI DO CARMO ANDRADE",
+    "obs": null
+  },
+  {
+    "placa": "SES9I83",
+    "tipo_documento": "nr20",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": "367490",
+    "resp": "VALDECIR ZORECK",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G51",
+    "tipo_documento": "nr20",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": "367493",
+    "resp": "AGADIR MACHADO",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G87",
+    "tipo_documento": "nr20",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": "367494",
+    "resp": "ELTON FRANKLIN DA SILVA",
+    "obs": null
+  },
+  {
+    "placa": "SFL4G85",
+    "tipo_documento": "nr20",
+    "data_realiz": "2024-04-26",
+    "venc": null,
+    "numero_doc": "367495",
+    "resp": "MARCIO ALBERTO MACHADO",
+    "obs": "NF-e NORDICA VEICULOS - Volvo FH460 chassi 9BVRTY0C6RE603194"
+  },
+  {
+    "placa": "SFL4G89",
+    "tipo_documento": "nr20",
+    "data_realiz": "2024-04-29",
+    "venc": null,
+    "numero_doc": "367598",
+    "resp": "ELIAZER DE OLIVEIRA",
+    "obs": "NF-e NORDICA VEICULOS - Volvo FH460 chassi 9BVRTY0C6RE603275"
+  },
+  {
+    "placa": "SFL4G49",
+    "tipo_documento": "nr20",
+    "data_realiz": "2024-04-29",
+    "venc": null,
+    "numero_doc": "367599",
+    "resp": "IDINEI FRANCA DE SOUZA",
+    "obs": "NF-e NORDICA VEICULOS - Volvo FH460 chassi 9BVRTY0C7RE603279"
+  },
+  {
+    "placa": "SFL4G37",
+    "tipo_documento": "nr20",
+    "data_realiz": "2024-04-29",
+    "venc": null,
+    "numero_doc": "367601",
+    "resp": "LAURECI FERREIRA SOARES",
+    "obs": "NF-e NORDICA VEICULOS - Volvo FH460 chassi 9BVRTY0C9RE603281"
+  },
+  {
+    "placa": "SFL4G38",
+    "tipo_documento": "nr20",
+    "data_realiz": "2024-04-29",
+    "venc": null,
+    "numero_doc": "367602",
+    "resp": "VALDEREI ALELUIA",
+    "obs": "NF-e NORDICA VEICULOS - Volvo FH460 chassi 9BVRTY0C8RE603353"
+  },
+  {
+    "placa": "SFL4G42",
+    "tipo_documento": "nr20",
+    "data_realiz": "2024-04-29",
+    "venc": null,
+    "numero_doc": "367603",
+    "resp": "JULIO ALCIONE GONÇALVES",
+    "obs": "NF-e NORDICA VEICULOS - Volvo FH460 chassi 9BVRTY0CXRE603387"
+  },
+  {
+    "placa": "SFL4G39",
+    "tipo_documento": "nr20",
+    "data_realiz": "2024-04-29",
+    "venc": null,
+    "numero_doc": "367604",
+    "resp": "WEBERSON PELIGRINI",
+    "obs": "NF-e NORDICA VEICULOS - Volvo FH460 chassi 9BVRTY0C7RE603391"
+  },
+  {
+    "placa": "SFL4G43",
+    "tipo_documento": "nr20",
+    "data_realiz": "2024-04-30",
+    "venc": null,
+    "numero_doc": "367797",
+    "resp": "EDSON ROBERTO",
+    "obs": "NF-e NORDICA VEICULOS - Volvo FH460 chassi 9BVRTY0C6RE603280"
+  },
+  {
+    "placa": "SFL4G35",
+    "tipo_documento": "nr20",
+    "data_realiz": "2024-04-24",
+    "venc": null,
+    "numero_doc": "367311",
+    "resp": "LUCIO SCHUARTZ",
+    "obs": "NF-e NORDICA VEICULOS - Volvo FH460 chassi 9BVRTY0CXRE603034"
+  },
+  {
+    "placa": "BBE9588",
+    "tipo_documento": "licenca_federal",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "COSME DA SILVA",
+    "obs": null
+  },
+  {
+    "placa": "BBE9588",
+    "tipo_documento": "aet",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "COSME DA SILVA",
+    "obs": "Licença SP/DER"
+  },
+  {
+    "placa": "BBE9593",
+    "tipo_documento": "aet",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "REGINALDO AQUINO",
+    "obs": "Licença DER São Paulo"
+  },
+  {
+    "placa": "BBE9593",
+    "tipo_documento": "licenca_parana",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "REGINALDO AQUINO",
+    "obs": null
+  },
+  {
+    "placa": "BBE9593",
+    "tipo_documento": "licenca_federal",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "REGINALDO AQUINO",
+    "obs": "Licença DNIT Paraná"
+  },
+  {
+    "placa": "SES9I83",
+    "tipo_documento": "licenca_federal",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "EVERSON MUNIS GADONSKI",
+    "obs": "Arquivo na pasta SFL4G90 mas placa no filename é SES9I83"
+  },
+  {
+    "placa": "SES9I83",
+    "tipo_documento": "licenca_parana",
+    "data_realiz": null,
+    "venc": null,
+    "numero_doc": null,
+    "resp": "EVERSON MUNIS GADONSKI",
+    "obs": "Arquivo na pasta SFL4G90 mas placa no filename é SES9I83"
+  }
+]
