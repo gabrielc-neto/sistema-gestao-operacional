@@ -194,6 +194,12 @@ service cloud.firestore {
       allow delete: if isAtivo();
     }
 
+    // Eventos de cerca (ENTRADA/SAIDA) — gerados pela Cloud Function, lidos pelo frontend
+    match /cercas_eventos/{id} {
+      allow read:  if logado();
+      allow write: if false; // só Functions admin SDK escreve
+    }
+
     // Ordens de Serviço (manutenção)
     match /ordens_servico/{id} {
       allow read:   if temPermissao('manutencao.ver');

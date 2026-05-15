@@ -27,7 +27,8 @@ Todas as coleções vivem no Firestore root do projeto `pontual-logistica`. Não
 | `config` | Configurações globais | `permissions`, etc. | poucos |
 | `permissoes` | Matriz legada role × módulo | livre | em deprecação |
 | `sascar_posicoes` | Última posição GPS persistida por veículo | `idVeiculo` (string) | 1 por veículo SASCAR |
-| `cercas_eletronicas` | Áreas geográficas (base, cliente, restrita) | auto | conforme desenho |
+| `cercas_eletronicas` | Geofences (base, cliente, restrita) — polígono ou círculo | auto | conforme desenho |
+| `cercas_eventos` | Eventos ENTRADA/SAÍDA gerados pelo callable `sascarPosicoes` | composto `{idVeiculo}_{cercaId}_{idPacote}_{E|S}` | 1 por cruzamento de borda |
 | `ordens_servico` | OS de manutenção mecânica | auto | numeração OS-NNNNN |
 
 ## Coleções RBAC
@@ -344,7 +345,8 @@ Log de auditoria. Atualmente unificado a partir de `atrelamentos`, `ordens_carre
     idMotorista: number,               // 0 = ninguém logado via iButton
     nomeMotorista: string,             // pode vir vazio
     motoristaLogado: string | null,    // nomeMotorista normalizado (null se vazio)
-    statusTexto: "EM_MOVIMENTO" | "PARADO_LIGADO" | "ESTACIONADO" | "SEM_DADOS"
+    statusTexto: "EM_MOVIMENTO" | "PARADO_LIGADO" | "ESTACIONADO" | "SEM_DADOS",
+    dentroDe: string[]                 // cercaIds em que o veículo está agora (Fase 1 — Cercas)
   }
 }
 ```
@@ -359,20 +361,60 @@ Log de auditoria. Atualmente unificado a partir de `atrelamentos`, `ordens_carre
 
 ### `cercas_eletronicas`
 
-Áreas geográficas usadas no módulo Rastreamento. Polígonos lat/lon armazenados como array.
+Geofences usadas em rastreamento. Suportam dois formatos: polígono ou círculo. Cercas legadas sem `formato` são tratadas como polígono.
 
 ```
 {
   nome: string,                        // "Base PONTUAL", "Replan", "Cliente XYZ"
-  tipo: "Base" | "Cliente" | "Restrita" | "Outro",
+  tipo: "Base" | "Cliente" | "Restrita" | "Posto" | "Refinaria" | "Oficina" | "Outro",
   cor: string,                         // hex "#2563eb"
-  pontos: number[][],                  // [[lat, lon], [lat, lon], ...]
+  formato: "poligono" | "circulo",     // adicionado na Fase 1; ausente = poligono
+
+  // Quando formato = "poligono"
+  pontos?: number[][],                 // [[lat, lng], ...] (≥3)
+
+  // Quando formato = "circulo"
+  centro?: { lat: number, lng: number },
+  raio?: number,                       // metros (50-50000)
+
   criadoEm: timestamp,
-  criadoPor: string                    // email
+  criadoPor: string,                   // email
+  atualizadoEm?: timestamp,            // setado em updateDoc (edição)
+  atualizadoPor?: string
 }
 ```
 
-Mínimo 3 pontos para formar polígono. Algoritmo `pontoEmPoligono()` (ray casting) em `frontend/src/components/CercaEletronica.jsx` detecta se um caminhão está dentro de qual cerca.
+Algoritmos em `frontend/src/components/CercaEletronica.jsx` e espelhados em `functions/src/sascar/geofence.js`:
+- `pontoEmCerca(lat, lng, cerca)` — round-robin entre formatos
+- Polígono: ray-casting
+- Círculo: distância haversine ≤ raio
+
+Detalhes completos em [`11-cercas-eletronicas.md`](11-cercas-eletronicas.md).
+
+### `cercas_eventos`
+
+Eventos de cruzamento de borda gerados pela Cloud Function `sascarPosicoes`. Cliente lê via `useEventosCerca` (snapshot live) — só Functions escreve.
+
+```
+{
+  tipo: "ENTRADA" | "SAIDA",
+  idVeiculo: number,
+  placa: string,
+  cercaId: string,                     // FK lógica para cercas_eletronicas/{id}
+  cercaNome: string,                   // denormalizado
+  cercaTipo: string,                   // denormalizado
+  latitude: number,
+  longitude: number,
+  idPacote: number | null,             // pacote SASCAR que disparou
+  dataPosicao: string | null,          // "2026-05-15T09:12:34.0" (data da SASCAR)
+  timestamp: serverTimestamp,          // ordenação canônica
+  criadoEmMs: number                   // Date.now() do servidor — usado em where>=X
+}
+```
+
+Doc ID composto pra idempotência: `{idVeiculo}_{cercaId}_{idPacote}_{E|S}`.
+
+Detecção: comparando `dentroDe` da nova posição com `dentroDe` da posição persistida anterior.
 
 ### `ordens_servico`
 

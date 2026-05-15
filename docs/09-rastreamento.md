@@ -62,17 +62,27 @@ Esta doc cobre **arquitetura, decisões técnicas e detalhes de implementação*
 
 ### `components/CercaEletronica.jsx`
 
-- `Polygon` do react-leaflet pra cada cerca (estilo: stroke, fill com opacidade .15, dasharray)
+- Renderiza `Polygon` ou `Circle` do react-leaflet por cerca conforme `formato`
 - `Tooltip` sticky com nome da cerca
-- Exporta `pontoEmPoligono(lat, lon, pontos)` (ray casting)
-- Exporta `areaDoPonto(lat, lon, cercas)` que itera as cercas e retorna a primeira que contém o ponto
+- Exporta `pontoEmPoligono`, `pontoEmCerca` (round-robin polígono/círculo), `areaDoPonto`, `haversineMetros`
 
 ### `pages/Cercas.jsx`
 
-- Editor visual: modo desenho ativa cursor crosshair, cliques no mapa adicionam pontos
-- Renderiza polyline parcial enquanto desenha, polígono fechado quando ≥3 pontos
-- Modal de salvar: nome (input), tipo (select), cor (chips clicáveis)
-- Lista lateral com botão de exclusão (com confirm nativo)
+- Editor visual com toggle Polígono / Círculo
+- Polígono: cliques adicionam vértices, polyline parcial → polígono fechado ≥3
+- Círculo: 1 clique no mapa = centro, slider/input pro raio (50m-5km)
+- Modal de salvar: nome, tipo, cor
+- Lista lateral com filtro client-side (nome/tipo)
+- Edição com drag handles (clique na cerca no mapa OU ✏️ na lista)
+- Busca de endereço via ViaCEP + Nominatim estruturado + fallbacks
+- Detalhes completos em [`11-cercas-eletronicas.md`](11-cercas-eletronicas.md)
+
+### Painel de eventos em `pages/Rastreamento.jsx`
+
+- Componente `EventosCercaPanel` colapsável abaixo da busca
+- Hook `useEventosCerca({ horasAtras: 12, limite: 100 })` — snapshot live
+- Lista ENTRADA (verde) / SAÍDA (laranja) com placa, cerca, tempo relativo
+- Badge contador 12h, prévia do último evento quando fechado
 
 ## Hooks
 
@@ -168,6 +178,7 @@ Detalhes em [`10-sascar-integracao.md`](10-sascar-integracao.md).
 
 Próximos itens previstos pro módulo (não implementados ainda):
 - Histórico de trajeto (linha colorida no mapa últimas 24h) — usar subcoleção `sascar_posicoes/{id}/historico/{idPacote}`
+- Cercas Fase 2-4 (permanência, velocidade dentro, horário, push/email/som, corredor de rota, grupos) — ver [`11-cercas-eletronicas.md`](11-cercas-eletronicas.md)
 - Alertas WhatsApp: parada não programada fora de cerca, desvio de rota
 - Score motorista: frenagem brusca, curva agressiva (campos `eventos` do pacote SASCAR)
 - Integração com OC: bloqueio de OC quando motorista não cumpriu 11h de descanso (precisa VDO antes)

@@ -1,0 +1,177 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f0f4f8;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+}
+
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --input-bg: #0f172a;
+  --input-border: #475569;
+}
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  transition: background .2s, color .2s;
+}
+#root { min-height: 100vh; }
+
+/* ── Dark mode — inputs, selects, tabelas ──────────────────── */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: var(--input-bg) !important;
+  color: var(--text) !important;
+  border-color: var(--input-border) !important;
+}
+
+[data-theme="dark"] table {
+  color: var(--text);
+}
+
+[data-theme="dark"] td,
+[data-theme="dark"] th {
+  border-color: var(--border) !important;
+}
+
+/* ── Layout responsivo ─────────────────────────────────────── */
+
+/* Tablet (≤ 900px) */
+@media (max-width: 900px) {
+  .pg-grid {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
+  }
+  .pg-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Tablet (≤ 900px) - body padding */
+@media (max-width: 900px) {
+  .pg-body {
+    padding: 18px 16px !important;
+  }
+}
+
+/* Mobile (≤ 640px) */
+@media (max-width: 640px) {
+  /* Header */
+  .pg-header {
+    flex-wrap: wrap !important;
+    padding: 10px 14px !important;
+    height: auto !important;
+    gap: 8px !important;
+  }
+  .pg-header-actions {
+    margin-left: 0 !important;
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+  .pg-header-center {
+    flex: 1 1 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Toolbar */
+  .pg-toolbar {
+    flex-direction: column !important;
+    padding: 10px 14px !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+  }
+  .pg-toolbar input {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .pg-toolbar .pg-tabs {
+    overflow-x: auto;
+    padding-bottom: 2px;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Grid cards */
+  .pg-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    padding: 12px !important;
+    gap: 10px !important;
+  }
+
+  /* Body/main padding */
+  .pg-body {
+    padding: 12px 10px !important;
+  }
+
+  /* Stats row */
+  .pg-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Modal: sobe da parte inferior em mobile */
+  .pg-modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .pg-modal {
+    border-radius: 16px 16px 0 0 !important;
+    max-height: 92vh !important;
+    width: 100% !important;
+  }
+
+  /* Ocultar textos secundários no header */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* Logo menor */
+  .pg-logo svg {
+    height: 28px !important;
+  }
+}
+
+/* Mobile pequeno (≤ 400px) */
+@media (max-width: 400px) {
+  .pg-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .pg-header {
+    padding: 8px 10px !important;
+  }
+}
+
+/* Dashboard específico */
+@media (max-width: 640px) {
+  .dash-kpi {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .dash-modules {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .dash-table-wrap {
+    overflow-x: auto !important;
+  }
+}
+@media (max-width: 400px) {
+  .dash-kpi {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .dash-modules {
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -15,6 +15,7 @@ import {
   ultimaPorVeiculo,
 } from './src/sascar/soap.js';
 import { cached } from './src/sascar/cache.js';
+import { cercasContendoPonto } from './src/sascar/geofence.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -32,6 +33,8 @@ if (process.env.FUNCTIONS_EMULATOR === 'true') {
 
 const db = getFirestore();
 const COL_POSICOES = 'sascar_posicoes';
+const COL_CERCAS = 'cercas_eletronicas';
+const COL_EVENTOS = 'cercas_eventos';
 
 setGlobalOptions({
   region: 'southamerica-east1',
@@ -79,8 +82,8 @@ export const sascarPosicoes = onCall(
   async (request) => {
     requireAuth(request);
     const { data, age, fresh } = await cached('posicoes', 30_000, async () => {
-      // 1) Em paralelo: chama SASCAR + lê estado anterior do Firestore
-      const [pacotes, veiculos, snapshot] = await Promise.all([
+      // 1) Em paralelo: chama SASCAR + lê estado anterior + cercas cadastradas
+      const [pacotes, veiculos, snapshot, cercasSnap] = await Promise.all([
         obterPacotePosicoesMotorista({
           usuario: SASCAR_USUARIO.value(),
           senha: SASCAR_SENHA.value(),
@@ -93,6 +96,7 @@ export const sascarPosicoes = onCall(
           idVeiculo: 0,
         }),
         db.collection(COL_POSICOES).get(),
+        db.collection(COL_CERCAS).get(),
       ]);
 
       // 2) Posições novas (idVeiculo → pacote)
@@ -106,14 +110,84 @@ export const sascarPosicoes = onCall(
         if (d?.ultimaPosicao) persistidas.set(d.idVeiculo, d.ultimaPosicao);
       });
 
-      // 4) Batch write: grava no Firestore só veículos com posição NOVA (idPacote maior)
+      // 3.1) Cercas cadastradas — id + dado bruto (formato/centro/raio/pontos)
+      const cercas = [];
+      const cercaPorId = new Map();
+      cercasSnap.forEach(doc => {
+        const c = { id: doc.id, ...doc.data() };
+        cercas.push(c);
+        cercaPorId.set(doc.id, c);
+      });
+
+      // 4) Batch write: grava posições novas + eventos de cerca em transação única
       const batch = db.batch();
       let writes = 0;
+      let eventos = 0;
+      const nowMs = Date.now();
+
       for (const [id, nova] of novas) {
         const v = veiculos.find(x => x.idVeiculo === id);
         if (!v) continue;
         const anterior = persistidas.get(id);
         if (anterior && Number(nova.idPacote) <= Number(anterior.idPacote)) continue;
+
+        // 4.1) Detectar transições de cerca (entrada/saída) — exige lat/lng válidas
+        const lat = Number(nova.latitude);
+        const lng = Number(nova.longitude);
+        const dentroDe = Number.isFinite(lat) && Number.isFinite(lng)
+          ? cercasContendoPonto(lat, lng, cercas)
+          : [];
+        const dentroAntes = Array.isArray(anterior?.dentroDe) ? anterior.dentroDe : [];
+        const setAntes = new Set(dentroAntes);
+        const setAgora = new Set(dentroDe);
+
+        // Só dispara eventos quando já existia estado anterior (evita spam no primeiro snapshot)
+        if (anterior) {
+          // ENTRADA: presente agora mas não antes
+          for (const cercaId of dentroDe) {
+            if (setAntes.has(cercaId)) continue;
+            const cerca = cercaPorId.get(cercaId);
+            if (!cerca) continue;
+            const docId = `${id}_${cercaId}_${nova.idPacote}_E`;
+            batch.set(db.collection(COL_EVENTOS).doc(docId), {
+              tipo: 'ENTRADA',
+              idVeiculo: id,
+              placa: v.placa,
+              cercaId,
+              cercaNome: cerca.nome || '',
+              cercaTipo: cerca.tipo || '',
+              latitude: lat,
+              longitude: lng,
+              idPacote: nova.idPacote ?? null,
+              dataPosicao: nova.dataPosicao ?? null,
+              timestamp: FieldValue.serverTimestamp(),
+              criadoEmMs: nowMs,
+            });
+            eventos++;
+          }
+          // SAIDA: presente antes mas não agora
+          for (const cercaId of dentroAntes) {
+            if (setAgora.has(cercaId)) continue;
+            const cerca = cercaPorId.get(cercaId);
+            if (!cerca) continue;
+            const docId = `${id}_${cercaId}_${nova.idPacote}_S`;
+            batch.set(db.collection(COL_EVENTOS).doc(docId), {
+              tipo: 'SAIDA',
+              idVeiculo: id,
+              placa: v.placa,
+              cercaId,
+              cercaNome: cerca.nome || '',
+              cercaTipo: cerca.tipo || '',
+              latitude: lat,
+              longitude: lng,
+              idPacote: nova.idPacote ?? null,
+              dataPosicao: nova.dataPosicao ?? null,
+              timestamp: FieldValue.serverTimestamp(),
+              criadoEmMs: nowMs,
+            });
+            eventos++;
+          }
+        }
 
         const enriched = {
           ...nova,
@@ -121,6 +195,7 @@ export const sascarPosicoes = onCall(
           statusTexto: statusFromPacote(nova),
           bloqueioArmado: nova.bloqueio === 1, // atuador armado, independente do motor
           motoristaLogado: (nova.idMotorista && nova.idMotorista !== 0 && nova.nomeMotorista) ? nova.nomeMotorista.trim() : null,
+          dentroDe, // array de cercaIds em que o veículo está agora
         };
         batch.set(db.collection(COL_POSICOES).doc(String(id)), {
           idVeiculo: id,
@@ -132,7 +207,7 @@ export const sascarPosicoes = onCall(
         persistidas.set(id, enriched); // reflete em memória
         writes++;
       }
-      if (writes > 0) await batch.commit();
+      if (writes > 0 || eventos > 0) await batch.commit();
 
       // 5) Resultado: 1 registro por veículo cadastrado, com posição persistida quando existir
       const resultado = veiculos.map(v => {
@@ -149,13 +224,14 @@ export const sascarPosicoes = onCall(
         };
       });
 
-      return { resultado, writes };
+      return { resultado, writes, eventos };
     });
 
-    // O "data" do cache é { resultado, writes }
+    // O "data" do cache é { resultado, writes, eventos }
     const posicoes = Array.isArray(data) ? data : data?.resultado || [];
     const writes = Array.isArray(data) ? 0 : data?.writes ?? 0;
-    return { posicoes, total: posicoes.length, cache: { age, fresh }, gravadosNoFirestore: writes };
+    const eventos = Array.isArray(data) ? 0 : data?.eventos ?? 0;
+    return { posicoes, total: posicoes.length, cache: { age, fresh }, gravadosNoFirestore: writes, eventosCerca: eventos };
   }
 );
 

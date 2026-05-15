@@ -1,0 +1,414 @@
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap, LayersControl } from "react-leaflet";
+import { divIcon } from "leaflet";
+import { useEffect, useMemo } from "react";
+import "leaflet/dist/leaflet.css";
+import CercaEletronica, { areaDoPonto } from "./CercaEletronica";
+import { useCercas } from "../hooks/useCercas";
+
+const STATUS = {
+  EM_MOVIMENTO:  { color: "#16a34a", label: "Em movimento",   pulse: true  },
+  PARADO_LIGADO: { color: "#eab308", label: "Parado / ligado", pulse: false },
+  ESTACIONADO:   { color: "#475569", label: "Estacionado",     pulse: false },
+  SEM_DADOS:     { color: "#94a3b8", label: "Sem comunicação", pulse: false },
+};
+
+function minutosDecorridos(iso) {
+  if (!iso) return Infinity;
+  const t = new Date(iso.replace("T", " ")).getTime();
+  if (!Number.isFinite(t)) return Infinity;
+  return Math.floor((Date.now() - t) / 60000);
+}
+
+// Centro padrão = base Pontual em Araucária/PR
+const CENTRO_PADRAO = [-25.5504, -49.3682];
+
+// SVG truck vista superior. Cabine na frente (norte por padrão), baú atrás.
+// Rotação pelo campo direcao (0=N, 90=L, 180=S, 270=O).
+function svgCaminhao(color) {
+  return `<svg viewBox="0 0 30 38" width="30" height="38" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="15" cy="35" rx="8" ry="1.6" fill="rgba(0,0,0,0.18)"/>
+    <rect x="9" y="2" width="12" height="9" rx="2" fill="${color}" stroke="#fff" stroke-width="1.6"/>
+    <rect x="11" y="3.5" width="8" height="3" rx="0.6" fill="rgba(255,255,255,0.65)"/>
+    <rect x="7.5" y="11" width="15" height="20" rx="1.6" fill="${color}" stroke="#fff" stroke-width="1.6"/>
+    <line x1="15" y1="12" x2="15" y2="30" stroke="rgba(255,255,255,0.55)" stroke-width="0.8"/>
+    <circle cx="15" cy="3.6" r="1.1" fill="#fff"/>
+  </svg>`;
+}
+
+// Capitaliza e pega 2 primeiros nomes (ex: "LUIS FERNANDO RAMALHO" -> "Luis Fernando")
+function formatarMotorista(nome) {
+  if (!nome) return "";
+  const partes = nome.trim().split(/\s+/).slice(0, 2);
+  return partes
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+// HTML do marker. Truck rotaciona; placa, motorista e velocidade ficam fixos.
+function buildMarkerHtml(p) {
+  const cfg = STATUS[p.statusTexto] || STATUS.ESTACIONADO;
+  const direcao = Number.isFinite(p.direcao) ? p.direcao : 0;
+  const vel = Number(p.velocidade) || 0;
+  const placa = p.placa || `#${p.idVeiculo}`;
+  const motorista = formatarMotorista(p.motoristaLogado);
+  const idadeMin = minutosDecorridos(p.dataPosicao);
+  const stale = idadeMin > 15;          // sinal velho
+  const veryStale = idadeMin > 60;      // sem comunicação há mais de 1h
+  const pulse = cfg.pulse && !stale ? "pulse" : "";
+  const opacityClass = veryStale ? "very-stale" : stale ? "stale" : "";
+
+  return `
+    <div class="truck-wrap ${pulse} ${opacityClass}">
+      <div class="truck-labels">
+        <div class="truck-placa">${placa}</div>
+        ${motorista ? `<div class="truck-driver">${motorista}</div>` : ""}
+      </div>
+      <div class="truck-svg" style="transform: rotate(${direcao}deg);">
+        ${svgCaminhao(cfg.color)}
+      </div>
+      ${vel > 0 ? `<div class="truck-vel">${vel}</div>` : ""}
+      ${stale ? `<div class="truck-stale" title="Sem comunicação há ${idadeMin} min">${idadeMin > 999 ? "999+" : idadeMin}m</div>` : ""}
+    </div>
+  `;
+}
+
+function makeIcon(p) {
+  return divIcon({
+    html: buildMarkerHtml(p),
+    className: "truck-icon",
+    iconSize: [110, 78],
+    iconAnchor: [55, 40],
+    popupAnchor: [0, -34],
+  });
+}
+
+function FitBounds({ posicoes, key }) {
+  const map = useMap();
+  useEffect(() => {
+    const pontos = posicoes
+      .filter(p => p.latitude && p.longitude)
+      .map(p => [p.latitude, p.longitude]);
+    if (pontos.length === 0) return;
+    if (pontos.length === 1) {
+      map.setView(pontos[0], 14);
+      return;
+    }
+    map.fitBounds(pontos, { padding: [60, 60], maxZoom: 14 });
+  }, [map, key]);
+  return null;
+}
+
+function tempoDecorrido(iso) {
+  if (!iso) return "—";
+  const t = new Date(iso.replace("T", " "));
+  if (!Number.isFinite(t.getTime())) return iso;
+  const min = Math.floor((Date.now() - t.getTime()) / 60000);
+  if (min < 1)  return "agora";
+  if (min < 60) return `${min} min atrás`;
+  const h = Math.floor(min / 60);
+  if (h < 24)   return `${h}h atrás`;
+  return `${Math.floor(h / 24)}d atrás`;
+}
+
+function bussola(graus) {
+  if (!Number.isFinite(graus)) return "—";
+  const labels = ["N","NE","L","SE","S","SO","O","NO"];
+  return labels[Math.round((graus % 360) / 45) % 8] + ` (${graus}°)`;
+}
+
+// Normaliza placa para lookup
+function normPlaca(p) { return (p || "").trim().toUpperCase().replace(/-/g, ""); }
+
+export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, ocsPorPlaca = null }) {
+  const { cercas } = useCercas();
+  const validas = useMemo(
+    () => (posicoes || []).filter(p => p.latitude && p.longitude),
+    [posicoes]
+  );
+
+  // Chave que muda quando o conjunto filtrado muda (re-fit no mapa)
+  const fitKey = useMemo(
+    () => validas.map(p => p.placa || p.idVeiculo).sort().join(","),
+    [validas]
+  );
+
+  return (
+    <div style={{ height, borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 6px rgba(0,0,0,0.12)", position: "relative" }}>
+      <MapContainer center={CENTRO_PADRAO} zoom={7} style={{ height: "100%", width: "100%" }} preferCanvas>
+        <LayersControl position="topright">
+          <LayersControl.BaseLayer checked name="Mapa">
+            <TileLayer
+              attribution='&copy; OpenStreetMap'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Satélite">
+            <TileLayer
+              attribution='Tiles &copy; Esri World Imagery'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+            />
+          </LayersControl.BaseLayer>
+        </LayersControl>
+        <FitBounds posicoes={validas} key={fitKey} />
+
+        <CercaEletronica cercas={cercas} />
+
+        {validas.map(p => {
+          const oc = ocsPorPlaca?.get(normPlaca(p.placa));
+          const area = areaDoPonto(p.latitude, p.longitude, cercas);
+          return (
+          <Marker
+            key={p.idVeiculo}
+            position={[p.latitude, p.longitude]}
+            icon={makeIcon(p)}
+            zIndexOffset={p.placa === focusPlaca ? 1000 : 0}
+          >
+            <Popup>
+              <div style={{ fontFamily: "system-ui", minWidth: 230 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <strong style={{ fontSize: "1.02rem", color: "#1a3a5c" }}>{p.placa || `id ${p.idVeiculo}`}</strong>
+                  <span style={{
+                    background: (STATUS[p.statusTexto] || STATUS.ESTACIONADO).color,
+                    color: "#fff", padding: "2px 8px", borderRadius: 6,
+                    fontSize: ".7rem", fontWeight: 700
+                  }}>
+                    {(STATUS[p.statusTexto] || STATUS.ESTACIONADO).label}
+                  </span>
+                </div>
+                <div style={{ fontSize: ".84rem", color: "#475569", lineHeight: 1.55 }}>
+                  <Row label="Motorista" value={p.motoristaLogado ? formatarMotorista(p.motoristaLogado) : "Não logado"} highlight={!!p.motoristaLogado} />
+                  <Row label="Velocidade" value={`${p.velocidade ?? 0} km/h`} highlight={p.velocidade > 0} />
+                  <Row label="Direção" value={bussola(p.direcao)} />
+                  <Row label="Ignição" value={p.ignicao === 1 ? "Ligada" : "Desligada"} highlight={p.ignicao === 1} />
+                  {/* Campo `bloqueio` da SASCAR ficou removido — é estado de saída elétrica, não comando pendente */}
+                  <Row label="GPS" value={p.gps === 1 ? "Sinal OK" : "Sem sinal"} alert={p.gps !== 1} />
+                  <Row label="Área" value={area ? area.nome : "—"} highlight={!!area} />
+                  <Row label="Local" value={`${p.cidade}/${p.uf}`} />
+                  {p.rua && <Row label="Endereço" value={p.rua} />}
+                  {p.pontoReferencia && <Row label="Referência" value={p.pontoReferencia} />}
+                  <Row label="Última posição" value={tempoDecorrido(p.dataPosicao)} />
+                  <Row label="Odômetro" value={p.odometro != null ? `${p.odometro.toLocaleString("pt-BR")} km` : "—"} />
+                  <Row label="Bateria" value={`${p.tensao ?? "—"}V`} alert={(p.tensao ?? 0) < 11} />
+                </div>
+                {/* Atalhos de mapa externo */}
+                <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+                  <a
+                    href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.latitude},${p.longitude}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={btnExt}
+                  >
+                    📷 Street View
+                  </a>
+                  <a
+                    href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={btnExt}
+                  >
+                    🗺️ Google Maps
+                  </a>
+                </div>
+
+                {oc && (
+                  <div style={{ marginTop: 10, padding: "8px 10px", background: "#f8fafc", borderLeft: "3px solid #d97706", borderRadius: 4 }}>
+                    <div style={{ fontSize: ".72rem", color: "#854d0e", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em", marginBottom: 4 }}>
+                      OC ativa · {oc.num}
+                    </div>
+                    <div style={{ fontSize: ".78rem", color: "#475569", lineHeight: 1.45 }}>
+                      <div><strong>Responsável:</strong> {oc.resp || "—"}</div>
+                      <div><strong>Carga:</strong> {(oc.totalLitros ?? 0).toLocaleString("pt-BR")} L · {oc.entregas?.length || 0} entrega(s)</div>
+                      <div><strong>Base:</strong> {oc.base || "—"}</div>
+                      <div><strong>Saída:</strong> {oc.data} {oc.hora}</div>
+                    </div>
+                    <a href={`/oc?q=${encodeURIComponent(oc.num)}`} style={{ display: "inline-block", marginTop: 6, color: "#d97706", textDecoration: "none", fontSize: ".74rem", fontWeight: 700 }}>
+                      Abrir OC →
+                    </a>
+                  </div>
+                )}
+              </div>
+            </Popup>
+            <Tooltip direction="top" offset={[0, -28]} opacity={0.9}>
+              <div style={{ fontWeight: 700, fontSize: ".78rem" }}>
+                {p.placa} {p.velocidade > 0 ? `· ${p.velocidade} km/h` : ""}
+                {oc && <div style={{ color: "#d97706", fontSize: ".7rem" }}>OC {oc.num}</div>}
+              </div>
+            </Tooltip>
+          </Marker>
+        );
+        })}
+      </MapContainer>
+
+      <Legenda />
+
+      {/* Estilos do marker e animação */}
+      <style>{`
+        .leaflet-marker-icon.truck-icon {
+          background: transparent;
+          border: 0;
+          transition: transform 600ms ease-out;
+        }
+        .truck-wrap {
+          position: relative;
+          width: 110px;
+          height: 78px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-end;
+          pointer-events: auto;
+        }
+        .truck-labels {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-bottom: 2px;
+          gap: 1px;
+        }
+        .truck-placa {
+          background: #1a3a5c;
+          color: #fff;
+          font-size: 10.5px;
+          font-weight: 800;
+          padding: 1px 6px;
+          border-radius: 4px;
+          letter-spacing: .02em;
+          white-space: nowrap;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+          font-family: system-ui, sans-serif;
+        }
+        .truck-driver {
+          background: rgba(255,255,255,0.95);
+          color: #1a3a5c;
+          font-size: 9.5px;
+          font-weight: 600;
+          padding: 0px 5px;
+          border-radius: 3px;
+          white-space: nowrap;
+          max-width: 108px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+          border: 1px solid rgba(26,58,92,0.15);
+          font-family: system-ui, sans-serif;
+        }
+        .truck-svg {
+          width: 30px;
+          height: 38px;
+          transform-origin: 50% 50%;
+          transition: transform 600ms ease-out;
+        }
+        .truck-vel {
+          position: absolute;
+          right: 6px;
+          top: 12px;
+          background: #16a34a;
+          color: #fff;
+          font-size: 10px;
+          font-weight: 800;
+          padding: 1px 5px;
+          border-radius: 8px;
+          border: 1.5px solid #fff;
+          font-family: system-ui, sans-serif;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+        }
+        .truck-stale {
+          position: absolute;
+          right: 6px;
+          top: 12px;
+          background: #f59e0b;
+          color: #fff;
+          font-size: 9.5px;
+          font-weight: 800;
+          padding: 1px 4px;
+          border-radius: 8px;
+          border: 1.5px solid #fff;
+          font-family: system-ui, sans-serif;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+        }
+        .truck-wrap.stale .truck-svg { opacity: 0.55; }
+        .truck-wrap.very-stale .truck-svg { opacity: 0.35; filter: grayscale(0.6); }
+        .truck-wrap.very-stale .truck-stale { background: #6b7280; }
+        .truck-lock {
+          position: absolute;
+          left: 4px;
+          top: 14px;
+          background: #fff;
+          font-size: 12px;
+          line-height: 14px;
+          padding: 1px 3px;
+          border-radius: 4px;
+          border: 1px solid #dc2626;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .truck-wrap.pulse::before {
+          content: "";
+          position: absolute;
+          left: 50%;
+          bottom: 14px;
+          width: 26px;
+          height: 26px;
+          margin-left: -13px;
+          border-radius: 50%;
+          background: rgba(22,163,74,0.45);
+          animation: truckpulse 1.5s ease-out infinite;
+        }
+        @keyframes truckpulse {
+          0%   { transform: scale(0.6); opacity: 0.8; }
+          100% { transform: scale(2.2); opacity: 0;   }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+const btnExt = {
+  display: "inline-flex", alignItems: "center", gap: 4,
+  padding: "5px 9px",
+  background: "#1a3a5c", color: "#fff",
+  borderRadius: 6, fontSize: ".74rem", fontWeight: 600,
+  textDecoration: "none",
+};
+
+function Row({ label, value, highlight, alert }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+      <span style={{ color: "#64748b" }}>{label}</span>
+      <span style={{
+        fontWeight: 600,
+        color: alert ? "#dc2626" : highlight ? "#16a34a" : "#1a3a5c"
+      }}>{value}</span>
+    </div>
+  );
+}
+
+function Legenda() {
+  const itens = [
+    ["#16a34a", "Em movimento"],
+    ["#eab308", "Parado / ligado"],
+    ["#475569", "Estacionado"],
+    ["#dc2626", "Bloqueado"],
+  ];
+  return (
+    <div style={{
+      position: "absolute",
+      right: 12,
+      bottom: 12,
+      background: "rgba(255,255,255,0.95)",
+      borderRadius: 8,
+      padding: "8px 12px",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+      fontSize: ".74rem",
+      fontFamily: "system-ui",
+      zIndex: 1000,
+    }}>
+      <div style={{ fontWeight: 700, color: "#475569", marginBottom: 4 }}>Status</div>
+      {itens.map(([c, l]) => (
+        <div key={l} style={{ display: "flex", alignItems: "center", gap: 6, lineHeight: 1.6 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 2, background: c, display: "inline-block" }} />
+          <span style={{ color: "#475569" }}>{l}</span>
+        </div>
+      ))}
+    </div>
+  );
+}

@@ -1,6 +1,39 @@
+# Secrets / env
 .env
 .env.local
 .env.*.local
-node_modules
+*.local
+
+# Logs
 *.log
+logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Dependencies
+node_modules
+
+# Build artifacts
+dist
+dist-ssr
+
+# Firebase
+firebase-debug.log
+
+# OS / editor
 .DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Credenciais sensíveis
+scripts/serviceAccountKey.json
+
+# Binários grandes (baixar separado)
+scripts/bin/
