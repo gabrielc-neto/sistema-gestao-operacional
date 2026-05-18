@@ -238,8 +238,8 @@ export default function Ferias() {
 
       {/* MODAL */}
       {modal && (
-        <div style={s.overlay} onClick={fecharModal}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <div style={s.overlay} className="modal-mobile-sheet-overlay" onClick={fecharModal}>
+          <div style={s.modal} className="modal-mobile-sheet" onClick={e => e.stopPropagation()}>
             <div style={s.mh}>
               <h3>{editId ? "Editar Férias" : "Nova Férias"}</h3>
               <button style={s.mclose} onClick={fecharModal}>×</button>

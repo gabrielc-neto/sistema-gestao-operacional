@@ -184,7 +184,7 @@ export default function Cargos() {
       )}
 
       <div style={s.body}>
-        <div style={s.grid}>
+        <div style={s.grid} className="layout-sidebar">
           {/* COLUNA ESQUERDA: lista de cargos */}
           <div style={s.painelEsq}>
             <h3 style={s.painelTitulo}>Cargos por setor</h3>
@@ -307,8 +307,8 @@ export default function Cargos() {
 
       {/* MODAL */}
       {modal && (
-        <div style={s.overlay} onClick={fechar}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <div style={s.overlay} className="modal-mobile-sheet-overlay" onClick={fechar}>
+          <div style={s.modal} className="modal-mobile-sheet" onClick={e => e.stopPropagation()}>
             <div style={s.mh}>
               <h3 style={{ color: "#fff", fontSize: "1rem", fontWeight: 700, margin: 0 }}>
                 {editId ? "Editar Cargo" : "Novo Cargo"}

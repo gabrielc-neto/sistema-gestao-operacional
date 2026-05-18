@@ -168,8 +168,8 @@ export default function Setores() {
       </div>
 
       {modal && (
-        <div style={s.overlay} onClick={fechar}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <div style={s.overlay} className="modal-mobile-sheet-overlay" onClick={fechar}>
+          <div style={s.modal} className="modal-mobile-sheet" onClick={e => e.stopPropagation()}>
             <div style={s.mh}>
               <h3 style={{ color: "#fff", fontSize: "1rem", fontWeight: 700, margin: 0 }}>
                 {editId ? "Editar Setor" : "Novo Setor"}

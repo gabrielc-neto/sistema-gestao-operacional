@@ -388,8 +388,8 @@ export default function Frota() {
       )}
 
       {bloqueioModal && (
-        <div style={s.overlay} onClick={() => setBloqueioModal(null)}>
-          <div style={{ ...s.modal, maxWidth:420 }} onClick={e => e.stopPropagation()}>
+        <div style={s.overlay} className="modal-mobile-sheet-overlay" onClick={() => setBloqueioModal(null)}>
+          <div style={{ ...s.modal, maxWidth:420 }} className="modal-mobile-sheet" onClick={e => e.stopPropagation()}>
             <div style={s.modalHeader}>
               <span>{bloqueioModal.modo === "bloquear" ? "🔒 Bloquear Veículo" : "🔓 Desbloquear Veículo"}</span>
               <button style={s.closeBtn} onClick={() => setBloqueioModal(null)}>×</button>
@@ -449,8 +449,8 @@ export default function Frota() {
       )}
 
       {modal && (
-        <div style={s.overlay} onClick={fecharModal}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <div style={s.overlay} className="modal-mobile-sheet-overlay" onClick={fecharModal}>
+          <div style={s.modal} className="modal-mobile-sheet" onClick={e => e.stopPropagation()}>
             <div style={s.modalHeader}>
               <span>{editId ? `Editar — ${form.placa}` : "Novo Veículo"}</span>
               <button style={s.closeBtn} onClick={fecharModal}>×</button>

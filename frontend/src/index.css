@@ -20,6 +20,8 @@
   --input-border: #475569;
 }
 
+html { -webkit-text-size-adjust: 100%; }
+
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
   background: var(--bg);
@@ -28,6 +30,12 @@ body {
   transition: background .2s, color .2s;
 }
 #root { min-height: 100vh; }
+
+/* Inputs em iOS não fazem zoom se font-size ≥ 16px */
+input, select, textarea, button { font-family: inherit; }
+@media (max-width: 640px) {
+  input, select, textarea { font-size: 16px !important; }
+}
 
 /* ── Dark mode — inputs, selects, tabelas ──────────────────── */
 [data-theme="dark"] input,
@@ -47,7 +55,116 @@ body {
   border-color: var(--border) !important;
 }
 
-/* ── Layout responsivo ─────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   UTILITIES RESPONSIVAS — usar em className junto com inline
+   ════════════════════════════════════════════════════════════ */
+
+/* Wrap obrigatório em qualquer tabela: <div className="table-wrap"><table>... */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--card-bg);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+/* Grids de formulário — colapsam pra 1 col em mobile */
+.grid-form-2, .grid-form-3, .grid-form-4 { display: grid; gap: 12px; }
+.grid-form-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-form-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-form-4 { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 768px) {
+  .grid-form-3, .grid-form-4 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 480px) {
+  .grid-form-2, .grid-form-3, .grid-form-4 { grid-template-columns: 1fr !important; }
+}
+
+/* Grid auto-fill responsivo — minmax reduz em mobile */
+.grid-auto-280 { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.grid-auto-240 { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.grid-auto-200 { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+
+@media (max-width: 480px) {
+  .grid-auto-280, .grid-auto-240, .grid-auto-200 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+}
+
+/* Layout sidebar+content — colapsa em mobile */
+.layout-sidebar {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .layout-sidebar {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+}
+
+/* Containers — padding adaptativo */
+.page-body { padding: 24px; max-width: 1300px; margin: 0 auto; }
+@media (max-width: 900px) { .page-body { padding: 18px 14px !important; } }
+@media (max-width: 480px) { .page-body { padding: 12px 10px !important; } }
+
+/* ── Inline styles legados: força colapso em mobile ────────── */
+/* Atinge qualquer elemento com grid inline em telas pequenas */
+@media (max-width: 480px) {
+  .force-stack [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+  .force-stack [style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Modal mobile-full: vira bottom-sheet ──────────────────── */
+.modal-mobile-full { width: 100%; }
+@media (max-width: 640px) {
+  .modal-mobile-full {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 100vh !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+  .modal-mobile-sheet {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin-top: auto !important;
+  }
+  .modal-mobile-sheet-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+}
+
+/* ── Botões alvo de toque ≥ 44px em mobile ─────────────────── */
+@media (max-width: 640px) {
+  button, .btn { min-height: 40px; }
+}
+
+/* ── Tabs com scroll horizontal em mobile ──────────────────── */
+.tabs-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.tabs-scroll > * { flex-shrink: 0; }
+
+/* ════════════════════════════════════════════════════════════
+   Layout legado (mantido para compatibilidade .pg-*)
+   ════════════════════════════════════════════════════════════ */
 
 /* Tablet (≤ 900px) */
 @media (max-width: 900px) {
@@ -57,10 +174,6 @@ body {
   .pg-stats {
     grid-template-columns: repeat(2, 1fr) !important;
   }
-}
-
-/* Tablet (≤ 900px) - body padding */
-@media (max-width: 900px) {
   .pg-body {
     padding: 18px 16px !important;
   }
@@ -68,7 +181,6 @@ body {
 
 /* Mobile (≤ 640px) */
 @media (max-width: 640px) {
-  /* Header */
   .pg-header {
     flex-wrap: wrap !important;
     padding: 10px 14px !important;
@@ -85,7 +197,6 @@ body {
     justify-content: flex-start !important;
   }
 
-  /* Toolbar */
   .pg-toolbar {
     flex-direction: column !important;
     padding: 10px 14px !important;
@@ -103,25 +214,21 @@ body {
     justify-content: flex-start !important;
   }
 
-  /* Grid cards */
   .pg-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     padding: 12px !important;
     gap: 10px !important;
   }
 
-  /* Body/main padding */
   .pg-body {
     padding: 12px 10px !important;
   }
 
-  /* Stats row */
   .pg-stats {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px !important;
   }
 
-  /* Modal: sobe da parte inferior em mobile */
   .pg-modal-overlay {
     align-items: flex-end !important;
     padding: 0 !important;
@@ -132,19 +239,17 @@ body {
     width: 100% !important;
   }
 
-  /* Ocultar textos secundários no header */
   .hide-mobile {
     display: none !important;
   }
 
-  /* Logo menor */
   .pg-logo svg {
     height: 28px !important;
   }
 }
 
-/* Mobile pequeno (≤ 400px) */
-@media (max-width: 400px) {
+/* Mobile pequeno (≤ 480px) */
+@media (max-width: 480px) {
   .pg-grid {
     grid-template-columns: 1fr !important;
   }
@@ -167,11 +272,32 @@ body {
     overflow-x: auto !important;
   }
 }
-@media (max-width: 400px) {
-  .dash-kpi {
-    grid-template-columns: repeat(2, 1fr) !important;
+@media (max-width: 480px) {
+  .dash-kpi { grid-template-columns: repeat(2, 1fr) !important; }
+  .dash-modules { grid-template-columns: 1fr !important; }
+}
+
+/* ── OC: layout 2-col vira coluna em mobile ────────────────── */
+@media (max-width: 768px) {
+  .oc-corpo { flex-direction: column !important; }
+  .oc-corpo > * { min-width: 0 !important; width: 100% !important; min-height: auto !important; }
+}
+
+/* ── Histórico: header escondido em mobile, itens viram card ─ */
+@media (max-width: 640px) {
+  .histo-header { display: none !important; }
+  .histo-item {
+    grid-template-columns: 1fr 1fr !important;
+    padding: 12px 14px !important;
+    gap: 6px 12px !important;
   }
-  .dash-modules {
-    grid-template-columns: 1fr !important;
+  .histo-item > :nth-child(4) { grid-column: 1 / -1 !important; font-weight: 600; }
+  .histo-item > :nth-child(5) { grid-column: 1 / -1 !important; color: var(--text-muted); font-size: .85rem; }
+}
+
+/* ── Leaflet mapa — altura adaptativa em mobile ────────────── */
+@media (max-width: 640px) {
+  .leaflet-container {
+    min-height: 50vh;
   }
 }

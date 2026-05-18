@@ -325,8 +325,8 @@ export default function Motoristas() {
 
       {/* MODAL */}
       {modalOpen && (
-        <div style={s.overlay} onClick={fecharModal}>
-          <div style={s.modal} onClick={(e) => e.stopPropagation()}>
+        <div style={s.overlay} className="modal-mobile-sheet-overlay" onClick={fecharModal}>
+          <div style={s.modal} className="modal-mobile-sheet" onClick={(e) => e.stopPropagation()}>
             <div style={s.modalHeader}>
               <h2 style={s.modalTitle}>
                 {editando ? "Editar Motorista" : "Novo Motorista"}

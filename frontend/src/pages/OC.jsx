@@ -241,7 +241,7 @@ export default function OC() {
       </header>
 
       {/* CORPO: duas colunas */}
-      <div style={s.corpo}>
+      <div style={s.corpo} className="oc-corpo">
 
         {/* LISTA — aparece primeiro no mobile (order via CSS) */}
         <div style={s.colLista}>
@@ -297,7 +297,7 @@ export default function OC() {
           <form style={s.form} onSubmit={e => e.preventDefault()}>
 
             {/* linha 1: num / data / hora */}
-            <div style={s.row3}>
+            <div style={s.row3} className="grid-form-3">
               <div style={s.grupo}>
                 <label style={s.label}>N° OC</label>
                 <input style={{ ...s.input, background:"#f1f5f9", color:"var(--text-muted)" }} value={num} readOnly />
@@ -368,7 +368,7 @@ export default function OC() {
             </div>
 
             {/* carretas */}
-            <div style={s.row2}>
+            <div style={s.row2} className="grid-form-2">
               <div style={s.grupo}>
                 <label style={s.label}>Placa Carreta 1</label>
                 <input
@@ -387,7 +387,7 @@ export default function OC() {
               </div>
             </div>
 
-            <div style={s.row2}>
+            <div style={s.row2} className="grid-form-2">
               <div style={s.grupo}>
                 <label style={s.label}>Placa Carreta 2 (opcional)</label>
                 <input
@@ -449,7 +449,7 @@ export default function OC() {
                     />
                   </div>
 
-                  <div style={s.row2}>
+                  <div style={s.row2} className="grid-form-2">
                     <div style={s.grupo}>
                       <label style={s.label}>Produto</label>
                       <select
@@ -577,8 +577,8 @@ function ModalImpressao({ oc, onFechar }) {
   const totalL = totalLitros(oc.entregas || []);
 
   return (
-    <div style={ms.overlay}>
-      <div style={ms.modal}>
+    <div style={ms.overlay} className="modal-mobile-sheet-overlay">
+      <div style={ms.modal} className="modal-mobile-sheet">
         {/* conteúdo imprimível */}
         <div id="print-area" style={ms.printArea}>
           <div style={ms.printHeader}>
@@ -748,7 +748,6 @@ const s = {
     flexWrap:"wrap",
     gap:0,
     alignItems:"flex-start",
-    "@media(maxWidth:768px)": { flexDirection:"column" },
   },
 
   colLista: {

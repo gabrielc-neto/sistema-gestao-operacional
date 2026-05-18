@@ -676,7 +676,7 @@ export default function Manutencao() {
           {/* Formulário de nova OS */}
           <div style={{ background: "#fff", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <h2 style={{ margin: "0 0 0.75rem 0", color: "#1a3a5c", fontSize: "1.05rem" }}>Nova ordem de serviço</h2>
-            <form onSubmit={salvarOS} style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+            <form onSubmit={salvarOS} className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
               <label style={s.fieldLabel}>
                 Tipo de serviço *
                 <select
@@ -813,8 +813,8 @@ export default function Manutencao() {
 
       {/* ── MODAL ─────────────────────────────────────────────────────── */}
       {modal && (
-        <div style={s.overlay} onClick={fecharModal}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <div style={s.overlay} className="modal-mobile-sheet-overlay" onClick={fecharModal}>
+          <div style={s.modal} className="modal-mobile-sheet" onClick={e => e.stopPropagation()}>
             <div style={s.modalHeader}>
               <div>
                 <div style={s.modalTitulo}>{modal.placa} — {modal.tipo.label}</div>

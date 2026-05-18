@@ -386,12 +386,12 @@ export default function Atrelamento() {
 
       {/* Modal Alertas Vencimento */}
       {alertas && (
-        <div style={{
+        <div className="modal-mobile-sheet-overlay" style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
           display: "flex", alignItems: "center", justifyContent: "center",
           zIndex: 2000, padding: 16,
         }}>
-          <div style={{
+          <div className="modal-mobile-sheet" style={{
             background: "#fff", borderRadius: 12, width: "100%", maxWidth: 560,
             boxShadow: "0 20px 60px rgba(0,0,0,0.3)", overflow: "hidden",
           }}>
@@ -450,12 +450,12 @@ export default function Atrelamento() {
 
       {/* Modal */}
       {modalOpen && (
-        <div style={{
+        <div className="modal-mobile-sheet-overlay" style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
           display: "flex", alignItems: "center", justifyContent: "center",
           zIndex: 1000, padding: 16,
         }}>
-          <div style={{
+          <div className="modal-mobile-sheet" style={{
             background: "var(--card-bg)", borderRadius: 12, width: "100%", maxWidth: 720,
             maxHeight: "90vh", overflowY: "auto",
             boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
@@ -474,7 +474,7 @@ export default function Atrelamento() {
 
             <form onSubmit={salvar} style={{ padding: 22 }}>
               {/* Linha 1 */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 0 }}>
+              <div className="grid-form-4" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 0 }}>
                 <div style={fieldGroup}>
                   <label style={labelStyle}>Nº Registro</label>
                   <input name="num" value={form.num} readOnly style={{ ...inputStyle, background: "#f1f5f9" }} />
@@ -494,7 +494,7 @@ export default function Atrelamento() {
               </div>
 
               {/* Linha 2 */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={fieldGroup}>
                   <label style={labelStyle}>Operação *</label>
                   <select name="op" value={form.op} onChange={handleChange} required style={inputStyle}>
@@ -510,7 +510,7 @@ export default function Atrelamento() {
               </div>
 
               {/* Linha 3 */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={fieldGroup}>
                   <label style={labelStyle}>Cavalo (Placa) *</label>
                   <select name="cavalo" value={form.cavalo} onChange={handleChange} required style={inputStyle}>
@@ -532,7 +532,7 @@ export default function Atrelamento() {
               </div>
 
               {/* Carreta 1 */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={fieldGroup}>
                   <label style={labelStyle}>Placa Carreta 1 *</label>
                   <input name="c1" value={form.c1} onChange={handleChange} placeholder="EX: ABC1234" required style={inputStyle} maxLength={10} />
@@ -546,7 +546,7 @@ export default function Atrelamento() {
               </div>
 
               {/* Carreta 2 */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={fieldGroup}>
                   <label style={labelStyle}>Placa Carreta 2 (opcional)</label>
                   <input name="c2" value={form.c2} onChange={handleChange} placeholder="EX: DEF5678" style={inputStyle} maxLength={10} />

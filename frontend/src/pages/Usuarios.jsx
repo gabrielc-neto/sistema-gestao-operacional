@@ -282,8 +282,8 @@ export default function Usuarios() {
       </div>
 
       {modal && (
-        <div style={s.overlay} onClick={fechar}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <div style={s.overlay} className="modal-mobile-sheet-overlay" onClick={fechar}>
+          <div style={s.modal} className="modal-mobile-sheet" onClick={e => e.stopPropagation()}>
             <div style={s.mh}>
               <h3 style={{ color: "#fff", fontSize: "1rem", fontWeight: 700, margin: 0 }}>
                 {editId ? "Editar Usuário" : "Novo Usuário"}
@@ -329,7 +329,7 @@ export default function Usuarios() {
                 </label>
               )}
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <label style={s.mlbl}>
                   Setor {!form.is_super_admin && "*"}
                   <select style={s.minp} value={form.setor_id}

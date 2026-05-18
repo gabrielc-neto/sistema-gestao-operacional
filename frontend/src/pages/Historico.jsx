@@ -171,7 +171,7 @@ export default function Historico() {
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 16px" }}>
         {/* Estatísticas rápidas */}
         {!loading && (
-          <div className="pg-stats" style={{
+          <div className="pg-stats grid-form-4" style={{
             display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 18,
           }}>
             {[
@@ -264,7 +264,7 @@ export default function Historico() {
           ) : (
             <>
               {/* Cabeçalho tabela */}
-              <div style={{
+              <div className="histo-header" style={{
                 display: "grid",
                 gridTemplateColumns: "110px 90px 100px 1fr 120px",
                 background: "#1a3a5c", color: "#fff",
@@ -281,6 +281,7 @@ export default function Historico() {
               {visiveis.map((item, i) => (
                 <div
                   key={`${item._tipo}-${item._id}-${i}`}
+                  className="histo-item"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "110px 90px 100px 1fr 120px",
