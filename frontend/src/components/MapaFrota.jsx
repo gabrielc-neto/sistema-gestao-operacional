@@ -1,9 +1,101 @@
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap, LayersControl } from "react-leaflet";
 import { divIcon } from "leaflet";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import "leaflet/dist/leaflet.css";
 import CercaEletronica, { areaDoPonto } from "./CercaEletronica";
 import { useCercas } from "../hooks/useCercas";
+
+// Distância em graus acima da qual consideramos "teleport" (≈ 5 km) — sem animar
+const TELEPORT_THRESHOLD_DEG = 0.045;
+// Limites da duração calculada a partir da velocidade real
+const MIN_ANIM_MS = 1500;     // garante uma transição perceptível mesmo em saltos curtos
+const MAX_ANIM_MS = 45000;    // teto generoso (≈ intervalo de polling + folga) pra evitar marker andando por minutos
+const FALLBACK_ANIM_MS = 20000; // quando não há velocidade confiável
+
+// Haversine — distância em metros entre dois pontos (lat,lng)
+function distMetros(a, b) {
+  const R = 6371000;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const lat1 = toRad(a[0]);
+  const lat2 = toRad(b[0]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/**
+ * Marker que interpola suavemente da posição atual até a próxima leitura SASCAR.
+ * Duração da animação = distância / velocidade real do pacote SASCAR.
+ * Limita entre MIN_ANIM_MS e MAX_ANIM_MS para evitar tremulação ou marker que anda por minutos.
+ * Usa requestAnimationFrame + setLatLng direto no marker — sem re-render do React.
+ * Quando o salto é > ~5 km (teleport, filtro mudou, GPS pulou) faz move instantâneo.
+ */
+function AnimatedTruckMarker({ posicao, icon, children, ...rest }) {
+  const markerRef = useRef(null);
+  const animFrame = useRef(null);
+  const initialPos = useRef([posicao.latitude, posicao.longitude]);
+
+  useEffect(() => {
+    const m = markerRef.current;
+    if (!m) return;
+    const target = [posicao.latitude, posicao.longitude];
+    const cur = m.getLatLng();
+    const start = [cur.lat, cur.lng];
+    const dLat = target[0] - start[0];
+    const dLng = target[1] - start[1];
+
+    // Sem mudança real → não anima
+    if (Math.abs(dLat) < 1e-7 && Math.abs(dLng) < 1e-7) return;
+
+    // Salto grande → teleport
+    if (Math.hypot(dLat, dLng) > TELEPORT_THRESHOLD_DEG) {
+      m.setLatLng(target);
+      return;
+    }
+
+    // Duração baseada na velocidade real (km/h) do último pacote SASCAR.
+    // distância (m) / velocidade (m/s) = tempo (s)
+    const velKmh = Number(posicao.velocidade) || 0;
+    let duration;
+    if (velKmh >= 3) {
+      const distM = distMetros(start, target);
+      const velMs = velKmh / 3.6;
+      duration = (distM / velMs) * 1000;
+      duration = Math.max(MIN_ANIM_MS, Math.min(MAX_ANIM_MS, duration));
+    } else {
+      // Parado ou quase parado: usa fallback curto pra acomodar GPS jitter
+      duration = FALLBACK_ANIM_MS;
+    }
+
+    if (animFrame.current) cancelAnimationFrame(animFrame.current);
+    const t0 = performance.now();
+
+    function step(now) {
+      const t = Math.min((now - t0) / duration, 1);
+      const e = 1 - (1 - t) * (1 - t); // ease-out quad
+      m.setLatLng([start[0] + dLat * e, start[1] + dLng * e]);
+      if (t < 1) {
+        animFrame.current = requestAnimationFrame(step);
+      } else {
+        animFrame.current = null;
+      }
+    }
+    animFrame.current = requestAnimationFrame(step);
+
+    return () => {
+      if (animFrame.current) cancelAnimationFrame(animFrame.current);
+    };
+  }, [posicao.latitude, posicao.longitude, posicao.velocidade]);
+
+  return (
+    <Marker ref={markerRef} position={initialPos.current} icon={icon} {...rest}>
+      {children}
+    </Marker>
+  );
+}
 
 const STATUS = {
   EM_MOVIMENTO:  { color: "#16a34a", label: "Em movimento",   pulse: true  },
@@ -158,9 +250,9 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
           const oc = ocsPorPlaca?.get(normPlaca(p.placa));
           const area = areaDoPonto(p.latitude, p.longitude, cercas);
           return (
-          <Marker
+          <AnimatedTruckMarker
             key={p.idVeiculo}
-            position={[p.latitude, p.longitude]}
+            posicao={p}
             icon={makeIcon(p)}
             zIndexOffset={p.placa === focusPlaca ? 1000 : 0}
           >
@@ -233,7 +325,7 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
                 {oc && <div style={{ color: "#d97706", fontSize: ".7rem" }}>OC {oc.num}</div>}
               </div>
             </Tooltip>
-          </Marker>
+          </AnimatedTruckMarker>
         );
         })}
       </MapContainer>
@@ -245,7 +337,7 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
         .leaflet-marker-icon.truck-icon {
           background: transparent;
           border: 0;
-          transition: transform 600ms ease-out;
+          /* sem CSS transition aqui — interpolação é feita por RAF em AnimatedTruckMarker */
         }
         .truck-wrap {
           position: relative;
