@@ -9,7 +9,7 @@ import { db } from "../firebase/config";
 import {
   Truck, Link2, ClipboardList, Users, Wrench,
   History, Palmtree, MapPin, UserCog, ShieldCheck,
-  Lock, AlertTriangle, ChevronRight, Building2, Briefcase,
+  Lock, AlertTriangle, ChevronRight, Building2, Briefcase, Clock,
 } from "lucide-react";
 import { useRBAC } from "../rbac/RBACContext";
 
@@ -203,6 +203,7 @@ export default function Dashboard() {
     { Icon:Palmtree,      color:"#0891b2", bg:"#cffafe", label:"Férias",                 desc:"Controle e alertas eSocial",         module:"ferias",      link:"/ferias",
       stat: kpi?.emFerias > 0 ? `${kpi.emFerias} em férias hoje` : null },
     { Icon:MapPin,        color:"#ea580c", bg:"#ffedd5", label:"Rastreamento",           desc:"Posição em tempo real (SASCAR)",     module:null,          link:"/rastreamento",  stat: null },
+    { Icon:Clock,         color:"#1d4ed8", bg:"#dbeafe", label:"Jornada & Extras",        desc:"Lei 13.103 + CLT (tablet SasMDT)",   module:null,          link:"/jornada",       stat: null },
     { Icon:Building2,     color:"#0891b2", bg:"#cffafe", label:"Setores",                desc:"Departamentos da empresa",           module:null,          link:"/admin/setores", perm:"setores.ver", stat: null },
     { Icon:Briefcase,     color:"#9333ea", bg:"#f3e8ff", label:"Cargos & Permissões",    desc:"Funções e seus acessos",             module:null,          link:"/admin/cargos",  perm:"cargos.ver", stat: null },
     { Icon:UserCog,       color:"#475569", bg:"#f1f5f9", label:"Usuários",               desc:"Contas e acessos",                   module:null,          link:"/usuarios",      perm:"usuarios.ver", stat: null },

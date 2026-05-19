@@ -1,0 +1,566 @@
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, Download, FileSpreadsheet, FileText, TrendingUp } from "lucide-react";
+import { useJornada } from "../hooks/useJornada";
+import { exportarJornadaCsv } from "../utils/exportJornadaCsv";
+import { exportarJornadaPdf } from "../utils/exportJornadaPdf";
+
+function capitalizarNome(nome) {
+  if (!nome) return "";
+  return nome.trim().toLowerCase()
+    .split(/\s+/)
+    .map(w => w.length <= 2 ? w : w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function hojeISO() {
+  const d = new Date();
+  const Y = d.getFullYear();
+  const M = String(d.getMonth() + 1).padStart(2, "0");
+  const D = String(d.getDate()).padStart(2, "0");
+  return `${Y}-${M}-${D}`;
+}
+
+function ontemISO() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split("T")[0];
+}
+
+function diasAtrasISO(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().split("T")[0];
+}
+
+function formatBR(iso) {
+  if (!iso) return "—";
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+  if (!m) return iso;
+  return `${m[3]}/${m[2]} ${m[4]}:${m[5]}`;
+}
+
+function formatDataBR(iso) {
+  if (!iso) return "";
+  const [Y, M, D] = iso.split("-");
+  return `${D}/${M}/${Y}`;
+}
+
+// Adiciona -3h (UTC → BRT) na string 'YYYY-MM-DD HH:MM:SS'
+function brt(iso) {
+  if (!iso) return null;
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+  if (!m) return iso;
+  const dt = new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]));
+  dt.setUTCHours(dt.getUTCHours() - 3);
+  const Y = dt.getUTCFullYear();
+  const M = String(dt.getUTCMonth()+1).padStart(2,"0");
+  const D = String(dt.getUTCDate()).padStart(2,"0");
+  const h = String(dt.getUTCHours()).padStart(2,"0");
+  const mi = String(dt.getUTCMinutes()).padStart(2,"0");
+  const s = String(dt.getUTCSeconds()).padStart(2,"0");
+  return `${Y}-${M}-${D} ${h}:${mi}:${s}`;
+}
+
+const PRESETS = [
+  { id: "hoje",   label: "Hoje",     range: () => [hojeISO(), hojeISO()] },
+  { id: "ontem",  label: "Ontem",    range: () => [ontemISO(), ontemISO()] },
+  { id: "7d",     label: "7 dias",   range: () => [diasAtrasISO(6), hojeISO()] },
+  { id: "30d",    label: "30 dias",  range: () => [diasAtrasISO(29), hojeISO()] },
+];
+
+function Cell({ value, min, danger, warn }) {
+  const cor = danger ? "#dc2626" : warn ? "#ea580c" : (min > 0 ? "#0f172a" : "#94a3b8");
+  return (
+    <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "monospace", fontWeight: 700, color: cor, whiteSpace: "nowrap" }}>
+      {value}
+    </td>
+  );
+}
+
+export default function Jornada() {
+  const navigate = useNavigate();
+  const [preset, setPreset] = useState("hoje");
+  const [dataInicio, setDataInicio] = useState(hojeISO());
+  const [dataFim, setDataFim] = useState(hojeISO());
+
+  const { linhas, dias, ehPeriodo, totalEventos, cache, loading, error, lastFetch, refetch } = useJornada(dataInicio, dataFim);
+  const [busca, setBusca] = useState("");
+  const [filtroInfracao, setFiltroInfracao] = useState(false);
+  const [filtroNaoEncerrou, setFiltroNaoEncerrou] = useState(false);
+  const [filtroEncerrou, setFiltroEncerrou] = useState(false);
+  const [filtroSemPausa, setFiltroSemPausa] = useState(false);
+
+  const aplicarPreset = (id) => {
+    setPreset(id);
+    const p = PRESETS.find(x => x.id === id);
+    if (p) {
+      const [i, f] = p.range();
+      setDataInicio(i);
+      setDataFim(f);
+    }
+  };
+
+  const filtradas = useMemo(() => {
+    const termo = busca.trim().toUpperCase();
+    return linhas.filter(j => {
+      if (filtroInfracao && !j.temInfracao) return false;
+      if (filtroNaoEncerrou && j.encerrouJornada !== false) return false;
+      if (filtroEncerrou && j.encerrouJornada !== true) return false;
+      if (filtroSemPausa && j.pausaDiariaSuficiente !== false) return false;
+      if (termo) {
+        const nome = (j.nomeMotorista || "").toUpperCase();
+        const placas = j.placas.join(",").toUpperCase();
+        if (!nome.includes(termo) && !placas.includes(termo)) return false;
+      }
+      return true;
+    });
+  }, [linhas, busca, filtroInfracao, filtroNaoEncerrou, filtroEncerrou, filtroSemPausa]);
+
+  const totais = useMemo(() => {
+    let jornadaSum = 0, extra50Sum = 0, extra100Sum = 0, infracoes = 0;
+    let comExtra = 0, comInfracao = 0, naoEncerraram = 0, encerraram = 0;
+    let semPausa30 = 0;
+    for (const j of linhas) {
+      jornadaSum += j.totalAtivoMin;
+      extra50Sum += j.extra50Min;
+      extra100Sum += j.extra100Min;
+      if (j.extra50Min > 0 || j.extra100Min > 0) comExtra++;
+      if (j.temInfracao) { comInfracao++; infracoes += j.infracoes.length; }
+      if (j.encerrouJornada === false) naoEncerraram++;
+      if (j.encerrouJornada === true) encerraram++;
+      if (j.pausaDiariaSuficiente === false) semPausa30++;
+    }
+    return {
+      motoristas: linhas.length,
+      jornadaMedia: linhas.length > 0 ? Math.round(jornadaSum / linhas.length) : 0,
+      extra50Sum,
+      extra100Sum,
+      comExtra,
+      comInfracao,
+      infracoesTotais: infracoes,
+      naoEncerraram,
+      encerraram,
+      semPausa30,
+    };
+  }, [linhas]);
+
+  const fmtHHmm = (min) => {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  };
+
+  const handleExportExcel = () => {
+    exportarJornadaCsv({ linhas: filtradas, dataInicio, dataFim, ehPeriodo });
+  };
+  const handleExportPdf = () => {
+    exportarJornadaPdf({ linhas: filtradas, dataInicio, dataFim, ehPeriodo, totais });
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#f0f4f8", fontFamily: "system-ui" }}>
+      <div style={{ maxWidth: 1480, margin: "0 auto", padding: "16px 14px 40px" }}>
+
+        {/* HEADER */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <button onClick={() => navigate("/dashboard")} style={btnGhost}>
+              <ArrowLeft size={18} /> Dashboard
+            </button>
+            <h1 style={{ margin: 0, fontSize: "1.25rem", color: "#0f172a", display: "flex", alignItems: "center", gap: 8 }}>
+              <Clock size={20} color="#1d4ed8" /> Jornada & Extras
+            </h1>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <button onClick={handleExportExcel} disabled={linhas.length === 0} style={{ ...btnGhost, opacity: linhas.length === 0 ? .5 : 1 }} title="Exportar Excel">
+              <FileSpreadsheet size={14} color="#16a34a" /> Excel
+            </button>
+            <button onClick={handleExportPdf} disabled={linhas.length === 0} style={{ ...btnGhost, opacity: linhas.length === 0 ? .5 : 1 }} title="Exportar PDF">
+              <FileText size={14} color="#dc2626" /> PDF
+            </button>
+            <button onClick={refetch} style={btnGhost} title="Atualizar">
+              <RefreshCw size={16} className={loading ? "rotating" : ""} /> Atualizar
+            </button>
+          </div>
+        </div>
+
+        {/* SELETOR DE PERÍODO */}
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px", marginBottom: 14, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+          <Calendar size={16} color="#64748b" />
+          <span style={{ fontSize: ".8rem", color: "#475569", fontWeight: 600 }}>Período:</span>
+
+          {PRESETS.map(p => (
+            <button
+              key={p.id}
+              onClick={() => aplicarPreset(p.id)}
+              style={{
+                ...btnPreset,
+                background: preset === p.id ? "#1d4ed8" : "#fff",
+                color: preset === p.id ? "#fff" : "#0f172a",
+                borderColor: preset === p.id ? "#1d4ed8" : "#cbd5e1",
+              }}
+            >
+              {p.label}
+            </button>
+          ))}
+          <button
+            onClick={() => setPreset("custom")}
+            style={{
+              ...btnPreset,
+              background: preset === "custom" ? "#1d4ed8" : "#fff",
+              color: preset === "custom" ? "#fff" : "#0f172a",
+              borderColor: preset === "custom" ? "#1d4ed8" : "#cbd5e1",
+            }}
+          >
+            Personalizado
+          </button>
+
+          <div style={{ display: "flex", gap: 6, alignItems: "center", marginLeft: 8 }}>
+            <input
+              type="date"
+              value={dataInicio}
+              onChange={e => { setPreset("custom"); setDataInicio(e.target.value); if (e.target.value > dataFim) setDataFim(e.target.value); }}
+              style={inputDate}
+            />
+            <span style={{ color: "#64748b" }}>até</span>
+            <input
+              type="date"
+              value={dataFim}
+              min={dataInicio}
+              onChange={e => { setPreset("custom"); setDataFim(e.target.value); }}
+              style={inputDate}
+            />
+          </div>
+
+          {ehPeriodo && (
+            <span style={{ marginLeft: "auto", background: "#dbeafe", color: "#1d4ed8", padding: "2px 8px", borderRadius: 6, fontSize: ".72rem", fontWeight: 700 }}>
+              {dias.length} dias agregados
+            </span>
+          )}
+        </div>
+
+        {/* KPIs */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 14 }}>
+          <Kpi label="Motoristas no período" value={totais.motoristas} color="#1d4ed8" icon={<Truck size={16} />} />
+          <Kpi label={ehPeriodo ? "Jornada média/motorista" : "Jornada média"} value={fmtHHmm(totais.jornadaMedia)} color="#0891b2" icon={<Clock size={16} />} />
+          <Kpi
+            label={ehPeriodo ? "Horas extras (total período)" : "Horas extras (total do dia)"}
+            value={fmtHHmm(totais.extra50Sum + totais.extra100Sum)}
+            color="#ea580c"
+            icon={<TrendingUp size={16} />}
+            sub={`50%: ${fmtHHmm(totais.extra50Sum)} | 100%: ${fmtHHmm(totais.extra100Sum)}`}
+          />
+          <Kpi
+            label="Motoristas com extras"
+            value={totais.comExtra}
+            color="#f59e0b"
+            icon={<AlertTriangle size={16} />}
+          />
+          <Kpi
+            label="Com infração legal"
+            value={totais.comInfracao}
+            color={totais.comInfracao > 0 ? "#dc2626" : "#16a34a"}
+            icon={totais.comInfracao > 0 ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
+            sub={totais.comInfracao > 0 ? `${totais.infracoesTotais} ocorrência(s)` : "Tudo conforme"}
+            onClick={() => setFiltroInfracao(v => !v)}
+            active={filtroInfracao}
+          />
+          {!ehPeriodo && (
+            <>
+              <Kpi
+                label="Encerraram jornada"
+                value={totais.encerraram}
+                color="#16a34a"
+                icon={<CheckCircle2 size={16} />}
+                sub={totais.encerraram > 0 ? "Clique p/ filtrar" : "Ninguém encerrou ainda"}
+                onClick={() => { setFiltroEncerrou(v => !v); setFiltroNaoEncerrou(false); }}
+                active={filtroEncerrou}
+              />
+              <Kpi
+                label="Não encerraram jornada"
+                value={totais.naoEncerraram}
+                color={totais.naoEncerraram > 0 ? "#d97706" : "#16a34a"}
+                icon={<Clock size={16} />}
+                sub={totais.naoEncerraram > 0 ? "Clique p/ filtrar" : "Todos encerraram"}
+                onClick={() => { setFiltroNaoEncerrou(v => !v); setFiltroEncerrou(false); }}
+                active={filtroNaoEncerrou}
+              />
+              <Kpi
+                label="Sem 30min de pausa"
+                value={totais.semPausa30}
+                color={totais.semPausa30 > 0 ? "#dc2626" : "#16a34a"}
+                icon={<AlertTriangle size={16} />}
+                sub={totais.semPausa30 > 0 ? "Clique p/ filtrar" : "Todos com pausa OK"}
+                onClick={() => setFiltroSemPausa(v => !v)}
+                active={filtroSemPausa}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Filtros */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+          <div style={{ position: "relative", flex: "1 1 240px", maxWidth: 360 }}>
+            <Search size={14} style={{ position: "absolute", left: 10, top: 11, color: "#94a3b8" }} />
+            <input
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              placeholder="Buscar motorista ou placa..."
+              style={{ width: "100%", padding: "8px 30px 8px 32px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: ".9rem", outline: "none" }}
+            />
+            {busca && (
+              <button onClick={() => setBusca("")} style={{ position: "absolute", right: 6, top: 6, background: "transparent", border: "none", cursor: "pointer", color: "#64748b" }}>
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          {filtroInfracao && (
+            <button onClick={() => setFiltroInfracao(false)} style={{ ...btnGhost, background: "#fee2e2", color: "#991b1b", borderColor: "#fecaca" }}>
+              <X size={14} /> Limpar filtro infração
+            </button>
+          )}
+          {filtroNaoEncerrou && (
+            <button onClick={() => setFiltroNaoEncerrou(false)} style={{ ...btnGhost, background: "#fef9c3", color: "#854d0e", borderColor: "#fde68a" }}>
+              <X size={14} /> Limpar filtro não encerrou
+            </button>
+          )}
+          {filtroEncerrou && (
+            <button onClick={() => setFiltroEncerrou(false)} style={{ ...btnGhost, background: "#dcfce7", color: "#166534", borderColor: "#bbf7d0" }}>
+              <X size={14} /> Limpar filtro encerrados
+            </button>
+          )}
+          {filtroSemPausa && (
+            <button onClick={() => setFiltroSemPausa(false)} style={{ ...btnGhost, background: "#fee2e2", color: "#991b1b", borderColor: "#fecaca" }}>
+              <X size={14} /> Limpar filtro sem pausa
+            </button>
+          )}
+          <div style={{ marginLeft: "auto", fontSize: ".75rem", color: "#64748b", display: "flex", alignItems: "center", gap: 6 }}>
+            {!ehPeriodo && dataInicio === hojeISO() && (
+              <span style={{ background: "#dcfce7", color: "#166534", padding: "2px 8px", borderRadius: 10, fontSize: ".7rem", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", boxShadow: "0 0 0 0 rgba(22,163,74,0.7)", animation: "ao-vivo-pulse 2s infinite" }} />
+                AO VIVO · atualiza a cada 60s
+                <style>{`@keyframes ao-vivo-pulse { 0% { box-shadow: 0 0 0 0 rgba(22,163,74,0.7);} 70% { box-shadow: 0 0 0 8px rgba(22,163,74,0);} 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0);} }`}</style>
+              </span>
+            )}
+            {lastFetch && `Atualizado: ${lastFetch.toLocaleTimeString("pt-BR")}`}
+            {cache && cache.age != null && ` · Cache ${Math.round(cache.age / 1000)}s`}
+            {totalEventos > 0 && ` · ${totalEventos} eventos brutos`}
+          </div>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div style={{ background: "#fee2e2", color: "#991b1b", padding: 12, borderRadius: 8, marginBottom: 12, fontSize: ".85rem" }}>
+            Erro ao carregar: {error}
+          </div>
+        )}
+
+        {/* Tabela */}
+        <div style={{ background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+          <div className="table-wrap" style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".82rem" }}>
+              <thead style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
+                <tr>
+                  <Th>Motorista</Th>
+                  <Th>Placa(s)</Th>
+                  {ehPeriodo ? <Th right>Dias</Th> : <><Th right>Início</Th><Th right>Fim</Th></>}
+                  <Th right title="Jornada efetiva total (jornada + dirigindo + refeição + pausa)">Total</Th>
+                  <Th right>Dirigindo</Th>
+                  <Th right>Refeição</Th>
+                  <Th right>Pausa</Th>
+                  <Th right title="Extra 50% — semana: acima de 9h30 (limite +2h). Sábado: acima de 4h.">Extra 50%</Th>
+                  <Th right title="Extra 100% — semana: acima de 11h30 (infração). Domingo: TODO o tempo.">Extra 100%</Th>
+                  {!ehPeriodo && <Th right title="Direção contínua máxima sem pausa">Dir. contínua</Th>}
+                  <Th>Status</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading && linhas.length === 0 && (
+                  <tr><td colSpan={12} style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+                    {ehPeriodo ? `Carregando ${dias.length} dias (pode demorar)...` : "Carregando eventos do SASCAR..."}
+                  </td></tr>
+                )}
+                {!loading && filtradas.length === 0 && (
+                  <tr><td colSpan={12} style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+                    Nenhuma jornada no período. {filtroInfracao ? "Tente limpar o filtro de infração." : "Motoristas precisam apertar 'Jornada' no tablet SasMDT."}
+                  </td></tr>
+                )}
+                {filtradas.map((j) => (
+                  <tr key={j.idMotorista} style={{ borderBottom: "1px solid #f1f5f9", background: j.temInfracao ? "#fef2f2" : "transparent" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 600, color: "#0f172a" }}>
+                      {capitalizarNome(j.nomeMotorista)}
+                      <div style={{ fontSize: ".7rem", color: "#64748b", fontWeight: 400, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                        ID {j.idMotorista} · {j.qtdEventos} ev.
+                        {!ehPeriodo && j.tipoDia === 'sabado' && <span style={pill("#fef3c7", "#92400e")}>SÁB</span>}
+                        {!ehPeriodo && j.tipoDia === 'domingo' && <span style={pill("#fee2e2", "#991b1b")}>DOM</span>}
+                      </div>
+                    </td>
+                    <td style={{ padding: "10px 8px", fontFamily: "monospace", fontWeight: 600, color: "#475569" }}>
+                      {j.placas.map(p => (
+                        <span key={p} style={{ display: "inline-block", background: "#e0f2fe", color: "#075985", padding: "2px 6px", borderRadius: 4, marginRight: 4, marginBottom: 2, fontSize: ".72rem" }}>
+                          {p}
+                        </span>
+                      ))}
+                    </td>
+                    {ehPeriodo ? (
+                      <td style={{ padding: "10px 8px", textAlign: "center", color: "#0f172a", fontWeight: 700 }}>{j.dias}</td>
+                    ) : (
+                      <>
+                        <td style={{ padding: "10px 8px", color: "#475569", whiteSpace: "nowrap" }}>{formatBR(j.inicio)}</td>
+                        <td style={{ padding: "10px 8px", color: "#475569", whiteSpace: "nowrap" }}>
+                          {j.encerrouJornada
+                            ? formatBR(j.fim)
+                            : (
+                              <span title={`Última marcação: ${j.ultimoEventoTipo || '?'} às ${formatBR(j.fim)}. Motorista não bateu "Encerrar" no tablet.`}
+                                    style={{ background: "#fef9c3", color: "#854d0e", padding: "2px 6px", borderRadius: 4, fontSize: ".72rem", fontWeight: 700, cursor: "help" }}>
+                                ⏱ em andamento
+                              </span>
+                            )}
+                        </td>
+                      </>
+                    )}
+                    <Cell value={j.totalAtivo} min={j.totalAtivoMin} warn={!ehPeriodo && j.totalAtivoMin > 8 * 60} danger={!ehPeriodo && j.totalAtivoMin > 10 * 60} />
+                    <Cell value={j.dirigindo} min={j.dirigindoMin} />
+                    <Cell value={j.refeicao} min={j.refeicaoMin} danger={!ehPeriodo && j.refeicaoMin > 0 && j.refeicaoMin < 60} />
+                    {!ehPeriodo ? (
+                      <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "monospace", whiteSpace: "nowrap",
+                          color: j.pausaDiariaSuficiente ? "#16a34a" : (j.pausaMin > 0 ? "#dc2626" : "#94a3b8"),
+                          fontWeight: j.pausaDiariaSuficiente || j.pausaMin > 0 ? 700 : 400 }}
+                          title={j.pausaDiariaSuficiente
+                            ? `Pausa diária OK (mínimo 30min cumprido)`
+                            : j.pausaMin > 0
+                              ? `Faltam ${j.pausaFaltante} de pausa pra completar 30min no dia`
+                              : `Sem pausa registrada hoje (precisa 30min)`}>
+                        {j.pausa}{!j.pausaDiariaSuficiente && j.pausaMin > 0 && ` /−${j.pausaFaltante}`}
+                      </td>
+                    ) : <Cell value={j.pausa} min={j.pausaMin} />}
+                    <Cell value={j.extra50} min={j.extra50Min} warn={j.extra50Min > 0} />
+                    <Cell value={j.extra100} min={j.extra100Min} danger={j.extra100Min > 0} />
+                    {!ehPeriodo && <Cell value={j.direcaoContinuaMaxima} min={j.direcaoContinuaMaximaMin} danger={j.direcaoContinuaMaximaMin > 4 * 60} />}
+                    <td style={{ padding: "10px 8px", textAlign: "center", whiteSpace: "nowrap" }}>
+                      {j.temInfracao ? (
+                        <span title={j.infracoes.map(i => `${i.tipo}${i.data ? ' (' + formatDataBR(i.data) + ')' : ''}: ${i.descricao}`).join("\n")}
+                              style={{ background: "#fee2e2", color: "#991b1b", padding: "2px 8px", borderRadius: 6, fontSize: ".72rem", fontWeight: 700, cursor: "help" }}>
+                          ⚠ {j.infracoes.length} infração{j.infracoes.length > 1 ? "s" : ""}
+                        </span>
+                      ) : (
+                        <span style={{ background: "#dcfce7", color: "#166534", padding: "2px 8px", borderRadius: 6, fontSize: ".72rem", fontWeight: 700 }}>
+                          ✓ OK
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Legenda */}
+        <div style={{ marginTop: 14, padding: 12, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: ".75rem", color: "#475569", lineHeight: 1.6 }}>
+          <div><strong style={{ color: "#0f172a" }}>Regra Pontual:</strong></div>
+          <div style={{ marginTop: 4 }}>
+            <span style={pill("#dbeafe", "#1d4ed8")}>SEG–SEX</span> Jornada normal até <b>9h30</b> (8h trabalho + 1h almoço + 30min pausa). Acima: até +2h = <b>extra 50%</b>, restante = <b>extra 100% / infração</b>.
+          </div>
+          <div style={{ marginTop: 2 }}>
+            <span style={pill("#fef3c7", "#92400e")}>SÁBADO</span> Jornada normal até <b>4h</b>. Acima = <b>extra 50%</b>.
+          </div>
+          <div style={{ marginTop: 2 }}>
+            <span style={pill("#fee2e2", "#991b1b")}>DOMINGO</span> Todo o tempo trabalhado é <b>extra 100%</b>.
+          </div>
+          <div style={{ marginTop: 6, color: "#64748b" }}>
+            Base legal complementar: CLT art. 58/59/71 · Lei 13.103/2015 art. 67-C (direção contínua máx 5h30 sem pausa de 30min) · art. 235-C (jornada do motorista).
+            Eventos vindos do tablet <strong>SasMDT</strong> da SASCAR — motorista precisa apertar Jornada → Dirigindo → Refeição → Encerrar.
+            {ehPeriodo && <> Em período multi-dia, totais são <b>somados</b> por motorista; coluna "Dir. contínua" só aparece em vista diária.</>}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+function Th({ children, right, title }) {
+  return (
+    <th title={title} style={{
+      padding: "10px 8px",
+      textAlign: right ? "center" : "left",
+      fontSize: ".72rem",
+      color: "#64748b",
+      fontWeight: 700,
+      textTransform: "uppercase",
+      letterSpacing: ".5px",
+      whiteSpace: "nowrap",
+    }}>{children}</th>
+  );
+}
+
+function Kpi({ label, value, color, icon, sub, onClick, active }) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        background: active ? "#fff7ed" : "#fff",
+        border: `1px solid ${active ? color : "#e2e8f0"}`,
+        borderRadius: 10,
+        padding: "12px 14px",
+        cursor: onClick ? "pointer" : "default",
+        transition: "all .15s",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#64748b", fontSize: ".75rem", fontWeight: 600 }}>
+        <span style={{ color }}>{icon}</span> {label}
+      </div>
+      <div style={{ marginTop: 4, fontSize: "1.5rem", fontWeight: 800, color }}>{value}</div>
+      {sub && <div style={{ marginTop: 2, fontSize: ".7rem", color: "#64748b" }}>{sub}</div>}
+    </div>
+  );
+}
+
+const btnGhost = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  background: "#fff",
+  border: "1px solid #cbd5e1",
+  borderRadius: 8,
+  padding: "6px 12px",
+  cursor: "pointer",
+  fontSize: ".85rem",
+  fontWeight: 600,
+  color: "#0f172a",
+};
+
+const btnPreset = {
+  border: "1px solid #cbd5e1",
+  borderRadius: 6,
+  padding: "5px 10px",
+  cursor: "pointer",
+  fontSize: ".8rem",
+  fontWeight: 600,
+};
+
+const inputDate = {
+  border: "1px solid #cbd5e1",
+  borderRadius: 6,
+  padding: "5px 8px",
+  fontSize: ".82rem",
+  outline: "none",
+  color: "#0f172a",
+};
+
+function pill(bg, color) {
+  return {
+    display: "inline-block",
+    background: bg,
+    color,
+    padding: "1px 6px",
+    borderRadius: 4,
+    fontSize: ".68rem",
+    fontWeight: 700,
+    marginRight: 6,
+    letterSpacing: ".3px",
+  };
+}

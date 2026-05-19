@@ -111,6 +111,36 @@ export async function obterPacotePosicoesMotorista({ usuario, senha, quantidade 
   return parseReturns(xml).map(parsePosicao);
 }
 
+// Eventos de Tempo de Direção (Jornada/Refeição/Pausa/Encerrar) enviados pelo tablet SasMDT
+// IDs evento: 1=Jornada, 2=Dirigindo, 3=Pausa, 4=Parada, 5=Refeição, 6=Esperar, 7=Encerrar, 8=Trocar
+// dataInicio/dataFim no formato 'YYYY-MM-DD HH:MM:SS'
+export async function obterEventosTempoDirecao({ usuario, senha, dataInicio, dataFim, quantidade = 3000, idMotorista = 0 }) {
+  const optMot = idMotorista ? `<idMotorista>${idMotorista}</idMotorista>` : '';
+  const params = `<usuario>${usuario}</usuario><senha>${senha}</senha><quantidade>${quantidade}</quantidade>${optMot}<dataInicio>${dataInicio}</dataInicio><dataFim>${dataFim}</dataFim>`;
+  const xml = await soapCall('obterEventosTempoDirecao', params, 'web');
+  return parseReturns(xml).map(b => ({
+    dataInicio: fieldString(b, 'dataInicio'),
+    eventoTempoDirecao: fieldNumber(b, 'eventoTempoDirecao'),
+    eventoTempoDirecaoAnterior: fieldNumber(b, 'eventoTempoDirecaoAnterior'),
+    descricaoEventoTempoDirecao: fieldString(b, 'descricaoEventoTempoDirecao'),
+    descricaoEventoTempoDirecaoAnterior: fieldString(b, 'descricaoEventoTempoDirecaoAnterior'),
+    idMotorista: fieldNumber(b, 'idMotorista'),
+    nomeMotorista: fieldString(b, 'nomeMotorista'),
+    idMotoristaReserva: fieldNumber(b, 'idMotoristaReserva'),
+    nomeMotoristaReserva: fieldString(b, 'nomeMotoristaReserva'),
+    idVeiculo: fieldNumber(b, 'idVeiculo'),
+    placa: fieldString(b, 'placa'),
+    idCliente: fieldNumber(b, 'idCliente'),
+    nomeCliente: fieldString(b, 'nomeCliente'),
+    latitude: fieldNumber(b, 'latitude'),
+    longitude: fieldNumber(b, 'longitude'),
+    odometro: fieldNumber(b, 'odometro'),
+    cidade: fieldString(b, 'cidade'),
+    uf: fieldString(b, 'uf'),
+    rua: fieldString(b, 'rua'),
+  }));
+}
+
 // Reduz lista de pacotes para "última posição por veículo"
 export function ultimaPorVeiculo(pacotes) {
   const map = new Map();

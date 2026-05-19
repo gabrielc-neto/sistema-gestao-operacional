@@ -12,10 +12,12 @@ import { dirname, resolve } from 'node:path';
 import {
   obterVeiculos,
   obterPacotePosicoesMotorista,
+  obterEventosTempoDirecao,
   ultimaPorVeiculo,
 } from './src/sascar/soap.js';
 import { cached } from './src/sascar/cache.js';
 import { cercasContendoPonto } from './src/sascar/geofence.js';
+import { calcularJornadas, rangeUtcParaDiaLocal, diasNoPeriodo, agregarJornadasPorMotorista } from './src/sascar/jornada.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -232,6 +234,95 @@ export const sascarPosicoes = onCall(
     const writes = Array.isArray(data) ? 0 : data?.writes ?? 0;
     const eventos = Array.isArray(data) ? 0 : data?.eventos ?? 0;
     return { posicoes, total: posicoes.length, cache: { age, fresh }, gravadosNoFirestore: writes, eventosCerca: eventos };
+  }
+);
+
+// --- jornadaDia: relatório de jornada de motorista (Lei 13.103 + CLT) ---
+// Recebe { data: 'YYYY-MM-DD' } (dia local UTC-3) e retorna lista por motorista
+export const jornadaDia = onCall(
+  { secrets: [SASCAR_USUARIO, SASCAR_SENHA] },
+  async (request) => {
+    requireAuth(request);
+    const data = String(request.data?.data || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+      throw new HttpsError('invalid-argument', 'Parâmetro "data" inválido. Use YYYY-MM-DD.');
+    }
+    const { dataInicio, dataFim } = rangeUtcParaDiaLocal(data);
+
+    // Cache curto pra dia atual (30s) pra atualização "tempo real" no /jornada.
+    // Cache longo (5min) pra dias passados (dados não mudam mais).
+    const hojeBRT = new Date(Date.now() - 3*60*60*1000).toISOString().split('T')[0];
+    const ttl = data === hojeBRT ? 30_000 : 5 * 60_000;
+    const cacheKey = `jornada:${data}`;
+    const { data: payload, age, fresh } = await cached(cacheKey, ttl, async () => {
+      const eventos = await obterEventosTempoDirecao({
+        usuario: SASCAR_USUARIO.value(),
+        senha: SASCAR_SENHA.value(),
+        dataInicio,
+        dataFim,
+        quantidade: 3000,
+      });
+      const jornadas = calcularJornadas(eventos, data);
+      return { jornadas, totalEventos: eventos.length, dataInicio, dataFim };
+    });
+
+    return {
+      data,
+      ...payload,
+      cache: { age, fresh },
+    };
+  }
+);
+
+// --- jornadaPeriodo: jornada agregada de N dias (limite SasIntegra é 1 dia por chamada) ---
+// Recebe { dataInicio, dataFim } YYYY-MM-DD, retorna jornadas agregadas por motorista
+export const jornadaPeriodo = onCall(
+  { secrets: [SASCAR_USUARIO, SASCAR_SENHA], timeoutSeconds: 120 },
+  async (request) => {
+    requireAuth(request);
+    const dataInicio = String(request.data?.dataInicio || '').trim();
+    const dataFim = String(request.data?.dataFim || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataInicio) || !/^\d{4}-\d{2}-\d{2}$/.test(dataFim)) {
+      throw new HttpsError('invalid-argument', 'dataInicio e dataFim obrigatórios no formato YYYY-MM-DD');
+    }
+    if (dataFim < dataInicio) {
+      throw new HttpsError('invalid-argument', 'dataFim deve ser >= dataInicio');
+    }
+    const dias = diasNoPeriodo(dataInicio, dataFim);
+    if (dias.length > 31) {
+      throw new HttpsError('invalid-argument', 'Período máximo de 31 dias por consulta');
+    }
+
+    const cacheKey = `jornadaPer:${dataInicio}:${dataFim}`;
+    const { data: payload, age, fresh } = await cached(cacheKey, 10 * 60_000, async () => {
+      // Chama 1 dia por vez (SasIntegra limita); usa cache interno por dia
+      const porDia = [];
+      let totalEventos = 0;
+      for (const dia of dias) {
+        const { dataInicio: di, dataFim: df } = rangeUtcParaDiaLocal(dia);
+        const { data: pj } = await cached(`jornada:${dia}`, 5 * 60_000, async () => {
+          const eventos = await obterEventosTempoDirecao({
+            usuario: SASCAR_USUARIO.value(),
+            senha: SASCAR_SENHA.value(),
+            dataInicio: di,
+            dataFim: df,
+            quantidade: 3000,
+          });
+          return { jornadas: calcularJornadas(eventos, dia), totalEventos: eventos.length };
+        });
+        porDia.push({ data: dia, jornadas: pj.jornadas });
+        totalEventos += pj.totalEventos || 0;
+      }
+      const jornadasAgregadas = agregarJornadasPorMotorista(porDia.map(d => d.jornadas));
+      return { dias, porDia, jornadasAgregadas, totalEventos };
+    });
+
+    return {
+      dataInicio,
+      dataFim,
+      ...payload,
+      cache: { age, fresh },
+    };
   }
 );
 

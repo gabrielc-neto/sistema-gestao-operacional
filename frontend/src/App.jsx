@@ -18,6 +18,7 @@ const Permissoes  = lazy(() => import("./pages/Permissoes"));
 const Ferias      = lazy(() => import("./pages/Ferias"));
 const Rastreamento= lazy(() => import("./pages/Rastreamento"));
 const Cercas      = lazy(() => import("./pages/Cercas"));
+const Jornada     = lazy(() => import("./pages/Jornada"));
 const Usuarios    = lazy(() => import("./pages/Usuarios"));
 const ImportAdmin = lazy(() => import("./pages/ImportAdmin"));
 const Setores     = lazy(() => import("./pages/admin/Setores"));
@@ -78,6 +79,7 @@ export default function App() {
                   <Route path="/ferias"      element={<Privada permissao="ferias.ver"><Ferias /></Privada>} />
                   <Route path="/rastreamento" element={<PrivateRoute><Rastreamento /></PrivateRoute>} />
                   <Route path="/cercas"       element={<PrivateRoute><Cercas /></PrivateRoute>} />
+                  <Route path="/jornada"      element={<PrivateRoute><Jornada /></PrivateRoute>} />
 
                   {/* Administração */}
                   <Route path="/usuarios"        element={<Privada permissao="usuarios.ver"><Usuarios /></Privada>} />

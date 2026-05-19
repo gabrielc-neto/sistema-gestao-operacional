@@ -37,3 +37,7 @@ scripts/serviceAccountKey.json
 
 # Binários grandes (baixar separado)
 scripts/bin/
+
+# Material de referência com dados pessoais de terceiros (LGPD)
+docs/jornada-referencia/
+docs/_jornada-seg.html
