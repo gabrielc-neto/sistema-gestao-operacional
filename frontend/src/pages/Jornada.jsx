@@ -102,6 +102,7 @@ export default function Jornada() {
   const [filtroNaoEncerrou, setFiltroNaoEncerrou] = useState(false);
   const [filtroEncerrou, setFiltroEncerrou] = useState(false);
   const [filtroSemPausa, setFiltroSemPausa] = useState(false);
+  const [filtroExtra, setFiltroExtra] = useState(false);
   const [ciclosExpandidos, setCiclosExpandidos] = useState({}); // { idMotorista: true }
 
   const aplicarPreset = (id) => {
@@ -121,6 +122,7 @@ export default function Jornada() {
       if (filtroNaoEncerrou && j.encerrouJornada !== false) return false;
       if (filtroEncerrou && j.encerrouJornada !== true) return false;
       if (filtroSemPausa && j.pausaDiariaSuficiente !== false) return false;
+      if (filtroExtra && !(j.extra50Min > 0 || j.extra100Min > 0)) return false;
       if (termo) {
         const nome = (j.nomeMotorista || "").toUpperCase();
         const placas = j.placas.join(",").toUpperCase();
@@ -128,7 +130,7 @@ export default function Jornada() {
       }
       return true;
     });
-  }, [linhas, busca, filtroInfracao, filtroNaoEncerrou, filtroEncerrou, filtroSemPausa]);
+  }, [linhas, busca, filtroInfracao, filtroNaoEncerrou, filtroEncerrou, filtroSemPausa, filtroExtra]);
 
   const totais = useMemo(() => {
     let jornadaSum = 0, extra50Sum = 0, extra100Sum = 0, infracoes = 0;
@@ -288,8 +290,11 @@ export default function Jornada() {
           <Kpi
             label="Motoristas com extras"
             value={totais.comExtra}
-            color="#f59e0b"
-            icon={<AlertTriangle size={16} />}
+            color={totais.comExtra > 0 ? "#f59e0b" : "#94a3b8"}
+            icon={<TrendingUp size={16} />}
+            sub={totais.comExtra > 0 ? "Clique p/ filtrar" : "Ninguém em extra"}
+            onClick={() => setFiltroExtra(v => !v)}
+            active={filtroExtra}
           />
           <Kpi
             label="Sem infração"
@@ -374,6 +379,11 @@ export default function Jornada() {
           {filtroSemPausa && (
             <button onClick={() => setFiltroSemPausa(false)} style={{ ...btnGhost, background: "#fee2e2", color: "#991b1b", borderColor: "#fecaca" }}>
               <X size={14} /> Limpar filtro sem pausa
+            </button>
+          )}
+          {filtroExtra && (
+            <button onClick={() => setFiltroExtra(false)} style={{ ...btnGhost, background: "#ffedd5", color: "#9a3412", borderColor: "#fed7aa" }}>
+              <X size={14} /> Limpar filtro horas extras
             </button>
           )}
           <div style={{ marginLeft: "auto", fontSize: ".75rem", color: "#64748b", display: "flex", alignItems: "center", gap: 6 }}>
