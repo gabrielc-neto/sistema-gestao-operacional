@@ -251,10 +251,12 @@ export const jornadaDia = onCall(
 
     // Cache curto pra dia atual (30s) pra atualização "tempo real" no /jornada.
     // Cache longo (5min) pra dias passados (dados não mudam mais).
+    // Cacheia só os EVENTOS brutos — o cálculo é feito fora do cache com a
+    // classificação (interno/px) atual, pra refletir mudanças sem esperar o TTL.
     const hojeBRT = new Date(Date.now() - 3*60*60*1000).toISOString().split('T')[0];
     const ttl = data === hojeBRT ? 30_000 : 5 * 60_000;
-    const cacheKey = `jornada:${data}`;
-    const { data: payload, age, fresh } = await cached(cacheKey, ttl, async () => {
+    const cacheKey = `jornada-eventos:${data}`;
+    const { data: cacheData, age, fresh } = await cached(cacheKey, ttl, async () => {
       const eventos = await obterEventosTempoDirecao({
         usuario: SASCAR_USUARIO.value(),
         senha: SASCAR_SENHA.value(),
@@ -262,13 +264,24 @@ export const jornadaDia = onCall(
         dataFim,
         quantidade: 3000,
       });
-      const jornadas = calcularJornadas(eventos, data);
-      return { jornadas, totalEventos: eventos.length, dataInicio, dataFim };
+      return { eventos, totalEventos: eventos.length };
     });
+
+    // Lê classificação de contrato (interno/px) — sempre fresca, fora do cache
+    const classificacao = {};
+    try {
+      const snap = await db.collection('motoristas_classificacao').get();
+      snap.forEach(doc => { classificacao[doc.id] = doc.data().tipoContrato || 'interno'; });
+    } catch (e) { /* coleção pode não existir ainda — todos viram interno */ }
+
+    const jornadas = calcularJornadas(cacheData.eventos, data, classificacao);
 
     return {
       data,
-      ...payload,
+      jornadas,
+      totalEventos: cacheData.totalEventos,
+      dataInicio,
+      dataFim,
       cache: { age, fresh },
     };
   }

@@ -186,6 +186,12 @@ service cloud.firestore {
       allow write: if false; // só Functions admin SDK escreve
     }
 
+    // Classificação de contrato dos motoristas (interno/px) — marcado na tela /jornada
+    match /motoristas_classificacao/{id} {
+      allow read:  if logado();
+      allow write: if isAtivo();
+    }
+
     // Cercas eletrônicas — qualquer logado pode criar/editar/excluir
     match /cercas_eletronicas/{id} {
       allow read:   if logado();
