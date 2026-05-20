@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, Download, FileSpreadsheet, FileText, TrendingUp } from "lucide-react";
 import { useJornada } from "../hooks/useJornada";
@@ -69,10 +69,20 @@ const PRESETS = [
   { id: "30d",    label: "30 dias",  range: () => [diasAtrasISO(29), hojeISO()] },
 ];
 
-function Cell({ value, min, danger, warn }) {
-  const cor = danger ? "#dc2626" : warn ? "#ea580c" : (min > 0 ? "#0f172a" : "#94a3b8");
+function Cell({ value, min, danger, warn, highlight }) {
+  const cor = danger ? "#991b1b" : warn ? "#9a3412" : (min > 0 ? "#0f172a" : "#94a3b8");
+  const bg = highlight && danger ? "#fee2e2" : (highlight && warn ? "#fff7ed" : "transparent");
   return (
-    <td style={{ padding: "10px 8px", textAlign: "center", fontFamily: "monospace", fontWeight: 700, color: cor, whiteSpace: "nowrap" }}>
+    <td style={{
+      padding: "10px 8px",
+      textAlign: "center",
+      fontFamily: "monospace",
+      fontWeight: 700,
+      color: cor,
+      background: bg,
+      whiteSpace: "nowrap",
+      borderRadius: highlight ? 4 : 0,
+    }}>
       {value}
     </td>
   );
@@ -90,6 +100,7 @@ export default function Jornada() {
   const [filtroNaoEncerrou, setFiltroNaoEncerrou] = useState(false);
   const [filtroEncerrou, setFiltroEncerrou] = useState(false);
   const [filtroSemPausa, setFiltroSemPausa] = useState(false);
+  const [ciclosExpandidos, setCiclosExpandidos] = useState({}); // { idMotorista: true }
 
   const aplicarPreset = (id) => {
     setPreset(id);
@@ -365,7 +376,7 @@ export default function Jornada() {
                 <tr>
                   <Th>Motorista</Th>
                   <Th>Placa(s)</Th>
-                  {ehPeriodo ? <Th right>Dias</Th> : <><Th right>Início</Th><Th right>Fim</Th></>}
+                  {ehPeriodo ? <Th right>Dias</Th> : <><Th right>Início</Th><Th right>Fim</Th><Th right title="Quantas vezes o motorista encerrou e reabriu jornada no dia (1 = normal, 2+ = reabriu)">Ciclos</Th></>}
                   <Th right title="Jornada efetiva total (jornada + dirigindo + refeição + pausa)">Total</Th>
                   <Th right>Dirigindo</Th>
                   <Th right>Refeição</Th>
@@ -378,17 +389,18 @@ export default function Jornada() {
               </thead>
               <tbody>
                 {loading && linhas.length === 0 && (
-                  <tr><td colSpan={12} style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+                  <tr><td colSpan={13} style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
                     {ehPeriodo ? `Carregando ${dias.length} dias (pode demorar)...` : "Carregando eventos do SASCAR..."}
                   </td></tr>
                 )}
                 {!loading && filtradas.length === 0 && (
-                  <tr><td colSpan={12} style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
+                  <tr><td colSpan={13} style={{ padding: 30, textAlign: "center", color: "#64748b" }}>
                     Nenhuma jornada no período. {filtroInfracao ? "Tente limpar o filtro de infração." : "Motoristas precisam apertar 'Jornada' no tablet SasMDT."}
                   </td></tr>
                 )}
                 {filtradas.map((j) => (
-                  <tr key={j.idMotorista} style={{ borderBottom: "1px solid #f1f5f9", background: j.temInfracao ? "#fef2f2" : "transparent" }}>
+                  <Fragment key={j.idMotorista}>
+                  <tr style={{ borderBottom: "1px solid #f1f5f9", background: j.temInfracao ? "#fef2f2" : "transparent" }}>
                     <td style={{ padding: "10px 12px", fontWeight: 600, color: "#0f172a" }}>
                       {capitalizarNome(j.nomeMotorista)}
                       <div style={{ fontSize: ".7rem", color: "#64748b", fontWeight: 400, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
@@ -419,6 +431,17 @@ export default function Jornada() {
                               </span>
                             )}
                         </td>
+                        <td style={{ padding: "10px 8px", textAlign: "center", whiteSpace: "nowrap" }}>
+                          {j.quantidadeJornadas > 1 ? (
+                            <button onClick={() => setCiclosExpandidos(s => ({ ...s, [j.idMotorista]: !s[j.idMotorista] }))}
+                                    title="Motorista encerrou e reabriu jornada. Clique pra ver detalhes."
+                                    style={{ background: "#fed7aa", color: "#9a3412", border: "none", padding: "2px 8px", borderRadius: 6, fontSize: ".72rem", fontWeight: 700, cursor: "pointer" }}>
+                              {j.quantidadeJornadas}× {ciclosExpandidos[j.idMotorista] ? "▲" : "▼"}
+                            </button>
+                          ) : (
+                            <span style={{ color: "#94a3b8", fontFamily: "monospace" }}>{j.quantidadeJornadas || 1}</span>
+                          )}
+                        </td>
                       </>
                     )}
                     <Cell value={j.totalAtivo} min={j.totalAtivoMin} warn={!ehPeriodo && j.totalAtivoMin > 8 * 60} danger={!ehPeriodo && j.totalAtivoMin > 10 * 60} />
@@ -436,8 +459,8 @@ export default function Jornada() {
                         {j.pausa}{!j.pausaDiariaSuficiente && j.pausaMin > 0 && ` /−${j.pausaFaltante}`}
                       </td>
                     ) : <Cell value={j.pausa} min={j.pausaMin} />}
-                    <Cell value={j.extra50} min={j.extra50Min} warn={j.extra50Min > 0} />
-                    <Cell value={j.extra100} min={j.extra100Min} danger={j.extra100Min > 0} />
+                    <Cell value={j.extra50} min={j.extra50Min} warn={j.extra50Min > 0} highlight={j.extra50Min > 0} />
+                    <Cell value={j.extra100} min={j.extra100Min} danger={j.extra100Min > 0} highlight={j.extra100Min > 0} />
                     {!ehPeriodo && <Cell value={j.direcaoContinuaMaxima} min={j.direcaoContinuaMaximaMin} danger={j.direcaoContinuaMaximaMin > 4 * 60} />}
                     <td style={{ padding: "10px 8px", textAlign: "center", whiteSpace: "nowrap" }}>
                       {j.temInfracao ? (
@@ -452,6 +475,50 @@ export default function Jornada() {
                       )}
                     </td>
                   </tr>
+                  {!ehPeriodo && ciclosExpandidos[j.idMotorista] && j.ciclos && j.ciclos.length > 1 && (
+                    <tr key={j.idMotorista + "-ciclos"}>
+                      <td colSpan={13} style={{ padding: "6px 12px 12px", background: "#fff7ed", borderBottom: "1px solid #fed7aa" }}>
+                        <div style={{ fontSize: ".75rem", fontWeight: 700, color: "#9a3412", marginBottom: 6 }}>
+                          Ciclos de jornada do motorista hoje ({j.ciclos.length})
+                        </div>
+                        <table style={{ width: "100%", fontSize: ".78rem", borderCollapse: "collapse" }}>
+                          <thead>
+                            <tr style={{ background: "#fef3c7", color: "#78350f" }}>
+                              <th style={{ padding: "4px 8px", textAlign: "left" }}>Ciclo</th>
+                              <th style={{ padding: "4px 8px", textAlign: "left" }}>Início</th>
+                              <th style={{ padding: "4px 8px", textAlign: "left" }}>Fim</th>
+                              <th style={{ padding: "4px 8px", textAlign: "center" }}>Total</th>
+                              <th style={{ padding: "4px 8px", textAlign: "center" }}>Dirigindo</th>
+                              <th style={{ padding: "4px 8px", textAlign: "center" }}>Refeição</th>
+                              <th style={{ padding: "4px 8px", textAlign: "center" }}>Pausa</th>
+                              <th style={{ padding: "4px 8px", textAlign: "center" }}>Dir. contínua</th>
+                              <th style={{ padding: "4px 8px", textAlign: "left" }}>Encerrou?</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {j.ciclos.map(c => (
+                              <tr key={c.numero} style={{ borderBottom: "1px solid #fed7aa" }}>
+                                <td style={{ padding: "4px 8px", fontWeight: 700, color: "#9a3412" }}>#{c.numero}</td>
+                                <td style={{ padding: "4px 8px", fontFamily: "monospace" }}>{formatBR(c.inicio)}</td>
+                                <td style={{ padding: "4px 8px", fontFamily: "monospace" }}>{formatBR(c.fim)}</td>
+                                <td style={{ padding: "4px 8px", textAlign: "center", fontFamily: "monospace", fontWeight: 700 }}>{c.totalAtivo}</td>
+                                <td style={{ padding: "4px 8px", textAlign: "center", fontFamily: "monospace" }}>{c.dirigindo}</td>
+                                <td style={{ padding: "4px 8px", textAlign: "center", fontFamily: "monospace" }}>{c.refeicao}</td>
+                                <td style={{ padding: "4px 8px", textAlign: "center", fontFamily: "monospace" }}>{c.pausa}</td>
+                                <td style={{ padding: "4px 8px", textAlign: "center", fontFamily: "monospace", color: c.direcaoContinuaMaximaMin > 4*60 ? "#991b1b" : "#0f172a" }}>{c.direcaoContinuaMaxima}</td>
+                                <td style={{ padding: "4px 8px" }}>
+                                  {c.encerrou
+                                    ? <span style={{ background: "#dcfce7", color: "#166534", padding: "1px 6px", borderRadius: 4, fontSize: ".7rem", fontWeight: 700 }}>✓ Encerrou</span>
+                                    : <span style={{ background: "#fef9c3", color: "#854d0e", padding: "1px 6px", borderRadius: 4, fontSize: ".7rem", fontWeight: 700 }}>⏱ em andamento</span>}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
