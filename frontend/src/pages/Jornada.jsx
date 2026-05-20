@@ -155,6 +155,7 @@ export default function Jornada() {
       naoEncerraram,
       encerraram,
       semPausa30,
+      semInfracao: linhas.length - comInfracao,
     };
   }, [linhas]);
 
@@ -291,11 +292,18 @@ export default function Jornada() {
             icon={<AlertTriangle size={16} />}
           />
           <Kpi
+            label="Sem infração"
+            value={totais.semInfracao}
+            color="#16a34a"
+            icon={<CheckCircle2 size={16} />}
+            sub="Motoristas conformes"
+          />
+          <Kpi
             label="Com infração"
             value={totais.comInfracao}
-            color={totais.comInfracao > 0 ? "#dc2626" : "#16a34a"}
-            icon={totais.comInfracao > 0 ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
-            sub={totais.comInfracao > 0 ? `${totais.infracoesTotais} ocorrência(s)` : "Tudo conforme"}
+            color={totais.comInfracao > 0 ? "#dc2626" : "#94a3b8"}
+            icon={<AlertTriangle size={16} />}
+            sub={totais.comInfracao > 0 ? `${totais.infracoesTotais} ocorrência(s)` : "Nenhuma até agora"}
             onClick={() => setFiltroInfracao(v => !v)}
             active={filtroInfracao}
           />
