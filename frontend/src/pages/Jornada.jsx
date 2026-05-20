@@ -1,6 +1,8 @@
 import { Fragment, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, Download, FileSpreadsheet, FileText, TrendingUp } from "lucide-react";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebase/config";
 import { useJornada } from "../hooks/useJornada";
 import { exportarJornadaCsv } from "../utils/exportJornadaCsv";
 import { exportarJornadaPdf } from "../utils/exportJornadaPdf";
@@ -162,6 +164,25 @@ export default function Jornada() {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   };
 
+  // Alterna tipo de contrato do motorista (interno ↔ px) e salva no Firestore
+  const [salvandoTipo, setSalvandoTipo] = useState(null); // idMotorista sendo salvo
+  async function toggleTipoContrato(j) {
+    const novo = j.tipoContrato === "px" ? "interno" : "px";
+    setSalvandoTipo(j.idMotorista);
+    try {
+      await setDoc(doc(db, "motoristas_classificacao", String(j.idMotorista)), {
+        nome: j.nomeMotorista,
+        tipoContrato: novo,
+        atualizadoEm: new Date().toISOString(),
+      });
+      await refetch(); // recalcula jornada com a nova classificação
+    } catch (e) {
+      alert("Erro ao salvar tipo: " + (e?.message || e));
+    } finally {
+      setSalvandoTipo(null);
+    }
+  }
+
   const handleExportExcel = () => {
     exportarJornadaCsv({ linhas: filtradas, dataInicio, dataFim, ehPeriodo });
   };
@@ -270,7 +291,7 @@ export default function Jornada() {
             icon={<AlertTriangle size={16} />}
           />
           <Kpi
-            label="Com infração legal"
+            label="Com infração"
             value={totais.comInfracao}
             color={totais.comInfracao > 0 ? "#dc2626" : "#16a34a"}
             icon={totais.comInfracao > 0 ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
@@ -407,6 +428,21 @@ export default function Jornada() {
                         ID {j.idMotorista} · {j.qtdEventos} ev.
                         {!ehPeriodo && j.tipoDia === 'sabado' && <span style={pill("#fef3c7", "#92400e")}>SÁB</span>}
                         {!ehPeriodo && j.tipoDia === 'domingo' && <span style={pill("#fee2e2", "#991b1b")}>DOM</span>}
+                        {!ehPeriodo && (
+                          <button
+                            onClick={() => toggleTipoContrato(j)}
+                            disabled={salvandoTipo === j.idMotorista}
+                            title="Clique pra alternar entre Interno (CLT) e PX (agregado PJ)"
+                            style={{
+                              border: "none", cursor: "pointer", fontSize: ".68rem", fontWeight: 700,
+                              padding: "1px 7px", borderRadius: 10,
+                              background: j.tipoContrato === "px" ? "#ede9fe" : "#dbeafe",
+                              color: j.tipoContrato === "px" ? "#6d28d9" : "#1d4ed8",
+                              opacity: salvandoTipo === j.idMotorista ? 0.5 : 1,
+                            }}>
+                            {salvandoTipo === j.idMotorista ? "..." : (j.tipoContrato === "px" ? "PX ⇄" : "Interno ⇄")}
+                          </button>
+                        )}
                       </div>
                     </td>
                     <td style={{ padding: "10px 8px", fontFamily: "monospace", fontWeight: 600, color: "#475569" }}>
@@ -459,8 +495,13 @@ export default function Jornada() {
                         {j.pausa}{!j.pausaDiariaSuficiente && j.pausaMin > 0 && ` /−${j.pausaFaltante}`}
                       </td>
                     ) : <Cell value={j.pausa} min={j.pausaMin} />}
-                    <Cell value={j.extra50} min={j.extra50Min} warn={j.extra50Min > 0} highlight={j.extra50Min > 0} />
-                    <Cell value={j.extra100} min={j.extra100Min} danger={j.extra100Min > 0} highlight={j.extra100Min > 0} />
+                    {j.tipoContrato === "px" ? (
+                      <><td style={{ padding: "10px 8px", textAlign: "center", color: "#94a3b8" }} title="PX é por contrato — não recebe hora extra">—</td>
+                        <td style={{ padding: "10px 8px", textAlign: "center", color: "#94a3b8" }} title="PX é por contrato — não recebe hora extra">—</td></>
+                    ) : (
+                      <><Cell value={j.extra50} min={j.extra50Min} warn={j.extra50Min > 0} highlight={j.extra50Min > 0} />
+                        <Cell value={j.extra100} min={j.extra100Min} danger={j.extra100Min > 0} highlight={j.extra100Min > 0} /></>
+                    )}
                     {!ehPeriodo && <Cell value={j.direcaoContinuaMaxima} min={j.direcaoContinuaMaximaMin} danger={j.direcaoContinuaMaximaMin > 4 * 60} />}
                     <td style={{ padding: "10px 8px", textAlign: "center", whiteSpace: "nowrap" }}>
                       {j.temInfracao ? (

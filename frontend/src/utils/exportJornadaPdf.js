@@ -131,7 +131,7 @@ export async function exportarJornadaPdf({ linhas, dataInicio, dataFim, ehPeriod
         <div style="background:#e0f2fe;border:1px solid #7dd3fc;padding:4px 8px;border-radius:4px">Jornada média: <b>${fmtHHmm(totais?.jornadaMedia ?? 0)}</b></div>
         <div style="background:#fff7ed;border:1px solid #fdba74;padding:4px 8px;border-radius:4px"><b>${totais?.comExtra ?? 0}</b> com hora extra</div>
         <div style="background:${totais?.comInfracao > 0 ? '#fee2e2' : '#dcfce7'};border:1px solid ${totais?.comInfracao > 0 ? '#fca5a5' : '#86efac'};padding:4px 8px;border-radius:4px">
-          <b>${totais?.comInfracao ?? 0}</b> com infração legal
+          <b>${totais?.comInfracao ?? 0}</b> com infração
         </div>
       </div>
 

@@ -51,6 +51,7 @@ function fmtDate(str) {
 const EMPTY_FORM = {
   nome: "", cnh: "", cat: "", tel: "", status: "ativo", obs: "",
   cnh_venc: "", mopp_venc: "", nr20_venc: "", nr35_venc: "",
+  tipoContrato: "interno", // "interno" (CLT/frota Pontual) | "px" (PJ/agregado)
 };
 
 // ── componente ──────────────────────────────────────────────────────────────
@@ -128,6 +129,7 @@ export default function Motoristas() {
       mopp_venc: m.mopp_venc || "",
       nr20_venc: m.nr20_venc || "",
       nr35_venc: m.nr35_venc || "",
+      tipoContrato: m.tipoContrato || "interno",
     });
     setErro("");
     setModalOpen(true);
@@ -161,6 +163,7 @@ export default function Motoristas() {
         mopp_venc: form.mopp_venc || null,
         nr20_venc: form.nr20_venc || null,
         nr35_venc: form.nr35_venc || null,
+        tipoContrato: form.tipoContrato || "interno",
         updatedAt: new Date().toISOString(),
       };
       if (!editando) data.createdAt = new Date().toISOString();
@@ -268,6 +271,13 @@ export default function Motoristas() {
                     <span style={{ ...s.badge, background: sc.bg, color: sc.color }}>
                       {sc.label}
                     </span>
+                  </div>
+                  <div style={{ marginBottom: 6 }}>
+                    {m.tipoContrato === "px" ? (
+                      <span style={{ ...s.badge, background: "#ede9fe", color: "#6d28d9" }}>PX · agregado (PJ)</span>
+                    ) : (
+                      <span style={{ ...s.badge, background: "#dbeafe", color: "#1d4ed8" }}>Interno · frota (CLT)</span>
+                    )}
                   </div>
                   <div style={s.cardRow}>
                     <span style={s.cardLabel}>CNH</span>
@@ -385,6 +395,19 @@ export default function Motoristas() {
                   </select>
                 </label>
               </div>
+
+              {/* Tipo de contrato: Interno (CLT) ou PX (PJ) */}
+              <label style={s.label}>
+                Tipo de motorista
+                <select
+                  style={s.fieldInput}
+                  value={form.tipoContrato}
+                  onChange={(e) => setForm({ ...form, tipoContrato: e.target.value })}
+                >
+                  <option value="interno">Interno (frota Pontual — CLT, jornada 9h30 + extras)</option>
+                  <option value="px">PX (agregado — PJ, jornada até 13h, sem horas extras)</option>
+                </select>
+              </label>
 
               {/* Vencimentos */}
               <div style={{ fontSize: ".82rem", fontWeight: 700, color: "#475569", borderTop: "1px solid #e5e7eb", paddingTop: 10, marginTop: 2 }}>

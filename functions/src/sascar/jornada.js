@@ -61,7 +61,10 @@ function formatHHmm(min) {
  * @param {string} dataReferenciaISO - 'YYYY-MM-DD' (dia local de referência)
  * @returns {Array} - lista de jornadas por motorista
  */
-export function calcularJornadas(eventos, dataReferenciaISO) {
+export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {}) {
+  // classificacao: { [idMotorista]: 'interno' | 'px' } — quem não está no mapa é 'interno'
+  // PX (agregado/PJ): jornada até 13h, SEM horas extras, mas COM regra de pausa/direção (é lei)
+  const LIMITE_PX = 13 * 60; // 780 min
   // 1. Agrupa por motorista (e ordena cronologicamente)
   const porMotorista = new Map();
   for (const ev of eventos) {
@@ -173,11 +176,25 @@ export function calcularJornadas(eventos, dataReferenciaISO) {
     // Total da jornada efetiva = soma de estados ativos (jornada + dirigindo + refeição + pausa)
     const totalAtivo = totais.jornada + totais.dirigindo + totais.refeicao + totais.pausa;
 
-    // Regra Pontual: limite e tipo de extra variam por dia da semana
+    // Tipo de contrato do motorista: 'interno' (CLT) ou 'px' (PJ/agregado)
+    const tipoContrato = classificacao[reg.idMotorista] === 'px' ? 'px' : 'interno';
+
     const tipo = tipoDia(dataReferenciaISO);
     let extra50 = 0, extra100 = 0, limiteNormal = 0;
 
-    if (tipo === 'domingo') {
+    if (tipoContrato === 'px') {
+      // PX (PJ): SEM horas extras (é por contrato). Jornada até 13h; acima = infração.
+      limiteNormal = LIMITE_PX;
+      if (totalAtivo > LIMITE_PX) {
+        infracoes.push({
+          tipo: 'JORNADA_PX_EXCEDIDA',
+          base: 'Limite contratual PX — 13h',
+          descricao: `Jornada de ${formatHHmm(totalAtivo)} excede o limite de ${formatHHmm(LIMITE_PX)} (13h) do contrato PX`,
+          data: reg.eventos[reg.eventos.length - 1]?.dataInicio,
+        });
+      }
+      // extra50 e extra100 ficam 0 — PX não recebe hora extra
+    } else if (tipo === 'domingo') {
       // Domingo: TUDO é extra 100%
       limiteNormal = 0;
       extra100 = totalAtivo;
@@ -301,6 +318,7 @@ export function calcularJornadas(eventos, dataReferenciaISO) {
       nomeMotorista: reg.nomeMotorista || '?',
       data: dataReferenciaISO,
       tipoDia: tipo, // 'semana' | 'sabado' | 'domingo'
+      tipoContrato, // 'interno' | 'px'
       limiteNormalMin: limiteNormal,
       placas: [...reg.placas].sort(),
       veiculosIds: [...reg.veiculos],
