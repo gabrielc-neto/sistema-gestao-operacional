@@ -188,17 +188,19 @@ export function calcularJornadas(eventos, dataReferenciaISO) {
         extra50 = totalAtivo - limiteNormal;
       }
     } else {
-      // Semana: normal até 9h30, próximas 2h são extra 50%, acima é extra 100% (infração)
+      // Semana: normal até 9h30. TODO o excedente é extra 50% (regra Pontual: 100% só domingo).
+      // Acima de 11h30 ainda gera INFRAÇÃO (Lei 13.103 limite 2h extras/dia), mas pago como 50%.
       limiteNormal = LIMITES.jornadaNormalSemana;
       if (totalAtivo > limiteNormal) {
         const excesso = totalAtivo - limiteNormal;
-        extra50 = Math.min(excesso, LIMITES.extraSeguroSemana);
-        extra100 = excesso - extra50;
-        if (extra100 > 0) {
+        extra50 = excesso;   // tudo 50% na semana
+        extra100 = 0;        // 100% só no domingo
+        const acimaDoLimite = excesso - LIMITES.extraSeguroSemana;
+        if (acimaDoLimite > 0) {
           infracoes.push({
             tipo: 'EXTRA_EXCESSIVA',
             base: 'Lei 13.103/2015 art. 235-C',
-            descricao: `${formatHHmm(extra100)} além das 2h extras permitidas (limite ${formatHHmm(limiteNormal + LIMITES.extraSeguroSemana)})`,
+            descricao: `${formatHHmm(acimaDoLimite)} além das 2h extras permitidas (jornada acima de ${formatHHmm(limiteNormal + LIMITES.extraSeguroSemana)}). Pago como extra 50%.`,
             data: reg.eventos[reg.eventos.length - 1]?.dataInicio,
           });
         }
@@ -218,6 +220,77 @@ export function calcularJornadas(eventos, dataReferenciaISO) {
     const ultimaDescricao = (ultimoEvento?.descricaoEventoTempoDirecao || '').toLowerCase();
     const encerrouJornada = ultimaDescricao.includes('encerrar');
 
+    // Detecta CICLOS de jornada: cada vez que o motorista bate "Encerrar" e depois
+    // reabre, conta como nova jornada. Útil pra motoristas como HAROLDO que
+    // encerram de manhã e voltam à tarde.
+    const ciclos = [];
+    {
+      let cicloAtual = { eventosIdx: [], inicio: null, fim: null, encerrou: false };
+      for (let k = 0; k < reg.eventos.length; k++) {
+        const ev = reg.eventos[k];
+        const d = (ev.descricaoEventoTempoDirecao || '').toLowerCase();
+        cicloAtual.eventosIdx.push(k);
+        if (cicloAtual.inicio == null) cicloAtual.inicio = ev.dataInicio;
+        cicloAtual.fim = ev.dataInicio;
+        if (d.includes('encerrar')) {
+          cicloAtual.encerrou = true;
+          ciclos.push(cicloAtual);
+          cicloAtual = { eventosIdx: [], inicio: null, fim: null, encerrou: false };
+        }
+      }
+      if (cicloAtual.eventosIdx.length > 0) ciclos.push(cicloAtual);
+    }
+
+    // Calcula totais por ciclo (re-percorrendo eventos do segmento)
+    const ciclosDetalhe = ciclos.map((c, idx) => {
+      const t = { jornada: 0, dirigindo: 0, refeicao: 0, pausa: 0 };
+      let direcaoContCiclo = 0, direcaoContMaxCiclo = 0;
+      const evs = c.eventosIdx.map(i => reg.eventos[i]);
+      for (let i = 0; i < evs.length; i++) {
+        const cur = evs[i];
+        const next = evs[i + 1];
+        const prev = evs[i - 1];
+        const delta = next ? minutosEntre(cur._ts, next._ts) : 0;
+        const d = (cur.descricaoEventoTempoDirecao || '').toLowerCase();
+        const dn = (next?.descricaoEventoTempoDirecao || '').toLowerCase();
+        const dp = (prev?.descricaoEventoTempoDirecao || '').toLowerCase();
+        if (d.includes('jornada')) {
+          if (dp.includes('dirigindo') && dn.includes('dirigindo') && delta > 0) {
+            t.pausa += delta;
+            direcaoContCiclo = 0;
+          } else t.jornada += delta;
+        } else if (d.includes('dirigindo')) {
+          t.dirigindo += delta;
+          direcaoContCiclo += delta;
+          if (direcaoContCiclo > direcaoContMaxCiclo) direcaoContMaxCiclo = direcaoContCiclo;
+        } else if (d.includes('refeição') || d.includes('refeicao')) {
+          t.refeicao += delta;
+          direcaoContCiclo = 0;
+        } else if (d.includes('pausa')) {
+          t.pausa += delta;
+          if (delta >= LIMITES.pausaMinima) direcaoContCiclo = 0;
+        }
+      }
+      const totalAtivoCiclo = t.jornada + t.dirigindo + t.refeicao + t.pausa;
+      return {
+        numero: idx + 1,
+        inicio: c.inicio,
+        fim: c.fim,
+        encerrou: c.encerrou,
+        totalAtivoMin: totalAtivoCiclo,
+        totalAtivo: formatHHmm(totalAtivoCiclo),
+        dirigindoMin: t.dirigindo,
+        dirigindo: formatHHmm(t.dirigindo),
+        refeicaoMin: t.refeicao,
+        refeicao: formatHHmm(t.refeicao),
+        pausaMin: t.pausa,
+        pausa: formatHHmm(t.pausa),
+        direcaoContinuaMaximaMin: direcaoContMaxCiclo,
+        direcaoContinuaMaxima: formatHHmm(direcaoContMaxCiclo),
+        qtdEventos: evs.length,
+      };
+    });
+
     // Regra Pontual: pausa total diária mínima de 30min (formal + informal somadas)
     const PAUSA_DIARIA_MIN = 30;
     const pausaDiariaSuficiente = totais.pausa >= PAUSA_DIARIA_MIN;
@@ -236,6 +309,9 @@ export function calcularJornadas(eventos, dataReferenciaISO) {
       fim: reg.eventos[reg.eventos.length - 1]?.dataInicio || null,
       encerrouJornada,
       ultimoEventoTipo: ultimoEvento?.descricaoEventoTempoDirecao || null,
+      quantidadeJornadas: ciclos.length,
+      multiJornada: ciclos.length > 1,
+      ciclos: ciclosDetalhe,
       totalAtivoMin: totalAtivo,
       totalAtivo: formatHHmm(totalAtivo),
       jornadaMin: totais.jornada,
