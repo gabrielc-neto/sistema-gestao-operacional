@@ -3,23 +3,24 @@ Cria contas Master no Firebase Auth + Firestore.
 Rodar UMA VEZ após baixar serviceAccountKey.json.
 Apagar este arquivo depois de executar.
 """
-import sys, os
+import sys, os, json
 sys.stdout.reconfigure(encoding="utf-8")
 
 SERVICE_ACCOUNT = os.path.join(os.path.dirname(__file__), "serviceAccountKey.json")
 
-MASTERS = [
-    {
-        "email":  "silvasampaiowesley03@gmail.com",
-        "senha":  "WeSlEy2005?",
-        "nome":   "Wesley",
-    },
-    {
-        "email": "gabrielneto327@gmail.com",
-        "senha": "Pontual2026**",
-        "nome":  "Gabriel",
-    },
-]
+# Senhas/e-mails NÃO ficam no código (vão parar no Git). Vêm da variável de
+# ambiente MASTERS_JSON. Exemplo (PowerShell), antes de rodar:
+#   $env:MASTERS_JSON='[{"email":"x@y.com","senha":"SENHA","nome":"Wesley"}]'
+_raw = os.environ.get("MASTERS_JSON")
+if not _raw:
+    print("ERRO: defina a variável de ambiente MASTERS_JSON antes de rodar.")
+    print('Ex (PowerShell): $env:MASTERS_JSON=\'[{"email":"x@y.com","senha":"...","nome":"Wesley"}]\'')
+    sys.exit(1)
+try:
+    MASTERS = json.loads(_raw)
+except json.JSONDecodeError as e:
+    print(f"ERRO: MASTERS_JSON inválido: {e}")
+    sys.exit(1)
 
 try:
     import firebase_admin
