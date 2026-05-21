@@ -313,6 +313,27 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
     const pausaDiariaSuficiente = totais.pausa >= PAUSA_DIARIA_MIN;
     const pausaFaltanteMin = pausaDiariaSuficiente ? 0 : PAUSA_DIARIA_MIN - totais.pausa;
 
+    // Cruzamento jornada × GPS: cada evento com a localização onde aconteceu.
+    // O lat/lng/cidade/rua já vem dentro de obterEventosTempoDirecao — só preservamos aqui.
+    const timeline = reg.eventos.map((ev, i) => {
+      const next = reg.eventos[i + 1];
+      const delta = next ? minutosEntre(ev._ts, next._ts) : 0;
+      const temGps = ev.latitude != null && ev.longitude != null && (ev.latitude !== 0 || ev.longitude !== 0);
+      return {
+        hora: ev.dataInicio,                              // BRT (igual início/fim)
+        tipo: ev.descricaoEventoTempoDirecao || '?',
+        eventoId: ev.eventoTempoDirecao,
+        duracaoMin: delta,
+        duracao: formatHHmm(delta),
+        lat: temGps ? ev.latitude : null,
+        lng: temGps ? ev.longitude : null,
+        cidade: ev.cidade || null,
+        uf: ev.uf || null,
+        rua: ev.rua || null,
+        placa: ev.placa || null,
+      };
+    });
+
     resultado.push({
       idMotorista: reg.idMotorista,
       nomeMotorista: reg.nomeMotorista || '?',
@@ -345,6 +366,7 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
       pausaDiariaSuficiente,
       pausaFaltanteMin,
       pausaFaltante: formatHHmm(pausaFaltanteMin),
+      timeline,
       paradaMin: totais.parada,
       parada: formatHHmm(totais.parada),
       esperarMin: totais.esperar,

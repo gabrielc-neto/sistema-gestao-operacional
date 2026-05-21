@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, Download, FileSpreadsheet, FileText, TrendingUp, UserX, Copy, UserMinus } from "lucide-react";
+import { ArrowLeft, Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, Download, FileSpreadsheet, FileText, TrendingUp, UserX, Copy, UserMinus, MapPin } from "lucide-react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useJornada } from "../hooks/useJornada";
@@ -106,6 +106,7 @@ export default function Jornada() {
   const [filtroSemPausa, setFiltroSemPausa] = useState(false);
   const [filtroExtra, setFiltroExtra] = useState(false);
   const [ciclosExpandidos, setCiclosExpandidos] = useState({}); // { idMotorista: true }
+  const [trajetoExpandido, setTrajetoExpandido] = useState({}); // { idMotorista: true }
 
   const aplicarPreset = (id) => {
     setPreset(id);
@@ -490,6 +491,19 @@ export default function Jornada() {
                             {salvandoTipo === j.idMotorista ? "..." : (j.tipoContrato === "px" ? "PX ⇄" : "Interno ⇄")}
                           </button>
                         )}
+                        {!ehPeriodo && j.timeline && j.timeline.length > 0 && (
+                          <button
+                            onClick={() => setTrajetoExpandido(s => ({ ...s, [j.idMotorista]: !s[j.idMotorista] }))}
+                            title="Ver onde cada evento da jornada aconteceu (GPS)"
+                            style={{
+                              border: "none", cursor: "pointer", fontSize: ".68rem", fontWeight: 700,
+                              padding: "1px 7px", borderRadius: 10, display: "inline-flex", alignItems: "center", gap: 3,
+                              background: trajetoExpandido[j.idMotorista] ? "#dcfce7" : "#ecfdf5",
+                              color: "#047857",
+                            }}>
+                            <MapPin size={11} /> Trajeto {trajetoExpandido[j.idMotorista] ? "▲" : "▼"}
+                          </button>
+                        )}
                       </div>
                     </td>
                     <td style={{ padding: "10px 8px", fontFamily: "monospace", fontWeight: 600, color: "#475569" }}>
@@ -603,6 +617,58 @@ export default function Jornada() {
                             ))}
                           </tbody>
                         </table>
+                      </td>
+                    </tr>
+                  )}
+                  {!ehPeriodo && trajetoExpandido[j.idMotorista] && j.timeline && j.timeline.length > 0 && (
+                    <tr key={j.idMotorista + "-trajeto"}>
+                      <td colSpan={13} style={{ padding: "6px 12px 12px", background: "#ecfdf5", borderBottom: "1px solid #a7f3d0" }}>
+                        <div style={{ fontSize: ".75rem", fontWeight: 700, color: "#047857", marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>
+                          <MapPin size={13} /> Trajeto da jornada — onde cada evento aconteceu ({j.timeline.length})
+                        </div>
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={{ width: "100%", fontSize: ".78rem", borderCollapse: "collapse" }}>
+                            <thead>
+                              <tr style={{ background: "#d1fae5", color: "#065f46" }}>
+                                <th style={thTraj}>Hora</th>
+                                <th style={thTraj}>Evento</th>
+                                <th style={{ ...thTraj, textAlign: "center" }}>Duração</th>
+                                <th style={thTraj}>Local</th>
+                                <th style={{ ...thTraj, textAlign: "center" }}>Mapa</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {j.timeline.map((ev, idx) => {
+                                const c = corEvento(ev.tipo);
+                                return (
+                                  <tr key={idx} style={{ borderBottom: "1px solid #d1fae5" }}>
+                                    <td style={{ padding: "4px 8px", fontFamily: "monospace", whiteSpace: "nowrap" }}>{formatBR(ev.hora)}</td>
+                                    <td style={{ padding: "4px 8px" }}>
+                                      <span style={{ background: c.bg, color: c.color, padding: "1px 7px", borderRadius: 4, fontSize: ".7rem", fontWeight: 700, whiteSpace: "nowrap" }}>{ev.tipo}</span>
+                                    </td>
+                                    <td style={{ padding: "4px 8px", textAlign: "center", fontFamily: "monospace", color: ev.duracaoMin > 0 ? "#0f172a" : "#94a3b8" }}>{ev.duracaoMin > 0 ? ev.duracao : "—"}</td>
+                                    <td style={{ padding: "4px 8px", color: "#475569" }}>
+                                      {ev.cidade ? (
+                                        <>
+                                          <span style={{ fontWeight: 600 }}>{ev.cidade}{ev.uf ? `/${ev.uf}` : ""}</span>
+                                          {ev.rua && <span style={{ color: "#94a3b8" }}> · {ev.rua}</span>}
+                                        </>
+                                      ) : <span style={{ color: "#cbd5e1" }}>sem endereço</span>}
+                                    </td>
+                                    <td style={{ padding: "4px 8px", textAlign: "center" }}>
+                                      {ev.lat != null && ev.lng != null ? (
+                                        <a href={`https://www.google.com/maps?q=${ev.lat},${ev.lng}`} target="_blank" rel="noopener noreferrer"
+                                           style={{ color: "#047857", fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
+                                          🗺 ver
+                                        </a>
+                                      ) : <span style={{ color: "#cbd5e1" }}>—</span>}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -794,4 +860,27 @@ function pill(bg, color) {
     marginRight: 6,
     letterSpacing: ".3px",
   };
+}
+
+const thTraj = {
+  padding: "4px 8px",
+  textAlign: "left",
+  fontSize: ".68rem",
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: ".3px",
+  whiteSpace: "nowrap",
+};
+
+// Cor do badge por tipo de evento de tempo-direção (trajeto da jornada)
+function corEvento(tipo) {
+  const t = (tipo || "").toLowerCase();
+  if (t.includes("dirigindo")) return { bg: "#dcfce7", color: "#166534" };
+  if (t.includes("jornada"))   return { bg: "#dbeafe", color: "#1d4ed8" };
+  if (t.includes("refei"))     return { bg: "#ffedd5", color: "#9a3412" };
+  if (t.includes("pausa"))     return { bg: "#fef9c3", color: "#854d0e" };
+  if (t.includes("encerrar"))  return { bg: "#fee2e2", color: "#991b1b" };
+  if (t.includes("parada"))    return { bg: "#e2e8f0", color: "#475569" };
+  if (t.includes("espera"))    return { bg: "#f1f5f9", color: "#64748b" };
+  return { bg: "#f1f5f9", color: "#475569" };
 }
