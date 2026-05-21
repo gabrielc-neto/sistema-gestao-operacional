@@ -73,6 +73,19 @@ export async function obterClientes({ usuario, senha, quantidade = 1000, idClien
   }));
 }
 
+// Cadastro de motoristas do integrador. idMotorista bate exato com os eventos
+// de tempo-direção — usado pra saber QUEM existe vs quem gerou jornada no dia.
+export async function obterMotoristas({ usuario, senha, quantidade = 1000, idMotorista = 0 }) {
+  const params = `<usuario>${usuario}</usuario><senha>${senha}</senha><quantidade>${quantidade}</quantidade><idMotorista>${idMotorista}</idMotorista>`;
+  const xml = await soapCall('obterMotoristas', params, 'web');
+  return parseReturns(xml).map(b => ({
+    idMotorista: fieldNumber(b, 'idMotorista'),
+    nome: fieldString(b, 'nome'),
+    tipoMotorista: fieldString(b, 'tipoMotorista'), // A=Agregado, T=Terceiro, F=Funcionário
+    generico: fieldString(b, 'generico') === 'true',
+  }));
+}
+
 function parsePosicao(b) {
   return {
     idVeiculo: fieldNumber(b, 'idVeiculo'),
