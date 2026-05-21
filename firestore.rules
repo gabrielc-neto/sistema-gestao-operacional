@@ -192,6 +192,13 @@ service cloud.firestore {
       allow write: if isAtivo();
     }
 
+    // Motoristas desligados — marcado na /jornada (SASCAR não tem flag "ativo").
+    // Some da lista "não iniciaram". doc id = idMotorista SASCAR.
+    match /motoristas_desligados/{id} {
+      allow read:  if logado();
+      allow write: if isAtivo();
+    }
+
     // Cercas eletrônicas — qualquer logado pode criar/editar/excluir
     match /cercas_eletronicas/{id} {
       allow read:   if logado();

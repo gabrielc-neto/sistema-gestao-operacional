@@ -28,6 +28,8 @@ export function useJornada(dataInicio, dataFim) {
           jornadas: res.data.jornadas || [],
           jornadasAgregadas: null,  // só 1 dia, não tem agregado
           porDia: [{ data: dataInicio, jornadas: res.data.jornadas || [] }],
+          naoIniciaram: res.data.naoIniciaram || [],
+          totalCadastro: res.data.totalCadastro || 0,
           totalEventos: res.data.totalEventos,
           cache: res.data.cache,
           dataInicio,
@@ -86,6 +88,8 @@ export function useJornada(dataInicio, dataFim) {
     porDia: payload?.porDia || [],
     dias: payload?.dias || [],
     ehPeriodo,
+    naoIniciaram: payload?.naoIniciaram || [],
+    totalCadastro: payload?.totalCadastro || 0,
     totalEventos: payload?.totalEventos || 0,
     cache: payload?.cache || null,
     loading,

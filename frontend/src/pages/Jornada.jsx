@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, Download, FileSpreadsheet, FileText, TrendingUp } from "lucide-react";
+import { ArrowLeft, Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, Download, FileSpreadsheet, FileText, TrendingUp, UserX, Copy, UserMinus } from "lucide-react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useJornada } from "../hooks/useJornada";
@@ -96,8 +96,10 @@ export default function Jornada() {
   const [dataInicio, setDataInicio] = useState(hojeISO());
   const [dataFim, setDataFim] = useState(hojeISO());
 
-  const { linhas, dias, ehPeriodo, totalEventos, cache, loading, error, lastFetch, refetch } = useJornada(dataInicio, dataFim);
+  const { linhas, dias, ehPeriodo, naoIniciaram, totalCadastro, totalEventos, cache, loading, error, lastFetch, refetch } = useJornada(dataInicio, dataFim);
   const [busca, setBusca] = useState("");
+  const [mostrarNaoIniciaram, setMostrarNaoIniciaram] = useState(false);
+  const [copiado, setCopiado] = useState(false);
   const [filtroInfracao, setFiltroInfracao] = useState(false);
   const [filtroNaoEncerrou, setFiltroNaoEncerrou] = useState(false);
   const [filtroEncerrou, setFiltroEncerrou] = useState(false);
@@ -183,6 +185,24 @@ export default function Jornada() {
       alert("Erro ao salvar tipo: " + (e?.message || e));
     } finally {
       setSalvandoTipo(null);
+    }
+  }
+
+  // Marca motorista como desligado (SASCAR não tem flag "ativo") — some da lista
+  const [marcandoDesligado, setMarcandoDesligado] = useState(null);
+  async function marcarDesligado(m) {
+    if (!window.confirm(`Marcar ${capitalizarNome(m.nome)} como DESLIGADO?\n\nEle some da lista "não iniciaram". Reversível depois.`)) return;
+    setMarcandoDesligado(m.idMotorista);
+    try {
+      await setDoc(doc(db, "motoristas_desligados", String(m.idMotorista)), {
+        nome: m.nome,
+        desligadoEm: new Date().toISOString(),
+      });
+      await refetch(); // recarrega já sem ele
+    } catch (e) {
+      alert("Erro ao marcar desligado: " + (e?.message || e));
+    } finally {
+      setMarcandoDesligado(null);
     }
   }
 
@@ -314,6 +334,15 @@ export default function Jornada() {
           />
           {!ehPeriodo && (
             <>
+              <Kpi
+                label="Não iniciaram jornada"
+                value={naoIniciaram.length}
+                color={naoIniciaram.length > 0 ? "#7c3aed" : "#16a34a"}
+                icon={<UserX size={16} />}
+                sub={naoIniciaram.length > 0 ? "Clique p/ ver e lançar folga" : "Todos do cadastro iniciaram"}
+                onClick={() => setMostrarNaoIniciaram(true)}
+                active={mostrarNaoIniciaram}
+              />
               <Kpi
                 label="Encerraram jornada"
                 value={totais.encerraram}
@@ -604,6 +633,82 @@ export default function Jornada() {
         </div>
 
       </div>
+
+      {/* Modal: motoristas que não iniciaram jornada no dia */}
+      {mostrarNaoIniciaram && (
+        <div
+          onClick={() => setMostrarNaoIniciaram(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="modal-mobile-sheet"
+            style={{ background: "#fff", borderRadius: 12, width: "100%", maxWidth: 460, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}
+          >
+            <div style={{ padding: "16px 18px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ color: "#7c3aed" }}><UserX size={20} /></span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "1rem" }}>Não iniciaram jornada</div>
+                <div style={{ fontSize: ".75rem", color: "#64748b" }}>
+                  {formatDataBR(dataInicio)} · {naoIniciaram.length} de {totalCadastro} cadastrados
+                </div>
+              </div>
+              <button onClick={() => setMostrarNaoIniciaram(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#64748b" }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ padding: "10px 18px", borderBottom: "1px solid #f1f5f9", fontSize: ".78rem", color: "#475569", background: "#faf5ff" }}>
+              Não bateram <b>"Jornada"</b> no tablet hoje. Confira quem está de folga e <b>lance a folga na SASCAR</b> manualmente.
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {naoIniciaram.length === 0 ? (
+                <div style={{ padding: 30, textAlign: "center", color: "#16a34a", fontWeight: 600 }}>
+                  ✓ Todos os motoristas do cadastro iniciaram jornada.
+                </div>
+              ) : (
+                naoIniciaram.map((m, i) => (
+                  <div key={m.idMotorista} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 18px", borderBottom: "1px solid #f8fafc" }}>
+                    <span style={{ width: 22, textAlign: "right", color: "#94a3b8", fontSize: ".75rem", fontFamily: "monospace" }}>{i + 1}</span>
+                    <span style={{ flex: 1, fontWeight: 600, color: "#0f172a", fontSize: ".9rem" }}>{capitalizarNome(m.nome)}</span>
+                    <span style={{ fontSize: ".68rem", color: "#64748b", fontFamily: "monospace" }}>ID {m.idMotorista}</span>
+                    <button
+                      onClick={() => marcarDesligado(m)}
+                      disabled={marcandoDesligado === m.idMotorista}
+                      title="Marcar como desligado — some da lista"
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 4, border: "1px solid #fecaca",
+                        background: "#fef2f2", color: "#b91c1c", borderRadius: 6, padding: "3px 8px",
+                        fontSize: ".7rem", fontWeight: 700, cursor: "pointer",
+                        opacity: marcandoDesligado === m.idMotorista ? 0.5 : 1, whiteSpace: "nowrap",
+                      }}>
+                      <UserMinus size={12} /> {marcandoDesligado === m.idMotorista ? "..." : "Desligado"}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {naoIniciaram.length > 0 && (
+              <div style={{ padding: "12px 18px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => {
+                    const txt = naoIniciaram.map(m => capitalizarNome(m.nome)).join("\n");
+                    navigator.clipboard?.writeText(txt).then(() => {
+                      setCopiado(true);
+                      setTimeout(() => setCopiado(false), 2000);
+                    });
+                  }}
+                  style={{ ...btnGhost, background: copiado ? "#dcfce7" : "#fff", color: copiado ? "#166534" : "#0f172a", borderColor: copiado ? "#bbf7d0" : "#cbd5e1" }}
+                >
+                  {copiado ? <CheckCircle2 size={14} /> : <Copy size={14} />} {copiado ? "Copiado!" : "Copiar lista"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

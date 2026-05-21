@@ -13,6 +13,7 @@ import {
   obterVeiculos,
   obterPacotePosicoesMotorista,
   obterEventosTempoDirecao,
+  obterMotoristas,
   ultimaPorVeiculo,
 } from './src/sascar/soap.js';
 import { cached } from './src/sascar/cache.js';
@@ -276,9 +277,45 @@ export const jornadaDia = onCall(
 
     const jornadas = calcularJornadas(cacheData.eventos, data, classificacao);
 
+    // Roster do cadastro SASCAR (cache longo — cadastro muda raramente).
+    // Cruzamento: quem está cadastrado mas NÃO gerou jornada no dia = "não iniciou".
+    // idMotorista do cadastro bate exato com o dos eventos.
+    let naoIniciaram = [];
+    let totalCadastro = 0;
+    try {
+      const { data: roster } = await cached('motoristas-roster', 30 * 60_000, async () => {
+        const lista = await obterMotoristas({
+          usuario: SASCAR_USUARIO.value(),
+          senha: SASCAR_SENHA.value(),
+          quantidade: 1000,
+        });
+        // Exclui motoristas genéricos (placeholders sem vínculo) e sem id
+        return lista.filter(m => m.idMotorista && !m.generico);
+      });
+      // Desligados marcados manualmente (fora do cache — reflete na hora ao marcar)
+      const desligados = new Set();
+      try {
+        const snapD = await db.collection('motoristas_desligados').get();
+        snapD.forEach(doc => desligados.add(Number(doc.id)));
+      } catch (e) { /* coleção pode não existir ainda */ }
+
+      const ativos = roster.filter(m => !desligados.has(m.idMotorista));
+      totalCadastro = ativos.length;
+      const idsComEvento = new Set(jornadas.map(j => j.idMotorista));
+      naoIniciaram = ativos
+        .filter(m => !idsComEvento.has(m.idMotorista))
+        .map(m => ({ idMotorista: m.idMotorista, nome: m.nome, tipoMotorista: m.tipoMotorista }))
+        .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+    } catch (e) {
+      // Se obterMotoristas falhar, não derruba o relatório — só não mostra o card
+      console.error('Falha ao obter roster de motoristas:', e?.message || e);
+    }
+
     return {
       data,
       jornadas,
+      naoIniciaram,
+      totalCadastro,
       totalEventos: cacheData.totalEventos,
       dataInicio,
       dataFim,
