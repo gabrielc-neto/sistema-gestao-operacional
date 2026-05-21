@@ -107,40 +107,20 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
     let direcaoContinuaMaxima = 0;
     const infracoes = [];
 
-    // Lista detalhada de pausas informais detectadas (transição Dirigindo→Jornada→Dirigindo)
-    const pausasDetalhe = [];
-
     for (let i = 0; i < reg.eventos.length; i++) {
       const cur = reg.eventos[i];
       const next = reg.eventos[i + 1];
-      const prev = reg.eventos[i - 1];
       const delta = next ? minutosEntre(cur._ts, next._ts) : 0;
       const desc = (cur.descricaoEventoTempoDirecao || '').toLowerCase();
-      const descNext = (next?.descricaoEventoTempoDirecao || '').toLowerCase();
-      const descPrev = (prev?.descricaoEventoTempoDirecao || '').toLowerCase();
 
       if (inicio == null) inicio = cur._ts;
       fim = cur._ts;
 
+      // Só conta pausa FORMAL (motorista bate "Pausa" no tablet). NÃO existe mais dedução
+      // de pausa informal (Dirigindo→Jornada→Dirigindo) — decisão Wesley 2026-05-21.
+      // Tempo em "Jornada" é só jornada; quem não registra Pausa não ganha desconto.
       if (desc.includes('jornada')) {
-        // REGRA PONTUAL: Transição Dirigindo → Jornada → Dirigindo é PAUSA INFORMAL.
-        // QUALQUER pausa entre dois "Dirigindo" reseta a direção contínua, independente
-        // da duração. Motorista parou o caminhão = quebrou a sequência de direção contínua.
-        const ehPausaInformal = descPrev.includes('dirigindo') && descNext.includes('dirigindo');
-        if (ehPausaInformal && delta > 0) {
-          totais.pausa += delta;
-          pausasDetalhe.push({
-            inicio: cur.dataInicio,
-            fim: next.dataInicio,
-            duracaoMin: delta,
-            duracao: formatHHmm(delta),
-            suficiente: delta >= LIMITES.pausaMinima, // só pra info, não usado pra infração
-          });
-          // SEMPRE reseta — qualquer parada interrompe direção contínua
-          direcaoContinua = 0;
-        } else {
-          totais.jornada += delta;
-        }
+        totais.jornada += delta;
       }
       else if (desc.includes('dirigindo')) {
         totais.dirigindo += delta;
@@ -162,7 +142,10 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
       }
       else if (desc.includes('pausa')) {
         totais.pausa += delta;
-        if (delta >= LIMITES.pausaMinima) direcaoContinua = 0;
+        // Regra Pontual (Wesley 2026-05-21): QUALQUER pausa reseta a direção contínua,
+        // independente da duração — parou o caminhão, quebrou a sequência de direção.
+        // (coerente com a pausa informal Dirigindo→Jornada→Dirigindo)
+        direcaoContinua = 0;
       }
       else if (desc.includes('parada')) totais.parada += delta;
       else if (desc.includes('espera') || desc.includes('esperar')) totais.esperar += delta;
@@ -266,16 +249,10 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
       for (let i = 0; i < evs.length; i++) {
         const cur = evs[i];
         const next = evs[i + 1];
-        const prev = evs[i - 1];
         const delta = next ? minutosEntre(cur._ts, next._ts) : 0;
         const d = (cur.descricaoEventoTempoDirecao || '').toLowerCase();
-        const dn = (next?.descricaoEventoTempoDirecao || '').toLowerCase();
-        const dp = (prev?.descricaoEventoTempoDirecao || '').toLowerCase();
         if (d.includes('jornada')) {
-          if (dp.includes('dirigindo') && dn.includes('dirigindo') && delta > 0) {
-            t.pausa += delta;
-            direcaoContCiclo = 0;
-          } else t.jornada += delta;
+          t.jornada += delta; // só pausa formal conta (sem dedução informal)
         } else if (d.includes('dirigindo')) {
           t.dirigindo += delta;
           direcaoContCiclo += delta;
@@ -285,7 +262,7 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
           direcaoContCiclo = 0;
         } else if (d.includes('pausa')) {
           t.pausa += delta;
-          if (delta >= LIMITES.pausaMinima) direcaoContCiclo = 0;
+          direcaoContCiclo = 0; // qualquer pausa reseta (regra Pontual 2026-05-21)
         }
       }
       const totalAtivoCiclo = t.jornada + t.dirigindo + t.refeicao + t.pausa;
@@ -361,8 +338,6 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
       refeicao: formatHHmm(totais.refeicao),
       pausaMin: totais.pausa,
       pausa: formatHHmm(totais.pausa),
-      pausasInformais: pausasDetalhe.length,
-      pausasDetalhe,
       pausaDiariaSuficiente,
       pausaFaltanteMin,
       pausaFaltante: formatHHmm(pausaFaltanteMin),
