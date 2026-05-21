@@ -103,8 +103,9 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
     // Delta = tempo entre evento N e evento N+1, atribuído ao evento N
     // (= "esse motorista ficou nesse estado por X minutos")
     let inicio = null, fim = null;
-    let direcaoContinua = 0; // soma de Dirigindo consecutivos sem Pausa/Refeição
+    let direcaoContinua = 0;  // soma de Dirigindo no trecho atual (sem intervalo de 30min)
     let direcaoContinuaMaxima = 0;
+    let paradoAcum = 0;       // minutos NÃO dirigindo acumulados desde a última direção
     const infracoes = [];
 
     for (let i = 0; i < reg.eventos.length; i++) {
@@ -116,45 +117,39 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
       if (inicio == null) inicio = cur._ts;
       fim = cur._ts;
 
-      // Só conta pausa FORMAL (motorista bate "Pausa" no tablet). NÃO existe mais dedução
-      // de pausa informal (Dirigindo→Jornada→Dirigindo) — decisão Wesley 2026-05-21.
-      // Tempo em "Jornada" é só jornada; quem não registra Pausa não ganha desconto.
-      if (desc.includes('jornada')) {
-        totais.jornada += delta;
-      }
-      else if (desc.includes('dirigindo')) {
+      // REGRA DIREÇÃO CONTÍNUA (Wesley 2026-05-21): só ZERA com intervalo REAL de
+      // descanso (≥30min sem dirigir). Paradas curtas (<30min) NÃO zeram — o contador
+      // MANTÉM somando, pra pegar quem dirige >4h só com paradinhas curtas.
+      // Mecânica: acumula tempo parado desde a última direção; ao chegar a 30min, zera.
+      if (desc.includes('dirigindo')) {
         totais.dirigindo += delta;
         direcaoContinua += delta;
         if (direcaoContinua > direcaoContinuaMaxima) direcaoContinuaMaxima = direcaoContinua;
+        paradoAcum = 0; // voltou a dirigir — recomeça a contar o tempo parado
       }
-      else if (desc.includes('refeição') || desc.includes('refeicao')) {
-        totais.refeicao += delta;
-        direcaoContinua = 0;
-        // Checa infração de almoço < 1h
-        if (delta > 0 && delta < LIMITES.refeicaoMinima) {
-          infracoes.push({
-            tipo: 'REFEICAO_INSUFICIENTE',
-            base: 'CLT art. 71',
-            descricao: `Refeição de ${formatHHmm(delta)} (mínimo ${formatHHmm(LIMITES.refeicaoMinima)})`,
-            data: cur.dataInicio,
-          });
+      else {
+        // Qualquer evento não-dirigindo conta como tempo parado.
+        paradoAcum += delta;
+        if (paradoAcum >= LIMITES.pausaMinima) direcaoContinua = 0; // descanso real ≥30min
+
+        if (desc.includes('jornada')) totais.jornada += delta;
+        else if (desc.includes('refeição') || desc.includes('refeicao')) {
+          totais.refeicao += delta;
+          if (delta > 0 && delta < LIMITES.refeicaoMinima) {
+            infracoes.push({
+              tipo: 'REFEICAO_INSUFICIENTE',
+              base: 'CLT art. 71',
+              descricao: `Refeição de ${formatHHmm(delta)} (mínimo ${formatHHmm(LIMITES.refeicaoMinima)})`,
+              data: cur.dataInicio,
+            });
+          }
         }
+        else if (desc.includes('pausa')) totais.pausa += delta;
+        else if (desc.includes('parada')) totais.parada += delta;
+        else if (desc.includes('espera') || desc.includes('esperar')) totais.esperar += delta;
+        else if (desc.includes('encerrar')) totais.encerrar += delta;
+        else if (desc.includes('trocar')) totais.trocar += delta;
       }
-      else if (desc.includes('pausa')) {
-        totais.pausa += delta;
-        // Regra Pontual (Wesley 2026-05-21): QUALQUER pausa reseta a direção contínua,
-        // independente da duração — parou o caminhão, quebrou a sequência de direção.
-        // (coerente com a pausa informal Dirigindo→Jornada→Dirigindo)
-        direcaoContinua = 0;
-      }
-      // Parada e Esperar também resetam: caminhão parado quebra a direção contínua (Wesley 2026-05-21)
-      else if (desc.includes('parada')) { totais.parada += delta; direcaoContinua = 0; }
-      else if (desc.includes('espera') || desc.includes('esperar')) { totais.esperar += delta; direcaoContinua = 0; }
-      else if (desc.includes('encerrar')) {
-        totais.encerrar += delta;
-        direcaoContinua = 0;
-      }
-      else if (desc.includes('trocar')) totais.trocar += delta;
     }
 
     // Total da jornada efetiva = soma de estados ativos (jornada + dirigindo + refeição + pausa)
@@ -245,27 +240,25 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
     // Calcula totais por ciclo (re-percorrendo eventos do segmento)
     const ciclosDetalhe = ciclos.map((c, idx) => {
       const t = { jornada: 0, dirigindo: 0, refeicao: 0, pausa: 0 };
-      let direcaoContCiclo = 0, direcaoContMaxCiclo = 0;
+      let direcaoContCiclo = 0, direcaoContMaxCiclo = 0, paradoAcumCiclo = 0;
       const evs = c.eventosIdx.map(i => reg.eventos[i]);
       for (let i = 0; i < evs.length; i++) {
         const cur = evs[i];
         const next = evs[i + 1];
         const delta = next ? minutosEntre(cur._ts, next._ts) : 0;
         const d = (cur.descricaoEventoTempoDirecao || '').toLowerCase();
-        if (d.includes('jornada')) {
-          t.jornada += delta; // só pausa formal conta (sem dedução informal)
-        } else if (d.includes('dirigindo')) {
+        // Mesma regra do total: direção contínua só zera com descanso real ≥30min
+        if (d.includes('dirigindo')) {
           t.dirigindo += delta;
           direcaoContCiclo += delta;
           if (direcaoContCiclo > direcaoContMaxCiclo) direcaoContMaxCiclo = direcaoContCiclo;
-        } else if (d.includes('refeição') || d.includes('refeicao')) {
-          t.refeicao += delta;
-          direcaoContCiclo = 0;
-        } else if (d.includes('pausa')) {
-          t.pausa += delta;
-          direcaoContCiclo = 0; // qualquer pausa reseta (regra Pontual 2026-05-21)
-        } else if (d.includes('parada') || d.includes('espera') || d.includes('esperar') || d.includes('encerrar')) {
-          direcaoContCiclo = 0; // caminhão parado quebra direção contínua (Wesley 2026-05-21)
+          paradoAcumCiclo = 0;
+        } else {
+          paradoAcumCiclo += delta;
+          if (paradoAcumCiclo >= LIMITES.pausaMinima) direcaoContCiclo = 0;
+          if (d.includes('jornada')) t.jornada += delta;
+          else if (d.includes('refeição') || d.includes('refeicao')) t.refeicao += delta;
+          else if (d.includes('pausa')) t.pausa += delta;
         }
       }
       const totalAtivoCiclo = t.jornada + t.dirigindo + t.refeicao + t.pausa;
