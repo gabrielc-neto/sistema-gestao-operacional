@@ -42,3 +42,7 @@ scripts/bin/
 # Material de referência com dados pessoais de terceiros (LGPD)
 docs/jornada-referencia/
 docs/_jornada-seg.html
+
+# Python
+__pycache__/
+*.pyc
