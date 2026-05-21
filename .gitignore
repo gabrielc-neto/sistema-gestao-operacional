@@ -20,6 +20,7 @@ dist-ssr
 
 # Firebase
 firebase-debug.log
+.firebase/
 
 # OS / editor
 .DS_Store
