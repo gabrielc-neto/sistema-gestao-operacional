@@ -64,6 +64,22 @@ function brt(iso) {
   return `${Y}-${M}-${D} ${h}:${mi}:${s}`;
 }
 
+// Minutos entre uma hora BRT ('YYYY-MM-DD HH:MM:SS') e agora.
+// SASCAR retorna em BRT; comparamos com "agora em BRT" tratando ambos como UTC.
+function minutosDesdeBRT(horaStr) {
+  const m = horaStr?.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+  if (!m) return null;
+  const evMs = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
+  const nowBRT = Date.now() - 3 * 3600 * 1000;
+  return Math.max(0, Math.round((nowBRT - evMs) / 60000));
+}
+
+function fmtDuracaoMin(min) {
+  if (min == null) return "—";
+  const h = Math.floor(min / 60), m = min % 60;
+  return h > 0 ? `${h}h${String(m).padStart(2, "0")}` : `${m}min`;
+}
+
 const PRESETS = [
   { id: "hoje",   label: "Hoje",     range: () => [hojeISO(), hojeISO()] },
   { id: "ontem",  label: "Ontem",    range: () => [ontemISO(), ontemISO()] },
@@ -99,12 +115,14 @@ export default function Jornada() {
   const { linhas, dias, ehPeriodo, naoIniciaram, totalCadastro, totalEventos, cache, loading, error, lastFetch, refetch } = useJornada(dataInicio, dataFim);
   const [busca, setBusca] = useState("");
   const [mostrarNaoIniciaram, setMostrarNaoIniciaram] = useState(false);
+  const [mostrarNaoEncerrou, setMostrarNaoEncerrou] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [filtroInfracao, setFiltroInfracao] = useState(false);
   const [filtroNaoEncerrou, setFiltroNaoEncerrou] = useState(false);
   const [filtroEncerrou, setFiltroEncerrou] = useState(false);
   const [filtroSemPausa, setFiltroSemPausa] = useState(false);
   const [filtroExtra, setFiltroExtra] = useState(false);
+  const [filtroSemInfracao, setFiltroSemInfracao] = useState(false);
   const [ciclosExpandidos, setCiclosExpandidos] = useState({}); // { idMotorista: true }
   const [trajetoExpandido, setTrajetoExpandido] = useState({}); // { idMotorista: true }
 
@@ -122,6 +140,7 @@ export default function Jornada() {
     const termo = busca.trim().toUpperCase();
     return linhas.filter(j => {
       if (filtroInfracao && !j.temInfracao) return false;
+      if (filtroSemInfracao && j.temInfracao) return false;
       if (filtroNaoEncerrou && j.encerrouJornada !== false) return false;
       if (filtroEncerrou && j.encerrouJornada !== true) return false;
       if (filtroSemPausa && j.pausaDiariaSuficiente !== false) return false;
@@ -134,6 +153,16 @@ export default function Jornada() {
       return true;
     });
   }, [linhas, busca, filtroInfracao, filtroNaoEncerrou, filtroEncerrou, filtroSemPausa, filtroExtra]);
+
+  // Lista de quem NÃO encerrou a jornada (só vista diária), ordenada por mais tempo aberta.
+  // Vira a "worklist" do despachante pra cobrar o motorista de bater Encerrar no tablet.
+  const naoEncerrados = useMemo(() => {
+    if (ehPeriodo) return [];
+    return linhas
+      .filter(j => j.encerrouJornada === false)
+      .map(j => ({ ...j, abertaHaMin: minutosDesdeBRT(j.fim) }))
+      .sort((a, b) => (b.abertaHaMin ?? 0) - (a.abertaHaMin ?? 0));
+  }, [linhas, ehPeriodo]);
 
   const totais = useMemo(() => {
     let jornadaSum = 0, extra50Sum = 0, extra100Sum = 0, infracoes = 0;
@@ -322,7 +351,9 @@ export default function Jornada() {
             value={totais.semInfracao}
             color="#16a34a"
             icon={<CheckCircle2 size={16} />}
-            sub="Motoristas conformes"
+            sub={totais.semInfracao > 0 ? "Clique p/ filtrar" : "Ninguém conforme"}
+            onClick={() => { setFiltroSemInfracao(v => !v); setFiltroInfracao(false); }}
+            active={filtroSemInfracao}
           />
           <Kpi
             label="Com infração"
@@ -330,7 +361,7 @@ export default function Jornada() {
             color={totais.comInfracao > 0 ? "#dc2626" : "#94a3b8"}
             icon={<AlertTriangle size={16} />}
             sub={totais.comInfracao > 0 ? `${totais.infracoesTotais} ocorrência(s)` : "Nenhuma até agora"}
-            onClick={() => setFiltroInfracao(v => !v)}
+            onClick={() => { setFiltroInfracao(v => !v); setFiltroSemInfracao(false); }}
             active={filtroInfracao}
           />
           {!ehPeriodo && (
@@ -358,8 +389,12 @@ export default function Jornada() {
                 value={totais.naoEncerraram}
                 color={totais.naoEncerraram > 0 ? "#d97706" : "#16a34a"}
                 icon={<Clock size={16} />}
-                sub={totais.naoEncerraram > 0 ? "Clique p/ filtrar" : "Todos encerraram"}
-                onClick={() => { setFiltroNaoEncerrou(v => !v); setFiltroEncerrou(false); }}
+                sub={totais.naoEncerraram > 0 ? "Clique p/ ver e cobrar" : "Todos encerraram"}
+                onClick={() => {
+                  if (totais.naoEncerraram > 0) setMostrarNaoEncerrou(true);
+                  setFiltroNaoEncerrou(true);
+                  setFiltroEncerrou(false);
+                }}
                 active={filtroNaoEncerrou}
               />
               <Kpi
@@ -394,6 +429,11 @@ export default function Jornada() {
           {filtroInfracao && (
             <button onClick={() => setFiltroInfracao(false)} style={{ ...btnGhost, background: "#fee2e2", color: "#991b1b", borderColor: "#fecaca" }}>
               <X size={14} /> Limpar filtro infração
+            </button>
+          )}
+          {filtroSemInfracao && (
+            <button onClick={() => setFiltroSemInfracao(false)} style={{ ...btnGhost, background: "#dcfce7", color: "#166534", borderColor: "#bbf7d0" }}>
+              <X size={14} /> Limpar filtro sem infração
             </button>
           )}
           {filtroNaoEncerrou && (
@@ -761,6 +801,74 @@ export default function Jornada() {
                 <button
                   onClick={() => {
                     const txt = naoIniciaram.map(m => capitalizarNome(m.nome)).join("\n");
+                    navigator.clipboard?.writeText(txt).then(() => {
+                      setCopiado(true);
+                      setTimeout(() => setCopiado(false), 2000);
+                    });
+                  }}
+                  style={{ ...btnGhost, background: copiado ? "#dcfce7" : "#fff", color: copiado ? "#166534" : "#0f172a", borderColor: copiado ? "#bbf7d0" : "#cbd5e1" }}
+                >
+                  {copiado ? <CheckCircle2 size={14} /> : <Copy size={14} />} {copiado ? "Copiado!" : "Copiar lista"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal: motoristas que não encerraram a jornada */}
+      {mostrarNaoEncerrou && (
+        <div
+          onClick={() => setMostrarNaoEncerrou(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="modal-mobile-sheet"
+            style={{ background: "#fff", borderRadius: 12, width: "100%", maxWidth: 520, maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}
+          >
+            <div style={{ padding: "16px 18px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ color: "#d97706" }}><AlertTriangle size={20} /></span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "1rem" }}>Não encerraram a jornada</div>
+                <div style={{ fontSize: ".75rem", color: "#64748b" }}>
+                  {formatDataBR(dataInicio)} · {naoEncerrados.length} motorista(s) · ordenado por mais tempo aberto
+                </div>
+              </div>
+              <button onClick={() => setMostrarNaoEncerrou(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#64748b" }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ padding: "10px 18px", borderBottom: "1px solid #f1f5f9", fontSize: ".78rem", color: "#475569", background: "#fffbeb" }}>
+              Não bateram <b>"Encerrar"</b> no tablet. Cobre o motorista pra fechar — sem isso a HE do dia fica em aberto.
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {naoEncerrados.map((j, i) => (
+                <div key={j.idMotorista} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 18px", borderBottom: "1px solid #f8fafc" }}>
+                  <span style={{ width: 22, textAlign: "right", color: "#94a3b8", fontSize: ".75rem", fontFamily: "monospace" }}>{i + 1}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, color: "#0f172a", fontSize: ".9rem" }}>{capitalizarNome(j.nomeMotorista)}</div>
+                    <div style={{ fontSize: ".7rem", color: "#64748b" }}>
+                      Início {formatBR(j.inicio)} · último: {j.ultimoEventoTipo || "?"}
+                    </div>
+                  </div>
+                  <span title="Tempo desde a última marcação no tablet"
+                        style={{ background: (j.abertaHaMin ?? 0) >= 120 ? "#fee2e2" : "#fef3c7",
+                          color: (j.abertaHaMin ?? 0) >= 120 ? "#991b1b" : "#92400e",
+                          padding: "2px 8px", borderRadius: 6, fontSize: ".72rem", fontWeight: 700, whiteSpace: "nowrap" }}>
+                    aberta há {fmtDuracaoMin(j.abertaHaMin)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {naoEncerrados.length > 0 && (
+              <div style={{ padding: "12px 18px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => {
+                    const txt = naoEncerrados.map(j => `${capitalizarNome(j.nomeMotorista)} — aberta há ${fmtDuracaoMin(j.abertaHaMin)}`).join("\n");
                     navigator.clipboard?.writeText(txt).then(() => {
                       setCopiado(true);
                       setTimeout(() => setCopiado(false), 2000);
