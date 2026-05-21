@@ -80,6 +80,32 @@ function fmtDuracaoMin(min) {
   return h > 0 ? `${h}h${String(m).padStart(2, "0")}` : `${m}min`;
 }
 
+// Copia texto pro clipboard. navigator.clipboard só existe em contexto seguro
+// (https/localhost); no acesso pela rede (http://192.168.x.x) ele é undefined,
+// então cai no fallback execCommand. Retorna Promise<boolean>.
+async function copiarTexto(texto) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(texto);
+      return true;
+    }
+  } catch { /* cai no fallback */ }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = texto;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 const PRESETS = [
   { id: "hoje",   label: "Hoje",     range: () => [hojeISO(), hojeISO()] },
   { id: "ontem",  label: "Ontem",    range: () => [ontemISO(), ontemISO()] },
@@ -801,9 +827,8 @@ export default function Jornada() {
                 <button
                   onClick={() => {
                     const txt = naoIniciaram.map(m => capitalizarNome(m.nome)).join("\n");
-                    navigator.clipboard?.writeText(txt).then(() => {
-                      setCopiado(true);
-                      setTimeout(() => setCopiado(false), 2000);
+                    copiarTexto(txt).then(ok => {
+                      if (ok) { setCopiado(true); setTimeout(() => setCopiado(false), 2000); }
                     });
                   }}
                   style={{ ...btnGhost, background: copiado ? "#dcfce7" : "#fff", color: copiado ? "#166534" : "#0f172a", borderColor: copiado ? "#bbf7d0" : "#cbd5e1" }}
@@ -869,9 +894,8 @@ export default function Jornada() {
                 <button
                   onClick={() => {
                     const txt = naoEncerrados.map(j => `${capitalizarNome(j.nomeMotorista)} — aberta há ${fmtDuracaoMin(j.abertaHaMin)}`).join("\n");
-                    navigator.clipboard?.writeText(txt).then(() => {
-                      setCopiado(true);
-                      setTimeout(() => setCopiado(false), 2000);
+                    copiarTexto(txt).then(ok => {
+                      if (ok) { setCopiado(true); setTimeout(() => setCopiado(false), 2000); }
                     });
                   }}
                   style={{ ...btnGhost, background: copiado ? "#dcfce7" : "#fff", color: copiado ? "#166534" : "#0f172a", borderColor: copiado ? "#bbf7d0" : "#cbd5e1" }}
