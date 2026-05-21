@@ -147,8 +147,9 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
         // (coerente com a pausa informal Dirigindo→Jornada→Dirigindo)
         direcaoContinua = 0;
       }
-      else if (desc.includes('parada')) totais.parada += delta;
-      else if (desc.includes('espera') || desc.includes('esperar')) totais.esperar += delta;
+      // Parada e Esperar também resetam: caminhão parado quebra a direção contínua (Wesley 2026-05-21)
+      else if (desc.includes('parada')) { totais.parada += delta; direcaoContinua = 0; }
+      else if (desc.includes('espera') || desc.includes('esperar')) { totais.esperar += delta; direcaoContinua = 0; }
       else if (desc.includes('encerrar')) {
         totais.encerrar += delta;
         direcaoContinua = 0;
@@ -263,6 +264,8 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
         } else if (d.includes('pausa')) {
           t.pausa += delta;
           direcaoContCiclo = 0; // qualquer pausa reseta (regra Pontual 2026-05-21)
+        } else if (d.includes('parada') || d.includes('espera') || d.includes('esperar') || d.includes('encerrar')) {
+          direcaoContCiclo = 0; // caminhão parado quebra direção contínua (Wesley 2026-05-21)
         }
       }
       const totalAtivoCiclo = t.jornada + t.dirigindo + t.refeicao + t.pausa;
