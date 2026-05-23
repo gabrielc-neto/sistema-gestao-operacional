@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
@@ -17,7 +17,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
-export const db   = getFirestore(app);
+// Persistência offline multi-tab: 2ª carga em diante vem do IndexedDB local (instantâneo),
+// sincroniza em background. Funciona em todas as páginas que leem do `db`.
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+});
 export const storage = getStorage(app);
 export const functions = getFunctions(app, "southamerica-east1");
 

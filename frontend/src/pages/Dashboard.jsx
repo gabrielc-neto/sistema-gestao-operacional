@@ -49,6 +49,9 @@ function KpiCard({ icon: Icon, color, bg, label, value, sub, alert, onClick }) {
   return (
     <div
       onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
       style={{
         background: alert ? "#fff5f5" : "var(--card-bg)",
         borderRadius: 14,
@@ -83,6 +86,9 @@ function ModuloCard({ Icon, color, bg, label, desc, stat, statAlert, link, onCli
   return (
     <div
       onClick={onClick}
+      role={link ? "button" : undefined}
+      tabIndex={link ? 0 : undefined}
+      onKeyDown={link ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
       style={{
         background: "var(--card-bg)",
         borderRadius: 14,
@@ -130,56 +136,71 @@ export default function Dashboard() {
   const { temPermissao } = useRBAC();
   const navigate = useNavigate();
 
-  const [kpi,       setKpi]       = useState(null);
+  const [kpi,       setKpi]       = useState({});
   const [recentOCs, setRecentOCs] = useState([]);
+  const [erro,      setErro]      = useState(false);
 
   useEffect(() => {
     function fetchDados() {
       const hoje = dataHoje();
-      const safe = p => p.catch(() => null);
+      const now  = new Date(); now.setHours(0, 0, 0, 0);
+      const merge = patch => setKpi(prev => ({ ...prev, ...patch }));
+      const falhas = { v:false, m:false, f:false, oc:false, manu:false };
+      const marcarErro = () => setErro(falhas.v && falhas.m && falhas.f && falhas.oc && falhas.manu);
 
-      Promise.all([
-        safe(getDocs(collection(db, "veiculos"))),
-        safe(getDocs(collection(db, "motoristas"))),
-        safe(getDocs(collection(db, "ferias"))),
-        safe(getDocs(query(collection(db, "ordens_carregamento"), orderBy("data", "desc"), limit(5)))),
-        safe(getDocs(collection(db, "manutencoes"))),
-      ]).then(([snapV, snapM, snapF, snapOC, snapManu]) => {
-        const veiculos   = snapV   ? snapV.docs.map(d => d.data())   : [];
-        const motoristas = snapM   ? snapM.docs.map(d => d.data())   : [];
-        const ferias     = snapF   ? snapF.docs.map(d => d.data())   : [];
-        const ocs        = snapOC  ? snapOC.docs.map(d => ({ id: d.id, ...d.data() })) : [];
-        const manus      = snapManu? snapManu.docs.map(d => d.data()): [];
+      // Cada query atualiza sua fatia assim que volta — UI pinta em ondas.
+      getDocs(collection(db, "veiculos")).then(snap => {
+        const veiculos = snap.docs.map(d => d.data());
+        merge({
+          frotaAtiva: veiculos.filter(v => ["ativo","disponivel"].includes(v.status) && v.tipo !== "carreta").length,
+          totalFrota: veiculos.filter(v => v.tipo !== "carreta").length,
+          bloqueados: veiculos.filter(v => v.bloqueio?.ativo && v.tipo !== "carreta").length,
+        });
+      }).catch(() => { falhas.v = true; marcarErro(); });
 
-        const now = new Date(); now.setHours(0, 0, 0, 0);
+      getDocs(collection(db, "motoristas")).then(snap => {
+        merge({ mAtivos: snap.docs.map(d => d.data()).filter(m => m.status === "ativo").length });
+      }).catch(() => { falhas.m = true; marcarErro(); });
 
-        const frotaAtiva = veiculos.filter(v => ["ativo","disponivel"].includes(v.status) && v.tipo !== "carreta").length;
-        const totalFrota = veiculos.filter(v => v.tipo !== "carreta").length;
-        const bloqueados = veiculos.filter(v => v.bloqueio?.ativo && v.tipo !== "carreta").length;
-        const mAtivos    = motoristas.filter(m => m.status === "ativo").length;
-        const emFerias   = ferias.filter(f => {
+      getDocs(collection(db, "ferias")).then(snap => {
+        const emFerias = snap.docs.map(d => d.data()).filter(f => {
           if (!f.inicio || !f.fim) return false;
           const ini = new Date(f.inicio + "T00:00:00");
           const fim = new Date(f.fim   + "T00:00:00");
           return now >= ini && now <= fim;
         }).length;
-        const ocsHoje  = ocs.filter(o => o.data === hoje).length;
-        const totalOCs = ocs.length;
-        const manuPend = manus.filter(r => ["vencido","alerta"].includes(calcManuStatus(r.venc))).length;
-        const manuVenc = manus.filter(r => calcManuStatus(r.venc) === "vencido").length;
+        merge({ emFerias });
+      }).catch(() => { falhas.f = true; marcarErro(); });
 
-        setKpi({ frotaAtiva, totalFrota, bloqueados, mAtivos, emFerias, ocsHoje, totalOCs, manuPend, manuVenc });
+      getDocs(query(collection(db, "ordens_carregamento"), orderBy("data", "desc"), limit(5))).then(snap => {
+        const ocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        merge({ ocsHoje: ocs.filter(o => o.data === hoje).length, totalOCs: ocs.length });
         setRecentOCs(ocs.slice(0, 5));
-      });
+      }).catch(() => { falhas.oc = true; marcarErro(); });
+
+      getDocs(collection(db, "manutencoes")).then(snap => {
+        const manus = snap.docs.map(d => d.data());
+        merge({
+          manuPend: manus.filter(r => ["vencido","alerta"].includes(calcManuStatus(r.venc))).length,
+          manuVenc: manus.filter(r => calcManuStatus(r.venc) === "vencido").length,
+        });
+      }).catch(() => { falhas.manu = true; marcarErro(); });
     }
 
+    let interval = null;
+    const start = () => { if (!interval) interval = setInterval(fetchDados, 60_000); };
+    const stop  = () => { if (interval) { clearInterval(interval); interval = null; } };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") { fetchDados(); start(); }
+      else stop();
+    };
+
     fetchDados();
-    const onVisible = () => { if (document.visibilityState === "visible") fetchDados(); };
+    start();
     document.addEventListener("visibilitychange", onVisible);
-    const interval = setInterval(fetchDados, 60_000);
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
-      clearInterval(interval);
+      stop();
     };
   }, []);
 
@@ -189,19 +210,19 @@ export default function Dashboard() {
 
   const MODULES = useMemo(() => [
     { Icon:Truck,         color:"#2563eb", bg:"#dbeafe", label:"Frota",                  desc:"Gestão de veículos e bloqueios",    module:"frota",       link:"/frota",
-      stat: kpi ? `${kpi.frotaAtiva} ativos${kpi.bloqueados > 0 ? ` · ${kpi.bloqueados} bloqueados` : ""}` : null,
-      statAlert: kpi?.bloqueados > 0 },
+      stat: kpi.frotaAtiva != null ? `${kpi.frotaAtiva} ativos${kpi.bloqueados > 0 ? ` · ${kpi.bloqueados} bloqueados` : ""}` : null,
+      statAlert: kpi.bloqueados > 0 },
     { Icon:Link2,         color:"#7c3aed", bg:"#ede9fe", label:"Atrelamento",             desc:"Conjuntos cavalo + carreta",         module:"atrelamento", link:"/atrelamento", stat: null },
     { Icon:ClipboardList, color:"#d97706", bg:"#fef3c7", label:"Ordens de Carregamento",  desc:"Emitir e controlar OCs",             module:"oc",          link:"/oc",
-      stat: kpi ? `${kpi.ocsHoje} hoje · ${kpi.totalOCs} total` : null },
+      stat: kpi.ocsHoje != null ? `${kpi.ocsHoje} hoje · ${kpi.totalOCs} total` : null },
     { Icon:Users,         color:"#059669", bg:"#d1fae5", label:"Motoristas",              desc:"Cadastro, CNH e documentos",         module:"motoristas",  link:"/motoristas",
-      stat: kpi ? `${kpi.mAtivos} ativos${kpi.emFerias > 0 ? ` · ${kpi.emFerias} em férias` : ""}` : null },
+      stat: kpi.mAtivos != null ? `${kpi.mAtivos} ativos${kpi.emFerias > 0 ? ` · ${kpi.emFerias} em férias` : ""}` : null },
     { Icon:Wrench,        color:"#dc2626", bg:"#fee2e2", label:"Manutenção",              desc:"Vencimentos e revisões",             module:"manutencao",  link:"/manutencao",
-      stat: kpi ? (kpi.manuVenc > 0 ? `${kpi.manuVenc} vencidos · ${kpi.manuPend} pendentes` : kpi.manuPend > 0 ? `${kpi.manuPend} em alerta` : "Tudo em dia") : null,
-      statAlert: kpi?.manuVenc > 0 },
+      stat: kpi.manuPend != null ? (kpi.manuVenc > 0 ? `${kpi.manuVenc} vencidos · ${kpi.manuPend} pendentes` : kpi.manuPend > 0 ? `${kpi.manuPend} em alerta` : "Tudo em dia") : null,
+      statAlert: kpi.manuVenc > 0 },
     { Icon:History,       color:"#7c3aed", bg:"#f3e8ff", label:"Histórico",              desc:"Registro de todas as operações",     module:"historico",   link:"/historico", stat: null },
     { Icon:Palmtree,      color:"#0891b2", bg:"#cffafe", label:"Férias",                 desc:"Controle e alertas eSocial",         module:"ferias",      link:"/ferias",
-      stat: kpi?.emFerias > 0 ? `${kpi.emFerias} em férias hoje` : null },
+      stat: kpi.emFerias > 0 ? `${kpi.emFerias} em férias hoje` : null },
     { Icon:MapPin,        color:"#ea580c", bg:"#ffedd5", label:"Rastreamento",           desc:"Posição em tempo real (SASCAR)",     module:null,          link:"/rastreamento",  stat: null },
     { Icon:Clock,         color:"#1d4ed8", bg:"#dbeafe", label:"Jornada & Extras",        desc:"Lei 13.103 + CLT (tablet SasMDT)",   module:null,          link:"/jornada",       stat: null },
     { Icon:Building2,     color:"#0891b2", bg:"#cffafe", label:"Setores",                desc:"Departamentos da empresa",           module:null,          link:"/admin/setores", perm:"setores.ver", stat: null },
@@ -223,7 +244,7 @@ export default function Dashboard() {
   const dataFmt = agora.toLocaleDateString("pt-BR", { weekday:"long", day:"2-digit", month:"long" });
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f0f4f8", fontFamily:"system-ui, sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:"var(--bg)", fontFamily:"system-ui, sans-serif" }}>
 
       {/* HEADER */}
       <header style={st.header} className="pg-header">
@@ -248,14 +269,20 @@ export default function Dashboard() {
 
       <div style={{ maxWidth:1400, margin:"0 auto", padding:"28px 24px" }} className="pg-body">
 
+        {erro && (
+          <div role="alert" style={{ display:"flex", alignItems:"center", gap:8, background:"#fef2f2", border:"1px solid #fca5a5", color:"#b91c1c", borderRadius:10, padding:"10px 14px", marginBottom:20, fontSize:".82rem", fontWeight:600 }}>
+            <AlertTriangle size={16} /> Não foi possível carregar os dados. Verifique a conexão e tente novamente.
+          </div>
+        )}
+
         {/* KPIs */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:14, marginBottom:28 }} className="dash-kpi">
-          <KpiCard icon={Truck}         color="#2563eb" bg="#dbeafe" label="Frota Ativa"            value={kpi?.frotaAtiva ?? "…"} sub={kpi ? `de ${kpi.totalFrota} cavalos` : null} onClick={() => navigate("/frota")} />
-          <KpiCard icon={Lock}          color="#dc2626" bg="#fee2e2" label="Bloqueados"              value={kpi?.bloqueados ?? "…"} alert={kpi?.bloqueados > 0} sub={kpi?.bloqueados > 0 ? "Requer atenção" : "Nenhum"} onClick={() => navigate("/frota")} />
-          <KpiCard icon={Users}         color="#059669" bg="#d1fae5" label="Motoristas Ativos"       value={kpi?.mAtivos ?? "…"}   sub={kpi?.emFerias > 0 ? `${kpi.emFerias} em férias` : "Sem férias hoje"} onClick={() => navigate("/motoristas")} />
-          <KpiCard icon={ClipboardList} color="#d97706" bg="#fef3c7" label="OCs Hoje"                value={kpi?.ocsHoje ?? "…"}   sub={kpi ? `${kpi.totalOCs} total` : null} onClick={() => navigate("/oc")} />
-          <KpiCard icon={Palmtree}      color="#0891b2" bg="#cffafe" label="Em Férias Hoje"          value={kpi?.emFerias ?? "…"}  sub={null} onClick={() => navigate("/ferias")} />
-          <KpiCard icon={Wrench}        color={kpi?.manuVenc > 0 ? "#dc2626" : "#f59e0b"} bg={kpi?.manuVenc > 0 ? "#fee2e2" : "#fef3c7"} label="Manutenções Pendentes" value={kpi?.manuPend ?? "…"} alert={kpi?.manuVenc > 0} sub={kpi?.manuVenc > 0 ? `${kpi.manuVenc} vencida${kpi.manuVenc > 1 ? "s" : ""}` : "Sem vencidos"} onClick={() => navigate("/manutencao")} />
+          <KpiCard icon={Truck}         color="#2563eb" bg="#dbeafe" label="Frota Ativa"            value={kpi.frotaAtiva ?? "…"} sub={kpi.totalFrota != null ? `de ${kpi.totalFrota} cavalos` : null} onClick={() => navigate("/frota")} />
+          <KpiCard icon={Lock}          color="#dc2626" bg="#fee2e2" label="Bloqueados"              value={kpi.bloqueados ?? "…"} alert={kpi.bloqueados > 0} sub={kpi.bloqueados == null ? null : kpi.bloqueados > 0 ? "Requer atenção" : "Nenhum"} onClick={() => navigate("/frota")} />
+          <KpiCard icon={Users}         color="#059669" bg="#d1fae5" label="Motoristas Ativos"       value={kpi.mAtivos ?? "…"}   sub={kpi.emFerias == null ? null : kpi.emFerias > 0 ? `${kpi.emFerias} em férias` : "Sem férias hoje"} onClick={() => navigate("/motoristas")} />
+          <KpiCard icon={ClipboardList} color="#d97706" bg="#fef3c7" label="OCs Hoje"                value={kpi.ocsHoje ?? "…"}   sub={kpi.totalOCs != null ? `${kpi.totalOCs} total` : null} onClick={() => navigate("/oc")} />
+          <KpiCard icon={Palmtree}      color="#0891b2" bg="#cffafe" label="Em Férias Hoje"          value={kpi.emFerias ?? "…"}  sub={null} onClick={() => navigate("/ferias")} />
+          <KpiCard icon={Wrench}        color={kpi.manuVenc > 0 ? "#dc2626" : "#f59e0b"} bg={kpi.manuVenc > 0 ? "#fee2e2" : "#fef3c7"} label="Manutenções Pendentes" value={kpi.manuPend ?? "…"} alert={kpi.manuVenc > 0} sub={kpi.manuVenc == null ? null : kpi.manuVenc > 0 ? `${kpi.manuVenc} vencida${kpi.manuVenc > 1 ? "s" : ""}` : "Sem vencidos"} onClick={() => navigate("/manutencao")} />
         </div>
 
         {/* Últimas OCs */}
