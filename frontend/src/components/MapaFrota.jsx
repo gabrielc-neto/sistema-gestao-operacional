@@ -271,17 +271,17 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
                 <div style={{ fontSize: ".84rem", color: "#475569", lineHeight: 1.55 }}>
                   <Row label="Motorista" value={p.motoristaLogado ? formatarMotorista(p.motoristaLogado) : "Não logado"} highlight={!!p.motoristaLogado} />
                   <Row label="Velocidade" value={`${p.velocidade ?? 0} km/h`} highlight={p.velocidade > 0} />
-                  <Row label="Direção" value={bussola(p.direcao)} />
-                  <Row label="Ignição" value={p.ignicao === 1 ? "Ligada" : "Desligada"} highlight={p.ignicao === 1} />
+                  <Row label="Direção" value={bussola(p.direcao)} extra />
+                  <Row label="Ignição" value={p.ignicao === 1 ? "Ligada" : "Desligada"} highlight={p.ignicao === 1} extra />
                   {/* Campo `bloqueio` da SASCAR ficou removido — é estado de saída elétrica, não comando pendente */}
-                  <Row label="GPS" value={p.gps === 1 ? "Sinal OK" : "Sem sinal"} alert={p.gps !== 1} />
-                  <Row label="Área" value={area ? area.nome : "—"} highlight={!!area} />
+                  <Row label="GPS" value={p.gps === 1 ? "Sinal OK" : "Sem sinal"} alert={p.gps !== 1} extra />
+                  <Row label="Área" value={area ? area.nome : "—"} highlight={!!area} extra />
                   <Row label="Local" value={`${p.cidade}/${p.uf}`} />
                   {p.rua && <Row label="Endereço" value={p.rua} />}
                   {p.pontoReferencia && <Row label="Referência" value={p.pontoReferencia} />}
                   <Row label="Última posição" value={tempoDecorrido(p.dataPosicao)} />
-                  <Row label="Odômetro" value={p.odometro != null ? `${p.odometro.toLocaleString("pt-BR")} km` : "—"} />
-                  <Row label="Bateria" value={`${p.tensao ?? "—"}V`} alert={(p.tensao ?? 0) < 11} />
+                  <Row label="Odômetro" value={p.odometro != null ? `${p.odometro.toLocaleString("pt-BR")} km` : "—"} extra />
+                  <Row label="Bateria" value={`${p.tensao ?? "—"}V`} alert={(p.tensao ?? 0) < 11} extra />
                 </div>
                 {/* Atalhos de mapa externo */}
                 <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
@@ -462,9 +462,12 @@ const btnExt = {
   textDecoration: "none",
 };
 
-function Row({ label, value, highlight, alert }) {
+function Row({ label, value, highlight, alert, extra }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+    <div
+      className={extra ? "popup-row popup-row-extra" : "popup-row"}
+      style={{ display: "flex", justifyContent: "space-between", gap: 8 }}
+    >
       <span style={{ color: "#64748b" }}>{label}</span>
       <span style={{
         fontWeight: 600,

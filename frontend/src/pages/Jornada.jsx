@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, Download, FileSpreadsheet, FileText, TrendingUp, UserX, Copy, UserMinus, MapPin } from "lucide-react";
+import { ArrowLeft, Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, FileSpreadsheet, FileText, TrendingUp, UserX, Copy, UserMinus, MapPin } from "lucide-react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useJornada } from "../hooks/useJornada";
@@ -46,22 +46,6 @@ function formatDataBR(iso) {
   if (!iso) return "";
   const [Y, M, D] = iso.split("-");
   return `${D}/${M}/${Y}`;
-}
-
-// Adiciona -3h (UTC → BRT) na string 'YYYY-MM-DD HH:MM:SS'
-function brt(iso) {
-  if (!iso) return null;
-  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
-  if (!m) return iso;
-  const dt = new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]));
-  dt.setUTCHours(dt.getUTCHours() - 3);
-  const Y = dt.getUTCFullYear();
-  const M = String(dt.getUTCMonth()+1).padStart(2,"0");
-  const D = String(dt.getUTCDate()).padStart(2,"0");
-  const h = String(dt.getUTCHours()).padStart(2,"0");
-  const mi = String(dt.getUTCMinutes()).padStart(2,"0");
-  const s = String(dt.getUTCSeconds()).padStart(2,"0");
-  return `${Y}-${M}-${D} ${h}:${mi}:${s}`;
 }
 
 // Minutos entre uma hora BRT ('YYYY-MM-DD HH:MM:SS') e agora.
@@ -649,7 +633,8 @@ export default function Jornada() {
                         <div style={{ fontSize: ".75rem", fontWeight: 700, color: "#9a3412", marginBottom: 6 }}>
                           Ciclos de jornada do motorista hoje ({j.ciclos.length})
                         </div>
-                        <table style={{ width: "100%", fontSize: ".78rem", borderCollapse: "collapse" }}>
+                        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                        <table style={{ width: "100%", fontSize: ".78rem", borderCollapse: "collapse", minWidth: 560 }}>
                           <thead>
                             <tr style={{ background: "#fef3c7", color: "#78350f" }}>
                               <th style={{ padding: "4px 8px", textAlign: "left" }}>Ciclo</th>
@@ -683,6 +668,7 @@ export default function Jornada() {
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </td>
                     </tr>
                   )}
