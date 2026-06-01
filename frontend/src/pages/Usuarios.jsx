@@ -80,6 +80,7 @@ export default function Usuarios() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- carrega ao montar; loader reusado no refresh
   useEffect(() => { carregar(); }, []);
 
   // Cargos filtrados pelo setor selecionado no form (carregamento dinâmico).
@@ -292,14 +293,14 @@ export default function Usuarios() {
             </div>
             <form onSubmit={salvar} style={s.mform}>
               <label style={s.mlbl}>
-                Nome completo *
+                Nome completo
                 <input style={s.minp} value={form.nome}
                   onChange={e => setForm({ ...form, nome: e.target.value })}
                   placeholder="Ex: João Silva" required />
               </label>
 
               <label style={s.mlbl}>
-                E-mail *
+                E-mail
                 <input style={s.minp} type="email" value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   placeholder="joao@pontual.com.br"
@@ -309,7 +310,7 @@ export default function Usuarios() {
 
               {!editId && (
                 <label style={s.mlbl}>
-                  Senha *
+                  Senha
                   <div style={{ position: "relative" }}>
                     <input
                       style={{ ...s.minp, paddingRight: 36 }}
@@ -331,7 +332,7 @@ export default function Usuarios() {
 
               <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <label style={s.mlbl}>
-                  Setor {!form.is_super_admin && "*"}
+                  Setor
                   <select style={s.minp} value={form.setor_id}
                     onChange={e => trocarSetor(e.target.value)}
                     disabled={form.is_super_admin}>
@@ -343,7 +344,7 @@ export default function Usuarios() {
                 </label>
 
                 <label style={s.mlbl}>
-                  Cargo {!form.is_super_admin && "*"}
+                  Cargo
                   <select style={s.minp} value={form.cargo_id}
                     onChange={e => setForm({ ...form, cargo_id: e.target.value })}
                     disabled={form.is_super_admin || !form.setor_id}>

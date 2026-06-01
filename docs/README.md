@@ -17,6 +17,10 @@ Sistema de gestão operacional para distribuidora de combustíveis (Pontual Log�
 | 09 | [Rastreamento de Frota](09-rastreamento.md) | Mapa Leaflet, cercas, OC ativa, decisões técnicas |
 | 10 | [Integração SASCAR](10-sascar-integracao.md) | Cloud Functions, SOAP, Secret Manager, emulator local, deploy |
 | 11 | [Cercas Eletrônicas](11-cercas-eletronicas.md) | Polígono/círculo, eventos entrada/saída, edição com handles, ViaCEP, schema |
+| 12 | [Migração PostgreSQL + TMS SaaS](12-migracao-postgresql-tms.md) | PLANO: virar produto multi-tenant no Supabase, schema relacional, RLS, fases, importação Pontual |
+| 13 | [Módulo Transportadoras Terceiras](13-modulo-terceiros.md) | DESENHO: cadastro transportadora (CNPJ), tipo de transporte na OC, frete contratado, CT-e recebido, regras e fases |
+| 14 | [Levantamento TMS · Logística operacional](14-levantamento-logistica.md) | Inventário do que tem ✅/falta ❌ em logística (exclui CT-e/MDF-e). Top 5 gaps + top 5 bloqueadores externos. Apêndice: cadastro de cliente NÃO precisa SEFAZ |
+| 15 | [Plano de Roteirização](15-roteirizacao.md) | DESENHO: rota+ETA via OpenRouteService (grátis, caminhão+hazmat) + pedágio por eixo via API (Veloe só frota interna). Fases 0-4, modelo de dados, estimado×real |
 
 ## Links rápidos
 

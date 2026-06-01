@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 import { usePermissions, MODULES, ROLES } from "../contexts/PermissionsContext";
 import LogoPontual from "../components/LogoPontual";
 
@@ -16,7 +15,6 @@ function nextLevel(current) {
 }
 
 export default function Permissoes() {
-  const { profile } = useAuth();
   const { perms, savePerms, isAdmin } = usePermissions();
   const navigate = useNavigate();
   const [local, setLocal]     = useState({});

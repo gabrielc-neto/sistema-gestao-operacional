@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { collection, getDocs, query, orderBy, limit, startAfter } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase/config";
 import LogoPontual from "../components/LogoPontual";
 

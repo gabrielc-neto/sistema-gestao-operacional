@@ -89,7 +89,11 @@ service cloud.firestore {
     match /veiculos/{id} {
       allow read:   if temPermissao('frota.ver');
       allow create: if temPermissao('frota.criar');
-      allow update: if temPermissao('frota.editar');
+      // frota.editar edita qualquer campo; manutenção pode mexer SÓ no campo `bloqueio`
+      // (bloqueio/liberação automática ao abrir/finalizar Ordem de Serviço)
+      allow update: if temPermissao('frota.editar')
+                    || ( (temPermissao('manutencao.editar') || temPermissao('manutencao.criar'))
+                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bloqueio']) );
       allow delete: if temPermissao('frota.excluir');
     }
 
@@ -216,6 +220,22 @@ service cloud.firestore {
     // Ordens de Serviço (manutenção)
     match /ordens_servico/{id} {
       allow read:   if temPermissao('manutencao.ver');
+      allow create: if temPermissao('manutencao.criar') || isAtivo();
+      allow update: if temPermissao('manutencao.editar') || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Lançamento de OS (registro de serviço/custo — não bloqueia veículo)
+    match /lancamentos_os/{id} {
+      allow read:   if temPermissao('manutencao.ver');
+      allow create: if temPermissao('manutencao.criar') || isAtivo();
+      allow update: if temPermissao('manutencao.editar') || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Catálogo de serviços/peças (cadastro inline no lançamento de OS)
+    match /itens_manutencao/{id} {
+      allow read:   if isAtivo();
       allow create: if temPermissao('manutencao.criar') || isAtivo();
       allow update: if temPermissao('manutencao.editar') || isSuperAdmin();
       allow delete: if isSuperAdmin();

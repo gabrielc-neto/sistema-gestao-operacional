@@ -17,5 +17,10 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Contextos exportam Provider + hook no mesmo arquivo (padrão do projeto).
+      // Só afeta o Fast Refresh em dev, não o runtime. Desligado conscientemente.
+      'react-refresh/only-export-components': 'off',
+    },
   },
 ])

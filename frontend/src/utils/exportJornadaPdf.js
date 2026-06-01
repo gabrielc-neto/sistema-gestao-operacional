@@ -27,10 +27,10 @@ function escapeHtml(s) {
 function rowsHtml(linhas, ehPeriodo) {
   return linhas.map(j => {
     const placas = j.placas.map(p => `<span style="background:#e0f2fe;color:#075985;padding:1px 4px;border-radius:3px;margin-right:2px;font-size:9px;font-family:monospace">${escapeHtml(p)}</span>`).join("");
-    const danger = c => `color:#dc2626;font-weight:700`;
-    const warn   = c => `color:#ea580c;font-weight:700`;
-    const ok     = c => `color:#0f172a;font-weight:600`;
-    const dim    = c => `color:#94a3b8`;
+    const danger = () => `color:#dc2626;font-weight:700`;
+    const warn   = () => `color:#ea580c;font-weight:700`;
+    const ok     = () => `color:#0f172a;font-weight:600`;
+    const dim    = () => `color:#94a3b8`;
     const totalSt = !ehPeriodo && j.totalAtivoMin > 10*60 ? danger() : (!ehPeriodo && j.totalAtivoMin > 8*60 ? warn() : ok());
     const refSt   = !ehPeriodo && j.refeicaoMin > 0 && j.refeicaoMin < 60 ? danger() : (j.refeicaoMin > 0 ? ok() : dim());
     const ex50St  = j.extra50Min > 0 ? warn() : dim();

@@ -6,6 +6,17 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // Libera qualquer subdomínio do Cloudflare Quick Tunnel (muda a cada reinício).
+    allowedHosts: ['.trycloudflare.com'],
+    proxy: {
+      // Encaminha as chamadas das Cloud Functions pro emulator local.
+      // Permite que o Rastreamento (dados SASCAR) funcione via Cloudflare Tunnel,
+      // já que o emulator (5001) não é exposto e o front roteia pela mesma origem.
+      '/pontual-logistica': {
+        target: 'http://127.0.0.1:5001',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     rollupOptions: {
