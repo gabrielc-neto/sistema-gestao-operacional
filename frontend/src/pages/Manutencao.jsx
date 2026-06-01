@@ -58,7 +58,10 @@ const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", o
 
 // Lançamento de OS — registro de serviço/custo (NÃO bloqueia o veículo)
 // Sugestões iniciais do "Tipo de lançamento" (campo é cadastrável — aceita novos)
-const TIPO_LANCAMENTO_SUGEST = ["Elétrico", "Motor", "Inspeção"];
+const TIPO_LANCAMENTO_SUGEST = [
+  "Estoque", "Peças", "Manutenção", "Pneus", "Socorro", "Lavagem",
+  "Sistema", "Contrato", "Documentação", "Elétrico", "Motor", "Inspeção"
+];
 // Cabeçalho do lançamento (os serviços/peças ficam na lista `itens`)
 const EMPTY_LANC = {
   tipoLancamento: "",
@@ -177,6 +180,292 @@ function osLimiteEdicao(os) {
   const t = new Date(base).getTime();
   if (!Number.isFinite(t)) return null;
   return new Date(t + OS_EDIT_WINDOW_MS).toISOString();
+}
+
+// ── Dashboard de Custos da aba Lançamento ─────────────────────────────────
+const PERIODOS_LANC = [
+  { key: "mes",       label: "Este mês" },
+  { key: "mes_ant",   label: "Mês passado" },
+  { key: "ano",       label: "Este ano" },
+  { key: "12meses",   label: "Últimos 12 meses" },
+  { key: "tudo",      label: "Tudo" },
+  { key: "custom",    label: "Personalizado" },
+];
+
+// Paleta cíclica para colorir categorias do ranking
+const PALETA_CAT = ["#1d4ed8","#15803d","#b45309","#dc2626","#7c3aed","#0891b2","#db2777","#65a30d","#c2410c","#0284c7","#9333ea","#059669"];
+
+function inicioPeriodo(key, agora, customIni) {
+  const y = agora.getFullYear();
+  const m = agora.getMonth();
+  if (key === "mes")      return new Date(y, m, 1).getTime();
+  if (key === "mes_ant")  return new Date(y, m - 1, 1).getTime();
+  if (key === "ano")      return new Date(y, 0, 1).getTime();
+  if (key === "12meses")  return new Date(y, m - 11, 1).getTime();
+  if (key === "custom" && customIni) {
+    const t = new Date(`${customIni}T00:00:00`).getTime();
+    return Number.isFinite(t) ? t : 0;
+  }
+  return 0;
+}
+function fimPeriodo(key, agora, customFim) {
+  const y = agora.getFullYear();
+  const m = agora.getMonth();
+  if (key === "mes_ant") return new Date(y, m, 1).getTime() - 1;
+  if (key === "custom" && customFim) {
+    const t = new Date(`${customFim}T23:59:59`).getTime();
+    return Number.isFinite(t) ? t : agora.getTime();
+  }
+  return agora.getTime();
+}
+function fmtBRLcurto(n) {
+  const v = Number(n) || 0;
+  if (v >= 1000000) return `R$ ${(v / 1000000).toFixed(1).replace(".", ",")}M`;
+  if (v >= 1000)    return `R$ ${(v / 1000).toFixed(1).replace(".", ",")}k`;
+  return (v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+function nomeMes(m) {
+  return ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][m];
+}
+
+function DashboardCustos({ lancamentos, fmtBRLfn }) {
+  const [periodo, setPeriodo] = useState("ano");
+  const [catSelecionada, setCatSelecionada] = useState(null); // null = todas no grafico
+  const [customIni, setCustomIni] = useState("");
+  const [customFim, setCustomFim] = useState("");
+
+  const { filtrados, totalGeral, ranking, mediaMes, mesesSerie, maxMes } = useMemo(() => {
+    const agora = new Date();
+    const ini = inicioPeriodo(periodo, agora, customIni);
+    const fim = fimPeriodo(periodo, agora, customFim);
+
+    const filtrados = (lancamentos || []).filter(l => {
+      const t = new Date(l.criadoEm || l.dataHora).getTime();
+      return Number.isFinite(t) && t >= ini && t <= fim;
+    });
+
+    const totalGeral = filtrados.reduce((s, l) => s + (Number(l.valorTotal) || 0), 0);
+    const porCategoria = {};
+    for (const l of filtrados) {
+      const cat = (l.tipoLancamento || "Sem categoria").trim() || "Sem categoria";
+      porCategoria[cat] = (porCategoria[cat] || 0) + (Number(l.valorTotal) || 0);
+    }
+    const ranking = Object.entries(porCategoria)
+      .map(([nome, valor]) => ({ nome, valor, pct: totalGeral > 0 ? (valor / totalGeral) * 100 : 0 }))
+      .sort((a, b) => b.valor - a.valor);
+
+    let mesesNoPeriodo;
+    if (periodo === "mes" || periodo === "mes_ant") mesesNoPeriodo = 1;
+    else if (periodo === "ano") mesesNoPeriodo = agora.getMonth() + 1;
+    else if (periodo === "12meses") mesesNoPeriodo = 12;
+    else if (filtrados.length === 0) mesesNoPeriodo = 1;
+    else {
+      const ts = filtrados.map(l => new Date(l.criadoEm || l.dataHora).getTime()).filter(Number.isFinite);
+      const minT = Math.min(...ts);
+      const dM = (agora.getTime() - minT) / (1000 * 60 * 60 * 24 * 30.4);
+      mesesNoPeriodo = Math.max(1, Math.round(dM));
+    }
+    const mediaMes = totalGeral / mesesNoPeriodo;
+
+    const N_MESES = periodo === "mes" || periodo === "mes_ant" ? 1 : 12;
+    const mesesSerie = [];
+    for (let i = N_MESES - 1; i >= 0; i--) {
+      const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
+      mesesSerie.push({
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        label: nomeMes(d.getMonth()),
+        ano: d.getFullYear(),
+        mesIdx: d.getMonth(),
+        valor: 0,
+      });
+    }
+    for (const l of filtrados) {
+      if (catSelecionada && (l.tipoLancamento || "Sem categoria") !== catSelecionada) continue;
+      const t = new Date(l.criadoEm || l.dataHora);
+      if (!Number.isFinite(t.getTime())) continue;
+      const k = `${t.getFullYear()}-${t.getMonth()}`;
+      const slot = mesesSerie.find(x => x.key === k);
+      if (slot) slot.valor += (Number(l.valorTotal) || 0);
+    }
+    const maxMes = Math.max(1, ...mesesSerie.map(m => m.valor));
+
+    return { filtrados, totalGeral, ranking, mediaMes, mesesSerie, maxMes };
+  }, [lancamentos, periodo, catSelecionada, customIni, customFim]);
+
+  // Dimensões SVG do gráfico
+  const W = 720, H = 220, padL = 50, padR = 10, padT = 10, padB = 36;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const barW = Math.min(46, innerW / mesesSerie.length - 8);
+  const gap = (innerW - barW * mesesSerie.length) / Math.max(1, mesesSerie.length);
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 14, padding: "1rem 1.25rem", marginBottom: "1rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" }}>
+      {/* Cabeçalho do dashboard */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+        <div>
+          <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: "1rem", fontWeight: 700 }} className="manut-display">Dashboard de custos</h2>
+          <p style={{ margin: "2px 0 0 0", fontSize: ".75rem", color: "#64748b" }}>
+            {filtrados.length} lançamento{filtrados.length === 1 ? "" : "s"} no período selecionado
+          </p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+          <div style={{ display: "flex", gap: 4, padding: 4, background: "#f1f5f9", borderRadius: 10, flexWrap: "wrap" }}>
+            {PERIODOS_LANC.map(p => (
+              <button key={p.key} type="button" onClick={() => setPeriodo(p.key)}
+                style={{ padding: "5px 12px", borderRadius: 7, border: "none", fontSize: ".78rem", fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                  background: periodo === p.key ? "#1a3a5c" : "transparent",
+                  color: periodo === p.key ? "#fff" : "#64748b",
+                }}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+          {periodo === "custom" && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".74rem", fontWeight: 600, color: "#64748b" }}>
+                De:
+                <input type="date" value={customIni} onChange={e => setCustomIni(e.target.value)}
+                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: ".78rem", fontFamily: "inherit" }}
+                />
+              </label>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".74rem", fontWeight: 600, color: "#64748b" }}>
+                Até:
+                <input type="date" value={customFim} onChange={e => setCustomFim(e.target.value)}
+                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: ".78rem", fontFamily: "inherit" }}
+                />
+              </label>
+              {(customIni || customFim) && (
+                <button type="button" onClick={() => { setCustomIni(""); setCustomFim(""); }}
+                  style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #cbd5e1", background: "transparent", fontSize: ".72rem", color: "#64748b", cursor: "pointer", fontFamily: "inherit" }}>
+                  Limpar
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* KPIs principais */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 16 }}>
+        <div style={{ padding: "14px 16px", borderRadius: 12, background: "linear-gradient(135deg, #1a3a5c, #234775)", color: "#fff" }}>
+          <div style={{ fontSize: ".7rem", fontWeight: 700, opacity: .75, textTransform: "uppercase", letterSpacing: ".04em" }}>Total gasto</div>
+          <div style={{ fontSize: "1.6rem", fontWeight: 800, marginTop: 4, lineHeight: 1 }} className="manut-display">{fmtBRLfn(totalGeral)}</div>
+        </div>
+        <div style={{ padding: "14px 16px", borderRadius: 12, background: "#f0f9ff", border: "1px solid #bae6fd" }}>
+          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "#0369a1", textTransform: "uppercase", letterSpacing: ".04em" }}>Categorias</div>
+          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0c4a6e", marginTop: 4, lineHeight: 1 }} className="manut-display">{ranking.length}</div>
+        </div>
+        <div style={{ padding: "14px 16px", borderRadius: 12, background: "#f0fdf4", border: "1px solid #86efac" }}>
+          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "#15803d", textTransform: "uppercase", letterSpacing: ".04em" }}>Média / mês</div>
+          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#14532d", marginTop: 4, lineHeight: 1 }} className="manut-display">{fmtBRLcurto(mediaMes)}</div>
+        </div>
+        <div style={{ padding: "14px 16px", borderRadius: 12, background: "#fffbeb", border: "1px solid #fcd34d" }}>
+          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "#b45309", textTransform: "uppercase", letterSpacing: ".04em" }}>Lançamentos</div>
+          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#78350f", marginTop: 4, lineHeight: 1 }} className="manut-display">{filtrados.length}</div>
+        </div>
+      </div>
+
+      {/* Ranking por categoria — barras horizontais */}
+      <div style={{ marginBottom: 18 }}>
+        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "#1e293b", textTransform: "uppercase", letterSpacing: ".04em" }}>Gastos por categoria</h3>
+        {ranking.length === 0 ? (
+          <p style={{ fontSize: ".82rem", color: "#94a3b8", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {ranking.map((r, i) => {
+              const cor = PALETA_CAT[i % PALETA_CAT.length];
+              const ativo = catSelecionada === r.nome;
+              return (
+                <div
+                  key={r.nome}
+                  onClick={() => setCatSelecionada(catSelecionada === r.nome ? null : r.nome)}
+                  title="Clique para filtrar o gráfico mês a mês"
+                  style={{ cursor: "pointer", padding: "6px 8px", borderRadius: 8, background: ativo ? "#f1f5f9" : "transparent", transition: "background .15s" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, fontSize: ".82rem" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#1e293b" }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 3, background: cor }} />
+                      {r.nome}
+                    </span>
+                    <span style={{ fontWeight: 700, color: cor }} className="manut-display">
+                      {fmtBRLfn(r.valor)} <span style={{ color: "#94a3b8", fontWeight: 600, fontSize: ".72rem" }}>· {r.pct.toFixed(1)}%</span>
+                    </span>
+                  </div>
+                  <div style={{ height: 8, background: "#f1f5f9", borderRadius: 6, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${Math.max(2, r.pct)}%`, background: cor, transition: "width .3s ease" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Gráfico de barras mês a mês */}
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <h3 style={{ margin: 0, fontSize: ".82rem", fontWeight: 700, color: "#1e293b", textTransform: "uppercase", letterSpacing: ".04em" }}>
+            Evolução mês a mês {catSelecionada && <span style={{ color: "#1d4ed8" }}>· {catSelecionada}</span>}
+          </h3>
+          {catSelecionada && (
+            <button type="button" onClick={() => setCatSelecionada(null)} style={{ fontSize: ".72rem", color: "#64748b", border: "1px solid #cbd5e1", background: "transparent", padding: "3px 8px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit" }}>
+              Ver tudo ✕
+            </button>
+          )}
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", minWidth: 480 }}>
+            {/* Linhas de grade horizontais */}
+            {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
+              const y = padT + innerH * (1 - p);
+              return (
+                <g key={i}>
+                  <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#e2e8f0" strokeWidth="1" />
+                  <text x={padL - 6} y={y + 4} fontSize="10" fill="#94a3b8" textAnchor="end" fontFamily="Manrope, sans-serif">
+                    {fmtBRLcurto(maxMes * p).replace("R$ ", "")}
+                  </text>
+                </g>
+              );
+            })}
+            {/* Barras */}
+            {mesesSerie.map((m, i) => {
+              const h = (m.valor / maxMes) * innerH;
+              const x = padL + i * (barW + gap) + gap / 2;
+              const y = padT + innerH - h;
+              return (
+                <g key={m.key}>
+                  {h > 0 && (
+                    <rect x={x} y={y} width={barW} height={h} fill="#1a3a5c" rx="3">
+                      <title>{`${m.label}/${String(m.ano).slice(2)}: ${fmtBRLfn(m.valor)}`}</title>
+                    </rect>
+                  )}
+                  {h === 0 && (
+                    <rect x={x} y={padT + innerH - 2} width={barW} height={2} fill="#e2e8f0" rx="1" />
+                  )}
+                  {/* Valor acima da barra (se couber) */}
+                  {h > 30 && (
+                    <text x={x + barW / 2} y={y - 4} fontSize="9" fill="#1a3a5c" textAnchor="middle" fontWeight="700" fontFamily="Manrope, sans-serif">
+                      {fmtBRLcurto(m.valor).replace("R$ ", "")}
+                    </text>
+                  )}
+                  {/* Mês */}
+                  <text x={x + barW / 2} y={padT + innerH + 14} fontSize="10" fill="#64748b" textAnchor="middle" fontWeight="600" fontFamily="Manrope, sans-serif">
+                    {m.label}
+                  </text>
+                  {(m.mesIdx === 0 || i === 0) && (
+                    <text x={x + barW / 2} y={padT + innerH + 26} fontSize="9" fill="#94a3b8" textAnchor="middle" fontFamily="Manrope, sans-serif">
+                      {m.ano}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Ícones SVG inline (estilo lucide) ──────────────────────────────────────
@@ -1509,6 +1798,9 @@ export default function Manutencao() {
       {/* ── ABA: LANÇAMENTO DE OS (registro de serviço/custo) ─────────── */}
       {aba === "lancamento" && (
         <main style={s.main} className="pg-body">
+          {/* Dashboard de custos (visão diretoria) */}
+          <DashboardCustos lancamentos={lancamentos} fmtBRLfn={fmtBRL} />
+
           {/* Formulário de novo lançamento */}
           <div style={{ background: "#fff", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <h2 style={{ margin: "0 0 0.25rem 0", color: "#1a3a5c", fontSize: "1.05rem" }}>Lançamento de OS</h2>
