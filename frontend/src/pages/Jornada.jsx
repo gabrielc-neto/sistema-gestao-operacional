@@ -58,6 +58,38 @@ function minutosDesdeBRT(horaStr) {
   return Math.max(0, Math.round((nowBRT - evMs) / 60000));
 }
 
+// Maior gap (em minutos) entre dois eventos de "Dirigindo" consecutivos sem
+// nenhuma macro intermediária (pausa/refeição/parada).
+function maiorGapSemMacro(timeline) {
+  if (!Array.isArray(timeline) || timeline.length < 2) return 0;
+  let maxGap = 0;
+  for (let i = 0; i < timeline.length - 1; i++) {
+    const a = timeline[i];
+    const b = timeline[i + 1];
+    const dA = (a.descricao || a.tipo || "").toLowerCase();
+    const dB = (b.descricao || b.tipo || "").toLowerCase();
+    if (!dA.includes("dirig") || !dB.includes("dirig")) continue;
+    const tA = new Date(a.fim || a.inicio).getTime();
+    const tB = new Date(b.inicio).getTime();
+    if (!Number.isFinite(tA) || !Number.isFinite(tB)) continue;
+    const gap = (tB - tA) / 60000;
+    if (gap > maxGap) maxGap = gap;
+  }
+  return maxGap;
+}
+
+// Avalia os 3 alertas novos para uma jornada (>8h, parado >7h, sem macro >30min)
+function alertasDaJornada(j) {
+  const semMacroMin = maiorGapSemMacro(j.timeline);
+  const ultimoMin = minutosDesdeBRT(j.fim);
+  return {
+    parado7h:    ultimoMin != null && ultimoMin > 420 && j.encerrouJornada !== true,
+    semMacro30:  semMacroMin >= 30,
+    semMacroMin,
+    ultimoMin,
+  };
+}
+
 function fmtDuracaoMin(min) {
   if (min == null) return "—";
   const h = Math.floor(min / 60), m = min % 60;
@@ -133,6 +165,8 @@ export default function Jornada() {
   const [filtroSemPausa, setFiltroSemPausa] = useState(false);
   const [filtroExtra, setFiltroExtra] = useState(false);
   const [filtroSemInfracao, setFiltroSemInfracao] = useState(false);
+  const [filtroParado7h,   setFiltroParado7h]   = useState(false);
+  const [filtroSemMacro30, setFiltroSemMacro30] = useState(false);
   const [ciclosExpandidos, setCiclosExpandidos] = useState({}); // { idMotorista: true }
   const [trajetoExpandido, setTrajetoExpandido] = useState({}); // { idMotorista: true }
 
@@ -155,6 +189,9 @@ export default function Jornada() {
       if (filtroEncerrou && j.encerrouJornada !== true) return false;
       if (filtroSemPausa && j.pausaDiariaSuficiente !== false) return false;
       if (filtroExtra && !(j.extra50Min > 0 || j.extra100Min > 0)) return false;
+      const al = alertasDaJornada(j);
+      if (filtroParado7h   && !al.parado7h)   return false;
+      if (filtroSemMacro30 && !al.semMacro30) return false;
       if (termo) {
         const nome = (j.nomeMotorista || "").toUpperCase();
         const placas = j.placas.join(",").toUpperCase();
@@ -162,7 +199,7 @@ export default function Jornada() {
       }
       return true;
     });
-  }, [linhas, busca, filtroInfracao, filtroNaoEncerrou, filtroEncerrou, filtroSemPausa, filtroExtra]);
+  }, [linhas, busca, filtroInfracao, filtroSemInfracao, filtroNaoEncerrou, filtroEncerrou, filtroSemPausa, filtroExtra, filtroParado7h, filtroSemMacro30]);
 
   // Lista de quem NÃO encerrou a jornada (só vista diária), ordenada por mais tempo aberta.
   // Vira a "worklist" do despachante pra cobrar o motorista de bater Encerrar no tablet.
@@ -178,6 +215,7 @@ export default function Jornada() {
     let jornadaSum = 0, extra50Sum = 0, extra100Sum = 0, infracoes = 0;
     let comExtra = 0, comInfracao = 0, naoEncerraram = 0, encerraram = 0;
     let semPausa30 = 0;
+    let parado7h = 0, semMacro30 = 0;
     for (const j of linhas) {
       jornadaSum += j.totalAtivoMin;
       extra50Sum += j.extra50Min;
@@ -187,6 +225,9 @@ export default function Jornada() {
       if (j.encerrouJornada === false) naoEncerraram++;
       if (j.encerrouJornada === true) encerraram++;
       if (j.pausaDiariaSuficiente === false) semPausa30++;
+      const al = alertasDaJornada(j);
+      if (al.parado7h)   parado7h++;
+      if (al.semMacro30) semMacro30++;
     }
     return {
       motoristas: linhas.length,
@@ -200,6 +241,8 @@ export default function Jornada() {
       encerraram,
       semPausa30,
       semInfracao: linhas.length - comInfracao,
+      parado7h,
+      semMacro30,
     };
   }, [linhas]);
 
@@ -416,6 +459,24 @@ export default function Jornada() {
                 onClick={() => setFiltroSemPausa(v => !v)}
                 active={filtroSemPausa}
               />
+              <Kpi
+                label="Parado +7h"
+                value={totais.parado7h}
+                color={totais.parado7h > 0 ? "#f59e0b" : "#94a3b8"}
+                icon={<AlertTriangle size={16} />}
+                sub={totais.parado7h > 0 ? "Sem dirigir há +7h" : "Ninguém parado +7h"}
+                onClick={() => setFiltroParado7h(v => !v)}
+                active={filtroParado7h}
+              />
+              <Kpi
+                label="Sem macro +30min"
+                value={totais.semMacro30}
+                color={totais.semMacro30 > 0 ? "#f59e0b" : "#94a3b8"}
+                icon={<MapPin size={16} />}
+                sub={totais.semMacro30 > 0 ? "Dirigiu sem macro entre os trechos" : "Macros em ordem"}
+                onClick={() => setFiltroSemMacro30(v => !v)}
+                active={filtroSemMacro30}
+              />
             </>
           )}
         </div>
@@ -464,6 +525,16 @@ export default function Jornada() {
           {filtroExtra && (
             <button onClick={() => setFiltroExtra(false)} style={{ ...btnGhost, background: "#ffedd5", color: "#9a3412", borderColor: "#fed7aa" }}>
               <X size={14} /> Limpar filtro horas extras
+            </button>
+          )}
+          {filtroParado7h && (
+            <button onClick={() => setFiltroParado7h(false)} style={{ ...btnGhost, background: "#fef3c7", color: "#92400e", borderColor: "#fcd34d" }}>
+              <X size={14} /> Limpar filtro parado +7h
+            </button>
+          )}
+          {filtroSemMacro30 && (
+            <button onClick={() => setFiltroSemMacro30(false)} style={{ ...btnGhost, background: "#fef3c7", color: "#92400e", borderColor: "#fcd34d" }}>
+              <X size={14} /> Limpar filtro sem macro +30min
             </button>
           )}
           <div style={{ marginLeft: "auto", fontSize: ".75rem", color: "#64748b", display: "flex", alignItems: "center", gap: 6 }}>
