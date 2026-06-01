@@ -148,6 +148,7 @@ VIAGEM
 3. Ordem de carregamento bloqueia veículo para outros despachantes
 4. Litros entregues devem ser conciliados com NF-e emitida
 5. Carga de retorno: caminhão vazio + posição SASCAR → nova ordem possível
+6. **Ordem de Serviço (manutenção) bloqueia o veículo automaticamente** ao ser aberta — veículo bloqueado não gera OC. A liberação só ocorre ao **finalizar a OS** (e desde que não haja outra OS aberta no mesmo veículo). A OS só pode ser **editada por 24h** após a abertura; depois disso trava. O bloqueio reusa o campo `veiculos.bloqueio.ativo` (origem `"os"`), o mesmo que a tela de OC já valida.
 
 ## Status Atual — 2026-05-07
 

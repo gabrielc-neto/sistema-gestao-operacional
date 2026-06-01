@@ -85,6 +85,7 @@ export default function Motoristas() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- carrega ao montar; loader reusado no refresh
   useEffect(() => { carregar(); }, []);
 
   // ── alertas vencimentos ───────────────────────────────────────────────────
@@ -185,7 +186,7 @@ export default function Motoristas() {
     try {
       await deleteDoc(doc(db, "motoristas", id));
       setMotoristas((prev) => prev.filter((m) => m.id !== id));
-    } catch (e) {
+    } catch {
       alert("Erro ao excluir.");
     }
   }
@@ -347,7 +348,7 @@ export default function Motoristas() {
             <form onSubmit={salvar} style={s.form}>
               {/* Nome */}
               <label style={s.label}>
-                Nome <span style={s.required}>*</span>
+                Nome
                 <input
                   style={s.fieldInput}
                   value={form.nome}

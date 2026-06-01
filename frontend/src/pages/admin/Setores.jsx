@@ -8,7 +8,6 @@ import {
   collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../firebase/config";
-import { useRBAC } from "../../rbac/RBACContext";
 import ProtegerPor from "../../rbac/ProtegerPor";
 import LogoPontual from "../../components/LogoPontual";
 
@@ -16,7 +15,6 @@ const VAZIO = { nome: "", descricao: "", status: "ativo" };
 
 export default function Setores() {
   const navigate = useNavigate();
-  const { temPermissao } = useRBAC();
 
   const [setores, setSetores] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +37,7 @@ export default function Setores() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- carrega ao montar; loader reusado no refresh
   useEffect(() => { carregar(); }, []);
 
   function abrirNovo() {

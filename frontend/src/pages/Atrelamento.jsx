@@ -480,11 +480,11 @@ export default function Atrelamento() {
                   <input name="num" value={form.num} readOnly style={{ ...inputStyle, background: "#f1f5f9" }} />
                 </div>
                 <div style={fieldGroup}>
-                  <label style={labelStyle}>Data *</label>
+                  <label style={labelStyle}>Data</label>
                   <input name="data" type="date" value={form.data} onChange={handleChange} required style={inputStyle} />
                 </div>
                 <div style={fieldGroup}>
-                  <label style={labelStyle}>Hora *</label>
+                  <label style={labelStyle}>Hora</label>
                   <input name="hora" type="time" value={form.hora} onChange={handleChange} required style={inputStyle} />
                 </div>
                 <div style={fieldGroup}>
@@ -496,13 +496,13 @@ export default function Atrelamento() {
               {/* Linha 2 */}
               <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={fieldGroup}>
-                  <label style={labelStyle}>Operação *</label>
+                  <label style={labelStyle}>Operação</label>
                   <select name="op" value={form.op} onChange={handleChange} required style={inputStyle}>
                     {OPERACOES.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </div>
                 <div style={fieldGroup}>
-                  <label style={labelStyle}>Status *</label>
+                  <label style={labelStyle}>Status</label>
                   <select name="status" value={form.status} onChange={handleChange} required style={inputStyle}>
                     {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -512,7 +512,7 @@ export default function Atrelamento() {
               {/* Linha 3 */}
               <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={fieldGroup}>
-                  <label style={labelStyle}>Cavalo (Placa) *</label>
+                  <label style={labelStyle}>Cavalo (Placa)</label>
                   <select name="cavalo" value={form.cavalo} onChange={handleChange} required style={inputStyle}>
                     <option value="">Selecione o cavalo...</option>
                     {veiculos.map(v => (
@@ -521,7 +521,7 @@ export default function Atrelamento() {
                   </select>
                 </div>
                 <div style={fieldGroup}>
-                  <label style={labelStyle}>Motorista *</label>
+                  <label style={labelStyle}>Motorista</label>
                   <select name="motorista" value={form.motorista} onChange={handleChange} required style={inputStyle}>
                     <option value="">Selecione o motorista...</option>
                     {motoristas.map(m => (
@@ -534,7 +534,7 @@ export default function Atrelamento() {
               {/* Carreta 1 */}
               <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={fieldGroup}>
-                  <label style={labelStyle}>Placa Carreta 1 *</label>
+                  <label style={labelStyle}>Placa Carreta 1</label>
                   <input name="c1" value={form.c1} onChange={handleChange} placeholder="EX: ABC1234" required style={inputStyle} maxLength={10} />
                 </div>
                 <div style={fieldGroup}>

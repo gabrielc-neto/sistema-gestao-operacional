@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Polygon, Polyline, Marker, Circle, useMapEvents, useMap, Tooltip, LayersControl } from "react-leaflet";
 import { divIcon } from "leaflet";
-import { ArrowLeft, Plus, Trash2, X, Check, Search, Undo2, MapPin, Locate, Hexagon, Circle as CircleIcon, Pencil, Save } from "lucide-react";
+import { ArrowLeft, Trash2, X, Check, Search, Undo2, MapPin, Locate, Hexagon, Circle as CircleIcon, Pencil, Save } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase/config";

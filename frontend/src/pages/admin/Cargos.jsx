@@ -51,6 +51,7 @@ export default function Cargos() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- carrega ao montar; loader reusado no refresh
   useEffect(() => { carregar(); }, []);
 
   const selecionado = useMemo(
@@ -59,6 +60,7 @@ export default function Cargos() {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reseta cópia editável ao trocar de cargo
     setPermsLocal(Array.isArray(selecionado?.permissoes) ? [...selecionado.permissoes] : []);
   }, [selecionadoId, selecionado?.permissoes]);
 
@@ -262,8 +264,6 @@ export default function Cargos() {
 
                 <div style={s.permGrid}>
                   {PERMISSOES_POR_MODULO.map(grupo => {
-                    const todasMarcadas = grupo.itens.every(p => permsLocal.includes(p.nome));
-                    const algumaMarcada = grupo.itens.some(p => permsLocal.includes(p.nome));
                     return (
                       <div key={grupo.modulo.id} style={s.permGrupo}>
                         <div style={s.permGrupoHeader}>

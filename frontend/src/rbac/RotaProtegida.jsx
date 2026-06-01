@@ -29,7 +29,7 @@ export default function RotaProtegida({
     );
   }
 
-  let permitido = false;
+  let permitido;
   if (permissao)     permitido = temPermissao(permissao);
   else if (algumaDe) permitido = temAlguma(algumaDe);
   else if (todasDe)  permitido = temTodas(todasDe);
