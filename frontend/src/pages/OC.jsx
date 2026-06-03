@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   collection, getDocs, addDoc, deleteDoc,
-  doc, query, orderBy, where,
+  doc, query, orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
@@ -77,14 +77,16 @@ export default function OC() {
       try {
         const [snapV, snapM, snapO] = await Promise.all([
           getDocs(query(collection(db, "veiculos"),   orderBy("placa"))),
-          getDocs(query(collection(db, "motoristas"), where("status", "==", "ativo"), orderBy("nome"))),
+          getDocs(query(collection(db, "motoristas"), orderBy("nome"))),
           getDocs(query(collection(db, "ordens_carregamento"), orderBy("data", "desc"))),
         ]);
 
         const vs = snapV.docs
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(v => v.tipo !== "carreta" && v.status !== "inativo");
-        const ms = snapM.docs.map(d => ({ id: d.id, ...d.data() }));
+        const ms = snapM.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(m => m.status === "ativo");
         const os = snapO.docs.map(d => ({ id: d.id, ...d.data() }));
 
         setVeiculos(vs);
