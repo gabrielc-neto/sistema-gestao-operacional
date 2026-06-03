@@ -1,9 +1,10 @@
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap, LayersControl } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap, LayersControl, Polyline, CircleMarker } from "react-leaflet";
 import { divIcon } from "leaflet";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import CercaEletronica, { areaDoPonto } from "./CercaEletronica";
 import { useCercas } from "../hooks/useCercas";
+import { buscarSugestoes, calcularRotaCaminhao, fmtDistancia, fmtDuracao } from "../utils/roteamento";
 
 // Distância em graus acima da qual consideramos "teleport" (≈ 5 km) — sem animar
 const TELEPORT_THRESHOLD_DEG = 0.045;
@@ -218,6 +219,40 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
     [posicoes]
   );
 
+  // Destinos definidos por veículo (ad-hoc — não persiste entre sessões).
+  // Map<placaNormalizada, { endereco, lat, lng, dist?, dur?, coords?, perfil?, loading?, erro? }>
+  const [destinos, setDestinos] = useState(() => new Map());
+
+  function definirDestino(p, dest) {
+    setDestinos(prev => {
+      const next = new Map(prev);
+      next.set(normPlaca(p.placa), { ...dest, loading: true, erro: null });
+      return next;
+    });
+    calcularRotaCaminhao(
+      { lat: p.latitude, lng: p.longitude },
+      { lat: dest.lat, lng: dest.lng }
+    )
+      .then(rota => setDestinos(prev => {
+        const next = new Map(prev);
+        next.set(normPlaca(p.placa), { ...dest, ...rota, loading: false, erro: null });
+        return next;
+      }))
+      .catch(err => setDestinos(prev => {
+        const next = new Map(prev);
+        next.set(normPlaca(p.placa), { ...dest, loading: false, erro: err.message || "falha ao calcular rota" });
+        return next;
+      }));
+  }
+
+  function limparDestino(p) {
+    setDestinos(prev => {
+      const next = new Map(prev);
+      next.delete(normPlaca(p.placa));
+      return next;
+    });
+  }
+
   // Chave que muda quando o conjunto filtrado muda (re-fit no mapa)
   const fitKey = useMemo(
     () => validas.map(p => p.placa || p.idVeiculo).sort().join(","),
@@ -301,6 +336,13 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
                   </a>
                 </div>
 
+                <PainelDestino
+                  posicao={p}
+                  destino={destinos.get(normPlaca(p.placa))}
+                  onDefinir={(d) => definirDestino(p, d)}
+                  onLimpar={() => limparDestino(p)}
+                />
+
                 {oc && (
                   <div style={{ marginTop: 10, padding: "8px 10px", background: "#f8fafc", borderLeft: "3px solid #d97706", borderRadius: 4 }}>
                     <div style={{ fontSize: ".72rem", color: "#854d0e", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em", marginBottom: 4 }}>
@@ -327,6 +369,36 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
             </Tooltip>
           </AnimatedTruckMarker>
         );
+        })}
+
+        {/* Rotas até destinos definidos por veículo */}
+        {Array.from(destinos.entries()).map(([placa, d]) => {
+          if (!d || !d.coords || !d.coords.length) return null;
+          return (
+            <Polyline
+              key={`rota-${placa}`}
+              positions={d.coords}
+              pathOptions={{ color: "#0284c7", weight: 4, opacity: 0.75, dashArray: "8 6" }}
+            />
+          );
+        })}
+        {Array.from(destinos.entries()).map(([placa, d]) => {
+          if (!d || d.lat == null || d.lng == null) return null;
+          return (
+            <CircleMarker
+              key={`dest-${placa}`}
+              center={[d.lat, d.lng]}
+              radius={7}
+              pathOptions={{ color: "#0284c7", fillColor: "#fff", fillOpacity: 1, weight: 3 }}
+            >
+              <Tooltip direction="top" offset={[0, -6]} opacity={0.95}>
+                <div style={{ fontSize: ".75rem" }}>
+                  <strong>Destino {placa}</strong>
+                  {d.dist != null && <div>{fmtDistancia(d.dist)} · {fmtDuracao(d.dur)}</div>}
+                </div>
+              </Tooltip>
+            </CircleMarker>
+          );
         })}
       </MapContainer>
 
@@ -473,6 +545,109 @@ function Row({ label, value, highlight, alert, extra }) {
         fontWeight: 600,
         color: alert ? "#dc2626" : highlight ? "#16a34a" : "#1a3a5c"
       }}>{value}</span>
+    </div>
+  );
+}
+
+/**
+ * Painel de "Definir destino" dentro do Popup do veículo.
+ * Faz autocomplete via Nominatim e dispara o cálculo de rota Valhalla (truck+hazmat).
+ */
+function PainelDestino({ posicao, destino, onDefinir, onLimpar }) {
+  const [q, setQ] = useState("");
+  const [sugest, setSugest] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [buscando, setBuscando] = useState(false);
+  const debounceRef = useRef(null);
+
+  function onChangeInput(v) {
+    setQ(v);
+    setBuscando(true);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const lista = await buscarSugestoes(v);
+        setSugest(lista);
+        setOpen(lista.length > 0);
+      } catch {
+        setSugest([]); setOpen(false);
+      } finally {
+        setBuscando(false);
+      }
+    }, 350);
+  }
+
+  function escolher(item) {
+    setQ(item.label);
+    setSugest([]);
+    setOpen(false);
+    onDefinir({ endereco: item.label, lat: item.lat, lng: item.lng });
+  }
+
+  const labelRotulo = { fontSize: ".7rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: ".03em", marginBottom: 4 };
+  const inputStyle = { width: "100%", padding: "6px 8px", border: "1px solid #cbd5e1", borderRadius: 5, fontSize: ".82rem", fontFamily: "inherit", outline: "none", boxSizing: "border-box" };
+  const sugStyle = { padding: "5px 8px", fontSize: ".78rem", cursor: "pointer", borderBottom: "1px solid #f1f5f9", color: "#1a3a5c" };
+
+  return (
+    <div style={{ marginTop: 10, padding: "8px 10px", background: "#f0f9ff", borderLeft: "3px solid #0284c7", borderRadius: 4 }}>
+      <div style={labelRotulo}>📍 Destino · ETA</div>
+
+      {destino ? (
+        <div>
+          <div style={{ fontSize: ".78rem", color: "#1a3a5c", lineHeight: 1.4, marginBottom: 6 }}>
+            <strong>Para:</strong> {destino.endereco}
+          </div>
+          {destino.loading && <div style={{ fontSize: ".78rem", color: "#64748b" }}>Calculando rota…</div>}
+          {destino.erro && <div style={{ fontSize: ".78rem", color: "#dc2626" }}>Erro: {destino.erro}</div>}
+          {!destino.loading && !destino.erro && destino.dist != null && (
+            <div style={{ display: "flex", gap: 10, fontSize: ".88rem", fontWeight: 700, color: "#0284c7", marginBottom: 4 }}>
+              <span>📏 {fmtDistancia(destino.dist)}</span>
+              <span>⏱ {fmtDuracao(destino.dur)}</span>
+            </div>
+          )}
+          {destino.perfil && (
+            <div style={{ fontSize: ".68rem", color: "#64748b", fontStyle: "italic" }}>{destino.perfil}</div>
+          )}
+          <button
+            onClick={() => { onLimpar(); setQ(""); }}
+            style={{ marginTop: 6, background: "transparent", border: "1px solid #cbd5e1", color: "#64748b", padding: "3px 10px", borderRadius: 4, fontSize: ".72rem", cursor: "pointer" }}
+          >
+            Limpar destino
+          </button>
+        </div>
+      ) : (
+        <div style={{ position: "relative" }}>
+          <input
+            type="text"
+            placeholder="Digite endereço, cidade ou CEP…"
+            value={q}
+            onChange={e => onChangeInput(e.target.value)}
+            onFocus={() => { if (sugest.length) setOpen(true); }}
+            onBlur={() => setTimeout(() => setOpen(false), 180)}
+            style={inputStyle}
+          />
+          {buscando && <div style={{ fontSize: ".7rem", color: "#94a3b8", marginTop: 3 }}>Buscando…</div>}
+          {open && sugest.length > 0 && (
+            <div style={{
+              position: "absolute", top: "100%", left: 0, right: 0, marginTop: 2,
+              background: "#fff", border: "1px solid #cbd5e1", borderRadius: 5,
+              maxHeight: 180, overflowY: "auto", zIndex: 1100, boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            }}>
+              {sugest.map((s, i) => (
+                <div
+                  key={`${s.lat},${s.lng},${i}`}
+                  onMouseDown={() => escolher(s)}
+                  style={sugStyle}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f0f9ff"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#fff"}
+                >
+                  {s.label}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
