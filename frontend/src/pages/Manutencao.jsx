@@ -56,7 +56,7 @@ const EMPTY_FORM = { data_realiz:"", venc:"", local:"", numero_doc:"", km_atual:
 // Abertura de OS — form vazio (bloqueia o veículo, NÃO tem custo)
 const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "" };
 
-// Lançamento de OS — registro de serviço/custo (NÃO bloqueia o veículo)
+// Lançamento de NF — registro de nota fiscal/custo (NÃO bloqueia o veículo)
 // Sugestões iniciais do "Tipo de lançamento" (campo é cadastrável — aceita novos)
 const TIPO_LANCAMENTO_SUGEST = [
   "Estoque", "Peças", "Manutenção", "Pneus", "Socorro", "Lavagem",
@@ -584,7 +584,7 @@ export default function Manutencao() {
   const [salvandoEdit,   setSalvandoEdit]   = useState(false);
   const [erroEdit,       setErroEdit]       = useState("");
   const [acaoOS,         setAcaoOS]         = useState(null); // id da OS em ação (finalizar)
-  // Lançamento de OS (registro de serviço/custo — NÃO bloqueia veículo)
+  // Lançamento de NF (registro de nota fiscal/custo — NÃO bloqueia veículo)
   const [lancamentos,     setLancamentos]     = useState([]);
   const [formLanc,        setFormLanc]        = useState({ ...EMPTY_LANC });
   const [lancItens,       setLancItens]       = useState([]);                 // itens do lançamento sendo criado
@@ -1056,7 +1056,7 @@ export default function Manutencao() {
     } catch { return iso; }
   }
 
-  // ── Lançamento de OS (registro de serviço/custo — NÃO bloqueia veículo) ──
+  // ── Lançamento de NF (registro de nota fiscal/custo — NÃO bloqueia veículo) ──
   function proximoNumeroLanc() {
     let maior = 0;
     for (const l of lancamentos) {
@@ -1307,11 +1307,11 @@ export default function Manutencao() {
           {alertaCount > 0 && <span style={s.tabBadge}>{alertaCount}</span>}
         </button>
         <button style={{ ...s.tab, ...(aba==="os" ? s.tabAtivo : {}) }} onClick={() => setAba("os")}>
-          Ordens de Serviço
+          Lançamento de OS
           {ordensServico.length > 0 && <span style={{ ...s.tabBadge, background:"#16a34a" }}>{ordensServico.length}</span>}
         </button>
         <button style={{ ...s.tab, ...(aba==="lancamento" ? s.tabAtivo : {}) }} onClick={() => setAba("lancamento")}>
-          Lançamento de OS
+          Lançamento de NF
           {lancamentos.length > 0 && <span style={{ ...s.tabBadge, background:"#4338ca" }}>{lancamentos.length}</span>}
         </button>
         <button style={{ ...s.tab, ...(aba==="cadastros" ? s.tabAtivo : {}) }} onClick={() => setAba("cadastros")}>
@@ -1795,7 +1795,7 @@ export default function Manutencao() {
         </main>
       )}
 
-      {/* ── ABA: LANÇAMENTO DE OS (registro de serviço/custo) ─────────── */}
+      {/* ── ABA: LANÇAMENTO DE NF (registro de nota fiscal/custo) ─────────── */}
       {aba === "lancamento" && (
         <main style={s.main} className="pg-body">
           {/* Dashboard de custos (visão diretoria) */}
@@ -1803,7 +1803,7 @@ export default function Manutencao() {
 
           {/* Formulário de novo lançamento */}
           <div style={{ background: "#fff", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ margin: "0 0 0.25rem 0", color: "#1a3a5c", fontSize: "1.05rem" }}>Lançamento de OS</h2>
+            <h2 style={{ margin: "0 0 0.25rem 0", color: "#1a3a5c", fontSize: "1.05rem" }}>Lançamento de NF</h2>
             <p style={{ margin: "0 0 0.75rem 0", fontSize: ".78rem", color: "#64748b" }}>Registro de serviço e custo. <strong>Não bloqueia o veículo.</strong></p>
             <form onSubmit={salvarLanc}>
               {/* Cabeçalho */}
@@ -2281,7 +2281,7 @@ export default function Manutencao() {
         </div>
       )}
 
-      {/* ── MODAL: EDITAR LANÇAMENTO DE OS ────────────────────────────── */}
+      {/* ── MODAL: EDITAR LANÇAMENTO DE NF ────────────────────────────── */}
       {editLanc && (
         <div style={s.overlay} className="modal-mobile-sheet-overlay" onClick={fecharEditLanc}>
           <div style={s.modal} className="modal-mobile-sheet" onClick={e => e.stopPropagation()}>
