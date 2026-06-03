@@ -55,6 +55,7 @@ const EMPTY_FORM = { data_realiz:"", venc:"", local:"", numero_doc:"", km_atual:
 
 // Abertura de OS — form vazio (bloqueia o veículo, NÃO tem custo)
 const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "" };
+const EMPTY_CONCLUSAO = { kmSaida: "", mecanico: "", oficina: "", servicoExecutado: "" };
 
 // Lançamento de NF — registro de nota fiscal/custo (NÃO bloqueia o veículo)
 // Sugestões iniciais do "Tipo de lançamento" (campo é cadastrável — aceita novos)
@@ -584,6 +585,11 @@ export default function Manutencao() {
   const [salvandoEdit,   setSalvandoEdit]   = useState(false);
   const [erroEdit,       setErroEdit]       = useState("");
   const [acaoOS,         setAcaoOS]         = useState(null); // id da OS em ação (finalizar)
+  // Conclusão de OS (Lançamento de OS — registra KM saída, mecânico, oficina, serviço executado)
+  const [concluindoOS,    setConcluindoOS]    = useState(null);
+  const [formConclusao,   setFormConclusao]   = useState({ ...EMPTY_CONCLUSAO });
+  const [erroConclusao,   setErroConclusao]   = useState("");
+  const [salvandoConclusao, setSalvandoConclusao] = useState(false);
   // Lançamento de NF (registro de nota fiscal/custo — NÃO bloqueia veículo)
   const [lancamentos,     setLancamentos]     = useState([]);
   const [formLanc,        setFormLanc]        = useState({ ...EMPTY_LANC });
@@ -961,6 +967,67 @@ export default function Manutencao() {
     }
   }
 
+  function abrirConclusaoOS(os) {
+    if (osStatus(os) === "finalizada") return;
+    setConcluindoOS(os);
+    setFormConclusao({
+      kmSaida: "",
+      mecanico: "",
+      oficina: "",
+      servicoExecutado: os.tipoServico || "",
+    });
+    setErroConclusao("");
+  }
+
+  function fecharConclusaoOS() {
+    setConcluindoOS(null);
+    setErroConclusao("");
+  }
+
+  async function salvarConclusaoOS(e) {
+    e.preventDefault();
+    if (!concluindoOS) return;
+    const os = concluindoOS;
+    const kmSaidaStr = String(formConclusao.kmSaida || "").replace(/\D/g, "");
+    if (!kmSaidaStr) { setErroConclusao("Informe o KM de saída."); return; }
+    if (os.hodometro != null && Number(kmSaidaStr) < Number(os.hodometro)) {
+      setErroConclusao(`KM de saída (${kmSaidaStr}) não pode ser menor que o KM de entrada (${os.hodometro}).`);
+      return;
+    }
+    if (!formConclusao.servicoExecutado.trim()) {
+      setErroConclusao("Descreva o serviço executado.");
+      return;
+    }
+    setSalvandoConclusao(true);
+    try {
+      const agora = new Date().toISOString();
+      const dados = {
+        status: "finalizada",
+        finalizadaEm: agora,
+        finalizadaPor: quemSou(),
+        kmSaida: Number(kmSaidaStr),
+        mecanico: formConclusao.mecanico.trim(),
+        oficina: formConclusao.oficina.trim(),
+        servicoExecutado: formConclusao.servicoExecutado.trim(),
+      };
+      await updateDoc(doc(db, "ordens_servico", os.id), dados);
+      setOrdensServico(prev => prev.map(o => o.id === os.id ? { ...o, ...dados } : o));
+      const veiculo = veiculoDaOS(os);
+      if (veiculo) {
+        try { await liberarVeiculoSePossivel(veiculo, os.id); }
+        catch (e2) {
+          console.warn("Falha ao liberar veículo:", e2);
+          alert("OS finalizada, mas não foi possível liberar o veículo automaticamente. Libere manualmente na tela Frota.");
+        }
+      }
+      fecharConclusaoOS();
+    } catch (e) {
+      setErroConclusao("Erro ao salvar: " + e.message);
+    } finally {
+      setSalvandoConclusao(false);
+    }
+  }
+
   function abrirEditOS(os) {
     if (!osEditavel(os)) return;
     setEditOS(os);
@@ -1307,8 +1374,11 @@ export default function Manutencao() {
           {alertaCount > 0 && <span style={s.tabBadge}>{alertaCount}</span>}
         </button>
         <button style={{ ...s.tab, ...(aba==="os" ? s.tabAtivo : {}) }} onClick={() => setAba("os")}>
-          Lançamento de OS
+          Abertura de OS
           {ordensServico.length > 0 && <span style={{ ...s.tabBadge, background:"#16a34a" }}>{ordensServico.length}</span>}
+        </button>
+        <button style={{ ...s.tab, ...(aba==="os_lanc" ? s.tabAtivo : {}) }} onClick={() => setAba("os_lanc")}>
+          Lançamento de OS
         </button>
         <button style={{ ...s.tab, ...(aba==="lancamento" ? s.tabAtivo : {}) }} onClick={() => setAba("lancamento")}>
           Lançamento de NF
@@ -1759,15 +1829,6 @@ export default function Manutencao() {
                       <td style={{ ...tdOS, maxWidth: 360, whiteSpace: "normal", color: "#475569" }}>{os.obs || "—"}</td>
                       <td style={tdOS}>
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                          {!finalizada && (
-                            <button
-                              onClick={() => finalizarOS(os)}
-                              disabled={acaoOS === os.id}
-                              style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5, opacity: acaoOS === os.id ? 0.6 : 1 }}
-                            >
-                              {acaoOS === os.id ? "..." : "Finalizar"}
-                            </button>
-                          )}
                           {editavel && (
                             <button
                               onClick={() => abrirEditOS(os)}
@@ -1788,6 +1849,67 @@ export default function Manutencao() {
                       </td>
                     </tr>
                   );})}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      )}
+
+      {/* ── ABA: LANÇAMENTO DE OS (conclusão — registra KM saída, mecânico, oficina, serviço executado) ── */}
+      {aba === "os_lanc" && (
+        <main style={s.main} className="pg-body">
+          <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
+              <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem" }}>
+                OSs abertas — registrar conclusão ({ordensServico.filter(o => osStatus(o) !== "finalizada").length})
+              </h2>
+              <p style={{ margin: "4px 0 0 0", fontSize: ".75rem", color: "#64748b" }}>
+                Concluir a OS registra KM de saída, mecânico, oficina e serviço executado, e libera o veículo.
+              </p>
+            </div>
+            <div style={{ overflowX: "auto" }} className="table-wrap">
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".88rem" }}>
+                <thead>
+                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                    <th style={thOS}>OS</th>
+                    <th style={thOS}>Abertura</th>
+                    <th style={thOS}>Placa</th>
+                    <th style={thOS}>Tipo</th>
+                    <th style={thOS}>Motorista</th>
+                    <th style={thOS}>KM entrada</th>
+                    <th style={thOS}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const abertas = ordensServico.filter(o => osStatus(o) !== "finalizada");
+                    if (abertas.length === 0) {
+                      return (
+                        <tr><td colSpan={7} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+                          Nenhuma OS aberta — todas finalizadas
+                        </td></tr>
+                      );
+                    }
+                    return abertas.map(os => (
+                      <tr key={os.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={tdOS}><strong style={{ color: "#1a3a5c" }}>{os.numero}</strong></td>
+                        <td style={tdOS}>{fmtDateTimeBR(os.dataHora)}</td>
+                        <td style={tdOS}><strong>{os.placa}</strong></td>
+                        <td style={tdOS}>{os.tipoServico}</td>
+                        <td style={tdOS}>{os.motoristaNome}</td>
+                        <td style={tdOS}>{os.hodometro != null ? os.hodometro : "—"}</td>
+                        <td style={tdOS}>
+                          <button
+                            onClick={() => abrirConclusaoOS(os)}
+                            style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
+                          >
+                            Concluir
+                          </button>
+                        </td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -2172,6 +2294,81 @@ export default function Manutencao() {
       )}
 
       {/* ── MODAL: EDITAR OS (até 24h) ────────────────────────────────── */}
+      {/* ── MODAL: CONCLUIR OS (registra KM saída + mecânico + oficina + serviço) ── */}
+      {concluindoOS && (
+        <div style={s.overlay} className="modal-mobile-sheet-overlay" onClick={fecharConclusaoOS}>
+          <div style={s.modal} className="modal-mobile-sheet" onClick={e => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <div>
+                <div style={s.modalTitulo}>Concluir {concluindoOS.numero}</div>
+                <div style={s.modalSubtitulo}>
+                  {concluindoOS.placa} · {concluindoOS.tipoServico}
+                  {concluindoOS.hodometro != null && ` · KM entrada: ${concluindoOS.hodometro}`}
+                </div>
+              </div>
+              <button style={s.closeBtn} onClick={fecharConclusaoOS}>✕</button>
+            </div>
+
+            <form onSubmit={salvarConclusaoOS} style={s.form}>
+              <label style={s.fieldLabel}>
+                KM de saída
+                <input
+                  type="number" min="0" step="1" inputMode="numeric"
+                  style={s.fieldInput}
+                  value={formConclusao.kmSaida}
+                  onChange={e => setFormConclusao({ ...formConclusao, kmSaida: e.target.value.replace(/\D/g, "") })}
+                  placeholder={concluindoOS.hodometro != null ? `≥ ${concluindoOS.hodometro}` : "Ex: 350500"}
+                  required
+                  autoFocus
+                />
+              </label>
+
+              <label style={s.fieldLabel}>
+                Mecânico / técnico
+                <input
+                  type="text"
+                  style={s.fieldInput}
+                  value={formConclusao.mecanico}
+                  onChange={e => setFormConclusao({ ...formConclusao, mecanico: e.target.value })}
+                  placeholder="Nome do mecânico responsável"
+                />
+              </label>
+
+              <label style={s.fieldLabel}>
+                Oficina
+                <input
+                  type="text"
+                  style={s.fieldInput}
+                  value={formConclusao.oficina}
+                  onChange={e => setFormConclusao({ ...formConclusao, oficina: e.target.value })}
+                  placeholder="Nome da oficina (interna/terceiro)"
+                />
+              </label>
+
+              <label style={s.fieldLabel}>
+                Serviço executado
+                <textarea
+                  style={{ ...s.fieldInput, resize: "vertical", minHeight: 80 }}
+                  value={formConclusao.servicoExecutado}
+                  onChange={e => setFormConclusao({ ...formConclusao, servicoExecutado: e.target.value })}
+                  placeholder="O que foi feito (peças trocadas, ajustes, diagnóstico…)"
+                  required
+                />
+              </label>
+
+              {erroConclusao && <p style={s.erroMsg}>{erroConclusao}</p>}
+
+              <div style={s.formFooter}>
+                <button type="button" style={s.cancelBtn} onClick={fecharConclusaoOS}>Cancelar</button>
+                <button type="submit" style={s.saveBtn} disabled={salvandoConclusao}>
+                  {salvandoConclusao ? "Salvando..." : "Concluir OS"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {editOS && (
         <div style={s.overlay} className="modal-mobile-sheet-overlay" onClick={fecharEditOS}>
           <div style={s.modal} className="modal-mobile-sheet" onClick={e => e.stopPropagation()}>
