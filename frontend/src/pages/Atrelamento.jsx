@@ -344,8 +344,8 @@ export default function Atrelamento() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ background: "#1a3a5c", color: "#fff" }}>
-                  {["Nº","Data/Hora","Operação","Cavalo","KM","Carreta 1","Tipo","Carreta 2","Tipo","Motorista","Local","Status"].map(h => (
-                    <th key={h} style={{ padding: "10px 12px", textAlign: "left", whiteSpace: "nowrap", fontWeight: 600, fontSize: 12 }}>{h}</th>
+                  {["Nº","Data/Hora","Operação","Cavalo","KM","Carreta 1","Tipo","Carreta 2","Tipo","Motorista","Local","Status"].map((h, i) => (
+                    <th key={i} style={{ padding: "10px 12px", textAlign: "left", whiteSpace: "nowrap", fontWeight: 600, fontSize: 12 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
