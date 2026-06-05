@@ -231,11 +231,10 @@ function nomeMes(m) {
 
 function DashboardCustos({ lancamentos, fmtBRLfn }) {
   const [periodo, setPeriodo] = useState("ano");
-  const [catSelecionada, setCatSelecionada] = useState(null); // null = todas no grafico
   const [customIni, setCustomIni] = useState("");
   const [customFim, setCustomFim] = useState("");
 
-  const { filtrados, totalGeral, ranking, mediaMes, mesesSerie, maxMes } = useMemo(() => {
+  const { filtrados, totalGeral, ranking, mediaMes, seriesPorCategoria } = useMemo(() => {
     const agora = new Date();
     const ini = inicioPeriodo(periodo, agora, customIni);
     const fim = fimPeriodo(periodo, agora, customFim);
@@ -246,13 +245,17 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
     });
 
     const totalGeral = filtrados.reduce((s, l) => s + (Number(l.valorTotal) || 0), 0);
+
+    // Agrupa lançamentos por categoria, guardando total + registros para a série mensal
     const porCategoria = {};
     for (const l of filtrados) {
       const cat = (l.tipoLancamento || "Sem categoria").trim() || "Sem categoria";
-      porCategoria[cat] = (porCategoria[cat] || 0) + (Number(l.valorTotal) || 0);
+      if (!porCategoria[cat]) porCategoria[cat] = { total: 0, registros: [] };
+      porCategoria[cat].total += (Number(l.valorTotal) || 0);
+      porCategoria[cat].registros.push(l);
     }
     const ranking = Object.entries(porCategoria)
-      .map(([nome, valor]) => ({ nome, valor, pct: totalGeral > 0 ? (valor / totalGeral) * 100 : 0 }))
+      .map(([nome, d]) => ({ nome, valor: d.total, pct: totalGeral > 0 ? (d.total / totalGeral) * 100 : 0 }))
       .sort((a, b) => b.valor - a.valor);
 
     let mesesNoPeriodo;
@@ -268,37 +271,50 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
     }
     const mediaMes = totalGeral / mesesNoPeriodo;
 
-    const N_MESES = periodo === "mes" || periodo === "mes_ant" ? 1 : 12;
-    const mesesSerie = [];
-    for (let i = N_MESES - 1; i >= 0; i--) {
-      const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
-      mesesSerie.push({
-        key: `${d.getFullYear()}-${d.getMonth()}`,
-        label: nomeMes(d.getMonth()),
-        ano: d.getFullYear(),
-        mesIdx: d.getMonth(),
-        valor: 0,
-      });
+    // Template de meses do eixo X — varia conforme o período selecionado
+    const monthsTemplate = [];
+    if (periodo === "ano") {
+      // Este ano = jan do ano corrente até o mês atual (evita 6 meses vazios)
+      for (let m = 0; m <= agora.getMonth(); m++) {
+        const d = new Date(agora.getFullYear(), m, 1);
+        monthsTemplate.push({
+          key: `${d.getFullYear()}-${d.getMonth()}`,
+          label: nomeMes(d.getMonth()),
+          ano: d.getFullYear(),
+          mesIdx: d.getMonth(),
+        });
+      }
+    } else {
+      const N_MESES = periodo === "mes" || periodo === "mes_ant" ? 1 : 12;
+      for (let i = N_MESES - 1; i >= 0; i--) {
+        const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
+        monthsTemplate.push({
+          key: `${d.getFullYear()}-${d.getMonth()}`,
+          label: nomeMes(d.getMonth()),
+          ano: d.getFullYear(),
+          mesIdx: d.getMonth(),
+        });
+      }
     }
-    for (const l of filtrados) {
-      if (catSelecionada && (l.tipoLancamento || "Sem categoria") !== catSelecionada) continue;
-      const t = new Date(l.criadoEm || l.dataHora);
-      if (!Number.isFinite(t.getTime())) continue;
-      const k = `${t.getFullYear()}-${t.getMonth()}`;
-      const slot = mesesSerie.find(x => x.key === k);
-      if (slot) slot.valor += (Number(l.valorTotal) || 0);
-    }
-    const maxMes = Math.max(1, ...mesesSerie.map(m => m.valor));
 
-    return { filtrados, totalGeral, ranking, mediaMes, mesesSerie, maxMes };
-  }, [lancamentos, periodo, catSelecionada, customIni, customFim]);
+    // Uma série mensal POR CATEGORIA — cada categoria vira seu próprio gráfico
+    const seriesPorCategoria = ranking.map((r, i) => {
+      const cor = PALETA_CAT[i % PALETA_CAT.length];
+      const mesesSerie = monthsTemplate.map(m => ({ ...m, valor: 0 }));
+      for (const l of (porCategoria[r.nome]?.registros || [])) {
+        const t = new Date(l.criadoEm || l.dataHora);
+        if (!Number.isFinite(t.getTime())) continue;
+        const k = `${t.getFullYear()}-${t.getMonth()}`;
+        const slot = mesesSerie.find(x => x.key === k);
+        if (slot) slot.valor += (Number(l.valorTotal) || 0);
+      }
+      const maxMes = Math.max(1, ...mesesSerie.map(m => m.valor));
+      const qtdLanc = (porCategoria[r.nome]?.registros || []).length;
+      return { ...r, cor, mesesSerie, maxMes, qtdLanc };
+    });
 
-  // Dimensões SVG do gráfico
-  const W = 720, H = 220, padL = 50, padR = 10, padT = 10, padB = 36;
-  const innerW = W - padL - padR;
-  const innerH = H - padT - padB;
-  const barW = Math.min(46, innerW / mesesSerie.length - 8);
-  const gap = (innerW - barW * mesesSerie.length) / Math.max(1, mesesSerie.length);
+    return { filtrados, totalGeral, ranking, mediaMes, seriesPorCategoria };
+  }, [lancamentos, periodo, customIni, customFim]);
 
   return (
     <div style={{ background: "#fff", borderRadius: 14, padding: "1rem 1.25rem", marginBottom: "1rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" }}>
@@ -311,10 +327,10 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
           </p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-          <div style={{ display: "flex", gap: 4, padding: 4, background: "#f1f5f9", borderRadius: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, padding: 6, background: "#f1f5f9", borderRadius: 12, flexWrap: "wrap" }}>
             {PERIODOS_LANC.map(p => (
               <button key={p.key} type="button" onClick={() => setPeriodo(p.key)}
-                style={{ padding: "5px 12px", borderRadius: 7, border: "none", fontSize: ".78rem", fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                style={{ padding: "7px 16px", borderRadius: 8, border: "none", fontSize: ".82rem", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
                   background: periodo === p.key ? "#1a3a5c" : "transparent",
                   color: periodo === p.key ? "#fff" : "#64748b",
                 }}>
@@ -376,14 +392,8 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {ranking.map((r, i) => {
               const cor = PALETA_CAT[i % PALETA_CAT.length];
-              const ativo = catSelecionada === r.nome;
               return (
-                <div
-                  key={r.nome}
-                  onClick={() => setCatSelecionada(catSelecionada === r.nome ? null : r.nome)}
-                  title="Clique para filtrar o gráfico mês a mês"
-                  style={{ cursor: "pointer", padding: "6px 8px", borderRadius: 8, background: ativo ? "#f1f5f9" : "transparent", transition: "background .15s" }}
-                >
+                <div key={r.nome} style={{ padding: "6px 8px", borderRadius: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, fontSize: ".82rem" }}>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#1e293b" }}>
                       <span style={{ width: 10, height: 10, borderRadius: 3, background: cor }} />
@@ -403,67 +413,112 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
         )}
       </div>
 
-      {/* Gráfico de barras mês a mês */}
+      {/* Gráfico agrupado: meses no eixo X, categorias lado a lado dentro de cada mês */}
+      <div style={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}>
+        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "#1e293b", textTransform: "uppercase", letterSpacing: ".04em" }}>
+          Evolução mês a mês — categorias lado a lado
+        </h3>
+        {seriesPorCategoria.length === 0 ? (
+          <p style={{ fontSize: ".82rem", color: "#94a3b8", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
+        ) : (
+          <GraficoAgrupado series={seriesPorCategoria} fmtBRLfn={fmtBRLfn} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Gráfico de barras AGRUPADAS — eixo X = meses, dentro de cada mês uma barra por categoria
+function GraficoAgrupado({ series, fmtBRLfn }) {
+  if (!series.length) return null;
+  // Eixo X usa os meses da primeira categoria (todas têm o mesmo template de meses)
+  const meses = series[0].mesesSerie;
+  const nMeses = meses.length;
+  const nCats  = series.length;
+
+  // Valor máximo entre TODAS as categorias × meses (escala única)
+  let maxVal = 1;
+  for (const cat of series) {
+    for (const m of cat.mesesSerie) {
+      if (m.valor > maxVal) maxVal = m.valor;
+    }
+  }
+
+  // Largura do gráfico escala com o número de meses (1 mês = compacto, 12 = mais largo)
+  // Card pai também usa cardMaxWidth pra acompanhar
+  const cardMaxWidth = Math.min(620, 220 + nMeses * 34);
+  const W = Math.min(560, 140 + nMeses * 36);
+  const H = 360, padL = 44, padR = 8, padT = 12, padB = 40;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const groupW = innerW / nMeses;            // largura disponível para cada mês
+  const gapEntreMeses = groupW * 0.18;       // 18% do grupo é espaço entre meses
+  const groupInner    = groupW - gapEntreMeses;
+  const barW = Math.max(4, groupInner / nCats);
+
+  return (
+    <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px", background: "#fff", boxShadow: "0 1px 3px rgba(15,23,42,.05)", width: "100%", maxWidth: cardMaxWidth, boxSizing: "border-box" }}>
+      {/* Legenda — uma chip por categoria */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+        {series.map(cat => (
+          <div key={cat.nome} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 20, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <span style={{ width: 12, height: 12, borderRadius: 3, background: cat.cor }} />
+            <span style={{ fontSize: ".82rem", fontWeight: 700, color: "#1e293b" }}>{cat.nome}</span>
+            <span style={{ fontSize: ".78rem", color: cat.cor, fontWeight: 800 }} className="manut-display">{fmtBRLfn(cat.valor)}</span>
+          </div>
+        ))}
+      </div>
+
       <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <h3 style={{ margin: 0, fontSize: ".82rem", fontWeight: 700, color: "#1e293b", textTransform: "uppercase", letterSpacing: ".04em" }}>
-            Evolução mês a mês {catSelecionada && <span style={{ color: "#1d4ed8" }}>· {catSelecionada}</span>}
-          </h3>
-          {catSelecionada && (
-            <button type="button" onClick={() => setCatSelecionada(null)} style={{ fontSize: ".72rem", color: "#64748b", border: "1px solid #cbd5e1", background: "transparent", padding: "3px 8px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit" }}>
-              Ver tudo ✕
-            </button>
-          )}
-        </div>
-        <div style={{ overflowX: "auto" }}>
-          <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", minWidth: 480 }}>
-            {/* Linhas de grade horizontais */}
-            {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
-              const y = padT + innerH * (1 - p);
-              return (
-                <g key={i}>
-                  <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#e2e8f0" strokeWidth="1" />
-                  <text x={padL - 6} y={y + 4} fontSize="10" fill="#94a3b8" textAnchor="end" fontFamily="Manrope, sans-serif">
-                    {fmtBRLcurto(maxMes * p).replace("R$ ", "")}
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="auto" preserveAspectRatio="xMidYMid meet" style={{ display: "block" }}>
+          {/* Grade horizontal + rótulos do eixo Y */}
+          {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
+            const y = padT + innerH * (1 - p);
+            return (
+              <g key={i}>
+                <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#e2e8f0" strokeWidth="1" />
+                <text x={padL - 6} y={y + 4} fontSize="12" fill="#94a3b8" textAnchor="end" fontFamily="Manrope, sans-serif">
+                  {fmtBRLcurto(maxVal * p).replace("R$ ", "")}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Para cada mês: desenha N barras lado a lado, uma por categoria */}
+          {meses.map((m, mi) => {
+            const groupX = padL + mi * groupW + gapEntreMeses / 2;
+            return (
+              <g key={m.key}>
+                {series.map((cat, ci) => {
+                  const valor = cat.mesesSerie[mi]?.valor || 0;
+                  const h = (valor / maxVal) * innerH;
+                  const x = groupX + ci * barW;
+                  const y = padT + innerH - h;
+                  return (
+                    <g key={cat.nome}>
+                      {h > 0 ? (
+                        <rect x={x + 1} y={y} width={Math.max(2, barW - 2)} height={h} fill={cat.cor} rx="2">
+                          <title>{`${cat.nome} · ${m.label}/${String(m.ano).slice(2)}: ${fmtBRLfn(valor)}`}</title>
+                        </rect>
+                      ) : (
+                        <rect x={x + 1} y={padT + innerH - 1} width={Math.max(2, barW - 2)} height={1} fill="#e2e8f0" />
+                      )}
+                    </g>
+                  );
+                })}
+                {/* Rótulo do mês embaixo do grupo */}
+                <text x={groupX + (groupInner) / 2} y={padT + innerH + 16} fontSize="12" fill="#64748b" textAnchor="middle" fontWeight="600" fontFamily="Manrope, sans-serif">
+                  {m.label.slice(0, 3)}
+                </text>
+                {(m.mesIdx === 0 || mi === 0) && (
+                  <text x={groupX + (groupInner) / 2} y={padT + innerH + 32} fontSize="11" fill="#94a3b8" textAnchor="middle" fontFamily="Manrope, sans-serif">
+                    {m.ano}
                   </text>
-                </g>
-              );
-            })}
-            {/* Barras */}
-            {mesesSerie.map((m, i) => {
-              const h = (m.valor / maxMes) * innerH;
-              const x = padL + i * (barW + gap) + gap / 2;
-              const y = padT + innerH - h;
-              return (
-                <g key={m.key}>
-                  {h > 0 && (
-                    <rect x={x} y={y} width={barW} height={h} fill="#1a3a5c" rx="3">
-                      <title>{`${m.label}/${String(m.ano).slice(2)}: ${fmtBRLfn(m.valor)}`}</title>
-                    </rect>
-                  )}
-                  {h === 0 && (
-                    <rect x={x} y={padT + innerH - 2} width={barW} height={2} fill="#e2e8f0" rx="1" />
-                  )}
-                  {/* Valor acima da barra (se couber) */}
-                  {h > 30 && (
-                    <text x={x + barW / 2} y={y - 4} fontSize="9" fill="#1a3a5c" textAnchor="middle" fontWeight="700" fontFamily="Manrope, sans-serif">
-                      {fmtBRLcurto(m.valor).replace("R$ ", "")}
-                    </text>
-                  )}
-                  {/* Mês */}
-                  <text x={x + barW / 2} y={padT + innerH + 14} fontSize="10" fill="#64748b" textAnchor="middle" fontWeight="600" fontFamily="Manrope, sans-serif">
-                    {m.label}
-                  </text>
-                  {(m.mesIdx === 0 || i === 0) && (
-                    <text x={x + barW / 2} y={padT + innerH + 26} fontSize="9" fill="#94a3b8" textAnchor="middle" fontFamily="Manrope, sans-serif">
-                      {m.ano}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+                )}
+              </g>
+            );
+          })}
+        </svg>
       </div>
     </div>
   );
