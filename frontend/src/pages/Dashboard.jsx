@@ -18,7 +18,7 @@ function dataHoje() { return new Date().toISOString().split("T")[0]; }
 
 function fmtData(iso) {
   if (!iso) return "—";
-  const [y, m, d] = iso.split("-");
+  const [y, m, d] = iso.slice(0, 10).split("-");
   return `${d}/${m}/${y}`;
 }
 
@@ -138,6 +138,7 @@ export default function Dashboard() {
 
   const [kpi,       setKpi]       = useState({});
   const [recentOCs, setRecentOCs] = useState([]);
+  const [recentOS,  setRecentOS]  = useState([]);
   const [erro,      setErro]      = useState(false);
 
   useEffect(() => {
@@ -145,8 +146,8 @@ export default function Dashboard() {
       const hoje = dataHoje();
       const now  = new Date(); now.setHours(0, 0, 0, 0);
       const merge = patch => setKpi(prev => ({ ...prev, ...patch }));
-      const falhas = { v:false, m:false, f:false, oc:false, manu:false };
-      const marcarErro = () => setErro(falhas.v && falhas.m && falhas.f && falhas.oc && falhas.manu);
+      const falhas = { v:false, m:false, f:false, oc:false, manu:false, os:false };
+      const marcarErro = () => setErro(falhas.v && falhas.m && falhas.f && falhas.oc && falhas.manu && falhas.os);
 
       // Cada query atualiza sua fatia assim que volta — UI pinta em ondas.
       getDocs(collection(db, "veiculos")).then(snap => {
@@ -185,6 +186,10 @@ export default function Dashboard() {
           manuVenc: manus.filter(r => calcManuStatus(r.venc) === "vencido").length,
         });
       }).catch(() => { falhas.manu = true; marcarErro(); });
+
+      getDocs(query(collection(db, "ordens_servico"), orderBy("criadoEm", "desc"), limit(5))).then(snap => {
+        setRecentOS(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      }).catch(() => { falhas.os = true; marcarErro(); });
     }
 
     let interval = null;
@@ -285,8 +290,8 @@ export default function Dashboard() {
           <KpiCard icon={Wrench}        color={kpi.manuVenc > 0 ? "#dc2626" : "#f59e0b"} bg={kpi.manuVenc > 0 ? "#fee2e2" : "#fef3c7"} label="Manutenções Pendentes" value={kpi.manuPend ?? "…"} alert={kpi.manuVenc > 0} sub={kpi.manuVenc == null ? null : kpi.manuVenc > 0 ? `${kpi.manuVenc} vencida${kpi.manuVenc > 1 ? "s" : ""}` : "Sem vencidos"} onClick={() => navigate("/manutencao")} />
         </div>
 
-        {/* Últimas OCs */}
-        <div style={{ marginBottom:28 }}>
+        {/* Últimas OCs + Últimas OS lado a lado */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(420px,1fr))", gap:14, marginBottom:28 }}>
           <div style={st.panel}>
             <div style={st.panelHeader}>
               <ClipboardList size={16} color="#d97706" />
@@ -319,6 +324,49 @@ export default function Dashboard() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+              </div>
+            )}
+          </div>
+
+          <div style={st.panel}>
+            <div style={st.panelHeader}>
+              <Wrench size={16} color="#dc2626" />
+              <span style={st.panelTitle}>Últimas Ordens de Serviço</span>
+              <button style={st.panelLink} onClick={() => navigate("/manutencao")}>Ver todas →</button>
+            </div>
+            {recentOS.length === 0 ? (
+              <div style={st.emptyMsg}>Nenhuma OS registrada</div>
+            ) : (
+              <div className="dash-table-wrap">
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".78rem", minWidth:420 }}>
+                <thead>
+                  <tr style={{ background:"#f8fafc" }}>
+                    {["Nº","Data","Placa","Motorista","Status"].map(h => (
+                      <th key={h} style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:"#64748b", fontSize:".7rem", textTransform:"uppercase", letterSpacing:.4 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentOS.map((os, i) => {
+                    const stCfg = os.status === "concluida" ? { bg:"#dcfce7", fg:"#15803d", label:"Concluída" }
+                                : os.status === "cancelada" ? { bg:"#f1f5f9", fg:"#475569", label:"Cancelada" }
+                                : { bg:"#fef3c7", fg:"#b45309", label:"Aberta" };
+                    return (
+                      <tr key={os.id} style={{ borderTop:"1px solid var(--border)", background: i % 2 === 0 ? "var(--card-bg)" : "#f8fafc" }}>
+                        <td style={{ padding:"9px 12px", fontWeight:800, color:"#1a3a5c" }}>{os.numero || "—"}</td>
+                        <td style={{ padding:"9px 12px", color:"var(--text-muted)" }}>{fmtData(os.dataHora || os.criadoEm)}</td>
+                        <td style={{ padding:"9px 12px", fontWeight:600 }}>{os.placa || "—"}</td>
+                        <td style={{ padding:"9px 12px", color:"var(--text-muted)", maxWidth:130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{os.motoristaNome || "—"}</td>
+                        <td style={{ padding:"9px 12px" }}>
+                          <span style={{ background: stCfg.bg, color: stCfg.fg, borderRadius:4, padding:"2px 7px", fontWeight:700, fontSize:".68rem" }}>
+                            {stCfg.label}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               </div>
