@@ -283,7 +283,7 @@ export default function Cercas() {
             const j = await r.json();
             if (!j.erro) cepInfo = j;
           }
-        } catch {}
+        } catch { /* ViaCEP é opcional, segue sem ele */ }
         const semCep = qOriginal.replace(cepMatch[0], "");
         const numMatch = semCep.match(/\b(\d{1,5})\b/);
         if (numMatch) numero = numMatch[1];
@@ -315,7 +315,7 @@ export default function Cercas() {
             const data = await r.json();
             lista = mapNominatim(data);
           }
-        } catch {}
+        } catch { /* cai pra Nominatim livre com endereço oficial */ }
 
         // Se a estruturada falhar, tenta livre com o endereço oficial do ViaCEP
         if (lista.length === 0) {
@@ -323,7 +323,7 @@ export default function Cercas() {
           try {
             const r = await fetchTimeout(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=br&limit=5&q=${encodeURIComponent(txt)}`, { headers: { "Accept-Language": "pt-BR" } });
             if (r.ok) lista = mapNominatim(await r.json());
-          } catch {}
+          } catch { /* cai pra busca livre normalizada (#3) */ }
         }
       }
 
@@ -338,7 +338,7 @@ export default function Cercas() {
         try {
           const r = await fetchTimeout(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=br&limit=5&q=${encodeURIComponent(norm)}`, { headers: { "Accept-Language": "pt-BR" } });
           if (r.ok) lista = mapNominatim(await r.json());
-        } catch {}
+        } catch { /* cai pro fallback aproximado por CEP (#4) */ }
       }
 
       // 4) Último fallback: aproximado pelo CEP
@@ -353,7 +353,7 @@ export default function Cercas() {
               lon: parseFloat(d.lon),
             }));
           }
-        } catch {}
+        } catch { /* todos os fallbacks falharam, alert mostrado abaixo */ }
       }
 
       if (lista.length === 0) {

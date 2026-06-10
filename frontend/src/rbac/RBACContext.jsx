@@ -41,6 +41,7 @@ export function RBACProvider({ children }) {
     // compatibilidade com sistema legado: master/admin ganham super admin temporariamente
     || ["master", "admin"].includes(profile?.role);
 
+  // deps granulares (user.uid, profile.setor_id, etc) evitam re-runs desnecessários quando outras props do profile mudam
   useEffect(() => {
     let cancelado = false;
 

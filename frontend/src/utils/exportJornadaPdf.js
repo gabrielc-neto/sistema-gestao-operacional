@@ -10,13 +10,7 @@ function fmtDataBR(iso) {
   return m[4] ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : `${m[3]}/${m[2]}/${m[1]}`;
 }
 
-function capitalizarNome(nome) {
-  if (!nome) return "";
-  return nome.trim().toLowerCase()
-    .split(/\s+/)
-    .map(w => w.length <= 2 ? w : w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
+import { capitalizarNome } from "./format";
 
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({

@@ -126,6 +126,7 @@ export default function Atrelamento() {
     setLoading(false);
   };
 
+  // carga inicial no mount
   useEffect(() => { carregar(); }, []);
 
   const abrirModal = () => {

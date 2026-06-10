@@ -24,8 +24,13 @@ set "PATH=%JAVA_HOME%\bin;%PATH%"
 REM Aumenta timeout de descoberta das functions (default 10s e pouco)
 set FUNCTIONS_DISCOVERY_TIMEOUT=60
 
-echo [1/2] Iniciando Firebase Emulators em janela separada...
-start "Firebase Emulators - Pontual Logistica" cmd /k "cd /d %~dp0 && set FUNCTIONS_DISCOVERY_TIMEOUT=60 && firebase emulators:start --only functions,firestore,auth --project pontual-logistica"
+REM Credencial pra Functions emulator falar com Firestore REAL (cloud).
+REM Sem isso, Functions emulator subia o Firestore emulator local — que ficava
+REM desincronizado do cloud onde o frontend escreve (motoristas_desligados etc).
+set "GOOGLE_APPLICATION_CREDENTIALS=%~dp0scripts\serviceAccountKey.json"
+
+echo [1/2] Iniciando Firebase Emulators em janela separada (so functions)...
+start "Firebase Emulators - Pontual Logistica" cmd /k "cd /d %~dp0 && set FUNCTIONS_DISCOVERY_TIMEOUT=60 && set GOOGLE_APPLICATION_CREDENTIALS=%~dp0scripts\serviceAccountKey.json && firebase emulators:start --only functions --project pontual-logistica"
 
 echo Aguardando 8 segundos pros emuladores subirem...
 timeout /t 8 /nobreak >nul

@@ -51,7 +51,7 @@ export default function Cargos() {
     }
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- carrega ao montar; loader reusado no refresh
+  // carrega ao montar; loader reusado no refresh
   useEffect(() => { carregar(); }, []);
 
   const selecionado = useMemo(
@@ -59,8 +59,8 @@ export default function Cargos() {
     [cargos, selecionadoId]
   );
 
+  // reseta cópia editável ao trocar de cargo
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reseta cópia editável ao trocar de cargo
     setPermsLocal(Array.isArray(selecionado?.permissoes) ? [...selecionado.permissoes] : []);
   }, [selecionadoId, selecionado?.permissoes]);
 

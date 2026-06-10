@@ -80,7 +80,7 @@ export default function Usuarios() {
     }
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- carrega ao montar; loader reusado no refresh
+  // carrega ao montar; loader reusado no refresh
   useEffect(() => { carregar(); }, []);
 
   // Cargos filtrados pelo setor selecionado no form (carregamento dinâmico).

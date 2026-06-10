@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import logo from "../assets/logo.png";
+import LogoPontual from "../components/LogoPontual";
 
 export default function Login() {
   const [email, setEmail]   = useState("");
@@ -44,7 +44,7 @@ export default function Login() {
   return (
     <div style={styles.wrap}>
       <div style={styles.card}>
-        <img src={logo} alt="Pontual" style={styles.logo} />
+        <div style={styles.logo}><LogoPontual height={48} /></div>
         <p style={styles.sub}>Controle de Frota — Acesso Restrito</p>
         <form onSubmit={handleLogin}>
           <div style={styles.fg}>
@@ -88,7 +88,7 @@ export default function Login() {
 const styles = {
   wrap:  { minHeight:"100vh", background:"#f0f4f8", display:"flex", alignItems:"center", justifyContent:"center", padding:16 },
   card:  { background:"#fff", borderRadius:14, padding:"40px 36px", width:"100%", maxWidth:380, boxShadow:"0 4px 24px rgba(0,0,0,.10)" },
-  logo:  { width:200, display:"block", margin:"0 auto 8px" },
+  logo:  { display:"flex", justifyContent:"center", marginBottom:8 },
   sub:   { textAlign:"center", fontSize:".82rem", color:"#64748b", marginBottom:28 },
   fg:    { marginBottom:16 },
   label: { display:"block", fontSize:".72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", marginBottom:4 },
