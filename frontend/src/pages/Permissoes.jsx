@@ -30,7 +30,7 @@ export default function Permissoes() {
         base[r.id][m.id] = perms[r.id]?.[m.id] || "none";
       });
     });
-    setLocal(base);
+    setLocal(base);  // sync local state com perms do contexto
   }, [perms]);
 
   if (!isAdmin) {

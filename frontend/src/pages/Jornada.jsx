@@ -6,14 +6,7 @@ import { db } from "../firebase/config";
 import { useJornada } from "../hooks/useJornada";
 import { exportarJornadaCsv } from "../utils/exportJornadaCsv";
 import { exportarJornadaPdf } from "../utils/exportJornadaPdf";
-
-function capitalizarNome(nome) {
-  if (!nome) return "";
-  return nome.trim().toLowerCase()
-    .split(/\s+/)
-    .map(w => w.length <= 2 ? w : w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
+import { capitalizarNome } from "../utils/format";
 
 function hojeISO() {
   const d = new Date();
@@ -49,13 +42,12 @@ function formatDataBR(iso) {
 }
 
 // Minutos entre uma hora BRT ('YYYY-MM-DD HH:MM:SS') e agora.
-// SASCAR retorna em BRT; comparamos com "agora em BRT" tratando ambos como UTC.
+// SASCAR retorna em BRT; parse com offset -03:00 explícito → não depende do fuso do navegador.
 function minutosDesdeBRT(horaStr) {
   const m = horaStr?.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
   if (!m) return null;
-  const evMs = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
-  const nowBRT = Date.now() - 3 * 3600 * 1000;
-  return Math.max(0, Math.round((nowBRT - evMs) / 60000));
+  const evMs = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}-03:00`).getTime();
+  return Math.max(0, Math.round((Date.now() - evMs) / 60000));
 }
 
 // Maior gap (em minutos) entre dois eventos de "Dirigindo" consecutivos sem

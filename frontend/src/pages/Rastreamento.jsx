@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, RefreshCw, MapPin, AlertTriangle, Truck, Map as MapIcon, Table, Search, X, WifiOff, Bell, LogIn, LogOut, ChevronDown, ChevronUp } from "lucide-react";
 import { useSascarPosicoes } from "../hooks/useSascarPosicoes";
 import { useOcsAtivas } from "../hooks/useOcsAtivas";
 import { useEventosCerca } from "../hooks/useEventosCerca";
 import MapaFrota from "../components/MapaFrota";
+import { capitalizarNome, tempoDecorrido } from "../utils/format";
 
 const STATUS_STYLE = {
   EM_MOVIMENTO:   { bg: "#dcfce7", color: "#166534", label: "Em movimento" },
@@ -23,29 +24,6 @@ function StatusBadge({ s }) {
   );
 }
 
-function capitalizarNome(nome) {
-  if (!nome) return "";
-  return nome.trim().toLowerCase()
-    .split(/\s+/)
-    .map(w => w.length <= 2 ? w : w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
-function tempoDecorrido(iso) {
-  if (!iso) return "—";
-  const t = new Date(iso.replace("T", " "));
-  if (!Number.isFinite(t.getTime())) return iso;
-  const ms = Date.now() - t.getTime();
-  if (ms < 0) return "agora";
-  const min = Math.floor(ms / 60000);
-  if (min < 1)   return "agora";
-  if (min < 60)  return `${min} min atrás`;
-  const h = Math.floor(min / 60);
-  if (h < 24)    return `${h}h atrás`;
-  const d = Math.floor(h / 24);
-  return `${d}d atrás`;
-}
-
 export default function Rastreamento() {
   const navigate = useNavigate();
   const { data, loading, error, lastFetch, refetch } = useSascarPosicoes();
@@ -56,29 +34,34 @@ export default function Rastreamento() {
   const [filtroStatus, setFiltroStatus] = useState(null); // null | EM_MOVIMENTO | ...
   const [eventosAbertos, setEventosAbertos] = useState(false);
 
+  // Tick a cada 30s pra "Sem comunicação" reagir mesmo quando SASCAR não retorna posições novas
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const posicoes = data?.posicoes ?? [];
   const counts = useMemo(() => {
     const c = { EM_MOVIMENTO: 0, PARADO_LIGADO: 0, ESTACIONADO: 0, SEM_DADOS: 0, SINAL_VELHO: 0 };
-    const agora = Date.now();
     for (const p of posicoes) {
       c[p.statusTexto] = (c[p.statusTexto] || 0) + 1;
       if (p.dataPosicao) {
-        const ageMin = (agora - new Date(p.dataPosicao.replace("T", " ")).getTime()) / 60000;
+        const ageMin = (nowMs - new Date(p.dataPosicao.replace("T", " ")).getTime()) / 60000;
         if (ageMin > 15 && p.statusTexto !== "SEM_DADOS") c.SINAL_VELHO++;
       }
     }
     return c;
-  }, [posicoes]);
+  }, [posicoes, nowMs]);
 
   const filtradas = useMemo(() => {
     const termo = busca.trim().toUpperCase();
-    const agora = Date.now();
     return posicoes.filter(p => {
-      // Filtro "Sem comunicação" cobre SEM_DADOS + sinal velho (>15 min)
+      // Filtro "Sem comunicação" cobre SEM_DADOS + sinal velho (>15 min sem posição)
       if (filtroStatus === "SEM_DADOS") {
-        if (p.statusTexto === "SEM_DADOS") {} // ok
-        else if (p.dataPosicao && (agora - new Date(p.dataPosicao.replace("T", " ")).getTime()) / 60000 > 15) {} // ok
-        else return false;
+        const sinalVelho = p.dataPosicao &&
+          (nowMs - new Date(p.dataPosicao.replace("T", " ")).getTime()) / 60000 > 15;
+        if (p.statusTexto !== "SEM_DADOS" && !sinalVelho) return false;
       } else if (filtroStatus && p.statusTexto !== filtroStatus) return false;
       if (termo) {
         const placa = (p.placa || "").toUpperCase();
@@ -88,7 +71,7 @@ export default function Rastreamento() {
       }
       return true;
     });
-  }, [posicoes, busca, filtroStatus]);
+  }, [posicoes, busca, filtroStatus, nowMs]);
 
   const ordenadas = useMemo(
     () => [...filtradas].sort((a, b) => (a.placa || "").localeCompare(b.placa || "")),

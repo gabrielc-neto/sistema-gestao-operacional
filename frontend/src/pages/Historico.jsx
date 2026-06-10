@@ -114,6 +114,7 @@ export default function Historico() {
     setLoading(false);
   }, []);
 
+  // carga inicial no mount (carregar é useCallback estável)
   useEffect(() => { carregar(); }, [carregar]);
 
   const filtrados = (() => {

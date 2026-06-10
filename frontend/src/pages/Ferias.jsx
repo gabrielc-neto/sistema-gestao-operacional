@@ -63,6 +63,7 @@ export default function Ferias() {
     setLoading(false);
   }
 
+  // carga inicial no mount
   useEffect(() => { carregar(); }, []);
 
   // alertas: férias que começam em até 60 dias e eSocial não enviado

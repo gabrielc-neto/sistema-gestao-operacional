@@ -110,12 +110,12 @@ export default function OC() {
     carregarDados();
   }, []);
 
-  /* ── preenche responsável com o usuário logado ── */
+  /* ── preenche responsável com o usuário logado (sync com profile do contexto) ── */
   useEffect(() => {
     if (profile?.nome) setResp(profile.nome);
   }, [profile]);
 
-  /* ── auto-fill conjunto ao mudar cavalo ── */
+  /* ── auto-fill conjunto ao mudar cavalo (autofill quando user troca no form) ── */
   useEffect(() => {
     if (!cavalo || veiculos.length === 0) return;
     const v = veiculos.find(vv => vv.id === cavalo);

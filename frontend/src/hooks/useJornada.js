@@ -57,9 +57,9 @@ export function useJornada(dataInicio, dataFim) {
   useEffect(() => {
     if (!dataInicio) return;
     const ehHoje = (() => {
-      const d = new Date();
-      d.setHours(d.getHours() - 3); // BRT
-      return d.toISOString().split('T')[0] === dataInicio && (dataFim === dataInicio || !dataFim);
+      // sv-SE retorna YYYY-MM-DD; timeZone fixo em São Paulo evita depender do fuso do navegador
+      const hojeBRT = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+      return hojeBRT === dataInicio && (dataFim === dataInicio || !dataFim);
     })();
     if (!ehHoje) return;
 

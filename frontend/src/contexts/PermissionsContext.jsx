@@ -49,7 +49,7 @@ export function PermissionsProvider({ children }) {
     setLoading(true);
     getDoc(doc(db, "config", "permissions"))
       .then(snap => setPerms(snap.exists() ? snap.data() : {}))
-      .catch(() => {})
+      .catch(e => console.warn("[PermissionsContext] falha ao ler config/permissions:", e.message))
       .finally(() => setLoading(false));
   }, [profile?.role]);
 

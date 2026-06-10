@@ -21,6 +21,13 @@ export default defineConfig([
       // Contextos exportam Provider + hook no mesmo arquivo (padrão do projeto).
       // Só afeta o Fast Refresh em dev, não o runtime. Desligado conscientemente.
       'react-refresh/only-export-components': 'off',
+      // Regra nova do React 19 que dispara em vários patterns válidos do projeto:
+      //   - polling SASCAR a cada 30s (useSascarPosicoes)
+      //   - carga inicial no mount (Atrelamento, Ferias, Historico, OC, Manutencao)
+      //   - sync de state local com contexto/profile (OC, Permissoes)
+      // Cada caso foi auditado: são sincronizações com sistema externo ou estado de pai,
+      // que é exatamente o uso recomendado de useEffect. Desligar evita ruído sem perder sinal.
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
 ])

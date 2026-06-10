@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import CercaEletronica, { areaDoPonto } from "./CercaEletronica";
 import { useCercas } from "../hooks/useCercas";
 import { buscarSugestoes, calcularRotaCaminhao, fmtDistancia, fmtDuracao } from "../utils/roteamento";
+import { tempoDecorrido } from "../utils/format";
 
 // Distância em graus acima da qual consideramos "teleport" (≈ 5 km) — sem animar
 const TELEPORT_THRESHOLD_DEG = 0.045;
@@ -37,7 +38,8 @@ function distMetros(a, b) {
 function AnimatedTruckMarker({ posicao, icon, children, ...rest }) {
   const markerRef = useRef(null);
   const animFrame = useRef(null);
-  const initialPos = useRef([posicao.latitude, posicao.longitude]);
+  // capturado 1x no mount; updates vão via setLatLng() no useEffect (bypass React)
+  const [initialPos] = useState([posicao.latitude, posicao.longitude]);
 
   useEffect(() => {
     const m = markerRef.current;
@@ -92,7 +94,7 @@ function AnimatedTruckMarker({ posicao, icon, children, ...rest }) {
   }, [posicao.latitude, posicao.longitude, posicao.velocidade]);
 
   return (
-    <Marker ref={markerRef} position={initialPos.current} icon={icon} {...rest}>
+    <Marker ref={markerRef} position={initialPos} icon={icon} {...rest}>
       {children}
     </Marker>
   );
@@ -189,18 +191,6 @@ function FitBounds({ posicoes, key }) {
     map.fitBounds(pontos, { padding: [60, 60], maxZoom: 14 });
   }, [map, key]);
   return null;
-}
-
-function tempoDecorrido(iso) {
-  if (!iso) return "—";
-  const t = new Date(iso.replace("T", " "));
-  if (!Number.isFinite(t.getTime())) return iso;
-  const min = Math.floor((Date.now() - t.getTime()) / 60000);
-  if (min < 1)  return "agora";
-  if (min < 60) return `${min} min atrás`;
-  const h = Math.floor(min / 60);
-  if (h < 24)   return `${h}h atrás`;
-  return `${Math.floor(h / 24)}d atrás`;
 }
 
 function bussola(graus) {
@@ -345,7 +335,6 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
                 </div>
 
                 <PainelDestino
-                  posicao={p}
                   destino={destinos.get(normPlaca(p.placa))}
                   onDefinir={(d) => definirDestino(p, d)}
                   onLimpar={() => limparDestino(p)}
@@ -561,7 +550,7 @@ function Row({ label, value, highlight, alert, extra }) {
  * Painel de "Definir destino" dentro do Popup do veículo.
  * Faz autocomplete via Nominatim e dispara o cálculo de rota Valhalla (truck+hazmat).
  */
-function PainelDestino({ posicao, destino, onDefinir, onLimpar }) {
+function PainelDestino({ destino, onDefinir, onLimpar }) {
   const [q, setQ] = useState("");
   const [sugest, setSugest] = useState([]);
   const [open, setOpen] = useState(false);

@@ -138,6 +138,8 @@ function calcStatus(vencStr) {
   return "ok";
 }
 
+const STATUS_ORDER = { vencido: 0, alerta: 1, ok: 2, sem_data: 3 };
+
 const STATUS_META = {
   vencido:  { label:"Vencido",      bg:"#fee2e2", color:"#dc2626", rowBg:"#fef2f2" },
   alerta:   { label:"Alerta",       bg:"#fef9c3", color:"#a16207", rowBg:"#fffbeb" },
@@ -639,6 +641,7 @@ export default function Manutencao() {
   const [formEditOS,     setFormEditOS]     = useState({ ...EMPTY_OS });
   const [salvandoEdit,   setSalvandoEdit]   = useState(false);
   const [erroEdit,       setErroEdit]       = useState("");
+  // eslint-disable-next-line no-unused-vars -- WIP: usado pelo fluxo finalizar OS, em standby
   const [acaoOS,         setAcaoOS]         = useState(null); // id da OS em ação (finalizar)
   // Conclusão de OS (Lançamento de OS — registra KM saída, mecânico, oficina, serviço executado)
   const [concluindoOS,    setConcluindoOS]    = useState(null);
@@ -732,6 +735,8 @@ export default function Manutencao() {
     }
   }
 
+  // carga inicial no mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { carregarTudo(); }, []);
 
   const alertaCount = useMemo(() => {
@@ -741,7 +746,6 @@ export default function Manutencao() {
   }, [registros, legacy]);
 
   const normP = (p) => (p || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-  const order = { vencido:0, alerta:1, ok:2, sem_data:3 };
 
   // ── Aba Por Veículo ───────────────────────────────────────────────────
   const veiculoSelecionado = useMemo(() =>
@@ -796,7 +800,7 @@ export default function Manutencao() {
       .filter(r => r.tipo === filtroTipo)
       .map(r => ({ ...r, _status: calcStatus(r.venc) }))
       .filter(r => filtroStTipo === "todos" || r._status === filtroStTipo)
-      .sort((a,b) => (order[a._status]||3) - (order[b._status]||3) || (a.venc||"").localeCompare(b.venc||""));
+      .sort((a,b) => (STATUS_ORDER[a._status]||3) - (STATUS_ORDER[b._status]||3) || (a.venc||"").localeCompare(b.venc||""));
   }, [todosRegistros, filtroTipo, filtroStTipo]);
 
   // ── Aba Alertas ───────────────────────────────────────────────────────
@@ -805,7 +809,6 @@ export default function Manutencao() {
       ...Object.values(registros).map(r => ({ ...r, _label: r.label || r.tipo })),
       ...legacy.map(r => ({ ...r, _label: r.item || "—" })),
     ];
-    const order = { vencido:0, alerta:1, ok:2, sem_data:3 };
     return tudo
       .map(r => ({ ...r, _status: calcStatus(r.venc) }))
       .filter(r => {
@@ -814,7 +817,7 @@ export default function Manutencao() {
         const matchS = filtroSt === "todos" || r._status === filtroSt;
         return matchB && matchS;
       })
-      .sort((a,b) => (order[a._status]||3) - (order[b._status]||3) || (a.venc||"").localeCompare(b.venc||""));
+      .sort((a,b) => (STATUS_ORDER[a._status]||3) - (STATUS_ORDER[b._status]||3) || (a.venc||"").localeCompare(b.venc||""));
   }, [registros, legacy, busca, filtroSt]);
 
   // ── Modal ─────────────────────────────────────────────────────────────
@@ -993,6 +996,7 @@ export default function Manutencao() {
   }
 
   // finaliza a OS e libera o veículo (se não houver outra OS aberta nele)
+  // eslint-disable-next-line no-unused-vars -- WIP: fluxo finalizar OS em standby, religar quando liberar pros usuários
   async function finalizarOS(os) {
     if (osStatus(os) === "finalizada") return;
     if (!window.confirm(`Finalizar ${os.numero}?\nIsso libera o veículo ${os.placa} no sistema.`)) return;

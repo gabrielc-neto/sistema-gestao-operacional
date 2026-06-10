@@ -37,7 +37,7 @@ export default function Setores() {
     }
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- carrega ao montar; loader reusado no refresh
+  // carrega ao montar; loader reusado no refresh
   useEffect(() => { carregar(); }, []);
 
   function abrirNovo() {
