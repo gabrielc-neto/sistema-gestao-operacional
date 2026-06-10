@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap, LayersControl, Polyline, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap, LayersControl, LayerGroup, Polyline, CircleMarker } from "react-leaflet";
 import { divIcon } from "leaflet";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
@@ -270,11 +270,19 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
             />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Satélite">
-            <TileLayer
-              attribution='Tiles &copy; Esri World Imagery'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={19}
-            />
+            {/* Híbrido: OSM por baixo serve de fallback quando o Esri não tem foto */}
+            <LayerGroup>
+              <TileLayer
+                attribution='&copy; OpenStreetMap'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <TileLayer
+                attribution='Tiles &copy; Esri World Imagery'
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={19}
+                errorTileUrl="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+              />
+            </LayerGroup>
           </LayersControl.BaseLayer>
         </LayersControl>
         <FitBounds posicoes={validas} key={fitKey} />
