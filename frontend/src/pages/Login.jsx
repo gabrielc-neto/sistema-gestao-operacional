@@ -44,7 +44,7 @@ export default function Login() {
   return (
     <div style={styles.wrap}>
       <div style={styles.card}>
-        <div style={styles.logo}><LogoPontual height={48} /></div>
+        <div style={styles.logo}><div style={styles.logoBg}><LogoPontual height={48} /></div></div>
         <p style={styles.sub}>Controle de Frota — Acesso Restrito</p>
         <form onSubmit={handleLogin}>
           <div style={styles.fg}>
@@ -89,6 +89,7 @@ const styles = {
   wrap:  { minHeight:"100vh", background:"#f0f4f8", display:"flex", alignItems:"center", justifyContent:"center", padding:16 },
   card:  { background:"#fff", borderRadius:14, padding:"40px 36px", width:"100%", maxWidth:380, boxShadow:"0 4px 24px rgba(0,0,0,.10)" },
   logo:  { display:"flex", justifyContent:"center", marginBottom:8 },
+  logoBg: { background:"#1a3a5c", borderRadius:10, padding:"10px 20px" },
   sub:   { textAlign:"center", fontSize:".82rem", color:"#64748b", marginBottom:28 },
   fg:    { marginBottom:16 },
   label: { display:"block", fontSize:".72rem", fontWeight:600, color:"#64748b", textTransform:"uppercase", marginBottom:4 },

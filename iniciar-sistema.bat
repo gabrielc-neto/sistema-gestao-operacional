@@ -41,7 +41,7 @@ start "Vite Dev Server - Pontual Logistica" cmd /k "cd /d %~dp0frontend && npm r
 echo.
 echo ============================================================
 echo  Sistema iniciado!
-echo  Acesse:  http://192.168.20.131:5173/rastreamento
+echo  Acesse:  http://192.168.68.68:5173/rastreamento
 echo  Local:   http://localhost:5173/rastreamento
 echo  Emu UI:  http://localhost:4000
 echo ============================================================
