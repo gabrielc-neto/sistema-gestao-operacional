@@ -385,7 +385,7 @@ export default function Frota() {
         .frota-header-btn:hover { transform: translateY(-1px); }
       `}</style>
       <header style={s.header} className="pg-header">
-        <div className="pg-logo"><LogoPontual height={36} /></div>
+        <div className="pg-logo"><LogoPontual height={36} variant="white" /></div>
         <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
           <span style={{ ...s.titulo }} className="frota-display">FROTA</span>
           <span style={s.sub} className="hide-mobile">{lista.length} veículos cadastrados</span>

@@ -1,8 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { httpsCallable } from "firebase/functions";
-import { functions } from "../firebase/config";
-
-const callPosicoes = httpsCallable(functions, "sascarPosicoes");
+import { callFunction } from "../firebase/callFunction";
 
 export function useSascarPosicoes({ intervalMs = 30_000 } = {}) {
   const [data, setData]       = useState(null);
@@ -14,7 +11,7 @@ export function useSascarPosicoes({ intervalMs = 30_000 } = {}) {
   const fetchOnce = useCallback(async () => {
     try {
       setError(null);
-      const res = await callPosicoes({});
+      const res = await callFunction("sascarPosicoes", {});
       setData(res.data);
       setLast(new Date());
     } catch (e) {

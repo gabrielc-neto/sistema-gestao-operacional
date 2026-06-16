@@ -153,7 +153,7 @@ export default function Historico() {
         justifyContent: "space-between", height: 64,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }} className="pg-logo">
-          <LogoPontual height={40} />
+          <LogoPontual height={40} variant="white" />
           <span style={{ color: "#fff", fontSize: 20, fontWeight: 700, letterSpacing: 0.5 }}>
             Histórico
           </span>

@@ -278,7 +278,7 @@ export default function ImportAdmin() {
     <div style={s.wrap}>
       <header style={s.header}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <LogoPontual height={36} />
+          <LogoPontual height={36} variant="white" />
           <h1 style={s.title}>Importação de Dados — Planilha Frota</h1>
         </div>
         <button style={s.backBtn} onClick={() => navigate("/dashboard")}>← Dashboard</button>

@@ -101,7 +101,7 @@ export default function Setores() {
   return (
     <div style={s.wrap}>
       <header style={s.header}>
-        <LogoPontual height={36} />
+        <LogoPontual height={36} variant="white" />
         <span style={s.titulo}>Setores</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
           <ProtegerPor permissao="setores.criar">
