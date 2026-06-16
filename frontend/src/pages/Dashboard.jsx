@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { usePermissions } from "../contexts/PermissionsContext";
 import { useNavigate } from "react-router-dom";
-import LogoPontual from "../components/LogoPontual";
 import SettingsMenu from "../components/SettingsMenu";
+import LogoPontual from "../components/LogoPontual";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase/config";
 import {
@@ -254,7 +254,7 @@ export default function Dashboard() {
       {/* HEADER */}
       <header style={st.header} className="pg-header">
         <div style={{ display:"flex", alignItems:"center", gap:14 }} className="pg-logo">
-          <LogoPontual height={38} />
+          <LogoPontual height={42} variant="white" />
           <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
             <span style={{ color:"#fff", fontWeight:800, fontSize:"1rem", letterSpacing:.3 }}>PONTUAL LOGÍSTICA</span>
             <span style={{ color:"rgba(255,255,255,.55)", fontSize:".7rem", fontWeight:500 }}>Sistema de Gestão Operacional</span>

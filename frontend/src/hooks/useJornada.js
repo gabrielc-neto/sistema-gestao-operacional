@@ -1,9 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { httpsCallable } from "firebase/functions";
-import { functions } from "../firebase/config";
-
-const callJornadaDia = httpsCallable(functions, "jornadaDia");
-const callJornadaPeriodo = httpsCallable(functions, "jornadaPeriodo");
+import { callFunction } from "../firebase/callFunction";
 
 /**
  * Busca jornadas. Se dataInicio === dataFim → chama jornadaDia (mais rápido).
@@ -22,7 +18,7 @@ export function useJornada(dataInicio, dataFim) {
     try {
       setError(null);
       if (fim === dataInicio) {
-        const res = await callJornadaDia({ data: dataInicio });
+        const res = await callFunction("jornadaDia", { data: dataInicio });
         // Normaliza formato: jornadaDia retorna { jornadas } direto
         setPayload({
           jornadas: res.data.jornadas || [],
@@ -37,7 +33,7 @@ export function useJornada(dataInicio, dataFim) {
           dias: [dataInicio],
         });
       } else {
-        const res = await callJornadaPeriodo({ dataInicio, dataFim: fim });
+        const res = await callFunction("jornadaPeriodo", { dataInicio, dataFim: fim });
         setPayload(res.data);
       }
       setLast(new Date());

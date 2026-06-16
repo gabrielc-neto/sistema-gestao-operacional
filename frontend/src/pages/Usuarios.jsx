@@ -191,7 +191,7 @@ export default function Usuarios() {
   return (
     <div style={s.wrap}>
       <header style={s.header} className="pg-header">
-        <div className="pg-logo"><LogoPontual height={36} /></div>
+        <div className="pg-logo"><LogoPontual height={36} variant="white" /></div>
         <span style={s.titulo}>Usuários</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }} className="pg-header-actions">
           <ProtegerPor permissao="usuarios.criar">

@@ -197,7 +197,7 @@ export default function Motoristas() {
 
       {/* HEADER */}
       <header style={s.header} className="pg-header">
-        <div className="pg-logo"><LogoPontual height={36} /></div>
+        <div className="pg-logo"><LogoPontual height={36} variant="white" /></div>
         <h1 style={s.headerTitle}>Motoristas</h1>
         <div className="pg-header-actions">
           <button style={s.backBtn} onClick={() => navigate("/dashboard")}>

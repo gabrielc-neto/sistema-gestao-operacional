@@ -167,7 +167,7 @@ export default function Cargos() {
   return (
     <div style={s.wrap}>
       <header style={s.header}>
-        <LogoPontual height={36} />
+        <LogoPontual height={36} variant="white" />
         <span style={s.titulo}>Cargos &amp; Permissões</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
           <ProtegerPor permissao="cargos.criar">

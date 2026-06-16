@@ -76,7 +76,7 @@ export default function Permissoes() {
   return (
     <div style={s.wrap}>
       <header style={s.header} className="pg-header">
-        <div className="pg-logo"><LogoPontual height={36} /></div>
+        <div className="pg-logo"><LogoPontual height={36} variant="white" /></div>
         <span style={s.titulo}>Permissões</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 10 }} className="pg-header-actions">
           <button style={s.btnSalvar} onClick={handleSalvar} disabled={salvando}>

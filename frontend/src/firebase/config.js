@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getFunctions } from "firebase/functions";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBUZdqVSvcoHhnSYNK1edtpbJ1_xfQ-DTU",
@@ -28,13 +28,12 @@ export const functions = getFunctions(app, "southamerica-east1");
 // Liga ao emulator local APENAS em modo dev (vite dev) E quando o flag estiver setado.
 // Build de produção (`npm run build`) tem import.meta.env.DEV=false, então NUNCA conecta no emulator.
 if (import.meta.env?.DEV && import.meta.env?.VITE_USE_FUNCTIONS_EMULATOR === "true") {
-  // Roteia as Functions pela MESMA origem da página em vez de apontar direto pra host:5001.
-  // O proxy do Vite (vite.config.js) encaminha /pontual-logistica/* pro emulator em 127.0.0.1:5001.
-  // Assim funciona igual em localhost, IP da rede E via Cloudflare Tunnel (HTTPS, sem porta 5001
-  // exposta e sem mixed-content). connectFunctionsEmulator forçaria http://host:5001 e quebraria fora.
-  functions.emulatorOrigin = window.location.origin;
+  // Roteia as Functions pelo proxy do Vite (mesma origem) → emulator em 127.0.0.1:5001.
+  // Funciona em localhost, IP da rede e Cloudflare Tunnel sem expor a porta 5001.
+  const port = Number(window.location.port) || (window.location.protocol === "https:" ? 443 : 80);
+  connectFunctionsEmulator(functions, window.location.hostname, port);
 
-  console.log(`[firebase] Functions via proxy: ${window.location.origin}/pontual-logistica/...`);
+  console.log(`[firebase] Functions emulator via proxy: ${window.location.origin}/pontual-logistica/...`);
 }
 
 export default app;
