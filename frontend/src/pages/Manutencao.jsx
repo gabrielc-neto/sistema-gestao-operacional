@@ -665,6 +665,10 @@ export default function Manutencao() {
   const [itemDraftEdit,   setItemDraftEdit]   = useState({ ...EMPTY_ITEM });
   const [salvandoEditLanc, setSalvandoEditLanc] = useState(false);
   const [erroEditLanc,    setErroEditLanc]    = useState("");
+  const [anexosLanc,      setAnexosLanc]      = useState([]);
+  const [uploadandoLanc,  setUploadandoLanc]  = useState(false);
+  const [erroAnexoLanc,   setErroAnexoLanc]   = useState("");
+  const fileInputLancRef                       = useRef(null);
   // catálogo de serviços e peças (cadastro inline)
   const [itensCatalogo,   setItensCatalogo]   = useState([]);
   // tela de Cadastros (gerenciar catálogo)
@@ -1167,6 +1171,73 @@ export default function Manutencao() {
     return `${(n / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  // ── Anexos do Lançamento de NF ─────────────────────────────────────
+  async function uploadAnexosLanc(fileList) {
+    if (!editLanc) return;
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
+    setErroAnexoLanc(""); setUploadandoLanc(true);
+    const novos = [];
+    try {
+      for (const file of files) {
+        if (!ANEXO_TIPOS_OK.includes(file.type)) {
+          setErroAnexoLanc(`Tipo não suportado (${file.name}). Use PDF, JPG, PNG ou WEBP.`);
+          continue;
+        }
+        if (file.size > ANEXO_MAX_BYTES) {
+          setErroAnexoLanc(`${file.name}: arquivo maior que 10 MB.`);
+          continue;
+        }
+        // eslint-disable-next-line react-hooks/purity -- handler de evento
+        const ts = Date.now();
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
+        const path = `lancamentos_os/${editLanc.id}/${ts}_${safeName}`;
+        const ref = storageRef(storage, path);
+        await uploadBytes(ref, file, { contentType: file.type });
+        const url = await getDownloadURL(ref);
+        novos.push({
+          nome: file.name, url, path,
+          contentType: file.type, tamanho: file.size,
+          criadoEm: new Date().toISOString(), criadoPor: quemSou(),
+        });
+      }
+      if (novos.length > 0) {
+        const atualizado = [...anexosLanc, ...novos];
+        setAnexosLanc(atualizado);
+        // Persiste imediato — Firestore + lista local
+        await updateDoc(doc(db, "lancamentos_os", editLanc.id), { anexos: atualizado, editadoEm: new Date().toISOString() });
+        setLancamentos(prev => prev.map(x => x.id === editLanc.id ? { ...x, anexos: atualizado } : x));
+      }
+    } catch (e) {
+      console.error("uploadAnexosLanc:", e);
+      setErroAnexoLanc("Erro no upload: " + (e?.message || e));
+    } finally {
+      setUploadandoLanc(false);
+      if (fileInputLancRef.current) fileInputLancRef.current.value = "";
+    }
+  }
+
+  async function removerAnexoLanc(idx) {
+    const a = anexosLanc[idx];
+    if (!a) return;
+    if (!window.confirm(`Excluir anexo "${a.nome}"?`)) return;
+    setErroAnexoLanc("");
+    try {
+      if (a.path) {
+        try { await deleteObject(storageRef(storage, a.path)); } catch (e) { console.warn("delete storage:", e); }
+      }
+      const atualizado = anexosLanc.filter((_, i) => i !== idx);
+      setAnexosLanc(atualizado);
+      if (editLanc?.id) {
+        await updateDoc(doc(db, "lancamentos_os", editLanc.id), { anexos: atualizado, editadoEm: new Date().toISOString() });
+        setLancamentos(prev => prev.map(x => x.id === editLanc.id ? { ...x, anexos: atualizado } : x));
+      }
+    } catch (e) {
+      console.error("removerAnexoLanc:", e);
+      setErroAnexoLanc("Erro ao excluir anexo: " + (e?.message || e));
+    }
+  }
+
   // ── Ordens de Serviço ──────────────────────────────────────────────────
   function proximoNumeroOS() {
     let maior = 0;
@@ -1605,10 +1676,12 @@ export default function Manutencao() {
       : (l.item ? [{ tipoItem: l.tipoItem || "", item: l.item, quantidade: numOS(l.quantidade) || 1, valorUnitario: numOS(l.valorUnitario), valorTotal: Number(l.valorTotal) || numOS(l.quantidade) * numOS(l.valorUnitario) }] : []);
     setLancItensEdit(itens);
     setItemDraftEdit({ ...EMPTY_ITEM });
+    setAnexosLanc(Array.isArray(l.anexos) ? l.anexos : []);
+    setErroAnexoLanc("");
     setErroEditLanc("");
   }
 
-  function fecharEditLanc() { setEditLanc(null); setErroEditLanc(""); }
+  function fecharEditLanc() { setEditLanc(null); setErroEditLanc(""); setAnexosLanc([]); setErroAnexoLanc(""); }
 
   function addItemEditLanc() {
     const item = (itemDraftEdit.item || "").trim();
@@ -1649,6 +1722,7 @@ export default function Manutencao() {
         itens,
         valorTotal,
         servicoFeito: (formEditLanc.servicoFeito || "").trim(),
+        anexos:       Array.isArray(anexosLanc) ? anexosLanc : [],
         editadoEm:    new Date().toISOString(),
         editadoPor:   quemSou(),
       };
@@ -1666,6 +1740,14 @@ export default function Manutencao() {
     if (!canDelete) return;
     if (!window.confirm(`Excluir o lançamento ${l.numero}?`)) return;
     try {
+      // limpa anexos do Storage (best-effort)
+      if (Array.isArray(l.anexos)) {
+        for (const a of l.anexos) {
+          if (a.path) {
+            try { await deleteObject(storageRef(storage, a.path)); } catch { /* ignore */ }
+          }
+        }
+      }
       await deleteDoc(doc(db, "lancamentos_os", l.id));
       setLancamentos(prev => prev.filter(x => x.id !== l.id));
     } catch (e) {
@@ -2495,6 +2577,11 @@ export default function Manutencao() {
                         {Array.isArray(l.itens) && l.itens.length > 0 && (
                           <div style={{ fontSize: ".68rem", color: "#94a3b8", marginTop: 2 }}>{l.itens.length} {l.itens.length === 1 ? "item" : "itens"}</div>
                         )}
+                        {Array.isArray(l.anexos) && l.anexos.length > 0 && (
+                          <div title={`${l.anexos.length} anexo(s)`} style={{ display:"inline-flex", alignItems:"center", gap:3, marginTop:4, fontSize:".68rem", fontWeight:700, color:"#4338ca", background:"#e0e7ff", padding:"2px 7px", borderRadius:10 }}>
+                            📎 {l.anexos.length}
+                          </div>
+                        )}
                       </td>
                       <td style={tdOS}>
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -3219,12 +3306,88 @@ export default function Manutencao() {
                 />
               </label>
 
+              {/* ── Anexos do Lançamento (NF, fotos, recibo) ─────── */}
+              <div style={{ borderTop:"1px dashed #cbd5e1", paddingTop:14, marginTop:4 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                  <span style={{ fontWeight:700, color:"#1a3a5c", fontSize:".9rem" }}>📎 Anexos (NF, foto da peça, recibo)</span>
+                  <span style={{ ...s.osBadge, background:"#e0e7ff", color:"#4338ca" }}>{anexosLanc.length}</span>
+                  <span style={{ fontSize:".72rem", color:"#94a3b8", marginLeft:"auto" }}>
+                    PDF · JPG · PNG · WEBP — até 10 MB
+                  </span>
+                </div>
+
+                <input
+                  ref={fileInputLancRef}
+                  type="file"
+                  multiple
+                  accept="application/pdf,image/jpeg,image/png,image/webp"
+                  style={{ display:"none" }}
+                  onChange={(e) => uploadAnexosLanc(e.target.files)}
+                />
+
+                <div
+                  onClick={() => fileInputLancRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); }}
+                  onDrop={(e) => { e.preventDefault(); uploadAnexosLanc(e.dataTransfer.files); }}
+                  style={{
+                    border:"2px dashed #94a3b8", borderRadius:10, padding:"14px",
+                    textAlign:"center", color:"#475569", cursor: uploadandoLanc ? "wait" : "pointer",
+                    background: uploadandoLanc ? "#f1f5f9" : "#f8fafc", fontSize:".82rem",
+                  }}
+                >
+                  {uploadandoLanc ? "Enviando arquivo(s)..." : "Clique para selecionar ou arraste arquivos aqui"}
+                </div>
+
+                {erroAnexoLanc && <p style={{ ...s.erroMsg, marginTop:8 }}>{erroAnexoLanc}</p>}
+
+                {anexosLanc.length > 0 && (
+                  <div style={{ marginTop:10, display:"flex", flexDirection:"column", gap:6 }}>
+                    {anexosLanc.map((a, i) => {
+                      const isImg = (a.contentType || "").startsWith("image/");
+                      return (
+                        <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 10px", border:"1px solid #e2e8f0", borderRadius:8, background:"#fff" }}>
+                          {isImg ? (
+                            <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ flexShrink:0 }}>
+                              <img src={a.url} alt={a.nome} style={{ width:42, height:42, objectFit:"cover", borderRadius:6, border:"1px solid #e2e8f0" }} />
+                            </a>
+                          ) : (
+                            <div style={{ width:42, height:42, borderRadius:6, background:"#fee2e2", color:"#dc2626", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:".7rem", flexShrink:0 }}>
+                              PDF
+                            </div>
+                          )}
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <a href={a.url} target="_blank" rel="noopener noreferrer"
+                              style={{ fontSize:".82rem", color:"#1d4ed8", fontWeight:600, textDecoration:"none", display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}
+                              title={a.nome}>
+                              {a.nome}
+                            </a>
+                            <div style={{ fontSize:".7rem", color:"#94a3b8" }}>
+                              {fmtTamanho(a.tamanho)}{a.criadoEm ? ` · ${fmtDate(a.criadoEm.slice(0,10))}` : ""}
+                              {a.criadoPor ? ` · ${a.criadoPor}` : ""}
+                            </div>
+                          </div>
+                          <a href={a.url} target="_blank" rel="noopener noreferrer"
+                            style={{ background:"#dbeafe", color:"#1d4ed8", border:"none", borderRadius:5, padding:"4px 10px", fontSize:".75rem", fontWeight:700, textDecoration:"none" }}>
+                            Abrir
+                          </a>
+                          <button type="button" onClick={() => removerAnexoLanc(i)}
+                            style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".9rem", fontWeight:700 }}
+                            title="Excluir anexo">
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               {erroEditLanc && <p style={s.erroMsg}>{erroEditLanc}</p>}
 
               <div style={s.formFooter}>
                 <div style={{ flex:1 }} />
                 <button type="button" style={s.cancelBtn} onClick={fecharEditLanc}>Cancelar</button>
-                <button type="submit" style={s.saveBtn} disabled={salvandoEditLanc}>
+                <button type="submit" style={s.saveBtn} disabled={salvandoEditLanc || uploadandoLanc}>
                   {salvandoEditLanc ? "Salvando..." : "Salvar alterações"}
                 </button>
               </div>
