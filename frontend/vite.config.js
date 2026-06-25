@@ -8,7 +8,7 @@ export default defineConfig({
     host: true,
     port: 5173,
     // Libera qualquer subdomínio do Cloudflare Quick Tunnel (muda a cada reinício).
-    allowedHosts: ['.trycloudflare.com'],
+    allowedHosts: ['.trycloudflare.com', '.loca.lt'],
     proxy: {
       // Encaminha as chamadas das Cloud Functions pro emulator local.
       // Permite que o Rastreamento (dados SASCAR) funcione via Cloudflare Tunnel,

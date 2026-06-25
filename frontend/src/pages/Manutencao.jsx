@@ -4,7 +4,8 @@ import {
   collection, getDocs, setDoc, deleteDoc, addDoc, updateDoc,
   doc, query, orderBy,
 } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { db, storage } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
 
@@ -190,7 +191,6 @@ const PERIODOS_LANC = [
   { key: "mes",       label: "Este mês" },
   { key: "mes_ant",   label: "Mês passado" },
   { key: "ano",       label: "Este ano" },
-  { key: "12meses",   label: "Últimos 12 meses" },
   { key: "tudo",      label: "Tudo" },
   { key: "custom",    label: "Personalizado" },
 ];
@@ -204,7 +204,6 @@ function inicioPeriodo(key, agora, customIni) {
   if (key === "mes")      return new Date(y, m, 1).getTime();
   if (key === "mes_ant")  return new Date(y, m - 1, 1).getTime();
   if (key === "ano")      return new Date(y, 0, 1).getTime();
-  if (key === "12meses")  return new Date(y, m - 11, 1).getTime();
   if (key === "custom" && customIni) {
     const t = new Date(`${customIni}T00:00:00`).getTime();
     return Number.isFinite(t) ? t : 0;
@@ -263,7 +262,6 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
     let mesesNoPeriodo;
     if (periodo === "mes" || periodo === "mes_ant") mesesNoPeriodo = 1;
     else if (periodo === "ano") mesesNoPeriodo = agora.getMonth() + 1;
-    else if (periodo === "12meses") mesesNoPeriodo = 12;
     else if (filtrados.length === 0) mesesNoPeriodo = 1;
     else {
       const ts = filtrados.map(l => new Date(l.criadoEm || l.dataHora).getTime()).filter(Number.isFinite);
@@ -627,7 +625,13 @@ export default function Manutencao() {
   const [filtroTipo,     setFiltroTipo]     = useState("civ");
   const [filtroStTipo,   setFiltroStTipo]   = useState("todos");
   const [modal,          setModal]          = useState(null);
+  const [modalDocs,      setModalDocs]      = useState(null); // { veiculo, selecionados:Set, sobrescrever:bool }
+  const [salvandoDocs,   setSalvandoDocs]   = useState(false);
   const [form,           setForm]           = useState(EMPTY_FORM);
+  const [anexos,         setAnexos]         = useState([]); // anexos do registro aberto no modal
+  const [uploadando,     setUploadando]     = useState(false);
+  const [erroAnexo,      setErroAnexo]      = useState("");
+  const fileInputRef                          = useRef(null);
   const [salvando,       setSalvando]       = useState(false);
   const [erro,           setErro]           = useState("");
   // Ordens de Serviço
@@ -666,19 +670,31 @@ export default function Manutencao() {
   // tela de Cadastros (gerenciar catálogo)
   const [novoCat,         setNovoCat]         = useState({ tipo_lancamento: "", servico: "", peca: "", fornecedor: "" });
   const [editItemCat,     setEditItemCat]     = useState(null); // { id, nome }
+  // tipos de manutenção personalizados (criados pelo usuário, gravados no Firestore)
+  const [tiposCustom,     setTiposCustom]     = useState([]);
+  const [novoTipo,        setNovoTipo]        = useState({ label: "", grupo: "Mecânica", desc: "", campos: ["data_realiz","venc","local","resp","obs"] });
+  const [editTipo,        setEditTipo]        = useState(null); // { id, label, grupo, desc, campos }
+  const [salvandoTipo,    setSalvandoTipo]    = useState(false);
+  const [erroTipo,        setErroTipo]        = useState("");
 
   async function carregarTudo() {
     setLoading(true);
     try {
       // queries em paralelo, cada uma com try local pra não derrubar as outras
-      const [snapM, snapV, snapMot, snapOS, snapLanc, snapCat] = await Promise.all([
+      const [snapM, snapV, snapMot, snapOS, snapLanc, snapCat, snapTC] = await Promise.all([
         getDocs(collection(db, "manutencoes")).catch(e => { console.warn("manutencoes:", e); return null; }),
         getDocs(query(collection(db, "veiculos"), orderBy("placa"))).catch(e => { console.warn("veiculos:", e); return null; }),
         getDocs(collection(db, "motoristas")).catch(e => { console.warn("motoristas:", e); return null; }),
         getDocs(collection(db, "ordens_servico")).catch(e => { console.warn("ordens_servico:", e); return null; }),
         getDocs(collection(db, "lancamentos_os")).catch(e => { console.warn("lancamentos_os:", e); return null; }),
         getDocs(collection(db, "itens_manutencao")).catch(e => { console.warn("itens_manutencao:", e); return null; }),
+        getDocs(collection(db, "tipos_manutencao_custom")).catch(e => { console.warn("tipos_manutencao_custom:", e); return null; }),
       ]);
+
+      // tipos personalizados — schema: { label, grupo, desc, campos[], criadoEm, criadoPor }
+      const tcs = snapTC ? snapTC.docs.map(d => ({ id: d.id, ...d.data() })) : [];
+      tcs.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
+      setTiposCustom(tcs);
 
       // motoristas: filtra ativos e ordena por nome localmente
       const mots = snapMot ? snapMot.docs.map(d => ({ id: d.id, ...d.data() })) : [];
@@ -747,6 +763,19 @@ export default function Manutencao() {
 
   const normP = (p) => (p || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
+  // Catálogo final = built-in + personalizados (Firestore). Custom já vem com id próprio.
+  const TIPOS_TODOS = useMemo(() => {
+    const customMapped = tiposCustom.map(c => ({
+      id: c.id,
+      label: c.label || "(sem nome)",
+      grupo: c.grupo || "Mecânica",
+      desc: c.desc || "",
+      campos: Array.isArray(c.campos) && c.campos.length ? c.campos : ["data_realiz","venc","local","resp","obs"],
+      _custom: true,
+    }));
+    return [...TIPOS, ...customMapped];
+  }, [tiposCustom]);
+
   // ── Aba Por Veículo ───────────────────────────────────────────────────
   const veiculoSelecionado = useMemo(() =>
     veiculos.find(v => v.placa === placa) || null,
@@ -757,17 +786,31 @@ export default function Manutencao() {
     const isCarreta = veiculoSelecionado.tipo === "carreta";
     const is9eixos  = String(veiculoSelecionado.total_eixos) === "9";
 
-    const tiposVeiculo = TIPOS.filter(t => {
-      if (isCarreta) {
-        if (t.grupo !== "Documentação") return false;
-        if (["calibragem","tacografo","rntrc","seguro"].includes(t.id)) return false;
-        if (t.id === "licenca_parana" || t.id === "licenca_federal") return is9eixos;
-        return true;
-      } else {
-        if (t.grupo === "Motorista") return false;
-        if (t.id === "licenca_parana" || t.id === "licenca_federal") return is9eixos;
-        return true;
+    // Lista customizada por placa: se presente, filtra só os escolhidos. Senão, cai no padrão da frota.
+    const aplicaveis = Array.isArray(veiculoSelecionado.documentosAplicaveis)
+      ? new Set(veiculoSelecionado.documentosAplicaveis)
+      : null;
+
+    const tiposVeiculo = TIPOS_TODOS.filter(t => {
+      // Tipos personalizados ignoram as regras de "tipo de veículo" — entram só se a placa marcou
+      if (t._custom) {
+        return aplicaveis ? aplicaveis.has(t.id) : false;
       }
+      // Padrão por tipo de veículo (mantém regra is9eixos como hard rule)
+      let padrao;
+      if (isCarreta) {
+        if (t.grupo !== "Documentação") padrao = false;
+        else if (["calibragem","tacografo","rntrc","seguro"].includes(t.id)) padrao = false;
+        else if (t.id === "licenca_parana" || t.id === "licenca_federal") padrao = is9eixos;
+        else padrao = true;
+      } else {
+        if (t.grupo === "Motorista") padrao = false;
+        else if (t.id === "licenca_parana" || t.id === "licenca_federal") padrao = is9eixos;
+        else padrao = true;
+      }
+      // Se há lista custom, intersecciona com o padrão (não pode exibir o que o tipo de veículo não permite)
+      if (aplicaveis) return padrao && aplicaveis.has(t.id);
+      return padrao;
     });
 
     const p = normP(placa);
@@ -782,7 +825,7 @@ export default function Manutencao() {
     });
     const tipoLabel = isCarreta ? "Carreta" : "Cavalo";
     return [{ placa: p, label: `${tipoLabel} — ${p}`, tiposStatus, grupos: grps }];
-  }, [veiculoSelecionado, placa, registros]);
+  }, [veiculoSelecionado, placa, registros, TIPOS_TODOS]);
 
   const summaryStatus = useMemo(() => {
     const all = conjuntoComStatus.flatMap(s => s.tiposStatus);
@@ -804,6 +847,17 @@ export default function Manutencao() {
   }, [todosRegistros, filtroTipo, filtroStTipo]);
 
   // ── Aba Alertas ───────────────────────────────────────────────────────
+  // Mapa placa-normalizada → Set de tipos aplicáveis (só pra placas que customizaram a lista)
+  const aplicaveisPorPlaca = useMemo(() => {
+    const m = new Map();
+    veiculos.forEach(v => {
+      if (Array.isArray(v.documentosAplicaveis)) {
+        m.set(normP(v.placa), new Set(v.documentosAplicaveis));
+      }
+    });
+    return m;
+  }, [veiculos]);
+
   const listaAlertas = useMemo(() => {
     const tudo = [
       ...Object.values(registros).map(r => ({ ...r, _label: r.label || r.tipo })),
@@ -812,13 +866,18 @@ export default function Manutencao() {
     return tudo
       .map(r => ({ ...r, _status: calcStatus(r.venc) }))
       .filter(r => {
+        // Oculta alerta de tipo que a placa removeu da lista aplicável
+        if (r.tipo) {
+          const set = aplicaveisPorPlaca.get(normP(r.placa));
+          if (set && !set.has(r.tipo)) return false;
+        }
         const q = busca.toLowerCase();
         const matchB = (r.placa||"").toLowerCase().includes(q) || (r._label||"").toLowerCase().includes(q);
         const matchS = filtroSt === "todos" || r._status === filtroSt;
         return matchB && matchS;
       })
       .sort((a,b) => (STATUS_ORDER[a._status]||3) - (STATUS_ORDER[b._status]||3) || (a.venc||"").localeCompare(b.venc||""));
-  }, [registros, legacy, busca, filtroSt]);
+  }, [registros, legacy, busca, filtroSt, aplicaveisPorPlaca]);
 
   // ── Modal ─────────────────────────────────────────────────────────────
   function abrirModal(veiculoPlaca, tipo) {
@@ -834,10 +893,136 @@ export default function Manutencao() {
       resp:        rec.resp        || "",
       obs:         rec.obs         || "",
     } : { ...EMPTY_FORM });
+    setAnexos(Array.isArray(rec?.anexos) ? rec.anexos : []);
+    setErroAnexo("");
     setErro("");
   }
 
-  function fecharModal() { setModal(null); setErro(""); }
+  function fecharModal() { setModal(null); setErro(""); setAnexos([]); setErroAnexo(""); }
+
+  // ── Modal: documentos aplicáveis por placa ───────────────────────────
+  function abrirModalDocs() {
+    if (!veiculoSelecionado) return;
+    const atuais = Array.isArray(veiculoSelecionado.documentosAplicaveis)
+      ? veiculoSelecionado.documentosAplicaveis
+      : null;
+    // Se ainda não customizou, pré-selecciona o padrão atual (o que já aparece pra esse veículo)
+    const padraoIds = conjuntoComStatus[0]?.tiposStatus.map(t => t.id) || [];
+    const iniciais = atuais ? atuais : padraoIds;
+    setModalDocs({
+      veiculo: veiculoSelecionado,
+      selecionados: new Set(iniciais),
+      sobrescrever: !!atuais, // true se já tinha custom; false se vai criar a 1ª vez
+    });
+  }
+  function fecharModalDocs() { setModalDocs(null); }
+
+  function toggleDocAplicavel(id) {
+    setModalDocs(m => {
+      if (!m) return m;
+      const ns = new Set(m.selecionados);
+      if (ns.has(id)) ns.delete(id); else ns.add(id);
+      return { ...m, selecionados: ns };
+    });
+  }
+  function marcarTodosDocs() {
+    // Só Documentação e Mecânica — Motorista é por pessoa, não por placa
+    setModalDocs(m => m ? { ...m, selecionados: new Set(TIPOS_TODOS.filter(t => t.grupo !== "Motorista").map(t => t.id)) } : m);
+  }
+  function restaurarPadraoDocs() {
+    // Volta para o padrão da frota (remove a customização salva)
+    setModalDocs(m => m ? { ...m, selecionados: new Set(), sobrescrever: false, restaurar: true } : m);
+  }
+  // ── CRUD: tipos de manutenção personalizados ──────────────────────────
+  function toggleCampoEm(form, setForm, campo) {
+    const atuais = Array.isArray(form.campos) ? form.campos : [];
+    const ns = atuais.includes(campo) ? atuais.filter(c => c !== campo) : [...atuais, campo];
+    setForm({ ...form, campos: ns });
+  }
+
+  async function salvarNovoTipo() {
+    const label = (novoTipo.label || "").trim();
+    if (!label) { setErroTipo("Informe o nome do tipo."); return; }
+    if (!novoTipo.grupo || !["Documentação","Mecânica"].includes(novoTipo.grupo)) {
+      setErroTipo("Selecione um grupo válido."); return;
+    }
+    if (!Array.isArray(novoTipo.campos) || novoTipo.campos.length === 0) {
+      setErroTipo("Marque pelo menos um campo."); return;
+    }
+    setSalvandoTipo(true); setErroTipo("");
+    try {
+      await addDoc(collection(db, "tipos_manutencao_custom"), {
+        label,
+        grupo: novoTipo.grupo,
+        desc: (novoTipo.desc || "").trim(),
+        campos: novoTipo.campos,
+        criadoEm: new Date().toISOString(),
+        criadoPor: quemSou(),
+      });
+      setNovoTipo({ label:"", grupo:"Mecânica", desc:"", campos:["data_realiz","venc","local","resp","obs"] });
+      await carregarTudo();
+    } catch (e) {
+      console.error("salvarNovoTipo:", e);
+      setErroTipo("Erro ao salvar: " + (e?.message || e));
+    } finally {
+      setSalvandoTipo(false);
+    }
+  }
+
+  async function salvarEditTipo() {
+    if (!editTipo?.id) return;
+    const label = (editTipo.label || "").trim();
+    if (!label) { setErroTipo("Informe o nome do tipo."); return; }
+    setSalvandoTipo(true); setErroTipo("");
+    try {
+      await updateDoc(doc(db, "tipos_manutencao_custom", editTipo.id), {
+        label,
+        grupo: editTipo.grupo,
+        desc: (editTipo.desc || "").trim(),
+        campos: Array.isArray(editTipo.campos) && editTipo.campos.length
+          ? editTipo.campos
+          : ["data_realiz","venc","local","resp","obs"],
+      });
+      setEditTipo(null);
+      await carregarTudo();
+    } catch (e) {
+      console.error("salvarEditTipo:", e);
+      setErroTipo("Erro ao salvar: " + (e?.message || e));
+    } finally {
+      setSalvandoTipo(false);
+    }
+  }
+
+  async function excluirTipoCustom(t) {
+    if (!confirm(`Excluir tipo "${t.label}"?\n\nRegistros já lançados com esse tipo permanecem no histórico, mas o tipo some das opções novas.`)) return;
+    try {
+      await deleteDoc(doc(db, "tipos_manutencao_custom", t.id));
+      await carregarTudo();
+    } catch (e) {
+      console.error("excluirTipoCustom:", e);
+      alert("Erro ao excluir: " + (e?.message || e));
+    }
+  }
+
+  async function salvarDocsAplicaveis() {
+    if (!modalDocs?.veiculo?.id) return;
+    setSalvandoDocs(true);
+    try {
+      const ref = doc(db, "veiculos", modalDocs.veiculo.id);
+      if (modalDocs.restaurar) {
+        await updateDoc(ref, { documentosAplicaveis: null });
+      } else {
+        await updateDoc(ref, { documentosAplicaveis: Array.from(modalDocs.selecionados) });
+      }
+      await carregarTudo();
+      setModalDocs(null);
+    } catch (e) {
+      console.error("salvarDocsAplicaveis:", e);
+      alert("Erro ao salvar configuração: " + (e?.message || e));
+    } finally {
+      setSalvandoDocs(false);
+    }
+  }
 
   async function salvar(e) {
     e.preventDefault();
@@ -858,6 +1043,7 @@ export default function Manutencao() {
         km_atual:    form.km_atual.trim()    || null,
         resp:        form.resp.trim()        || null,
         obs:         form.obs.trim()         || null,
+        anexos:      Array.isArray(anexos) ? anexos : [],
         updatedAt:   new Date().toISOString(),
       };
       if (!modal.record) payload.createdAt = new Date().toISOString();
@@ -875,11 +1061,110 @@ export default function Manutencao() {
   async function excluir(docId, label) {
     if (!window.confirm(`Excluir registro de "${label}"?`)) return;
     try {
+      // tenta apagar anexos do Storage antes (best-effort — ignora se falhar)
+      const rec = modal?.record;
+      if (Array.isArray(rec?.anexos)) {
+        for (const a of rec.anexos) {
+          if (a.path) {
+            try { await deleteObject(storageRef(storage, a.path)); } catch { /* ignore */ }
+          }
+        }
+      }
       await deleteDoc(doc(db, "manutencoes", docId));
       await carregarTudo();
     } catch {
       alert("Erro ao excluir.");
     }
+  }
+
+  // ── Anexos: upload e delete no Firebase Storage ──────────────────────
+  const ANEXO_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+  const ANEXO_TIPOS_OK = ["application/pdf","image/jpeg","image/png","image/webp"];
+
+  async function uploadAnexos(fileList) {
+    if (!modal) return;
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
+    setErroAnexo(""); setUploadando(true);
+    const novos = [];
+    try {
+      for (const file of files) {
+        if (!ANEXO_TIPOS_OK.includes(file.type)) {
+          setErroAnexo(`Tipo não suportado (${file.name}). Use PDF, JPG, PNG ou WEBP.`);
+          continue;
+        }
+        if (file.size > ANEXO_MAX_BYTES) {
+          setErroAnexo(`${file.name}: arquivo maior que 10 MB.`);
+          continue;
+        }
+        // eslint-disable-next-line react-hooks/purity -- handler de evento, não render
+        const ts = Date.now();
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
+        const path = `manutencoes/${modal.placa}/${modal.tipo.id}/${ts}_${safeName}`;
+        const ref = storageRef(storage, path);
+        await uploadBytes(ref, file, { contentType: file.type });
+        const url = await getDownloadURL(ref);
+        novos.push({
+          nome: file.name,
+          url,
+          path,
+          contentType: file.type,
+          tamanho: file.size,
+          criadoEm: new Date().toISOString(),
+          criadoPor: quemSou(),
+        });
+      }
+      if (novos.length > 0) {
+        const atualizado = [...anexos, ...novos];
+        setAnexos(atualizado);
+        // Persiste imediato: se modal.record existe, atualiza Firestore agora; senão fica pendente até user clicar Salvar
+        if (modal.record?.id) {
+          await updateDoc(doc(db, "manutencoes", modal.record.id), { anexos: atualizado, updatedAt: new Date().toISOString() });
+          // atualiza registros local sem refazer fetch completo
+          setRegistros(prev => {
+            const key = `${modal.placa}__${modal.tipo.id}`;
+            return prev[key] ? { ...prev, [key]: { ...prev[key], anexos: atualizado } } : prev;
+          });
+        }
+      }
+    } catch (e) {
+      console.error("uploadAnexos:", e);
+      setErroAnexo("Erro no upload: " + (e?.message || e));
+    } finally {
+      setUploadando(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function removerAnexo(idx) {
+    const a = anexos[idx];
+    if (!a) return;
+    if (!window.confirm(`Excluir anexo "${a.nome}"?`)) return;
+    setErroAnexo("");
+    try {
+      if (a.path) {
+        try { await deleteObject(storageRef(storage, a.path)); } catch (e) { console.warn("delete storage:", e); }
+      }
+      const atualizado = anexos.filter((_, i) => i !== idx);
+      setAnexos(atualizado);
+      if (modal?.record?.id) {
+        await updateDoc(doc(db, "manutencoes", modal.record.id), { anexos: atualizado, updatedAt: new Date().toISOString() });
+        setRegistros(prev => {
+          const key = `${modal.placa}__${modal.tipo.id}`;
+          return prev[key] ? { ...prev, [key]: { ...prev[key], anexos: atualizado } } : prev;
+        });
+      }
+    } catch (e) {
+      console.error("removerAnexo:", e);
+      setErroAnexo("Erro ao excluir anexo: " + (e?.message || e));
+    }
+  }
+
+  function fmtTamanho(b) {
+    const n = Number(b) || 0;
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+    return `${(n / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   // ── Ordens de Serviço ──────────────────────────────────────────────────
@@ -1476,6 +1761,21 @@ export default function Manutencao() {
                   {summaryStatus.semReg  > 0 && <span style={{ ...s.rPill, background:"#f1f5f9", color:"#94a3b8" }}>{summaryStatus.semReg} sem reg.</span>}
                 </div>
             )}
+            {placa && veiculoSelecionado && (
+              <button
+                type="button"
+                onClick={abrirModalDocs}
+                title={Array.isArray(veiculoSelecionado.documentosAplicaveis) ? "Editar quais documentos aplicam a essa placa" : "Personalizar quais documentos aplicam a essa placa"}
+                style={{ marginLeft:"auto", padding:"8px 14px", background:"#1a3a5c", color:"#fff", border:"none", borderRadius:8, fontSize:".82rem", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6, fontFamily:"inherit" }}
+              >
+                ⚙ Documentos aplicáveis
+                {Array.isArray(veiculoSelecionado.documentosAplicaveis) && (
+                  <span style={{ background:"#f5c318", color:"#1a3a5c", borderRadius:20, fontSize:".7rem", fontWeight:800, padding:"2px 8px" }}>
+                    customizado
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -1538,7 +1838,7 @@ export default function Manutencao() {
           <div style={{ padding:"12px 16px", borderBottom:"1px solid var(--border)", display:"flex", flexDirection:"column", gap:10 }}>
             {["Documentação","Motorista","Mecânica"].map(grupo => {
               const gc = GRUPO_COLOR[grupo];
-              const tiposGrupo = TIPOS.filter(t => t.grupo === grupo);
+              const tiposGrupo = TIPOS_TODOS.filter(t => t.grupo === grupo);
               return (
                 <div key={grupo} style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
                   <span style={{ fontSize:".7rem", fontWeight:700, color: gc.color, background: gc.bg, border:`1px solid ${gc.border}`, borderRadius:6, padding:"2px 8px", whiteSpace:"nowrap" }}>
@@ -1606,7 +1906,7 @@ export default function Manutencao() {
                   <tbody>
                     {listaPorTipo.map(r => {
                       const sm   = STATUS_META[r._status] || STATUS_META.ok;
-                      const tipo = TIPOS.find(t => t.id === r.tipo) || { id: r.tipo, label: r.tipo, desc:"", campos:["data_realiz","venc","local","resp","obs"] };
+                      const tipo = TIPOS_TODOS.find(t => t.id === r.tipo) || { id: r.tipo, label: r.tipo, desc:"", campos:["data_realiz","venc","local","resp","obs"] };
                       const ident = r.placa || r.motorista || "—";
                       return (
                         <tr key={r.id} style={{ ...s.tr, background: sm.rowBg }}>
@@ -1680,7 +1980,7 @@ export default function Manutencao() {
                   <tbody>
                     {listaAlertas.map(r => {
                       const sm   = STATUS_META[r._status] || STATUS_META.ok;
-                      const tipo = TIPOS.find(t => t.id === r.tipo) || { id: r.tipo||"outro", label: r._label, desc:"", campos:["data_realiz","venc","local","resp","obs"] };
+                      const tipo = TIPOS_TODOS.find(t => t.id === r.tipo) || { id: r.tipo||"outro", label: r._label, desc:"", campos:["data_realiz","venc","local","resp","obs"] };
                       return (
                         <tr key={r.id} style={{ ...s.tr, background: sm.rowBg }}>
                           <td style={{ ...s.td, fontWeight:700, color:"#1a3a5c" }}>{r.placa}</td>
@@ -1726,7 +2026,7 @@ export default function Manutencao() {
                 >
                   <option value="">— Selecione —</option>
                   <optgroup label="Mecânica">
-                    {TIPOS.filter(t => t.grupo === "Mecânica").map(t => (
+                    {TIPOS_TODOS.filter(t => t.grupo === "Mecânica").map(t => (
                       <option key={t.id} value={t.label}>{t.label}</option>
                     ))}
                   </optgroup>
@@ -2288,6 +2588,161 @@ export default function Manutencao() {
           {!canDelete && (
             <p style={{ marginTop:12, fontSize:".78rem", color:"#64748b" }}>Você pode adicionar itens. Editar e excluir é restrito a administradores.</p>
           )}
+
+          {/* ── Tipos de Manutenção personalizados ─────────────────────── */}
+          <div style={{ marginTop: 28, background:"#fff", borderRadius:12, boxShadow:"0 1px 3px rgba(0,0,0,0.06)", overflow:"hidden" }}>
+            <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0", display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ ...s.osBadge, background:"#fef3c7", color:"#92400e" }}>{tiposCustom.length}</span>
+              <h3 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>Tipos de Manutenção personalizados</h3>
+              <span style={{ fontSize:".75rem", color:"#64748b", marginLeft:4 }}>
+                — adicione itens que não estão no catálogo padrão (ex: mais serviços de Mecânica)
+              </span>
+            </div>
+
+            {/* Form: novo tipo */}
+            <div style={{ padding:"14px 16px", borderBottom:"1px solid #f1f5f9", display:"grid", gap:10 }}>
+              <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+                <label style={{ ...s.fieldLabel, flex:"2 1 240px", minWidth:200 }}>
+                  Nome do tipo *
+                  <input
+                    style={s.fieldInput}
+                    value={novoTipo.label}
+                    onChange={e => setNovoTipo({ ...novoTipo, label: e.target.value })}
+                    placeholder="Ex: Lavagem do motor"
+                  />
+                </label>
+                <label style={{ ...s.fieldLabel, flex:"1 1 160px", minWidth:140 }}>
+                  Grupo *
+                  <select
+                    style={s.fieldInput}
+                    value={novoTipo.grupo}
+                    onChange={e => setNovoTipo({ ...novoTipo, grupo: e.target.value })}
+                  >
+                    <option value="Mecânica">Mecânica</option>
+                    <option value="Documentação">Documentação</option>
+                  </select>
+                </label>
+              </div>
+              <label style={s.fieldLabel}>
+                Descrição
+                <input
+                  style={s.fieldInput}
+                  value={novoTipo.desc}
+                  onChange={e => setNovoTipo({ ...novoTipo, desc: e.target.value })}
+                  placeholder="Detalhe rápido do que esse tipo significa"
+                />
+              </label>
+              <div>
+                <div style={{ fontSize:".82rem", fontWeight:600, color:"#374151", marginBottom:6 }}>Campos a preencher</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                  {Object.entries(CAMPO_LABEL).map(([id, label]) => (
+                    <label key={id} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:".82rem", color:"#1e293b", padding:"4px 10px", border:"1px solid #cbd5e1", borderRadius:8, background: novoTipo.campos.includes(id) ? "#eff6ff" : "#fff", cursor:"pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={novoTipo.campos.includes(id)}
+                        onChange={() => toggleCampoEm(novoTipo, setNovoTipo, id)}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {erroTipo && <p style={s.erroMsg}>{erroTipo}</p>}
+              <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+                <button type="button" style={s.cancelBtn}
+                  onClick={() => { setNovoTipo({ label:"", grupo:"Mecânica", desc:"", campos:["data_realiz","venc","local","resp","obs"] }); setErroTipo(""); }}>
+                  Limpar
+                </button>
+                <button type="button" style={s.saveBtn} onClick={salvarNovoTipo} disabled={salvandoTipo}>
+                  {salvandoTipo ? "Salvando..." : "+ Adicionar tipo"}
+                </button>
+              </div>
+            </div>
+
+            {/* Lista */}
+            <div style={{ padding:"6px 0", maxHeight:420, overflowY:"auto" }}>
+              {tiposCustom.length === 0 ? (
+                <p style={{ textAlign:"center", color:"#94a3b8", fontSize:".85rem", padding:"1rem" }}>
+                  Nenhum tipo personalizado cadastrado.
+                </p>
+              ) : tiposCustom.map(t => (
+                <div key={t.id} style={{ padding:"10px 16px", borderBottom:"1px solid #f8fafc" }}>
+                  {editTipo?.id === t.id ? (
+                    <div style={{ display:"grid", gap:8 }}>
+                      <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+                        <input
+                          style={{ ...s.fieldInput, flex:"2 1 240px" }}
+                          value={editTipo.label}
+                          onChange={e => setEditTipo({ ...editTipo, label: e.target.value })}
+                          placeholder="Nome"
+                          autoFocus
+                        />
+                        <select
+                          style={{ ...s.fieldInput, flex:"1 1 140px" }}
+                          value={editTipo.grupo}
+                          onChange={e => setEditTipo({ ...editTipo, grupo: e.target.value })}
+                        >
+                          <option value="Mecânica">Mecânica</option>
+                          <option value="Documentação">Documentação</option>
+                        </select>
+                      </div>
+                      <input
+                        style={s.fieldInput}
+                        value={editTipo.desc || ""}
+                        onChange={e => setEditTipo({ ...editTipo, desc: e.target.value })}
+                        placeholder="Descrição"
+                      />
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                        {Object.entries(CAMPO_LABEL).map(([id, lbl]) => (
+                          <label key={id} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:".78rem", padding:"3px 8px", border:"1px solid #cbd5e1", borderRadius:6, background: (editTipo.campos||[]).includes(id) ? "#eff6ff" : "#fff", cursor:"pointer" }}>
+                            <input
+                              type="checkbox"
+                              checked={(editTipo.campos||[]).includes(id)}
+                              onChange={() => toggleCampoEm(editTipo, setEditTipo, id)}
+                            />
+                            {lbl}
+                          </label>
+                        ))}
+                      </div>
+                      <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+                        <button type="button" style={{ ...s.cancelBtn, padding:"4px 12px" }} onClick={() => { setEditTipo(null); setErroTipo(""); }}>Cancelar</button>
+                        <button type="button" style={{ ...s.saveBtn, padding:"4px 14px" }} onClick={salvarEditTipo} disabled={salvandoTipo}>
+                          {salvandoTipo ? "Salvando..." : "Salvar"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display:"flex", alignItems:"flex-start", gap:10 }}>
+                      <div style={{ flex:1 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                          <span style={{ fontWeight:700, color:"#1e293b", fontSize:".92rem" }}>{t.label}</span>
+                          <span style={{ ...s.osBadge, background: t.grupo === "Documentação" ? "#dbeafe" : "#dcfce7", color: t.grupo === "Documentação" ? "#1d4ed8" : "#15803d" }}>{t.grupo}</span>
+                        </div>
+                        {t.desc && <div style={{ fontSize:".78rem", color:"#64748b", marginTop:2 }}>{t.desc}</div>}
+                        <div style={{ fontSize:".72rem", color:"#94a3b8", marginTop:4 }}>
+                          Campos: {(t.campos || []).map(c => CAMPO_LABEL[c] || c).join(" · ") || "—"}
+                        </div>
+                      </div>
+                      {canDelete && (
+                        <div style={{ display:"flex", gap:6 }}>
+                          <button type="button"
+                            onClick={() => { setEditTipo({ id:t.id, label:t.label, grupo:t.grupo, desc:t.desc||"", campos: Array.isArray(t.campos)?[...t.campos]:[] }); setErroTipo(""); }}
+                            style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}>
+                            Editar
+                          </button>
+                          <button type="button"
+                            onClick={() => excluirTipoCustom(t)}
+                            style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}>
+                            Excluir
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </main>
       )}
 
@@ -2329,6 +2784,91 @@ export default function Manutencao() {
                 )
               ))}
 
+              {/* ── Anexos ───────────────────────────────────────────── */}
+              <div style={{ borderTop:"1px dashed #cbd5e1", paddingTop:14, marginTop:4 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                  <span style={{ fontWeight:700, color:"#1a3a5c", fontSize:".9rem" }}>📎 Anexos</span>
+                  <span style={{ ...s.osBadge, background:"#e0e7ff", color:"#4338ca" }}>{anexos.length}</span>
+                  <span style={{ fontSize:".72rem", color:"#94a3b8", marginLeft:"auto" }}>
+                    PDF · JPG · PNG · WEBP — até 10 MB
+                  </span>
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="application/pdf,image/jpeg,image/png,image/webp"
+                  style={{ display:"none" }}
+                  onChange={(e) => uploadAnexos(e.target.files)}
+                />
+
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); }}
+                  onDrop={(e) => { e.preventDefault(); uploadAnexos(e.dataTransfer.files); }}
+                  style={{
+                    border:"2px dashed #94a3b8", borderRadius:10, padding:"14px",
+                    textAlign:"center", color:"#475569", cursor: uploadando ? "wait" : "pointer",
+                    background: uploadando ? "#f1f5f9" : "#f8fafc", fontSize:".82rem",
+                    transition:"background .15s"
+                  }}
+                >
+                  {uploadando
+                    ? "Enviando arquivo(s)..."
+                    : "Clique para selecionar ou arraste arquivos aqui"}
+                </div>
+
+                {!modal.record && (
+                  <p style={{ marginTop:6, fontSize:".72rem", color:"#a16207", background:"#fef9c3", padding:"6px 10px", borderRadius:6 }}>
+                    💡 Anexos vão pro Storage agora. Clique <strong>Salvar</strong> pra criar o registro do documento (senão os anexos ficam órfãos).
+                  </p>
+                )}
+
+                {erroAnexo && <p style={{ ...s.erroMsg, marginTop:8 }}>{erroAnexo}</p>}
+
+                {anexos.length > 0 && (
+                  <div style={{ marginTop:10, display:"flex", flexDirection:"column", gap:6 }}>
+                    {anexos.map((a, i) => {
+                      const isImg = (a.contentType || "").startsWith("image/");
+                      return (
+                        <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 10px", border:"1px solid #e2e8f0", borderRadius:8, background:"#fff" }}>
+                          {isImg ? (
+                            <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ flexShrink:0 }}>
+                              <img src={a.url} alt={a.nome} style={{ width:42, height:42, objectFit:"cover", borderRadius:6, border:"1px solid #e2e8f0" }} />
+                            </a>
+                          ) : (
+                            <div style={{ width:42, height:42, borderRadius:6, background:"#fee2e2", color:"#dc2626", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:".7rem", flexShrink:0 }}>
+                              PDF
+                            </div>
+                          )}
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <a href={a.url} target="_blank" rel="noopener noreferrer"
+                              style={{ fontSize:".82rem", color:"#1d4ed8", fontWeight:600, textDecoration:"none", display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}
+                              title={a.nome}>
+                              {a.nome}
+                            </a>
+                            <div style={{ fontSize:".7rem", color:"#94a3b8" }}>
+                              {fmtTamanho(a.tamanho)}{a.criadoEm ? ` · ${fmtDate(a.criadoEm.slice(0,10))}` : ""}
+                              {a.criadoPor ? ` · ${a.criadoPor}` : ""}
+                            </div>
+                          </div>
+                          <a href={a.url} target="_blank" rel="noopener noreferrer"
+                            style={{ background:"#dbeafe", color:"#1d4ed8", border:"none", borderRadius:5, padding:"4px 10px", fontSize:".75rem", fontWeight:700, textDecoration:"none" }}>
+                            Abrir
+                          </a>
+                          <button type="button" onClick={() => removerAnexo(i)}
+                            style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".9rem", fontWeight:700 }}
+                            title="Excluir anexo">
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               {erro && <p style={s.erroMsg}>{erro}</p>}
 
               <div style={s.formFooter}>
@@ -2343,7 +2883,7 @@ export default function Manutencao() {
                 )}
                 <div style={{ flex:1 }} />
                 <button type="button" style={s.cancelBtn} onClick={fecharModal}>Cancelar</button>
-                <button type="submit" style={s.saveBtn} disabled={salvando}>
+                <button type="submit" style={s.saveBtn} disabled={salvando || uploadando}>
                   {salvando ? "Salvando..." : modal.record ? "Atualizar" : "Salvar"}
                 </button>
               </div>
@@ -2450,7 +2990,7 @@ export default function Manutencao() {
                 >
                   <option value="">— Selecione —</option>
                   <optgroup label="Mecânica">
-                    {TIPOS.filter(t => t.grupo === "Mecânica").map(t => (
+                    {TIPOS_TODOS.filter(t => t.grupo === "Mecânica").map(t => (
                       <option key={t.id} value={t.label}>{t.label}</option>
                     ))}
                   </optgroup>
@@ -2689,6 +3229,94 @@ export default function Manutencao() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: Documentos aplicáveis por placa ─────────────────────── */}
+      {modalDocs && (
+        <div style={s.overlay} onClick={fecharModalDocs}>
+          <div style={{ ...s.modal, maxWidth: 640 }} onClick={e => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <div>
+                <div style={s.modalTitulo}>Documentos aplicáveis — {modalDocs.veiculo.placa}</div>
+                <div style={s.modalSubtitulo}>
+                  Marque só os documentos que essa placa precisa. Desmarcar oculta o documento da aba Veículo e dos Alertas.
+                </div>
+              </div>
+              <button style={s.closeBtn} onClick={fecharModalDocs}>✕</button>
+            </div>
+
+            <div style={{ padding:"16px 24px", display:"flex", flexDirection:"column", gap:14 }}>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                <button type="button" onClick={marcarTodosDocs}
+                  style={{ padding:"6px 12px", background:"#dbeafe", color:"#1d4ed8", border:"none", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".78rem" }}>
+                  Marcar todos
+                </button>
+                <button type="button" onClick={restaurarPadraoDocs}
+                  style={{ padding:"6px 12px", background:"#f1f5f9", color:"#475569", border:"1px solid #cbd5e1", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".78rem" }}>
+                  Restaurar padrão da frota
+                </button>
+                <button type="button"
+                  onClick={() => { fecharModalDocs(); setAba("cadastros"); }}
+                  style={{ padding:"6px 12px", background:"#fef3c7", color:"#92400e", border:"none", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".78rem", marginLeft:"auto" }}
+                  title="Vai pra aba Cadastros pra criar um tipo novo">
+                  + Cadastrar novo tipo
+                </button>
+                {modalDocs.restaurar && (
+                  <span style={{ alignSelf:"center", fontSize:".78rem", color:"#a16207" }}>
+                    Vai voltar pro padrão ao salvar
+                  </span>
+                )}
+              </div>
+
+              {["Documentação","Mecânica"].map(grupo => {
+                const tiposG = TIPOS_TODOS.filter(t => t.grupo === grupo);
+                if (tiposG.length === 0) return null;
+                const gc = GRUPO_COLOR[grupo] || { bg:"#f1f5f9", color:"#475569", border:"#cbd5e1" };
+                return (
+                  <div key={grupo}>
+                    <div style={{ ...s.grupoHeader, background: gc.bg, color: gc.color, borderColor: gc.border, marginBottom: 8 }}>
+                      {grupo}
+                    </div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(240px, 1fr))", gap:6 }}>
+                      {tiposG.map(t => {
+                        const checked = modalDocs.selecionados.has(t.id) && !modalDocs.restaurar;
+                        return (
+                          <label key={t.id}
+                            style={{ display:"flex", alignItems:"flex-start", gap:8, padding:"6px 8px", borderRadius:6, cursor: modalDocs.restaurar ? "not-allowed" : "pointer", background: checked ? "#eff6ff" : "transparent", opacity: modalDocs.restaurar ? 0.5 : 1 }}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={modalDocs.restaurar}
+                              onChange={() => toggleDocAplicavel(t.id)}
+                              style={{ marginTop: 3 }}
+                            />
+                            <span style={{ fontSize:".82rem", color:"#1e293b", lineHeight:1.3 }}>
+                              <strong>{t.label}</strong>
+                              <br />
+                              <span style={{ color:"#64748b", fontSize:".72rem" }}>{t.desc}</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ ...s.formFooter, padding:"16px 24px 20px" }}>
+              <div style={{ flex:1, fontSize:".78rem", color:"#64748b" }}>
+                {modalDocs.restaurar
+                  ? "Padrão da frota: documentos definidos pelas regras de tipo de veículo."
+                  : `${modalDocs.selecionados.size} de ${TIPOS_TODOS.filter(t => t.grupo !== "Motorista").length} marcados`}
+              </div>
+              <button type="button" style={s.cancelBtn} onClick={fecharModalDocs}>Cancelar</button>
+              <button type="button" style={s.saveBtn} onClick={salvarDocsAplicaveis} disabled={salvandoDocs}>
+                {salvandoDocs ? "Salvando..." : "Salvar"}
+              </button>
+            </div>
           </div>
         </div>
       )}
