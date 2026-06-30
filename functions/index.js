@@ -62,20 +62,37 @@ function requireAuth(request) {
   }
 }
 
+// Converte erros não-HttpsError (ex.: ECONNRESET do SOAP SASCAR) em HttpsError.
+// Sem isso o onCall devolve 500 cru sem cabeçalho CORS e o browser mostra "Failed to fetch".
+async function safeRun(label, fn) {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof HttpsError) throw err;
+    const code = err?.code || err?.cause?.code || '';
+    const msg = err?.message || String(err);
+    const netErr = ['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'ECONNREFUSED', 'EAI_AGAIN'].includes(code);
+    console.error(`[${label}] falhou:`, code || 'erro', '-', msg);
+    throw new HttpsError(netErr ? 'unavailable' : 'internal', `${label}: ${msg}`);
+  }
+}
+
 // --- sascarVeiculos: lista a frota (cache 1h) ---
 export const sascarVeiculos = onCall(
   { secrets: [SASCAR_USUARIO, SASCAR_SENHA] },
   async (request) => {
     requireAuth(request);
-    const { data, age, fresh } = await cached('veiculos', 3600_000, () =>
-      obterVeiculos({
-        usuario: SASCAR_USUARIO.value(),
-        senha: SASCAR_SENHA.value(),
-        quantidade: 1000,
-        idVeiculo: 0,
-      })
-    );
-    return { veiculos: data, total: data.length, cache: { age, fresh } };
+    return await safeRun('sascarVeiculos', async () => {
+      const { data, age, fresh } = await cached('veiculos', 3600_000, () =>
+        obterVeiculos({
+          usuario: SASCAR_USUARIO.value(),
+          senha: SASCAR_SENHA.value(),
+          quantidade: 1000,
+          idVeiculo: 0,
+        })
+      );
+      return { veiculos: data, total: data.length, cache: { age, fresh } };
+    });
   }
 );
 
@@ -84,6 +101,7 @@ export const sascarPosicoes = onCall(
   { secrets: [SASCAR_USUARIO, SASCAR_SENHA] },
   async (request) => {
     requireAuth(request);
+    return await safeRun('sascarPosicoes', async () => {
     const { data, age, fresh } = await cached('posicoes', 30_000, async () => {
       // 1) Em paralelo: chama SASCAR + lê estado anterior + cercas cadastradas
       const [pacotes, veiculos, snapshot, cercasSnap] = await Promise.all([
@@ -235,6 +253,7 @@ export const sascarPosicoes = onCall(
     const writes = Array.isArray(data) ? 0 : data?.writes ?? 0;
     const eventos = Array.isArray(data) ? 0 : data?.eventos ?? 0;
     return { posicoes, total: posicoes.length, cache: { age, fresh }, gravadosNoFirestore: writes, eventosCerca: eventos };
+    });
   }
 );
 
