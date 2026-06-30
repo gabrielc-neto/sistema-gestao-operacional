@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend-vite",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "frontend"],
+      "port": 5173
+    },
+    {
+      "name": "firebase-functions-emulator",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "serve", "--prefix", "functions"],
+      "port": 5001
+    },
+    {
+      "name": "laravel-php",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["sistema-php/artisan", "serve"],
+      "port": 8000
+    }
+  ]
+}

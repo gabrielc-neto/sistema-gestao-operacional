@@ -46,3 +46,6 @@ docs/_jornada-seg.html
 # Python
 __pycache__/
 *.pyc
+
+# Claude local settings (per-machine)
+.claude/settings.local.json
