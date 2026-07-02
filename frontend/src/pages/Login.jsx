@@ -204,8 +204,8 @@ export default function Login() {
           overflow: hidden;
           display: flex;
           align-items: center;
-          justify-content: center;
-          padding: 24px;
+          justify-content: flex-start;
+          padding: 24px 24px 24px clamp(32px, 8vw, 120px);
           font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
           color: #fff;
         }
@@ -468,7 +468,7 @@ export default function Login() {
 
         /* ================= RESPONSIVO ================= */
         @media (max-width: 480px) {
-          .login-shell { padding: 16px; }
+          .login-shell { padding: 16px; justify-content: center; }
           .login-card { padding: 32px 24px 24px; border-radius: 18px; }
           .login-logo-top { margin-bottom: 24px; }
           .login-cta { top: 14px; right: 16px; padding: 8px 16px; font-size: .85rem; }
