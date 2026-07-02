@@ -151,12 +151,11 @@ export default function Login() {
         </div>
 
         {/* COLUNA DIREITA — IMAGEM INSTITUCIONAL
-            Por padrão tenta `/login-tanques.jpg`. Se não existir, cai no SVG.
-            Pra trocar a foto: jogar arquivo em frontend/public/login-tanques.jpg
-            Pra forçar SVG: <LoginPainel forcarSvg /> */}
+            Foto aérea Pontual Petróleo. Cai no SVG se o arquivo sumir.
+            Pra trocar: jogar arquivo em frontend/public/ e atualizar o src abaixo. */}
         <div className="login-img-col" aria-hidden="true">
           <div className="login-img-frame">
-            <LoginPainel src="/login-tanques.png" />
+            <LoginPainel src="/login-aerea.jpg" />
           </div>
         </div>
       </div>
