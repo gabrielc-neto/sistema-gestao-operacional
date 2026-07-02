@@ -57,26 +57,21 @@ export default function Login() {
       <img className="login-bg" src="/login-aerea.jpg" alt="" aria-hidden="true" />
       <div className="login-bg-overlay" aria-hidden="true" />
 
-      {/* Header topo — logo esquerda + botão Entrar direita */}
-      <header className="login-header">
-        <div className="login-header-logo">
-          <LogoPontual height={38} variant="white" />
-        </div>
-        {!mostrarLogin && (
-          <button
-            type="button"
-            className="login-cta"
-            onClick={() => setMostrarLogin(true)}
-          >
-            Entrar
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 6 }}>
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-              <polyline points="10 17 15 12 10 7"/>
-              <line x1="15" y1="12" x2="3" y2="12"/>
-            </svg>
-          </button>
-        )}
-      </header>
+      {/* Botão único no canto superior direito — tela permanece limpa */}
+      {!mostrarLogin && (
+        <button
+          type="button"
+          className="login-cta"
+          onClick={() => setMostrarLogin(true)}
+        >
+          Entrar
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 6 }}>
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+        </button>
+      )}
 
       {/* Card flutuante — só aparece após clicar em Entrar */}
       {mostrarLogin && (
@@ -233,19 +228,12 @@ export default function Login() {
             linear-gradient(135deg, rgba(13,31,74,.20) 0%, rgba(13,31,74,.55) 100%);
         }
 
-        /* ================= HEADER ================= */
-        .login-header {
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          z-index: 3;
-          padding: 20px 32px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-        .login-header-logo { display: flex; align-items: center; }
-
+        /* ================= BOTÃO ENTRAR (canto sup. direito) ================= */
         .login-cta {
+          position: absolute;
+          top: 20px;
+          right: 32px;
+          z-index: 3;
           display: inline-flex;
           align-items: center;
           gap: 4px;
@@ -483,8 +471,7 @@ export default function Login() {
           .login-shell { padding: 16px; }
           .login-card { padding: 32px 24px 24px; border-radius: 18px; }
           .login-logo-top { margin-bottom: 24px; }
-          .login-header { padding: 14px 16px; }
-          .login-cta { padding: 8px 16px; font-size: .85rem; }
+          .login-cta { top: 14px; right: 16px; padding: 8px 16px; font-size: .85rem; }
         }
       `}</style>
     </div>
