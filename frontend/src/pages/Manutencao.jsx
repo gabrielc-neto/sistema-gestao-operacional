@@ -8,6 +8,15 @@ import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "fi
 import { db, storage } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
+import {
+  LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
+  FileText, Receipt, Settings, TrendingUp,
+} from "lucide-react";
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  LineChart, Line,
+} from "recharts";
 
 // ── Catálogo de tipos de manutenção ───────────────────────────────────────
 const TIPOS = [
@@ -603,6 +612,286 @@ function SearchSelect({ value, onChange, options, onAdd, placeholder }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Dashboard Analytics — visão executiva com gráficos recharts ───────────
+const CORES_STATUS = { normal: "#16a34a", atencao: "#f59e0b", critico: "#dc2626" };
+
+function DashboardAnalytics({ lancamentos, fmtBRLfn }) {
+  const agoraAno = new Date().getFullYear();
+  // Anos disponíveis a partir dos dados
+  const anosDisponiveis = useMemo(() => {
+    const set = new Set([agoraAno]);
+    for (const l of (lancamentos || [])) {
+      const t = new Date(l.criadoEm || l.dataHora);
+      if (Number.isFinite(t.getTime())) set.add(t.getFullYear());
+    }
+    return Array.from(set).sort((a, b) => b - a);
+  }, [lancamentos, agoraAno]);
+
+  const [anoBarras, setAnoBarras] = useState(agoraAno);
+  const [anoLinhas, setAnoLinhas] = useState(agoraAno);
+
+  const {
+    totalGeral, totalVeiculos, mediaVeiculo, mediaMes,
+    dadosPizzaCategoria, dadosBarrasMensal, top10Veiculos,
+    dadosStatusFrota, dadosLinhaAcumulado,
+  } = useMemo(() => {
+    const list = lancamentos || [];
+    // Total geral (todos os lançamentos, sem filtro de período)
+    const totalGeral = list.reduce((s, l) => s + (Number(l.valorTotal) || 0), 0);
+
+    // Distribuição por categoria (pizza)
+    const porCategoria = {};
+    for (const l of list) {
+      const cat = (l.tipoLancamento || "Sem categoria").trim() || "Sem categoria";
+      porCategoria[cat] = (porCategoria[cat] || 0) + (Number(l.valorTotal) || 0);
+    }
+    const dadosPizzaCategoria = Object.entries(porCategoria)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Evolução mensal do ano selecionado (barras)
+    const mesesAnoBarras = Array.from({ length: 12 }, (_, i) => ({ mes: nomeMes(i), valor: 0 }));
+    for (const l of list) {
+      const t = new Date(l.criadoEm || l.dataHora);
+      if (!Number.isFinite(t.getTime())) continue;
+      if (t.getFullYear() !== anoBarras) continue;
+      mesesAnoBarras[t.getMonth()].valor += (Number(l.valorTotal) || 0);
+    }
+    const dadosBarrasMensal = mesesAnoBarras;
+
+    // Top 10 veículos com maior custo (todos os anos)
+    const porPlaca = {};
+    for (const l of list) {
+      const p = (l.placa || "Sem placa").trim() || "Sem placa";
+      porPlaca[p] = (porPlaca[p] || 0) + (Number(l.valorTotal) || 0);
+    }
+    const top10Veiculos = Object.entries(porPlaca)
+      .map(([placa, valor]) => ({ placa, valor }))
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, 10);
+
+    // Status da frota — classificação por custo médio mensal por veículo
+    // normal < 500, atenção 500-2000, crítico > 2000
+    const mesesDecorridos = new Date().getMonth() + 1; // do ano corrente
+    let sN = 0, sA = 0, sC = 0;
+    for (const [, valor] of Object.entries(porPlaca)) {
+      const medMes = valor / Math.max(1, mesesDecorridos);
+      if (medMes >= 2000) sC++;
+      else if (medMes >= 500) sA++;
+      else sN++;
+    }
+    const dadosStatusFrota = [
+      { name: "Normal", value: sN, cor: CORES_STATUS.normal },
+      { name: "Atenção", value: sA, cor: CORES_STATUS.atencao },
+      { name: "Crítico", value: sC, cor: CORES_STATUS.critico },
+    ].filter(x => x.value > 0);
+
+    // Custo anual acumulado (linhas) — soma cumulativa mês a mês
+    let acc = 0;
+    const dadosLinhaAcumulado = Array.from({ length: 12 }, (_, i) => {
+      const valorMes = list.reduce((s, l) => {
+        const t = new Date(l.criadoEm || l.dataHora);
+        if (!Number.isFinite(t.getTime())) return s;
+        if (t.getFullYear() !== anoLinhas || t.getMonth() !== i) return s;
+        return s + (Number(l.valorTotal) || 0);
+      }, 0);
+      acc += valorMes;
+      return { mes: nomeMes(i), valor: acc };
+    });
+
+    const totalVeiculos = Object.keys(porPlaca).length;
+    const mediaVeiculo = totalVeiculos > 0 ? totalGeral / totalVeiculos : 0;
+    const mesesTotais = Math.max(1, mesesDecorridos);
+    const mediaMes = totalGeral / mesesTotais;
+
+    return {
+      totalGeral, totalVeiculos, mediaVeiculo, mediaMes,
+      dadosPizzaCategoria, dadosBarrasMensal, top10Veiculos,
+      dadosStatusFrota, dadosLinhaAcumulado,
+    };
+  }, [lancamentos, anoBarras, anoLinhas]);
+
+  const fmt = fmtBRLfn || ((n) => (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
+
+  // ── Estilos base ──────────────────────────────────────────────
+  const cardStyle = { background: "#fff", borderRadius: 14, padding: "1rem 1.25rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" };
+  const chartTitle = { margin: "0 0 12px", color: "#1a3a5c", fontSize: "0.95rem", fontWeight: 700 };
+  const kpiValor = { fontSize: "1.35rem", fontWeight: 800, lineHeight: 1.1 };
+  const kpiLabel = { fontSize: ".72rem", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600, opacity: 0.85, marginBottom: 6 };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+        <div style={{ ...cardStyle, background: "linear-gradient(135deg, #1a3a5c, #234775)", color: "#fff", border: "none" }}>
+          <div style={kpiLabel}>Total geral</div>
+          <div style={kpiValor}>{fmt(totalGeral)}</div>
+          <div style={{ fontSize: ".72rem", opacity: 0.8, marginTop: 4 }}>{lancamentos?.length || 0} lançamentos</div>
+        </div>
+        <div style={{ ...cardStyle, background: "#e0f2fe" }}>
+          <div style={{ ...kpiLabel, color: "#0369a1" }}>Média / mês</div>
+          <div style={{ ...kpiValor, color: "#0c4a6e" }}>{fmt(mediaMes)}</div>
+          <div style={{ fontSize: ".72rem", color: "#0369a1", marginTop: 4 }}>{new Date().getMonth() + 1} meses no ano</div>
+        </div>
+        <div style={{ ...cardStyle, background: "#dcfce7" }}>
+          <div style={{ ...kpiLabel, color: "#166534" }}>Veículos ativos</div>
+          <div style={{ ...kpiValor, color: "#14532d" }}>{totalVeiculos}</div>
+          <div style={{ fontSize: ".72rem", color: "#166534", marginTop: 4 }}>com lançamentos</div>
+        </div>
+        <div style={{ ...cardStyle, background: "#fef3c7" }}>
+          <div style={{ ...kpiLabel, color: "#92400e" }}>Custo médio / veículo</div>
+          <div style={{ ...kpiValor, color: "#78350f" }}>{fmt(mediaVeiculo)}</div>
+          <div style={{ fontSize: ".72rem", color: "#92400e", marginTop: 4 }}>acumulado</div>
+        </div>
+      </div>
+
+      {/* Row: Pizza Categoria + Pizza Status */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 12 }}>
+        <div style={cardStyle}>
+          <h3 style={chartTitle}>Distribuição por categoria</h3>
+          {dadosPizzaCategoria.length === 0 ? (
+            <p style={{ color: "#94a3b8", fontSize: ".85rem", margin: "20px 0" }}>Sem lançamentos ainda.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie data={dadosPizzaCategoria} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} labelLine={false}
+                  label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ""}>
+                  {dadosPizzaCategoria.map((_, i) => (
+                    <Cell key={i} fill={PALETA_CAT[i % PALETA_CAT.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v) => fmt(v)} />
+                <Legend verticalAlign="bottom" height={36} iconSize={10} wrapperStyle={{ fontSize: ".78rem" }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        <div style={cardStyle}>
+          <h3 style={chartTitle}>Status da frota <span style={{ fontSize: ".72rem", color: "#94a3b8", fontWeight: 500 }}>· faixa de custo médio mensal</span></h3>
+          {dadosStatusFrota.length === 0 ? (
+            <p style={{ color: "#94a3b8", fontSize: ".85rem", margin: "20px 0" }}>Sem lançamentos ainda.</p>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={230}>
+                <PieChart>
+                  <Pie data={dadosStatusFrota} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={90} labelLine={false}
+                    label={({ value }) => value}>
+                    {dadosStatusFrota.map((d, i) => <Cell key={i} fill={d.cor} />)}
+                  </Pie>
+                  <Tooltip formatter={(v, n) => [`${v} veículo${v === 1 ? "" : "s"}`, n]} />
+                  <Legend verticalAlign="bottom" height={30} iconSize={10} wrapperStyle={{ fontSize: ".78rem" }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{ display: "flex", justifyContent: "center", gap: 12, fontSize: ".68rem", color: "#64748b", marginTop: 4 }}>
+                <span>● Normal &lt; R$ 500/mês</span>
+                <span>● Atenção R$ 500-2k</span>
+                <span>● Crítico &gt; R$ 2k</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Barras: Evolução mensal com seletor de ano */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          <h3 style={{ ...chartTitle, margin: 0 }}>Evolução de custos mensais</h3>
+          <SeletorAno anos={anosDisponiveis} valor={anoBarras} onChange={setAnoBarras} />
+        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={dadosBarrasMensal} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
+            <YAxis tickFormatter={(v) => fmtBRLcurto(v)} tick={{ fontSize: 12 }} width={80} />
+            <Tooltip formatter={(v) => fmt(v)} />
+            <Bar dataKey="valor" fill="#1a3a5c" radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Linhas: Custo anual acumulado com seletor de ano */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          <h3 style={{ ...chartTitle, margin: 0 }}>Custo anual acumulado</h3>
+          <SeletorAno anos={anosDisponiveis} valor={anoLinhas} onChange={setAnoLinhas} />
+        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={dadosLinhaAcumulado} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
+            <YAxis tickFormatter={(v) => fmtBRLcurto(v)} tick={{ fontSize: 12 }} width={80} />
+            <Tooltip formatter={(v) => fmt(v)} />
+            <Line type="monotone" dataKey="valor" stroke="#16a34a" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Top 10 veículos */}
+      <div style={cardStyle}>
+        <h3 style={chartTitle}>Top 10 veículos com maior custo</h3>
+        {top10Veiculos.length === 0 ? (
+          <p style={{ color: "#94a3b8", fontSize: ".85rem", margin: "20px 0" }}>Sem lançamentos ainda.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={Math.max(220, top10Veiculos.length * 36)}>
+            <BarChart data={top10Veiculos} layout="vertical" margin={{ top: 6, right: 30, left: 20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+              <XAxis type="number" tickFormatter={(v) => fmtBRLcurto(v)} tick={{ fontSize: 12 }} />
+              <YAxis type="category" dataKey="placa" tick={{ fontSize: 12, fontWeight: 600 }} width={100} />
+              <Tooltip formatter={(v) => fmt(v)} />
+              <Bar dataKey="valor" fill="#dc2626" radius={[0, 6, 6, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function NavTab({ icon: Icon, label, active, onClick, accent, badge }) {
+  const base = {
+    padding: "8px 12px", border: "1px solid transparent", borderRadius: 10,
+    background: "transparent", cursor: "pointer", fontSize: ".82rem", fontWeight: 600,
+    color: "#475569", display: "inline-flex", alignItems: "center", gap: 8,
+    fontFamily: "inherit", whiteSpace: "nowrap", transition: "all .15s",
+  };
+  const activeStyle = active
+    ? { background: accent || "#1a3a5c", color: "#fff", borderColor: accent || "#1a3a5c", boxShadow: `0 4px 12px ${accent || "#1a3a5c"}40` }
+    : {};
+  return (
+    <button type="button" style={{ ...base, ...activeStyle }} onClick={onClick}
+      onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = accent || "#1a3a5c"; } }}
+      onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#475569"; } }}>
+      {Icon && <Icon size={16} strokeWidth={2.2} />}
+      <span>{label}</span>
+      {badge && (
+        <span style={{ background: active ? "rgba(255,255,255,.25)" : badge.color, color: "#fff",
+          borderRadius: 20, fontSize: ".62rem", fontWeight: 800, padding: "1px 6px", minWidth: 16, textAlign: "center", lineHeight: 1.3 }}>
+          {badge.text}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function SeletorAno({ anos, valor, onChange }) {
+  return (
+    <div style={{ display: "inline-flex", gap: 4, padding: 4, background: "#f1f5f9", borderRadius: 10 }}>
+      {anos.map(a => (
+        <button key={a} type="button" onClick={() => onChange(a)}
+          style={{
+            padding: "6px 14px", borderRadius: 6, border: "none", fontSize: ".78rem", fontWeight: 700,
+            cursor: "pointer", fontFamily: "inherit",
+            background: valor === a ? "#1a3a5c" : "transparent",
+            color: valor === a ? "#fff" : "#64748b",
+          }}>
+          {a}
+        </button>
+      ))}
     </div>
   );
 }
@@ -1787,34 +2076,52 @@ export default function Manutencao() {
         </div>
       </header>
 
-      {/* TABS */}
-      <div style={s.tabBar}>
-        <button style={{ ...s.tab, ...(aba==="veiculo" ? s.tabAtivo : {}) }} onClick={() => setAba("veiculo")}>
-          Por Veículo
-        </button>
-        <button style={{ ...s.tab, ...(aba==="tipo" ? s.tabAtivo : {}) }} onClick={() => setAba("tipo")}>
-          Por Tipo
-        </button>
-        <button style={{ ...s.tab, ...(aba==="alertas" ? s.tabAtivo : {}) }} onClick={() => setAba("alertas")}>
-          Alertas
-          {alertaCount > 0 && <span style={s.tabBadge}>{alertaCount}</span>}
-        </button>
-        <button style={{ ...s.tab, ...(aba==="os" ? s.tabAtivo : {}) }} onClick={() => setAba("os")}>
-          Abertura de OS
-          {ordensServico.length > 0 && <span style={{ ...s.tabBadge, background:"#16a34a" }}>{ordensServico.length}</span>}
-        </button>
-        <button style={{ ...s.tab, ...(aba==="os_lanc" ? s.tabAtivo : {}) }} onClick={() => setAba("os_lanc")}>
-          Lançamento de OS
-        </button>
-        <button style={{ ...s.tab, ...(aba==="lancamento" ? s.tabAtivo : {}) }} onClick={() => setAba("lancamento")}>
-          Lançamento de NF
-          {lancamentos.length > 0 && <span style={{ ...s.tabBadge, background:"#4338ca" }}>{lancamentos.length}</span>}
-        </button>
-        <button style={{ ...s.tab, ...(aba==="cadastros" ? s.tabAtivo : {}) }} onClick={() => setAba("cadastros")}>
-          Cadastros
-          {itensCatalogo.length > 0 && <span style={{ ...s.tabBadge, background:"#64748b" }}>{itensCatalogo.length}</span>}
-        </button>
+      {/* NAVBAR REFORMADA — ícones + agrupamento por função */}
+      <div style={s.navGroups} className="manut-navgroups">
+        {/* Grupo 1 — Visão executiva */}
+        <div style={s.navGroup}>
+          <span style={s.navGroupLabel}>Visão</span>
+          <NavTab icon={LayoutDashboard} label="Dashboard" active={aba==="dashboard"} onClick={() => setAba("dashboard")} accent="#0891b2" />
+        </div>
+
+        {/* Grupo 2 — Manutenção operacional */}
+        <div style={s.navGroup}>
+          <span style={s.navGroupLabel}>Manutenção</span>
+          <NavTab icon={Truck} label="Por Veículo" active={aba==="veiculo"} onClick={() => setAba("veiculo")} accent="#2563eb" />
+          <NavTab icon={ListChecks} label="Por Tipo" active={aba==="tipo"} onClick={() => setAba("tipo")} accent="#2563eb" />
+          <NavTab icon={AlertTriangle} label="Alertas" active={aba==="alertas"} onClick={() => setAba("alertas")} accent="#dc2626"
+            badge={alertaCount > 0 ? { text: alertaCount, color: "#dc2626" } : null} />
+        </div>
+
+        {/* Grupo 3 — Ordens de Serviço */}
+        <div style={s.navGroup}>
+          <span style={s.navGroupLabel}>Ordens de Serviço</span>
+          <NavTab icon={FilePlus2} label="Abertura" active={aba==="os"} onClick={() => setAba("os")} accent="#16a34a"
+            badge={ordensServico.length > 0 ? { text: ordensServico.length, color: "#16a34a" } : null} />
+          <NavTab icon={FileText} label="Lançamento" active={aba==="os_lanc"} onClick={() => setAba("os_lanc")} accent="#16a34a" />
+        </div>
+
+        {/* Grupo 4 — Financeiro */}
+        <div style={s.navGroup}>
+          <span style={s.navGroupLabel}>Financeiro</span>
+          <NavTab icon={Receipt} label="Lançamento de NF" active={aba==="lancamento"} onClick={() => setAba("lancamento")} accent="#4338ca"
+            badge={lancamentos.length > 0 ? { text: lancamentos.length, color: "#4338ca" } : null} />
+        </div>
+
+        {/* Grupo 5 — Config */}
+        <div style={s.navGroup}>
+          <span style={s.navGroupLabel}>Config</span>
+          <NavTab icon={Settings} label="Cadastros" active={aba==="cadastros"} onClick={() => setAba("cadastros")} accent="#64748b"
+            badge={itensCatalogo.length > 0 ? { text: itensCatalogo.length, color: "#64748b" } : null} />
+        </div>
       </div>
+
+      {/* ── ABA: DASHBOARD ANALYTICS ─────────────────────────────────── */}
+      {aba === "dashboard" && (
+        <main style={s.main} className="pg-body">
+          <DashboardAnalytics lancamentos={lancamentos} fmtBRLfn={fmtBRL} />
+        </main>
+      )}
 
       {/* ── ABA: POR VEÍCULO ──────────────────────────────────────────── */}
       {aba === "veiculo" && (
@@ -3502,6 +3809,13 @@ const s = {
   tab:         { padding:"14px 18px", border:"none", borderBottom:"3px solid transparent", background:"none", cursor:"pointer", fontSize:".86rem", fontWeight:700, color:"#64748b", display:"flex", alignItems:"center", gap:8, fontFamily:"inherit", whiteSpace:"nowrap", transition:"color .15s, border-color .15s" },
   tabAtivo:    { color:"#1a3a5c", borderBottomColor:"#1a3a5c" },
   tabBadge:    { background:"#dc2626", color:"#fff", borderRadius:20, fontSize:".64rem", fontWeight:800, padding:"2px 7px", minWidth:18, textAlign:"center", lineHeight:1.2 },
+  // Navbar reformada
+  navGroups:      { display:"flex", gap:8, background:"#fff", borderBottom:"1px solid #e2e8f0", padding:"10px 20px", boxShadow:"0 1px 3px rgba(15,23,42,.03)", overflowX:"auto", flexWrap:"nowrap", alignItems:"flex-end" },
+  navGroup:       { display:"flex", flexDirection:"column", gap:6, paddingRight:12, borderRight:"1px solid #e2e8f0", minWidth:"max-content" },
+  navGroupLabel:  { fontSize:".62rem", textTransform:"uppercase", letterSpacing:"0.06em", fontWeight:700, color:"#94a3b8", padding:"0 8px", marginBottom:2 },
+  navTab:         { padding:"8px 12px", border:"1px solid transparent", borderRadius:10, background:"transparent", cursor:"pointer", fontSize:".82rem", fontWeight:600, color:"#475569", display:"inline-flex", alignItems:"center", gap:8, fontFamily:"inherit", whiteSpace:"nowrap", transition:"all .15s" },
+  navTabActive:   { background:"#1a3a5c", color:"#fff", borderColor:"#1a3a5c", boxShadow:"0 4px 12px rgba(26,58,92,.25)" },
+  navTabBadge:    { color:"#fff", borderRadius:20, fontSize:".62rem", fontWeight:800, padding:"1px 6px", minWidth:16, textAlign:"center", lineHeight:1.3 },
 
   // seletor veículo
   main:        { padding:"24px", maxWidth:1300, margin:"0 auto" },
