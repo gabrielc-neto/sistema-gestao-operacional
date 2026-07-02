@@ -143,6 +143,7 @@ const Ico = {
   Lock:   (p) => <Sv {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Sv>,
   Unlock: (p) => <Sv {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></Sv>,
   Dash:   (p) => <Sv {...p}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></Sv>,
+  Edit:   (p) => <Sv {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></Sv>,
   Cog:    (p) => <Sv {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></Sv>,
 };
 
@@ -179,6 +180,13 @@ export default function Frota() {
   const isAdmin   = ["master","admin"].includes(role);
   const canBlock   = ["master","admin","manutencao","logistica"].includes(role);
   const canUnblock = ["master","admin","manutencao"].includes(role);
+
+  const [flipped, setFlipped] = useState(() => new Set()); // ids de cards virados
+  const toggleFlip = (id) => setFlipped(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   const [bloqueioModal, setBloqueioModal] = useState(null); // { veiculo, modo: "bloquear"|"desbloquear" }
   const [bmMotivo,   setBmMotivo]   = useState(MOTIVOS_BLOQUEIO[0]);
@@ -449,54 +457,133 @@ export default function Frota() {
         <div style={s.grid} className="pg-grid">
           {lista.map(v => {
             const bloqueado = v.bloqueio?.ativo;
+            const isFlipped = flipped.has(v.id);
+            const cardBorder = bloqueado ? "2px solid #dc2626" : s.card.border;
+            const marca = (v.fabricante || "").split("/")[0].split(" ")[0] || "—";
             return (
               <div
                 key={v.id}
-                className="frota-card"
-                style={{ ...s.card, opacity: v.status === "inativo" ? 0.55 : 1, border: bloqueado ? "2px solid #dc2626" : s.card.border, position:"relative" }}
-                onClick={() => abrirEditar(v)}
+                className="frota-card-flip"
+                style={{ perspective: 1200, opacity: v.status === "inativo" ? 0.55 : 1 }}
+                onClick={() => toggleFlip(v.id)}
               >
-                {/* Faixa colorida no topo por status (inspirado no guia) */}
-                <span style={{ ...s.cardStripe, background: STATUS_STRIPE[v.status] || "#cbd5e1" }} aria-hidden />
-                {bloqueado && (
-                  <div style={s.lockBanner}>
-                    <Ico.Lock size={12} /> {v.bloqueio.motivo}
+                <div
+                  className="frota-card-flip-inner"
+                  style={{
+                    position: "relative",
+                    width: "100%",
+                    minHeight: 300,
+                    transformStyle: "preserve-3d",
+                    transition: "transform .6s cubic-bezier(.4,.2,.2,1)",
+                    transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {/* ===== FRENTE ===== */}
+                  <div
+                    className="frota-card"
+                    style={{
+                      ...s.card,
+                      border: cardBorder,
+                      position: "absolute",
+                      inset: 0,
+                      backfaceVisibility: "hidden",
+                      WebkitBackfaceVisibility: "hidden",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span style={{ ...s.cardStripe, background: STATUS_STRIPE[v.status] || "#cbd5e1" }} aria-hidden />
+                    {bloqueado && (
+                      <div style={s.lockBanner}>
+                        <Ico.Lock size={12} /> {v.bloqueio.motivo}
+                      </div>
+                    )}
+
+                    <div>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                        <div style={{ ...s.fabBadge, background: corFab(v.fabricante) }}>{marca}</div>
+                        <div style={{ fontSize:".62rem", color:"#94a3b8", fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
+                          <Ico.Truck size={12} /> clique pra virar
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 14 }}>
+                        <div style={{ ...s.placa, fontSize:"1.8rem", letterSpacing:"0.02em" }} className="frota-display">{v.placa}</div>
+                        <div style={{ ...s.modelo, fontSize:".95rem", marginTop:4 }}>{v.modelo || "—"}</div>
+                        <div style={{ fontSize:".78rem", color:"#64748b", marginTop:6, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.02em" }}>{v.fabricante || "—"}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ ...s.cardFooter, marginTop:0 }}>
+                      <span style={{ ...s.statusPill, background: STATUS_COR[v.status]||"#f1f5f9", color: STATUS_TEXT[v.status]||"#94a3b8" }}>
+                        <span style={{ width:6, height:6, borderRadius:"50%", background: STATUS_STRIPE[v.status]||"#cbd5e1", display:"inline-block" }} />
+                        {STATUS_LABEL[v.status] || v.status}
+                      </span>
+                    </div>
                   </div>
-                )}
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <div style={{ ...s.fabBadge, background: corFab(v.fabricante) }}>{(v.fabricante||"—").split("/")[0].split(" ")[0]}</div>
-                  {(canBlock || canUnblock) && (
-                    <button
-                      className="frota-card-action"
-                      style={{ ...s.lockBtn, background: bloqueado ? "#fee2e2" : "transparent", color: bloqueado ? "#dc2626" : "#64748b", opacity: bloqueado ? 1 : 0 }}
-                      onClick={(e) => abrirBloqueio(v, e)}
-                      title={bloqueado ? "Desbloquear veículo" : "Bloquear veículo"}
-                    >
-                      {bloqueado ? <Ico.Lock size={15} /> : <Ico.Unlock size={15} />}
-                    </button>
-                  )}
-                </div>
-                <div style={s.placa} className="frota-display">{v.placa}</div>
-                <div style={s.modelo}>{v.modelo || "—"}</div>
 
-                <div style={{ height:1, background:"#e2e8f0", margin:"10px 0 8px" }} />
+                  {/* ===== VERSO ===== */}
+                  <div
+                    className="frota-card"
+                    style={{
+                      ...s.card,
+                      border: cardBorder,
+                      position: "absolute",
+                      inset: 0,
+                      backfaceVisibility: "hidden",
+                      WebkitBackfaceVisibility: "hidden",
+                      transform: "rotateY(180deg)",
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <span style={{ ...s.cardStripe, background: STATUS_STRIPE[v.status] || "#cbd5e1" }} aria-hidden />
 
-                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                  <SpecRow icon={Ico.Scale} label="Tara:"     value={v.tara ? `${v.tara} kg` : ""} />
-                  <SpecRow icon={Ico.Key}   label="Chassi:"   value={v.chassi ? v.chassi.slice(-8) : ""} />
-                  <SpecRow icon={Ico.File}  label="RENAVAM:"  value={v.renavam || ""} />
-                  <SpecRow icon={Ico.Cal}   label="Ano:"      value={v.ano_fab ? `${v.ano_fab}${v.ano_mod && v.ano_mod !== v.ano_fab ? `/${v.ano_mod}` : ""}` : ""} />
-                  <SpecRow icon={Ico.User}  label="Motorista:" value={v.motorista || ""} accent />
-                  <SpecRow icon={Ico.Link}  label="Carretas:"  value={[v.c1, v.c2, v.c3].filter(Boolean).join(" · ")} accent />
-                  <SpecRow icon={Ico.Drop}  label="Capacidade:" value={v.cap ? `${v.cap}L${v.comp ? ` · ${v.comp}` : ""}` : ""} />
-                  <SpecRow icon={Ico.Truck} label="Config.:"   value={v.tipo_conjunto || ""} />
-                </div>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: 8 }}>
+                      <div style={{ fontSize:".82rem", fontWeight:800, color:"#1a3a5c", letterSpacing:"0.02em" }}>
+                        {v.placa} <span style={{ color:"#94a3b8", fontWeight:500 }}>· detalhes</span>
+                      </div>
+                      <div style={{ display:"flex", gap:6 }}>
+                        {(canBlock || canUnblock) && (
+                          <button
+                            className="frota-card-action"
+                            style={{ ...s.lockBtn, background: bloqueado ? "#fee2e2" : "#f1f5f9", color: bloqueado ? "#dc2626" : "#64748b", opacity: 1 }}
+                            onClick={(e) => { e.stopPropagation(); abrirBloqueio(v, e); }}
+                            title={bloqueado ? "Desbloquear veículo" : "Bloquear veículo"}
+                          >
+                            {bloqueado ? <Ico.Lock size={15} /> : <Ico.Unlock size={15} />}
+                          </button>
+                        )}
+                        <button
+                          className="frota-card-action"
+                          style={{ ...s.lockBtn, background: "#dbeafe", color: "#1d4ed8", opacity: 1 }}
+                          onClick={(e) => { e.stopPropagation(); abrirEditar(v); }}
+                          title="Editar veículo"
+                        >
+                          <Ico.Edit size={15} />
+                        </button>
+                      </div>
+                    </div>
 
-                <div style={s.cardFooter}>
-                  <span style={{ ...s.statusPill, background: STATUS_COR[v.status]||"#f1f5f9", color: STATUS_TEXT[v.status]||"#94a3b8" }}>
-                    <span style={{ width:6, height:6, borderRadius:"50%", background: STATUS_STRIPE[v.status]||"#cbd5e1", display:"inline-block" }} />
-                    {STATUS_LABEL[v.status] || v.status}
-                  </span>
+                    <div style={{ height:1, background:"#e2e8f0", margin:"0 0 10px" }} />
+
+                    <div style={{ display:"flex", flexDirection:"column", gap:6, flex:1, overflowY:"auto" }}>
+                      <SpecRow icon={Ico.Scale} label="Tara:"     value={v.tara ? `${v.tara} kg` : ""} />
+                      <SpecRow icon={Ico.Key}   label="Chassi:"   value={v.chassi ? v.chassi.slice(-8) : ""} />
+                      <SpecRow icon={Ico.File}  label="RENAVAM:"  value={v.renavam || ""} />
+                      <SpecRow icon={Ico.Cal}   label="Ano:"      value={v.ano_fab ? `${v.ano_fab}${v.ano_mod && v.ano_mod !== v.ano_fab ? `/${v.ano_mod}` : ""}` : ""} />
+                      <SpecRow icon={Ico.User}  label="Motorista:" value={v.motorista || ""} accent />
+                      <SpecRow icon={Ico.Link}  label="Carretas:"  value={[v.c1, v.c2, v.c3].filter(Boolean).join(" · ")} accent />
+                      <SpecRow icon={Ico.Drop}  label="Capacidade:" value={v.cap ? `${v.cap}L${v.comp ? ` · ${v.comp}` : ""}` : ""} />
+                      <SpecRow icon={Ico.Truck} label="Config.:"   value={v.tipo_conjunto || ""} />
+                    </div>
+
+                    <div style={{ fontSize:".65rem", color:"#94a3b8", textAlign:"center", marginTop:6, fontWeight:600 }}>
+                      clique pra voltar
+                    </div>
+                  </div>
                 </div>
               </div>
             );
