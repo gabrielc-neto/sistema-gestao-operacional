@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
@@ -11,8 +11,17 @@ export default function Login() {
   const [verSenha, setVerSenha] = useState(false);
   const [manterConectado, setManterConectado] = useState(true);
   const [tentativas, setTentativas]           = useState(0);
+  const [mostrarLogin, setMostrarLogin]       = useState(false);
   const { login } = useAuth();
   const navigate  = useNavigate();
+
+  // ESC fecha o card
+  useEffect(() => {
+    if (!mostrarLogin) return;
+    const onKey = (e) => { if (e.key === "Escape") setMostrarLogin(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mostrarLogin]);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -48,8 +57,42 @@ export default function Login() {
       <img className="login-bg" src="/login-aerea.jpg" alt="" aria-hidden="true" />
       <div className="login-bg-overlay" aria-hidden="true" />
 
-      {/* Card flutuante — Liquid Glass */}
-      <div className="login-card">
+      {/* Header topo — logo esquerda + botão Entrar direita */}
+      <header className="login-header">
+        <div className="login-header-logo">
+          <LogoPontual height={38} variant="white" />
+        </div>
+        {!mostrarLogin && (
+          <button
+            type="button"
+            className="login-cta"
+            onClick={() => setMostrarLogin(true)}
+          >
+            Entrar
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 6 }}>
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+              <polyline points="10 17 15 12 10 7"/>
+              <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+          </button>
+        )}
+      </header>
+
+      {/* Card flutuante — só aparece após clicar em Entrar */}
+      {mostrarLogin && (
+      <>
+      <div className="login-backdrop" onClick={() => setMostrarLogin(false)} aria-hidden="true" />
+      <div className="login-card" role="dialog" aria-modal="true">
+        <button
+          type="button"
+          className="login-close"
+          onClick={() => setMostrarLogin(false)}
+          aria-label="Fechar"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
         <div className="login-logo-top">
           <LogoPontual height={42} />
         </div>
@@ -149,6 +192,8 @@ export default function Login() {
           </p>
         </div>
       </div>
+      </>
+      )}
 
       <style>{`
         :root {
@@ -188,19 +233,88 @@ export default function Login() {
             linear-gradient(135deg, rgba(13,31,74,.20) 0%, rgba(13,31,74,.55) 100%);
         }
 
-        /* ================= CARD SÓLIDO (teste sem glass) ================= */
+        /* ================= HEADER ================= */
+        .login-header {
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          z-index: 3;
+          padding: 20px 32px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .login-header-logo { display: flex; align-items: center; }
+
+        .login-cta {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 10px 22px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.18);
+          color: #fff;
+          border: 1px solid rgba(255,255,255,0.4);
+          backdrop-filter: blur(16px) saturate(180%);
+          -webkit-backdrop-filter: blur(16px) saturate(180%);
+          font-size: .92rem;
+          font-weight: 700;
+          letter-spacing: .01em;
+          cursor: pointer;
+          transition: background .15s, transform .05s, box-shadow .15s;
+          font-family: inherit;
+        }
+        .login-cta:hover {
+          background: rgba(255,255,255,0.28);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.20);
+        }
+        .login-cta:active { transform: translateY(1px); }
+
+        /* Fallback sem backdrop */
+        @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+          .login-cta { background: rgba(13,31,74,0.75); }
+        }
+
+        /* ================= BACKDROP (escurece atrás do card) ================= */
+        .login-backdrop {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          background: rgba(0,0,0,0.35);
+          animation: fadeIn .18s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn {
+          from { opacity: 0; transform: translateY(8px) scale(.98); }
+          to   { opacity: 1; transform: translateY(0)   scale(1); }
+        }
+
+        /* ================= CARD SÓLIDO ================= */
         .login-card {
           position: relative;
-          z-index: 2;
+          z-index: 3;
           width: 100%;
           max-width: 420px;
           padding: 40px 36px 32px;
           border-radius: 20px;
           background: #ffffff;
           border: 1px solid #e2e8f0;
-          box-shadow: 0 24px 60px rgba(0,0,0,0.28);
+          box-shadow: 0 24px 60px rgba(0,0,0,0.35);
           color: #1a1a2e;
+          animation: popIn .22s ease-out;
         }
+        .login-close {
+          position: absolute;
+          top: 14px; right: 14px;
+          background: transparent;
+          border: none;
+          color: #94a3b8;
+          cursor: pointer;
+          padding: 6px;
+          line-height: 0;
+          border-radius: 8px;
+          transition: background .15s, color .15s;
+        }
+        .login-close:hover { background: #f1f5f9; color: #334155; }
 
         .login-logo-top {
           margin-bottom: 32px;
@@ -369,6 +483,8 @@ export default function Login() {
           .login-shell { padding: 16px; }
           .login-card { padding: 32px 24px 24px; border-radius: 18px; }
           .login-logo-top { margin-bottom: 24px; }
+          .login-header { padding: 14px 16px; }
+          .login-cta { padding: 8px 16px; font-size: .85rem; }
         }
       `}</style>
     </div>
