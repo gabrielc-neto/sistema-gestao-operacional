@@ -218,14 +218,15 @@ export default function Login() {
           object-fit: cover;
           object-position: center;
           z-index: 0;
+          filter: brightness(1.15) saturate(1.05);
         }
         .login-bg-overlay {
           position: absolute;
           inset: 0;
           z-index: 1;
           background:
-            radial-gradient(120% 90% at 30% 30%, rgba(13,31,74,.15), rgba(13,31,74,.55) 70%),
-            linear-gradient(135deg, rgba(13,31,74,.20) 0%, rgba(13,31,74,.55) 100%);
+            radial-gradient(120% 90% at 30% 30%, rgba(13,31,74,.05), rgba(13,31,74,.25) 70%),
+            linear-gradient(135deg, rgba(13,31,74,.08) 0%, rgba(13,31,74,.25) 100%);
         }
 
         /* ================= BOTÃO ENTRAR (canto sup. direito) ================= */
