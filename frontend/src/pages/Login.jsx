@@ -51,7 +51,7 @@ export default function Login() {
       {/* Card flutuante — Liquid Glass */}
       <div className="login-card">
         <div className="login-logo-top">
-          <LogoPontual height={42} variant="white" />
+          <LogoPontual height={42} />
         </div>
 
         <h1 className="login-title">Bem-vindo</h1>
@@ -188,21 +188,18 @@ export default function Login() {
             linear-gradient(135deg, rgba(13,31,74,.20) 0%, rgba(13,31,74,.55) 100%);
         }
 
-        /* ================= CARD GLASS ================= */
+        /* ================= CARD SÓLIDO (teste sem glass) ================= */
         .login-card {
           position: relative;
           z-index: 2;
           width: 100%;
           max-width: 420px;
           padding: 40px 36px 32px;
-          border-radius: 28px;
-          background: rgba(255,255,255,0.14);
-          backdrop-filter: blur(28px) saturate(180%);
-          -webkit-backdrop-filter: blur(28px) saturate(180%);
-          border: 1px solid rgba(255,255,255,0.28);
-          box-shadow:
-            0 24px 60px rgba(0,0,0,0.30),
-            inset 0 1px 0 rgba(255,255,255,0.35);
+          border-radius: 20px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 24px 60px rgba(0,0,0,0.28);
+          color: #1a1a2e;
         }
 
         .login-logo-top {
@@ -214,14 +211,13 @@ export default function Login() {
         .login-title {
           font-size: 1.6rem;
           font-weight: 700;
-          color: #fff;
+          color: #000;
           margin: 0 0 6px;
           letter-spacing: -0.01em;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.15);
         }
         .login-sub {
           font-size: .9rem;
-          color: rgba(255,255,255,0.82);
+          color: #64748b;
           margin: 0 0 28px;
           line-height: 1.45;
         }
@@ -232,7 +228,7 @@ export default function Login() {
           display: block;
           font-size: .82rem;
           font-weight: 500;
-          color: rgba(255,255,255,0.88);
+          color: #475569;
           margin-bottom: 6px;
         }
 
@@ -240,21 +236,19 @@ export default function Login() {
           width: 100%;
           height: 44px;
           padding: 0 14px;
-          border-radius: 12px;
-          border: 1px solid rgba(255,255,255,0.28);
-          background: rgba(255,255,255,0.15);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          border-radius: 10px;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
           font-size: .95rem;
-          color: #fff;
+          color: #1a1a2e;
           outline: none;
           transition: border-color .15s, box-shadow .15s, background .15s;
         }
-        .login-input::placeholder { color: rgba(255,255,255,0.55); }
+        .login-input::placeholder { color: #94a3b8; }
         .login-input:focus {
-          border-color: rgba(255,255,255,0.65);
-          background: rgba(255,255,255,0.22);
-          box-shadow: 0 0 0 4px rgba(255,255,255,0.12);
+          border-color: var(--pt-navy);
+          background: #fff;
+          box-shadow: 0 0 0 3px rgba(26,58,140,0.12);
         }
 
         .login-senha-wrap { position: relative; }
@@ -265,11 +259,11 @@ export default function Login() {
           background: none; border: none;
           cursor: pointer;
           padding: 4px;
-          color: rgba(255,255,255,0.7);
+          color: #94a3b8;
           line-height: 0;
           display: inline-flex;
         }
-        .login-eye:hover { color: #fff; }
+        .login-eye:hover { color: #64748b; }
 
         .login-row {
           display: flex;
@@ -284,7 +278,7 @@ export default function Login() {
           align-items: center;
           gap: 8px;
           font-size: .85rem;
-          color: rgba(255,255,255,0.9);
+          color: #334155;
           cursor: pointer;
           user-select: none;
           position: relative;
@@ -299,8 +293,8 @@ export default function Login() {
           width: 18px;
           height: 18px;
           border-radius: 5px;
-          background: var(--pt-yellow);
-          color: var(--pt-navy-deep);
+          background: var(--pt-navy);
+          color: #fff;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -308,27 +302,26 @@ export default function Login() {
           transition: background .15s;
         }
         .login-check input:not(:checked) ~ .login-check-box {
-          background: rgba(255,255,255,0.15);
-          border: 1.5px solid rgba(255,255,255,0.45);
+          background: #fff;
+          border: 1.5px solid #cbd5e1;
           color: transparent;
         }
         .login-link {
           font-size: .85rem;
           font-weight: 600;
-          color: var(--pt-yellow);
+          color: #000;
           text-decoration: none;
         }
-        .login-link:hover { text-decoration: underline; }
+        .login-link:hover { color: var(--pt-navy); text-decoration: underline; }
 
         .login-erro {
-          color: #fee2e2;
-          background: rgba(220, 38, 38, 0.25);
-          border: 1px solid rgba(254, 202, 202, 0.4);
-          border-radius: 10px;
-          padding: 10px 14px;
+          color: #b91c1c;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          border-radius: 8px;
+          padding: 8px 12px;
           font-size: .85rem;
           margin: 0 0 14px;
-          backdrop-filter: blur(8px);
         }
 
         .login-btn {
@@ -336,7 +329,7 @@ export default function Login() {
           height: 50px;
           background: var(--pt-navy-deep);
           color: #fff;
-          border: 1px solid rgba(255,255,255,0.15);
+          border: none;
           border-radius: 999px;
           font-size: 1rem;
           font-weight: 700;
@@ -357,31 +350,25 @@ export default function Login() {
           gap: 6px;
         }
         .login-foot-link {
-          color: rgba(255,255,255,0.85);
+          color: #000;
           font-size: .82rem;
           font-weight: 600;
           text-decoration: none;
         }
-        .login-foot-link:hover { color: #fff; text-decoration: underline; }
+        .login-foot-link:hover { color: var(--pt-navy); text-decoration: underline; }
         .login-copy {
           margin-top: 12px;
           font-size: .78rem;
-          color: rgba(255,255,255,0.7);
+          color: #64748b;
           text-align: center;
         }
-        .login-copy strong { color: #fff; font-weight: 700; }
+        .login-copy strong { color: #1a1a2e; font-weight: 700; }
 
         /* ================= RESPONSIVO ================= */
         @media (max-width: 480px) {
           .login-shell { padding: 16px; }
-          .login-card { padding: 32px 24px 24px; border-radius: 24px; }
+          .login-card { padding: 32px 24px 24px; border-radius: 18px; }
           .login-logo-top { margin-bottom: 24px; }
-        }
-
-        /* Fallback pra browsers sem backdrop-filter */
-        @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-          .login-card { background: rgba(13,31,74,0.75); }
-          .login-input { background: rgba(255,255,255,0.20); }
         }
       `}</style>
     </div>
