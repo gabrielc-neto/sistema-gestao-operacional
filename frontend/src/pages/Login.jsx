@@ -46,7 +46,14 @@ export default function Login() {
   return (
     <div className="login-shell">
       <div className="login-wrap">
-        {/* COLUNA ESQUERDA — FORMULÁRIO */}
+        {/* COLUNA ESQUERDA — IMAGEM INSTITUCIONAL */}
+        <div className="login-img-col" aria-hidden="true">
+          <div className="login-img-frame">
+            <LoginPainel src="/login-aerea.jpg" />
+          </div>
+        </div>
+
+        {/* COLUNA DIREITA — FORMULÁRIO */}
         <div className="login-form-col">
           <div className="login-form-inner">
             <div className="login-logo-top">
@@ -150,14 +157,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* COLUNA DIREITA — IMAGEM INSTITUCIONAL
-            Foto aérea Pontual Petróleo. Cai no SVG se o arquivo sumir.
-            Pra trocar: jogar arquivo em frontend/public/ e atualizar o src abaixo. */}
-        <div className="login-img-col" aria-hidden="true">
-          <div className="login-img-frame">
-            <LoginPainel src="/login-aerea.jpg" />
-          </div>
-        </div>
       </div>
 
       <style>{`
@@ -190,7 +189,7 @@ export default function Login() {
           width: 100%;
           max-width: 1200px;
           display: grid;
-          grid-template-columns: 45% 55%;
+          grid-template-columns: 55% 45%;
           gap: 32px;
           align-items: center;
         }
