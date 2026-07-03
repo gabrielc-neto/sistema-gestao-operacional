@@ -67,7 +67,7 @@ const CAMPO_LABEL = {
 const EMPTY_FORM = { data_realiz:"", venc:"", local:"", numero_doc:"", km_atual:"", resp:"", obs:"" };
 
 // Abertura de OS — form vazio (bloqueia o veículo, NÃO tem custo)
-const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "" };
+const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "", fornecedor: "", fornecedorCnpj: "" };
 const EMPTY_CONCLUSAO = { kmSaida: "", mecanico: "", oficina: "", servicoExecutado: "" };
 
 // Lançamento de NF — registro de nota fiscal/custo (NÃO bloqueia o veículo)
@@ -1079,6 +1079,15 @@ export default function Manutencao() {
     refetchSascar();
   }, [formOS.placa]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-preenche CNPJ do fornecedor ao selecionar um do catálogo
+  useEffect(() => {
+    if (!formOS.fornecedor) return;
+    const cnpj = cnpjDoFornecedor(formOS.fornecedor);
+    if (cnpj && cnpj !== formOS.fornecedorCnpj) {
+      setFormOS(f => ({ ...f, fornecedorCnpj: cnpj }));
+    }
+  }, [formOS.fornecedor, itensCatalogo]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!formLanc.placa) return;
     refetchSascar();
@@ -1773,6 +1782,12 @@ export default function Manutencao() {
       const mot = motoristas.find(m => m.id === formOS.motoristaId);
       const veiculo = veiculos.find(v => normP(v.placa) === normP(placa)) || null;
       const agora = new Date();
+      const fornecedorNome = (formOS.fornecedor || "").trim();
+      const fornecedorCnpj = (formOS.fornecedorCnpj || "").trim();
+      if (fornecedorNome) {
+        // Salva/atualiza no catálogo (com CNPJ, se informado)
+        await garantirItemCatalogo("fornecedor", fornecedorNome, { cnpj: fornecedorCnpj });
+      }
       const payload = {
         numero:        proximoNumeroOS(),
         dataHora:      agora.toISOString(),
@@ -1783,6 +1798,8 @@ export default function Manutencao() {
         motoristaNome: mot?.nome || "",
         hodometro:     numOS(formOS.hodometro),
         obs:           (formOS.obs || "").trim(),
+        fornecedor:    fornecedorNome,
+        fornecedorCnpj,
         status:        "aberta",
         criadoPor:     profile?.email || profile?.nome || "—",
         criadoEm:      agora.toISOString(),
@@ -2007,19 +2024,39 @@ export default function Manutencao() {
     return `LANC-${String(maior + 1).padStart(5, "0")}`;
   }
 
-  // cadastra item no catálogo se ainda não existir (tipoItem: "servico"|"peca")
-  async function garantirItemCatalogo(tipoItem, nome) {
+  // cadastra item no catálogo se ainda não existir. Extra pode ter { cnpj }.
+  // Se item já existe mas não tinha CNPJ e agora foi fornecido, atualiza no doc.
+  async function garantirItemCatalogo(tipoItem, nome, extra = {}) {
     const nm = (nome || "").trim();
     if (!nm || !tipoItem) return;
-    const existe = itensCatalogo.some(i => i.tipo === tipoItem && normNome(i.nome) === normNome(nm));
-    if (existe) return;
+    const cnpj = (extra.cnpj || "").trim();
+    const existente = itensCatalogo.find(i => i.tipo === tipoItem && normNome(i.nome) === normNome(nm));
+    if (existente) {
+      // Atualiza CNPJ se antes vazio e agora veio preenchido
+      if (cnpj && !existente.cnpj) {
+        try {
+          await updateDoc(doc(db, "itens_manutencao", existente.id), { cnpj });
+          setItensCatalogo(prev => prev.map(i => i.id === existente.id ? { ...i, cnpj } : i));
+        } catch (e) { console.warn("Falha ao atualizar CNPJ do fornecedor:", e); }
+      }
+      return;
+    }
     try {
       const payload = { tipo: tipoItem, nome: nm, criadoEm: new Date().toISOString(), criadoPor: quemSou() };
+      if (cnpj) payload.cnpj = cnpj;
       const ref = await addDoc(collection(db, "itens_manutencao"), payload);
       setItensCatalogo(prev => [...prev, { id: ref.id, ...payload }].sort((a, b) => (a.nome || "").localeCompare(b.nome || "")));
     } catch (e) {
       console.warn("Falha ao cadastrar item no catálogo:", e);
     }
+  }
+
+  // Retorna o CNPJ salvo pra um fornecedor pelo nome (ou "" se não tiver).
+  function cnpjDoFornecedor(nome) {
+    const nm = (nome || "").trim();
+    if (!nm) return "";
+    const f = itensCatalogo.find(i => i.tipo === "fornecedor" && normNome(i.nome) === normNome(nm));
+    return f?.cnpj || "";
   }
 
   // adiciona item ao catálogo pela tela de Cadastros (avisa se duplicado)
@@ -2658,6 +2695,28 @@ export default function Manutencao() {
                     <option key={m.id} value={m.id}>{m.nome}</option>
                   ))}
                 </select>
+              </label>
+
+              <div style={s.fieldLabel}>
+                Fornecedor / Oficina
+                <SearchSelect
+                  value={formOS.fornecedor}
+                  onChange={val => setFormOS({ ...formOS, fornecedor: val, fornecedorCnpj: cnpjDoFornecedor(val) })}
+                  options={opcoesCatalogo(itensCatalogo, "fornecedor")}
+                  onAdd={nome => garantirItemCatalogo("fornecedor", nome, { cnpj: formOS.fornecedorCnpj })}
+                  placeholder="Buscar ou cadastrar fornecedor"
+                />
+              </div>
+
+              <label style={s.fieldLabel}>
+                CNPJ do fornecedor
+                <input
+                  type="text"
+                  style={s.fieldInput}
+                  value={formOS.fornecedorCnpj}
+                  onChange={e => setFormOS({ ...formOS, fornecedorCnpj: e.target.value })}
+                  placeholder="Ex: 12.345.678/0001-90"
+                />
               </label>
 
               <label style={s.fieldLabel}>

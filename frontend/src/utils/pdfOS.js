@@ -82,6 +82,12 @@ function buildHtml(os) {
           <div style="font-size:9px; color:#64748b; text-transform:uppercase; font-weight:700; margin-bottom:4px;">Tipo</div>
           <div style="font-size:13px; font-weight:700; margin-bottom:10px;">${esc(tipo)}</div>
 
+          ${(os.fornecedor || os.fornecedorCnpj) ? `
+          <div style="font-size:9px; color:#64748b; text-transform:uppercase; font-weight:700; margin-bottom:4px;">Fornecedor / Oficina</div>
+          <div style="font-size:12px; font-weight:700; margin-bottom:2px;">${esc(os.fornecedor || "—")}</div>
+          ${os.fornecedorCnpj ? `<div style="font-size:11px; color:#475569; margin-bottom:10px;">CNPJ: ${esc(os.fornecedorCnpj)}</div>` : `<div style="margin-bottom:10px;"></div>`}
+          ` : ""}
+
           <div style="font-size:9px; color:#64748b; text-transform:uppercase; font-weight:700; margin-bottom:4px;">Observações / instruções</div>
           <div style="min-height:60px; font-size:12px; line-height:1.45; padding:6px 8px; border:1px dashed #cbd5e1; border-radius:4px; white-space:pre-wrap;">${esc(obs || "—")}</div>
         </div>
