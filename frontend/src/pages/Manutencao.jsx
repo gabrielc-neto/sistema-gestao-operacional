@@ -3325,9 +3325,9 @@ export default function Manutencao() {
                     <h3 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>{sec.titulo}</h3>
                   </div>
                   <div style={{ padding:"0.85rem 1rem", display:"flex", flexDirection:"column", gap:8, borderBottom:"1px solid #f1f5f9" }}>
-                    <div style={{ display:"flex", gap:8 }}>
+                    <div className="cadastro-add-row">
                       <input
-                        style={{ ...s.fieldInput, flex:1 }}
+                        style={{ ...s.fieldInput }}
                         value={novoCat[sec.tipo]}
                         onChange={e => setNovoCat(prev => ({ ...prev, [sec.tipo]: e.target.value }))}
                         onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addItemCat(sec.tipo); } }}
