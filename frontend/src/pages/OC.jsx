@@ -5,8 +5,9 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { Lock } from "lucide-react";
 import LogoPontual from "../components/LogoPontual";
+import ModuleHeader from "../components/ModuleHeader";
 
 /* ─── constantes ────────────────────────────────────────────────────────── */
 const BASES    = ["PONTUAL", "REPLAN", "OUTROS"];
@@ -41,7 +42,6 @@ function totalLitros(entregas) {
 /* ─── componente principal ──────────────────────────────────────────────── */
 export default function OC() {
   const { profile } = useAuth();
-  const navigate    = useNavigate();
 
   /* dados externos */
   const [veiculos,    setVeiculos]    = useState([]);
@@ -234,13 +234,7 @@ export default function OC() {
   return (
     <div style={s.wrap}>
       {/* HEADER */}
-      <header style={s.header} className="pg-header">
-        <div className="pg-logo"><LogoPontual height={36} variant="white" /></div>
-        <span style={s.titulo}>Ordens de Carregamento</span>
-        <div className="pg-header-actions">
-          <button style={s.btnBack} onClick={() => navigate("/dashboard")}>← Dashboard</button>
-        </div>
-      </header>
+      <ModuleHeader title="Ordens de Carregamento" />
 
       {/* CORPO: duas colunas */}
       <div style={s.corpo} className="oc-corpo">
@@ -302,7 +296,7 @@ export default function OC() {
             <div style={s.row3} className="grid-form-3">
               <div style={s.grupo}>
                 <label style={s.label}>N° OC</label>
-                <input style={{ ...s.input, background:"#f1f5f9", color:"var(--text-muted)" }} value={num} readOnly />
+                <input style={{ ...s.input, background:"var(--surface-3)", color:"var(--text-muted)" }} value={num} readOnly />
               </div>
               <div style={s.grupo}>
                 <label style={s.label}>Data</label>
@@ -325,18 +319,18 @@ export default function OC() {
             {/* cavalo */}
             <div style={s.grupo}>
               <label style={s.label}>Cavalo (Trator)</label>
-              <select style={{ ...s.select, borderColor: veiculoBloqueado ? "#dc2626" : undefined }} value={cavalo} onChange={e => setCavalo(e.target.value)}>
+              <select style={{ ...s.select, borderColor: veiculoBloqueado ? "var(--danger)" : undefined }} value={cavalo} onChange={e => setCavalo(e.target.value)}>
                 {veiculos.length === 0 && <option value="">— sem veículos ativos —</option>}
                 {veiculos.map(v => (
                   <option key={v.id} value={v.id}>
-                    {v.placa}{v.bloqueio?.ativo ? " 🔒 BLOQUEADO" : ""}{v.motoristaNome ? ` — ${v.motoristaNome.split(" ")[0]}` : ""}
+                    {v.placa}{v.bloqueio?.ativo ? " • BLOQUEADO" : ""}{v.motoristaNome ? ` — ${v.motoristaNome.split(" ")[0]}` : ""}
                   </option>
                 ))}
               </select>
               {veiculoBloqueado && (
-                <div style={{ marginTop:6, padding:"10px 14px", borderRadius:8, background:"#fef2f2", border:"1px solid #fca5a5" }}>
-                  <div style={{ fontWeight:700, color:"#dc2626", fontSize:".85rem", marginBottom:4 }}>
-                    🔒 Veículo bloqueado — OC não pode ser gerada
+                <div style={{ marginTop:6, padding:"10px 14px", borderRadius:8, background:"var(--danger-bg)", border:"1px solid #fca5a5" }}>
+                  <div style={{ fontWeight:700, color:"var(--danger)", fontSize:".85rem", marginBottom:4, display:"inline-flex", alignItems:"center", gap:6 }}>
+                    <Lock size={14}/> Veículo bloqueado — OC não pode ser gerada
                   </div>
                   <div style={{ fontSize:".78rem", color:"#7f1d1d" }}>
                     <strong>Motivo:</strong> {veiculoSelecionado.bloqueio.motivo}
@@ -345,7 +339,7 @@ export default function OC() {
                   <div style={{ fontSize:".78rem", color:"#7f1d1d", marginTop:2 }}>
                     <strong>Bloqueado por:</strong> {veiculoSelecionado.bloqueio.bloqueadoPor}
                   </div>
-                  <div style={{ fontSize:".75rem", color:"#b91c1c", marginTop:4, fontWeight:600 }}>
+                  <div style={{ fontSize:".75rem", color:"var(--danger)", marginTop:4, fontWeight:600 }}>
                     Somente Administradores ou Manutenção podem liberar este veículo.
                   </div>
                 </div>
@@ -366,7 +360,7 @@ export default function OC() {
             {/* responsável */}
             <div style={s.grupo}>
               <label style={s.label}>Responsável / Despachante</label>
-              <input style={{ ...s.input, background:"#f1f5f9", color:"var(--text-muted)", cursor:"default" }} value={resp} readOnly />
+              <input style={{ ...s.input, background:"var(--surface-3)", color:"var(--text-muted)", cursor:"default" }} value={resp} readOnly />
             </div>
 
             {/* carretas */}
@@ -500,7 +494,7 @@ export default function OC() {
             <div style={s.acoes}>
               <button
                 type="button"
-                style={{ ...s.btnAcao, background:"#1a3a5c", color:"#fff", opacity: veiculoBloqueado ? 0.4 : 1 }}
+                style={{ ...s.btnAcao, background:"var(--accent)", color:"#fff", opacity: veiculoBloqueado ? 0.4 : 1 }}
                 onClick={salvar}
                 disabled={salvando || veiculoBloqueado}
                 title={veiculoBloqueado ? "Veículo bloqueado — libere antes de gerar OC" : ""}
@@ -509,7 +503,7 @@ export default function OC() {
               </button>
               <button
                 type="button"
-                style={{ ...s.btnAcao, background:"#f5c318", color:"#1a3a5c", opacity: veiculoBloqueado ? 0.4 : 1 }}
+                style={{ ...s.btnAcao, background:"var(--accent)", color:"#fff", opacity: veiculoBloqueado ? 0.4 : 1 }}
                 onClick={salvarEImprimir}
                 disabled={salvando || veiculoBloqueado}
                 title={veiculoBloqueado ? "Veículo bloqueado — libere antes de gerar OC" : ""}
@@ -531,7 +525,7 @@ export default function OC() {
 
 /* ─── Card OC ────────────────────────────────────────────────────────────── */
 function CardOC({ oc, isAdmin, onExcluir, onImprimir }) {
-  const baseCor  = oc.base === "REPLAN" ? "#16a34a" : "#1a3a5c";
+  const baseCor  = oc.base === "REPLAN" ? "var(--success)" : "var(--accent)";
   const totalL   = totalLitros(oc.entregas || []);
   const nClientes = (oc.entregas || []).filter(e => e.dest).length;
 
@@ -675,7 +669,7 @@ function ModalImpressao({ oc, onFechar }) {
         {/* botões fora da área de impressão */}
         <div style={ms.modalAcoes} className="no-print">
           <button
-            style={{ ...ms.btnModal, background:"#16a34a", color:"#fff" }}
+            style={{ ...ms.btnModal, background:"var(--success)", color:"#fff" }}
             onClick={async () => {
               const el = document.getElementById("print-area");
               if (!el) return;
@@ -692,13 +686,13 @@ function ModalImpressao({ oc, onFechar }) {
             Baixar PDF
           </button>
           <button
-            style={{ ...ms.btnModal, background:"#1a3a5c", color:"#fff" }}
+            style={{ ...ms.btnModal, background:"var(--accent)", color:"#fff" }}
             onClick={() => window.print()}
           >
             Imprimir
           </button>
           <button
-            style={{ ...ms.btnModal, background:"#e2e8f0", color:"#475569" }}
+            style={{ ...ms.btnModal, background:"var(--border)", color:"var(--text-muted)" }}
             onClick={onFechar}
           >
             Fechar
@@ -729,7 +723,7 @@ const s = {
   wrap:  { minHeight:"100vh", background:"var(--bg)", fontFamily:"system-ui,sans-serif" },
 
   header: {
-    background:"#1a3a5c", borderBottom:"4px solid transparent", borderImage:"linear-gradient(90deg, #3d6b47, #6aaa5e, #b5d947, #f5c318, #f0a500) 1",
+    background:"var(--header-bg)", borderBottom: "1px solid var(--header-border)",
     padding:"10px 20px", display:"flex", alignItems:"center",
     gap:12, boxShadow:"0 2px 8px rgba(0,0,0,.18)",
     position:"sticky", top:0, zIndex:100,
@@ -737,10 +731,11 @@ const s = {
   logo:    { height:34, objectFit:"contain" },
   titulo:  { color:"#fff", fontWeight:700, fontSize:"1.05rem", flex:1 },
   btnBack: {
-    marginLeft:"auto", background:"#f5c318", border:"none",
-    color:"#1a3a5c", borderRadius:6, padding:"5px 14px",
+    marginLeft:"auto", background:"var(--header-btn-bg)", border:"none",
+    color:"var(--accent)", borderRadius:6, padding:"5px 14px",
     cursor:"pointer", fontSize:".82rem", fontWeight:700,
     whiteSpace:"nowrap",
+    display:"inline-flex", alignItems:"center", gap:6,
   },
 
   /* layout duas colunas */
@@ -774,9 +769,9 @@ const s = {
     padding:"14px 18px", background:"var(--card-bg)", borderBottom:"1px solid var(--border)",
     display:"flex", alignItems:"center", gap:10,
   },
-  painelTitulo: { fontWeight:700, color:"#1a3a5c", fontSize:".95rem", flex:1 },
-  painelSub:    { fontSize:".75rem", color:"#94a3b8" },
-  numOC:        { fontSize:".85rem", fontWeight:800, color:"#f5c318", background:"#1a3a5c", padding:"2px 10px", borderRadius:5 },
+  painelTitulo: { fontWeight:700, color:"var(--accent)", fontSize:".95rem", flex:1 },
+  painelSub:    { fontSize:".75rem", color:"var(--text-subtle)" },
+  numOC:        { fontSize:".85rem", fontWeight:800, color:"#fff", background:"var(--accent)", padding:"2px 10px", borderRadius:5 },
 
   toolbarLista: {
     padding:"10px 14px", background:"var(--bg)", borderBottom:"1px solid var(--border)",
@@ -793,14 +788,14 @@ const s = {
     background:"var(--bg)", fontSize:".75rem", cursor:"pointer",
     fontWeight:600, color:"var(--text-muted)",
   },
-  tabAtivo: { background:"#1a3a5c", color:"#fff", borderColor:"#1a3a5c" },
+  tabAtivo: { background:"var(--accent)", color:"#fff", borderColor:"var(--accent)" },
 
   listaScroll: {
     flex:1, overflowY:"auto",
     padding:"12px 14px", display:"flex", flexDirection:"column", gap:10,
     maxHeight:"calc(100vh - 200px)",
   },
-  hint: { textAlign:"center", color:"#94a3b8", padding:24, fontSize:".85rem" },
+  hint: { textAlign:"center", color:"var(--text-subtle)", padding:24, fontSize:".85rem" },
 
   /* form */
   form: { padding:"16px 18px", display:"flex", flexDirection:"column", gap:12 },
@@ -809,7 +804,7 @@ const s = {
   row3: { display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 },
 
   grupo: { display:"flex", flexDirection:"column", gap:4 },
-  label: { fontSize:".75rem", fontWeight:600, color:"#475569" },
+  label: { fontSize:".75rem", fontWeight:600, color:"var(--text-muted)" },
   input: {
     padding:"7px 10px", borderRadius:7, border:"1px solid var(--border)",
     fontSize:".85rem", outline:"none", width:"100%", boxSizing:"border-box",
@@ -826,9 +821,9 @@ const s = {
     padding:"12px 14px", display:"flex", flexDirection:"column", gap:10,
   },
   secaoHeader: { display:"flex", alignItems:"center", gap:8 },
-  secaoTitulo: { fontWeight:700, color:"#1a3a5c", flex:1, fontSize:".9rem" },
+  secaoTitulo: { fontWeight:700, color:"var(--accent)", flex:1, fontSize:".9rem" },
   btnAddEntrega: {
-    background:"#f5c318", border:"none", color:"#1a3a5c",
+    background:"var(--accent)", border:"none", color:"#fff",
     borderRadius:6, padding:"4px 12px", fontSize:".78rem",
     fontWeight:700, cursor:"pointer",
   },
@@ -839,18 +834,18 @@ const s = {
   entregaTop: { display:"flex", alignItems:"center", justifyContent:"space-between" },
   entregaIdx: { fontSize:".75rem", fontWeight:700, color:"var(--text-muted)" },
   btnRemove: {
-    background:"#fee2e2", border:"none", color:"#dc2626",
+    background:"var(--danger-bg)", border:"none", color:"var(--danger)",
     borderRadius:5, width:22, height:22, cursor:"pointer",
     fontWeight:700, fontSize:".85rem", display:"flex",
     alignItems:"center", justifyContent:"center",
   },
 
   totalLitros: {
-    textAlign:"right", fontSize:".85rem", color:"#475569",
+    textAlign:"right", fontSize:".85rem", color:"var(--text-muted)",
     borderTop:"1px solid var(--border)", paddingTop:8,
   },
 
-  erroMsg: { color:"#dc2626", fontSize:".8rem", background:"#fee2e2", padding:"6px 10px", borderRadius:6 },
+  erroMsg: { color:"var(--danger)", fontSize:".8rem", background:"var(--danger-bg)", padding:"6px 10px", borderRadius:6 },
 
   acoes: { display:"flex", gap:10, paddingTop:4 },
   btnAcao: {
@@ -867,26 +862,26 @@ const cs = {
     boxShadow:"0 1px 4px rgba(0,0,0,.06)",
   },
   cardTop: { display:"flex", alignItems:"center", justifyContent:"space-between" },
-  numOC:   { fontWeight:800, color:"#1a3a5c", fontSize:".95rem" },
+  numOC:   { fontWeight:800, color:"var(--accent)", fontSize:".95rem" },
   badge: {
     fontSize:".65rem", fontWeight:700, color:"#fff",
     padding:"2px 8px", borderRadius:4,
   },
-  linha: { display:"flex", gap:6, fontSize:".78rem", color:"#475569" },
-  label: { fontWeight:600, color:"#94a3b8", minWidth:66 },
+  linha: { display:"flex", gap:6, fontSize:".78rem", color:"var(--text-muted)" },
+  label: { fontWeight:600, color:"var(--text-subtle)", minWidth:66 },
   resumo: {
     marginTop:2, fontSize:".75rem", color:"var(--text-muted)",
-    background:"#f1f5f9", borderRadius:5, padding:"3px 8px", alignSelf:"flex-start",
+    background:"var(--surface-3)", borderRadius:5, padding:"3px 8px", alignSelf:"flex-start",
   },
   acoes: { display:"flex", gap:8, marginTop:4 },
   btnImprimir: {
-    flex:1, padding:"5px", border:"1px solid #1a3a5c", borderRadius:6,
-    background:"transparent", color:"#1a3a5c", fontSize:".75rem",
+    flex:1, padding:"5px", border:"1px solid var(--accent)", borderRadius:6,
+    background:"transparent", color:"var(--accent)", fontSize:".75rem",
     fontWeight:600, cursor:"pointer",
   },
   btnExcluir: {
     flex:1, padding:"5px", border:"1px solid #dc2626", borderRadius:6,
-    background:"transparent", color:"#dc2626", fontSize:".75rem",
+    background:"transparent", color:"var(--danger)", fontSize:".75rem",
     fontWeight:600, cursor:"pointer",
   },
 };
@@ -908,18 +903,18 @@ const ms = {
   },
   printHeader: { display:"flex", alignItems:"center", gap:14, marginBottom:4 },
   printLogo:   { height:44, objectFit:"contain" },
-  printEmpresa:{ fontWeight:800, fontSize:15, color:"#1a3a5c" },
+  printEmpresa:{ fontWeight:800, fontSize:15, color:"var(--accent)" },
   printTitulo: {
     textAlign:"center", fontSize:15, fontWeight:800,
-    color:"#1a3a5c", margin:"10px 0 12px", letterSpacing:1,
-    borderBottom:"2px solid #f5c318", paddingBottom:8,
+    color:"var(--accent)", margin:"10px 0 12px", letterSpacing:1,
+    borderBottom:"2px solid var(--accent)", paddingBottom:8,
   },
   infoTable: { width:"100%", borderCollapse:"collapse", marginBottom:14, fontSize:12 },
-  infoLabel: { fontWeight:700, color:"#475569", padding:"3px 8px 3px 0", whiteSpace:"nowrap", width:80 },
+  infoLabel: { fontWeight:700, color:"var(--text-muted)", padding:"3px 8px 3px 0", whiteSpace:"nowrap", width:80 },
   infoVal:   { padding:"3px 16px 3px 0", color:"#111" },
-  secTitle:  { fontSize:13, fontWeight:700, color:"#1a3a5c", margin:"10px 0 6px", borderBottom:"1px solid var(--border)", paddingBottom:4 },
+  secTitle:  { fontSize:13, fontWeight:700, color:"var(--accent)", margin:"10px 0 6px", borderBottom:"1px solid var(--border)", paddingBottom:4 },
   tabEntregas:{ width:"100%", borderCollapse:"collapse", fontSize:12 },
-  thRow: { background:"#1a3a5c" },
+  thRow: { background:"var(--accent)" },
   th: { color:"#fff", padding:"5px 8px", textAlign:"left", fontWeight:700 },
   td: { padding:"4px 8px", borderBottom:"1px solid #f1f5f9", verticalAlign:"top" },
   trPar:   { background:"var(--card-bg)" },

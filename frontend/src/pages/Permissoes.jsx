@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePermissions, MODULES, ROLES } from "../contexts/PermissionsContext";
-import LogoPontual from "../components/LogoPontual";
+import ModuleHeader from "../components/ModuleHeader";
+import { Save, CheckCircle2 } from "lucide-react";
 
 const LEVELS = [
-  { value: "none", label: "Sem acesso", color: "#fee2e2", text: "#dc2626" },
-  { value: "view", label: "Ver",        color: "#dbeafe", text: "#1d4ed8" },
-  { value: "edit", label: "Editar",     color: "#dcfce7", text: "#15803d" },
+  { value: "none", label: "Sem acesso", color: "var(--danger-bg)", text: "var(--danger)" },
+  { value: "view", label: "Ver",        color: "var(--accent-soft)", text: "var(--accent)" },
+  { value: "edit", label: "Editar",     color: "var(--success-bg)", text: "var(--success)" },
 ];
 
 function nextLevel(current) {
@@ -36,7 +37,7 @@ export default function Permissoes() {
   if (!isAdmin) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)" }}>
-        <p style={{ color: "#dc2626", fontWeight: 700 }}>Acesso restrito a Administradores.</p>
+        <p style={{ color: "var(--danger)", fontWeight: 700 }}>Acesso restrito a Administradores.</p>
       </div>
     );
   }
@@ -75,25 +76,23 @@ export default function Permissoes() {
 
   return (
     <div style={s.wrap}>
-      <header style={s.header} className="pg-header">
-        <div className="pg-logo"><LogoPontual height={36} variant="white" /></div>
-        <span style={s.titulo}>Permissões</span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 10 }} className="pg-header-actions">
-          <button style={s.btnSalvar} onClick={handleSalvar} disabled={salvando}>
-            {salvando ? "Salvando..." : salvo ? "✓ Salvo" : "💾 Salvar"}
+      <ModuleHeader
+        title="Permissões"
+        actions={
+          <button className="mod-hbtn-alt" onClick={handleSalvar} disabled={salvando}>
+            {salvando ? "Salvando..." : salvo ? <><CheckCircle2 size={14} color="var(--success)"/> Salvo</> : <><Save size={14}/> Salvar</>}
           </button>
-          <button style={s.btnBack} onClick={() => navigate("/dashboard")}>← Dashboard</button>
-        </div>
-      </header>
+        }
+      />
 
       <div style={s.body}>
         {erro && (
-          <div style={{ background: "#fee2e2", color: "#dc2626", padding: "10px 16px", borderRadius: 8, marginBottom: 12, fontWeight: 600, fontSize: ".88rem" }}>
+          <div style={{ background: "var(--danger-bg)", color: "var(--danger)", padding: "10px 16px", borderRadius: 8, marginBottom: 12, fontWeight: 600, fontSize: ".88rem" }}>
             {erro}
           </div>
         )}
         <p style={s.info}>
-          Clique na célula para alternar: <strong style={{ color: "#dc2626" }}>Sem acesso</strong> → <strong style={{ color: "#1d4ed8" }}>Ver</strong> → <strong style={{ color: "#15803d" }}>Editar</strong>
+          Clique na célula para alternar: <strong style={{ color: "var(--danger)" }}>Sem acesso</strong> → <strong style={{ color: "var(--accent)" }}>Ver</strong> → <strong style={{ color: "var(--success)" }}>Editar</strong>
         </p>
 
         <div style={s.tableWrap}>
@@ -126,9 +125,9 @@ export default function Permissoes() {
                   })}
                   <td style={s.tdCell}>
                     <div style={{ display: "flex", gap: 4 }}>
-                      <button style={{ ...s.quick, background: "#dcfce7", color: "#15803d" }} onClick={() => setAll(r.id, "edit")}>Tudo Editar</button>
-                      <button style={{ ...s.quick, background: "#dbeafe", color: "#1d4ed8" }} onClick={() => setAll(r.id, "view")}>Tudo Ver</button>
-                      <button style={{ ...s.quick, background: "#fee2e2", color: "#dc2626" }} onClick={() => setAll(r.id, "none")}>Remover tudo</button>
+                      <button style={{ ...s.quick, background: "var(--success-bg)", color: "var(--success)" }} onClick={() => setAll(r.id, "edit")}>Tudo Editar</button>
+                      <button style={{ ...s.quick, background: "var(--accent-soft)", color: "var(--accent)" }} onClick={() => setAll(r.id, "view")}>Tudo Ver</button>
+                      <button style={{ ...s.quick, background: "var(--danger-bg)", color: "var(--danger)" }} onClick={() => setAll(r.id, "none")}>Remover tudo</button>
                     </div>
                   </td>
                 </tr>
@@ -151,22 +150,22 @@ export default function Permissoes() {
 }
 
 const s = {
-  wrap:       { minHeight: "100vh", background: "var(--bg)", fontFamily: "system-ui, sans-serif" },
-  header:     { background: "#1a3a5c", borderBottom: "4px solid transparent", borderImage: "linear-gradient(90deg, #3d6b47, #6aaa5e, #b5d947, #f5c318, #f0a500) 1", padding: "10px 24px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 2px 8px rgba(0,0,0,.15)" },
+  wrap:       { minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)" },
+  header:     { background: "var(--header-bg)", borderBottom: "1px solid var(--header-border)", padding: "10px 24px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 2px 8px rgba(0,0,0,.15)" },
   titulo:     { color: "#fff", fontWeight: 700, fontSize: "1.1rem" },
-  btnSalvar:  { padding: "7px 20px", background: "#f5c318", color: "#1a3a5c", border: "none", borderRadius: 7, fontWeight: 700, cursor: "pointer", fontSize: ".88rem" },
-  btnBack:    { padding: "7px 16px", background: "rgba(255,255,255,.15)", color: "#fff", border: "1px solid rgba(255,255,255,.3)", borderRadius: 7, cursor: "pointer", fontSize: ".85rem" },
+  btnSalvar:  { padding: "7px 20px", background: "var(--header-btn-bg)", color: "var(--accent)", border: "none", borderRadius: 7, fontWeight: 700, cursor: "pointer", fontSize: ".88rem", display: "inline-flex", alignItems: "center", gap: 6 },
+  btnBack:    { padding: "7px 16px", background: "rgba(255,255,255,.15)", color: "#fff", border: "1px solid rgba(255,255,255,.3)", borderRadius: 7, cursor: "pointer", fontSize: ".85rem", display: "inline-flex", alignItems: "center", gap: 6 },
   body:       { padding: 24 },
-  info:       { marginBottom: 16, fontSize: ".9rem", color: "#475569" },
+  info:       { marginBottom: 16, fontSize: ".9rem", color: "var(--text-muted)" },
   tableWrap:  { overflowX: "auto", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card-bg)" },
   table:      { width: "100%", borderCollapse: "collapse", fontSize: ".85rem" },
-  thRole:     { padding: "12px 16px", textAlign: "left", fontWeight: 700, color: "#1a3a5c", background: "var(--bg)", borderBottom: "2px solid #e2e8f0", whiteSpace: "nowrap", minWidth: 140 },
-  thModule:   { padding: "12px 12px", textAlign: "center", fontWeight: 700, color: "#1a3a5c", background: "var(--bg)", borderBottom: "2px solid #e2e8f0", whiteSpace: "nowrap" },
+  thRole:     { padding: "12px 16px", textAlign: "left", fontWeight: 700, color: "var(--accent)", background: "var(--bg)", borderBottom: "2px solid var(--border)", whiteSpace: "nowrap", minWidth: 140 },
+  thModule:   { padding: "12px 12px", textAlign: "center", fontWeight: 700, color: "var(--accent)", background: "var(--bg)", borderBottom: "2px solid var(--border)", whiteSpace: "nowrap" },
   tdRole:     { padding: "10px 16px", fontWeight: 600, color: "var(--text)", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" },
   tdCell:     { padding: "8px 10px", textAlign: "center", borderBottom: "1px solid #f1f5f9" },
   pill:       { padding: "4px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontWeight: 600, fontSize: ".78rem", whiteSpace: "nowrap" },
   quick:      { padding: "4px 8px", borderRadius: 6, border: "none", cursor: "pointer", fontWeight: 600, fontSize: ".72rem", whiteSpace: "nowrap" },
   legenda:    { display: "flex", gap: 10, marginTop: 16, alignItems: "center", flexWrap: "wrap" },
   legendaItem:{ padding: "4px 12px", borderRadius: 20, fontWeight: 600, fontSize: ".78rem" },
-  legendaNota:{ fontSize: ".78rem", color: "#94a3b8", marginLeft: 8 },
+  legendaNota:{ fontSize: ".78rem", color: "var(--text-subtle)", marginLeft: 8 },
 };

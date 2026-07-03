@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs, addDoc, updateDoc, query, where, orderBy, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
-import LogoPontual from "../components/LogoPontual";
+import ModuleHeader from "../components/ModuleHeader";
 
 const normPlaca = (p) => (p || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 
@@ -10,19 +10,19 @@ const OPERACOES = ["ATRELAMENTO", "DESATRELAMENTO", "SUBSTITUIÇÃO"];
 const STATUS_LIST = ["CONCLUÍDO", "PENDENTE", "CANCELADO"];
 
 const corOperacao = {
-  ATRELAMENTO: { bg: "#1d4ed8", color: "#fff" },
-  DESATRELAMENTO: { bg: "#ea580c", color: "#fff" },
-  "SUBSTITUIÇÃO": { bg: "#7c3aed", color: "#fff" },
+  ATRELAMENTO: { bg: "var(--accent)", color: "#fff" },
+  DESATRELAMENTO: { bg: "var(--accent)", color: "#fff" },
+  "SUBSTITUIÇÃO": { bg: "var(--accent)", color: "#fff" },
 };
 
 const corStatus = {
-  "CONCLUÍDO": { bg: "#16a34a", color: "#fff" },
-  PENDENTE: { bg: "#f5c318", color: "#1a3a5c" },
-  CANCELADO: { bg: "#dc2626", color: "#fff" },
+  "CONCLUÍDO": { bg: "var(--success)", color: "#fff" },
+  PENDENTE: { bg: "var(--accent-soft)", color: "var(--accent)" },
+  CANCELADO: { bg: "var(--danger)", color: "#fff" },
 };
 
 const Badge = ({ label, map }) => {
-  const style = map[label] || { bg: "#94a3b8", color: "#fff" };
+  const style = map[label] || { bg: "var(--text-subtle)", color: "#fff" };
   return (
     <span style={{
       background: style.bg,
@@ -67,7 +67,7 @@ function calcStatusPlaca(manutencoes, placa) {
   return pior;
 }
 
-const DOT_COR = { vencido:"#dc2626", alerta:"#f59e0b", ok:"#16a34a" };
+const DOT_COR = { vencido:"var(--danger)", alerta:"var(--warning)", ok:"var(--success)" };
 const DOT_TITLE = { vencido:"Documentos vencidos", alerta:"Documentos a vencer em 30 dias", ok:"Documentos em dia" };
 
 function PlacaDot({ status }) {
@@ -266,37 +266,29 @@ export default function Atrelamento() {
   };
 
   const inputStyle = {
-    width: "100%", padding: "7px 10px", border: "1px solid #cbd5e1",
+    width: "100%", padding: "7px 10px", border: "1px solid var(--border-strong)",
     borderRadius: 6, fontSize: 13, boxSizing: "border-box",
     background: "var(--card-bg)", color: "var(--text)",
   };
-  const labelStyle = { fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 3, display: "block" };
+  const labelStyle = { fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 3, display: "block" };
   const fieldGroup = { display: "flex", flexDirection: "column", marginBottom: 10 };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "Inter, sans-serif" }}>
       {/* Header */}
-      <div className="pg-header" style={{
-        background: "#1a3a5c", borderBottom: "4px solid transparent", borderImage: "linear-gradient(90deg, #3d6b47, #6aaa5e, #b5d947, #f5c318, #f0a500) 1",
-        padding: "0 24px", display: "flex", alignItems: "center",
-        justifyContent: "space-between", height: 64,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }} className="pg-logo">
-          <LogoPontual height={40} variant="white" />
-          <span style={{ color: "#fff", fontSize: 20, fontWeight: 700, letterSpacing: 0.5 }}>
-            Atrelamento
-          </span>
-        </div>
-        <div className="pg-header-actions">
-          <a href="/dashboard" style={{
-            background: "#f5c318", color: "#1a3a5c", fontWeight: 700,
-            border: "none", borderRadius: 6, padding: "8px 18px",
-            cursor: "pointer", textDecoration: "none", fontSize: 14,
-          }}>
-            ← Dashboard
-          </a>
-        </div>
-      </div>
+      <ModuleHeader
+        title="Atrelamento"
+        actions={
+          <>
+            <button className="mod-hbtn-alt" onClick={exportarCSV}>
+              Exportar CSV
+            </button>
+            <button className="mod-hbtn-alt" onClick={abrirModal}>
+              + Novo Registro
+            </button>
+          </>
+        }
+      />
 
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 16px" }} className="pg-body">
         {/* Toolbar */}
@@ -309,29 +301,16 @@ export default function Atrelamento() {
             placeholder="Buscar por placa, motorista, nº..."
             value={busca}
             onChange={e => setBusca(e.target.value)}
-            style={{ ...inputStyle, width: 240, flex: "none" }}
+            style={{ ...inputStyle, flex: "1 1 200px", minWidth: 0, width: "auto" }}
           />
-          <select value={filtroOp} onChange={e => setFiltroOp(e.target.value)} style={{ ...inputStyle, width: 180, flex: "none" }}>
+          <select value={filtroOp} onChange={e => setFiltroOp(e.target.value)} style={{ ...inputStyle, flex: "1 1 150px", minWidth: 0, width: "auto" }}>
             <option value="todos">Todas operações</option>
             {OPERACOES.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
-          <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ ...inputStyle, width: 160, flex: "none" }}>
+          <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ ...inputStyle, flex: "1 1 140px", minWidth: 0, width: "auto" }}>
             <option value="todos">Todos status</option>
             {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <div style={{ flex: 1 }} />
-          <button onClick={exportarCSV} style={{
-            background: "var(--bg)", color: "#1a3a5c", border: "1px solid #cbd5e1",
-            borderRadius: 6, padding: "8px 14px", cursor: "pointer", fontWeight: 600, fontSize: 13,
-          }}>
-            Exportar CSV
-          </button>
-          <button onClick={abrirModal} style={{
-            background: "#f5c318", color: "#1a3a5c", border: "none",
-            borderRadius: 6, padding: "8px 18px", cursor: "pointer", fontWeight: 700, fontSize: 14,
-          }}>
-            + Novo Registro
-          </button>
         </div>
 
         {/* Tabela */}
@@ -344,7 +323,7 @@ export default function Atrelamento() {
           ) : (
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ background: "#1a3a5c", color: "#fff" }}>
+                <tr style={{ background: "var(--accent)", color: "#fff" }}>
                   {["Nº","Data/Hora","Operação","Cavalo","KM","Carreta 1","Tipo","Carreta 2","Tipo","Motorista","Local","Status"].map((h, i) => (
                     <th key={i} style={{ padding: "10px 12px", textAlign: "left", whiteSpace: "nowrap", fontWeight: 600, fontSize: 12 }}>{h}</th>
                   ))}
@@ -352,10 +331,10 @@ export default function Atrelamento() {
               </thead>
               <tbody>
                 {filtrados.length === 0 ? (
-                  <tr><td colSpan={12} style={{ textAlign: "center", padding: 32, color: "#94a3b8" }}>Nenhum registro encontrado.</td></tr>
+                  <tr><td colSpan={12} style={{ textAlign: "center", padding: 32, color: "var(--text-subtle)" }}>Nenhum registro encontrado.</td></tr>
                 ) : filtrados.map((r, i) => (
-                  <tr key={r.id} style={{ background: i % 2 === 0 ? "#f8fafc" : "#fff", borderBottom: "1px solid var(--border)" }}>
-                    <td style={{ padding: "8px 12px", fontWeight: 600, color: "#1a3a5c" }}>{r.num}</td>
+                  <tr key={r.id} style={{ background: i % 2 === 0 ? "var(--surface-2)" : "#fff", borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--accent)" }}>{r.num}</td>
                     <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>{r.data} {r.hora}</td>
                     <td style={{ padding: "8px 12px" }}><Badge label={r.op} map={corOperacao} /></td>
                     <td style={{ padding: "8px 12px", fontWeight: 600 }}>
@@ -393,20 +372,20 @@ export default function Atrelamento() {
           zIndex: 2000, padding: 16,
         }}>
           <div className="modal-mobile-sheet" style={{
-            background: "#fff", borderRadius: 12, width: "100%", maxWidth: 560,
+            background: "var(--card-bg)", borderRadius: 12, width: "100%", maxWidth: 560,
             boxShadow: "0 20px 60px rgba(0,0,0,0.3)", overflow: "hidden",
           }}>
-            <div style={{ background: "#b91c1c", padding: "16px 22px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ background: "var(--danger)", padding: "16px 22px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>Atenção — Vencimentos do Conjunto</span>
-              <button onClick={() => setAlertas(null)} style={{ background: "transparent", border: "none", color: "#fca5a5", fontSize: 22, cursor: "pointer" }}>×</button>
+              <button onClick={() => setAlertas(null)} style={{ background: "transparent", border: "none", color: "var(--danger-border)", fontSize: 22, cursor: "pointer" }}>×</button>
             </div>
             <div style={{ padding: 20 }}>
-              <p style={{ margin: "0 0 14px", fontSize: 13, color: "#374151" }}>
+              <p style={{ margin: "0 0 14px", fontSize: 13, color: "var(--text)" }}>
                 Conjunto: <strong>{alertas.conjunto.join(" + ")}</strong>
               </p>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: "#f1f5f9" }}>
+                  <tr style={{ background: "var(--surface-3)" }}>
                     <th style={{ padding: "7px 10px", textAlign: "left" }}>Placa / Nome</th>
                     <th style={{ padding: "7px 10px", textAlign: "left" }}>Documento</th>
                     <th style={{ padding: "7px 10px", textAlign: "left" }}>Vencimento</th>
@@ -415,16 +394,16 @@ export default function Atrelamento() {
                 </thead>
                 <tbody>
                   {alertas.itens.map((it, i) => (
-                    <tr key={i} style={{ borderBottom: "1px solid #e5e7eb", background: it.status === "VENCIDO" ? "#fef2f2" : "#fffbeb" }}>
+                    <tr key={i} style={{ borderBottom: "1px solid var(--border)", background: it.status === "VENCIDO" ? "var(--danger-bg)" : "var(--warning-bg)" }}>
                       <td style={{ padding: "7px 10px", fontWeight: 700 }}>
                         {it.placa}
-                        {it.isMotorista && <span style={{ marginLeft: 5, fontSize: 10, background: "#fef3c7", color: "#92400e", borderRadius: 4, padding: "1px 5px" }}>Motorista</span>}
+                        {it.isMotorista && <span style={{ marginLeft: 5, fontSize: 10, background: "var(--warning-bg)", color: "var(--warning)", borderRadius: 4, padding: "1px 5px" }}>Motorista</span>}
                       </td>
                       <td style={{ padding: "7px 10px" }}>{it.tipo}</td>
                       <td style={{ padding: "7px 10px" }}>{it.venc}</td>
                       <td style={{ padding: "7px 10px" }}>
                         <span style={{
-                          background: it.status === "VENCIDO" ? "#dc2626" : "#f59e0b",
+                          background: it.status === "VENCIDO" ? "var(--danger)" : "var(--warning)",
                           color: "#fff", borderRadius: 4, padding: "2px 8px",
                           fontWeight: 700, fontSize: 11,
                         }}>{it.status}</span>
@@ -434,13 +413,13 @@ export default function Atrelamento() {
                 </tbody>
               </table>
               {alertas.itens.some(it => it.isMotorista) && (
-                <p style={{ margin: "10px 0 0", fontSize: 12, color: "#92400e", background: "#fef3c7", padding: "6px 10px", borderRadius: 6 }}>
+                <p style={{ margin: "10px 0 0", fontSize: 12, color: "var(--warning)", background: "var(--warning-bg)", padding: "6px 10px", borderRadius: 6 }}>
                   Documentos de motorista são gerenciados em <strong>/motoristas</strong>.
                 </p>
               )}
               <div style={{ marginTop: 16, textAlign: "right" }}>
                 <button onClick={() => setAlertas(null)} style={{
-                  background: "#1a3a5c", color: "#fff", border: "none",
+                  background: "var(--accent)", color: "#fff", border: "none",
                   borderRadius: 6, padding: "9px 24px", cursor: "pointer", fontWeight: 700, fontSize: 14,
                 }}>OK, Entendido</button>
               </div>
@@ -462,13 +441,13 @@ export default function Atrelamento() {
             boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
           }}>
             <div style={{
-              background: "#1a3a5c", borderBottom: "3px solid #f5c318",
+              background: "var(--accent)", borderBottom: "3px solid var(--accent)",
               padding: "16px 22px", display: "flex", justifyContent: "space-between", alignItems: "center",
               borderRadius: "12px 12px 0 0",
             }}>
               <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>Novo Registro de Atrelamento</span>
               <button onClick={() => setModalOpen(false)} style={{
-                background: "transparent", border: "none", color: "#f5c318",
+                background: "transparent", border: "none", color: "#fff",
                 fontSize: 22, cursor: "pointer", lineHeight: 1,
               }}>×</button>
             </div>
@@ -478,7 +457,7 @@ export default function Atrelamento() {
               <div className="grid-form-4" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 0 }}>
                 <div style={fieldGroup}>
                   <label style={labelStyle}>Nº Registro</label>
-                  <input name="num" value={form.num} readOnly style={{ ...inputStyle, background: "#f1f5f9" }} />
+                  <input name="num" value={form.num} readOnly style={{ ...inputStyle, background: "var(--surface-3)" }} />
                 </div>
                 <div style={fieldGroup}>
                   <label style={labelStyle}>Data</label>
@@ -574,13 +553,13 @@ export default function Atrelamento() {
               {/* Botões */}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
                 <button type="button" onClick={() => setModalOpen(false)} disabled={saving} style={{
-                  background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1",
+                  background: "var(--surface-3)", color: "var(--text-muted)", border: "1px solid var(--border-strong)",
                   borderRadius: 6, padding: "9px 20px", cursor: "pointer", fontWeight: 600, fontSize: 14,
                 }}>
                   Cancelar
                 </button>
                 <button type="submit" disabled={saving} style={{
-                  background: "#f5c318", color: "#1a3a5c", border: "none",
+                  background: "var(--accent)", color: "#fff", border: "none",
                   borderRadius: 6, padding: "9px 24px", cursor: "pointer", fontWeight: 700, fontSize: 14,
                   opacity: saving ? 0.7 : 1,
                 }}>

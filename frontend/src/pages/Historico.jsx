@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase/config";
-import LogoPontual from "../components/LogoPontual";
+import ModuleHeader from "../components/ModuleHeader";
 
 const PAGE_SIZE = 50;
 
 const TIPO_CONFIG = {
-  ATRELAMENTO:  { bg: "#1d4ed8", color: "#fff", label: "ATRELAMENTO" },
+  ATRELAMENTO:  { bg: "var(--accent)", color: "#fff", label: "ATRELAMENTO" },
   OC:           { bg: "#0f766e", color: "#fff", label: "OC" },
-  "MANUTENÇÃO": { bg: "#b45309", color: "#fff", label: "MANUTENÇÃO" },
+  "MANUTENÇÃO": { bg: "var(--warning)", color: "#fff", label: "MANUTENÇÃO" },
 };
 
 const Badge = ({ tipo }) => {
-  const cfg = TIPO_CONFIG[tipo] || { bg: "#64748b", color: "#fff", label: tipo };
+  const cfg = TIPO_CONFIG[tipo] || { bg: "var(--text-muted)", color: "#fff", label: tipo };
   return (
     <span style={{
       background: cfg.bg, color: cfg.color,
@@ -139,7 +139,7 @@ export default function Historico() {
   const resetPagina = () => setPagina(1);
 
   const inputStyle = {
-    padding: "8px 12px", border: "1px solid #cbd5e1",
+    padding: "8px 12px", border: "1px solid var(--border-strong)",
     borderRadius: 6, fontSize: 13, background: "var(--card-bg)",
     color: "var(--text)", outline: "none",
   };
@@ -147,27 +147,7 @@ export default function Historico() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "Inter, sans-serif" }}>
       {/* Header */}
-      <div className="pg-header" style={{
-        background: "#1a3a5c", borderBottom: "4px solid transparent", borderImage: "linear-gradient(90deg, #3d6b47, #6aaa5e, #b5d947, #f5c318, #f0a500) 1",
-        padding: "0 24px", display: "flex", alignItems: "center",
-        justifyContent: "space-between", height: 64,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }} className="pg-logo">
-          <LogoPontual height={40} variant="white" />
-          <span style={{ color: "#fff", fontSize: 20, fontWeight: 700, letterSpacing: 0.5 }}>
-            Histórico
-          </span>
-        </div>
-        <div className="pg-header-actions">
-          <a href="/dashboard" style={{
-            background: "#f5c318", color: "#1a3a5c", fontWeight: 700,
-            border: "none", borderRadius: 6, padding: "8px 18px",
-            cursor: "pointer", textDecoration: "none", fontSize: 14,
-          }}>
-            ← Dashboard
-          </a>
-        </div>
-      </div>
+      <ModuleHeader title="Histórico" />
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 16px" }}>
         {/* Estatísticas rápidas */}
@@ -176,10 +156,10 @@ export default function Historico() {
             display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 18,
           }}>
             {[
-              { label: "Total", valor: todos.length, cor: "#1a3a5c" },
-              { label: "Atrelamentos", valor: todos.filter(i => i._tipo === "ATRELAMENTO").length, cor: "#1d4ed8" },
+              { label: "Total", valor: todos.length, cor: "var(--accent)" },
+              { label: "Atrelamentos", valor: todos.filter(i => i._tipo === "ATRELAMENTO").length, cor: "var(--accent)" },
               { label: "Ordens", valor: todos.filter(i => i._tipo === "OC").length, cor: "#0f766e" },
-              { label: "Manutenções", valor: todos.filter(i => i._tipo === "MANUTENÇÃO").length, cor: "#b45309" },
+              { label: "Manutenções", valor: todos.filter(i => i._tipo === "MANUTENÇÃO").length, cor: "var(--warning)" },
             ].map(s => (
               <div key={s.label} style={{
                 background: "var(--card-bg)", borderRadius: 10, padding: "14px 18px",
@@ -227,7 +207,7 @@ export default function Historico() {
           </select>
           <div style={{ flex: 1 }} />
           <button onClick={() => { carregar(); resetPagina(); }} style={{
-            background: "var(--bg)", color: "#1a3a5c", border: "1px solid #cbd5e1",
+            background: "var(--bg)", color: "var(--accent)", border: "1px solid var(--border-strong)",
             borderRadius: 6, padding: "8px 14px", cursor: "pointer", fontWeight: 600, fontSize: 13,
           }}>
             Atualizar
@@ -242,24 +222,24 @@ export default function Historico() {
           {loading ? (
             <div style={{ textAlign: "center", padding: 64 }}>
               <div style={{
-                width: 36, height: 36, border: "4px solid #e2e8f0",
-                borderTop: "4px solid #1a3a5c", borderRadius: "50%",
+                width: 36, height: 36, border: "4px solid var(--border)",
+                borderTop: "4px solid var(--accent)", borderRadius: "50%",
                 animation: "spin 0.8s linear infinite", margin: "0 auto 12px",
               }} />
               <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Carregando histórico...</div>
             </div>
           ) : erro ? (
-            <div style={{ textAlign: "center", padding: 48, color: "#dc2626" }}>
+            <div style={{ textAlign: "center", padding: 48, color: "var(--danger)" }}>
               {erro}
               <br />
               <button onClick={carregar} style={{
-                marginTop: 12, background: "#f5c318", color: "#1a3a5c",
+                marginTop: 12, background: "var(--accent)", color: "#fff",
                 border: "none", borderRadius: 6, padding: "8px 18px",
                 cursor: "pointer", fontWeight: 700,
               }}>Tentar novamente</button>
             </div>
           ) : filtrados.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 64, color: "#94a3b8" }}>
+            <div style={{ textAlign: "center", padding: 64, color: "var(--text-subtle)" }}>
               Nenhum registro encontrado para os filtros selecionados.
             </div>
           ) : (
@@ -268,7 +248,7 @@ export default function Historico() {
               <div className="histo-header" style={{
                 display: "grid",
                 gridTemplateColumns: "110px 90px 100px 1fr 120px",
-                background: "#1a3a5c", color: "#fff",
+                background: "var(--accent)", color: "#fff",
                 padding: "10px 18px", gap: 12,
                 fontSize: 12, fontWeight: 600,
               }}>
@@ -287,15 +267,15 @@ export default function Historico() {
                     display: "grid",
                     gridTemplateColumns: "110px 90px 100px 1fr 120px",
                     padding: "11px 18px", gap: 12,
-                    background: i % 2 === 0 ? "#f8fafc" : "#fff",
+                    background: i % 2 === 0 ? "var(--surface-2)" : "#fff",
                     borderBottom: "1px solid var(--border)",
                     alignItems: "center",
                     transition: "background 0.1s",
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#eff6ff"}
-                  onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "#f8fafc" : "#fff"}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--accent-soft)"}
+                  onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "var(--surface-2)" : "#fff"}
                 >
-                  <span style={{ fontSize: 13, color: "#475569", whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: 13, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                     {item._data
                       ? new Date(item._data + "T00:00:00").toLocaleDateString("pt-BR")
                       : "—"}
@@ -327,7 +307,7 @@ export default function Historico() {
                   <button
                     onClick={() => setPagina(p => p + 1)}
                     style={{
-                      background: "#f5c318", color: "#1a3a5c", border: "none",
+                      background: "var(--accent)", color: "#fff", border: "none",
                       borderRadius: 6, padding: "10px 32px", cursor: "pointer",
                       fontWeight: 700, fontSize: 14,
                     }}
@@ -338,7 +318,7 @@ export default function Historico() {
               )}
 
               <div style={{ padding: "12px 18px", borderTop: "1px solid #f1f5f9", textAlign: "right" }}>
-                <span style={{ fontSize: 12, color: "#94a3b8" }}>
+                <span style={{ fontSize: 12, color: "var(--text-subtle)" }}>
                   Exibindo {visiveis.length} de {filtrados.length} registro{filtrados.length !== 1 ? "s" : ""}
                 </span>
               </div>

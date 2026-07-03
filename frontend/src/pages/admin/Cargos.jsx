@@ -15,7 +15,8 @@ import { db } from "../../firebase/config";
 import { useRBAC } from "../../rbac/RBACContext";
 import ProtegerPor from "../../rbac/ProtegerPor";
 import { PERMISSOES_POR_MODULO } from "../../rbac/permissoes-catalogo";
-import LogoPontual from "../../components/LogoPontual";
+import ModuleHeader from "../../components/ModuleHeader";
+import { Save, Pencil } from "lucide-react";
 
 const VAZIO = { nome: "", setor_id: "", nivel: 1, descricao: "", status: "ativo", permissoes: [] };
 
@@ -166,18 +167,16 @@ export default function Cargos() {
 
   return (
     <div style={s.wrap}>
-      <header style={s.header}>
-        <LogoPontual height={36} variant="white" />
-        <span style={s.titulo}>Cargos &amp; Permissões</span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+      <ModuleHeader
+        title="Cargos & Permissões"
+        actions={
           <ProtegerPor permissao="cargos.criar">
-            <button style={s.btnNovo} onClick={abrirNovo} disabled={setores.length === 0}>
+            <button className="mod-hbtn-alt" onClick={abrirNovo} disabled={setores.length === 0}>
               + Novo Cargo
             </button>
           </ProtegerPor>
-          <button style={s.btnBack} onClick={() => navigate("/dashboard")}>← Dashboard</button>
-        </div>
-      </header>
+        }
+      />
 
       {setores.length === 0 && !loading && (
         <div style={s.aviso}>
@@ -206,22 +205,22 @@ export default function Cargos() {
                         key={c.id}
                         style={{
                           ...s.cargoItem,
-                          background: selecionadoId === c.id ? "#dbeafe" : "#fff",
-                          borderColor: selecionadoId === c.id ? "#1d4ed8" : "#e2e8f0",
+                          background: selecionadoId === c.id ? "var(--accent-soft)" : "#fff",
+                          borderColor: selecionadoId === c.id ? "var(--accent)" : "var(--border)",
                           opacity: c.status === "inativo" ? 0.5 : 1,
                         }}
                         onClick={() => setSelecionadoId(c.id)}
                       >
                         <div style={{ flex: 1 }}>
                           <strong>{c.nome}</strong>
-                          <div style={{ fontSize: ".7rem", color: "#64748b" }}>
+                          <div style={{ fontSize: ".7rem", color: "var(--text-muted)" }}>
                             Nível {c.nivel ?? 1} · {(c.permissoes || []).length} permissões
                           </div>
                         </div>
                         <div style={{ display: "flex", gap: 4 }}>
                           <ProtegerPor permissao="cargos.editar">
                             <button style={s.btnMiniEdit}
-                              onClick={(ev) => { ev.stopPropagation(); abrirEditar(c); }}>✏</button>
+                              onClick={(ev) => { ev.stopPropagation(); abrirEditar(c); }}><Pencil size={14}/></button>
                           </ProtegerPor>
                           <ProtegerPor permissao="cargos.excluir">
                             <button style={s.btnMiniDel}
@@ -240,14 +239,14 @@ export default function Cargos() {
           <div style={s.painelDir}>
             {!selecionado ? (
               <div style={s.placeholder}>
-                <p style={{ color: "#64748b" }}>Selecione um cargo para editar permissões.</p>
+                <p style={{ color: "var(--text-muted)" }}>Selecione um cargo para editar permissões.</p>
               </div>
             ) : (
               <>
                 <div style={s.painelHeader}>
                   <div>
                     <h3 style={s.painelTitulo}>{selecionado.nome}</h3>
-                    <p style={{ color: "#64748b", fontSize: ".8rem" }}>
+                    <p style={{ color: "var(--text-muted)", fontSize: ".8rem" }}>
                       {setores.find(x => x.id === selecionado.setor_id)?.nome} · Nível {selecionado.nivel ?? 1}
                     </p>
                   </div>
@@ -257,7 +256,7 @@ export default function Cargos() {
                       onClick={salvarPermissoes}
                       disabled={salvandoPerms}
                     >
-                      {salvandoPerms ? "Salvando..." : "💾 Salvar permissões"}
+                      {salvandoPerms ? "Salvando..." : <><Save size={14}/> Salvar permissões</>}
                     </button>
                   </ProtegerPor>
                 </div>
@@ -349,7 +348,7 @@ export default function Cargos() {
                 </select>
               </label>
 
-              {erro && <p style={{ color: "#dc2626", fontSize: ".82rem", fontWeight: 600 }}>{erro}</p>}
+              {erro && <p style={{ color: "var(--danger)", fontSize: ".82rem", fontWeight: 600 }}>{erro}</p>}
 
               <div style={s.mfoot}>
                 <button type="button" style={s.mbtnCancel} onClick={fechar}>Cancelar</button>
@@ -366,42 +365,42 @@ export default function Cargos() {
 }
 
 const s = {
-  wrap:    { minHeight: "100vh", background: "var(--bg, #f0f4f8)", fontFamily: "system-ui, sans-serif" },
-  header:  { background: "#1a3a5c", padding: "10px 24px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 2px 8px rgba(0,0,0,.15)" },
+  wrap:    { minHeight: "100vh", background: "var(--bg, #f0f4f8)", fontFamily: "var(--font)" },
+  header:  { background: "var(--header-bg)", borderBottom: "1px solid var(--header-border)", padding: "10px 24px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 2px 8px rgba(0,0,0,.15)" },
   titulo:  { color: "#fff", fontWeight: 700, fontSize: "1.1rem" },
-  btnNovo: { padding: "7px 16px", background: "#f5c318", color: "#1a3a5c", border: "none", borderRadius: 7, fontWeight: 700, cursor: "pointer", fontSize: ".85rem" },
-  btnBack: { padding: "7px 16px", background: "rgba(255,255,255,.15)", color: "#fff", border: "1px solid rgba(255,255,255,.3)", borderRadius: 7, cursor: "pointer", fontSize: ".85rem" },
-  aviso:   { background: "#fef9c3", borderLeft: "4px solid #f5c318", padding: "10px 20px", margin: "12px 24px", borderRadius: 6, color: "#854d0e", fontWeight: 600, fontSize: ".88rem" },
+  btnNovo: { padding: "7px 16px", background: "var(--header-btn-bg)", color: "var(--accent)", border: "none", borderRadius: 7, fontWeight: 700, cursor: "pointer", fontSize: ".85rem" },
+  btnBack: { padding: "7px 16px", background: "rgba(255,255,255,.15)", color: "#fff", border: "1px solid rgba(255,255,255,.3)", borderRadius: 7, cursor: "pointer", fontSize: ".85rem", display: "inline-flex", alignItems: "center", gap: 6 },
+  aviso:   { background: "var(--warning-bg)", borderLeft: "4px solid var(--warning)", padding: "10px 20px", margin: "12px 24px", borderRadius: 6, color: "var(--warning)", fontWeight: 600, fontSize: ".88rem" },
   body:    { padding: 24, maxWidth: 1400, margin: "0 auto" },
   grid:    { display: "grid", gridTemplateColumns: "320px 1fr", gap: 20, alignItems: "start" },
-  painelEsq: { background: "#fff", padding: 16, borderRadius: 10, border: "1px solid #e2e8f0", maxHeight: "calc(100vh - 200px)", overflowY: "auto" },
-  painelDir: { background: "#fff", padding: 20, borderRadius: 10, border: "1px solid #e2e8f0", minHeight: 400 },
+  painelEsq: { background: "var(--card-bg)", padding: 16, borderRadius: 10, border: "1px solid var(--border)", maxHeight: "calc(100vh - 200px)", overflowY: "auto" },
+  painelDir: { background: "var(--card-bg)", padding: 20, borderRadius: 10, border: "1px solid var(--border)", minHeight: 400 },
   painelHeader: { display: "flex", justifyContent: "space-between", alignItems: "start", borderBottom: "1px solid #f1f5f9", paddingBottom: 12, marginBottom: 16 },
-  painelTitulo: { color: "#1a3a5c", margin: 0, fontSize: "1rem" },
-  grupoTitulo: { fontSize: ".75rem", textTransform: "uppercase", fontWeight: 700, color: "#1a3a5c", marginBottom: 8, letterSpacing: ".5px" },
-  grupoVazio:  { fontSize: ".78rem", color: "#94a3b8", fontStyle: "italic", margin: "4px 0 0 8px" },
+  painelTitulo: { color: "var(--accent)", margin: 0, fontSize: "1rem" },
+  grupoTitulo: { fontSize: ".75rem", textTransform: "uppercase", fontWeight: 700, color: "var(--accent)", marginBottom: 8, letterSpacing: ".5px" },
+  grupoVazio:  { fontSize: ".78rem", color: "var(--text-subtle)", fontStyle: "italic", margin: "4px 0 0 8px" },
   cargoItem:   { display: "flex", alignItems: "center", padding: "8px 10px", border: "1px solid", borderRadius: 6, marginBottom: 4, cursor: "pointer", fontSize: ".85rem", gap: 8 },
-  btnMiniEdit: { background: "#dbeafe", color: "#1d4ed8", border: "none", padding: "3px 7px", borderRadius: 4, cursor: "pointer", fontSize: ".7rem" },
-  btnMiniDel:  { background: "#fee2e2", color: "#dc2626", border: "none", padding: "3px 8px", borderRadius: 4, cursor: "pointer", fontSize: ".8rem", fontWeight: 700 },
+  btnMiniEdit: { background: "var(--accent-soft)", color: "var(--accent)", border: "none", padding: "3px 7px", borderRadius: 4, cursor: "pointer", fontSize: ".7rem" },
+  btnMiniDel:  { background: "var(--danger-bg)", color: "var(--danger)", border: "none", padding: "3px 8px", borderRadius: 4, cursor: "pointer", fontSize: ".8rem", fontWeight: 700 },
   placeholder: { padding: 60, textAlign: "center" },
   permGrid:    { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 14 },
-  permGrupo:   { border: "1px solid #e2e8f0", borderRadius: 8, padding: 12, background: "#f8fafc" },
-  permGrupoHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, color: "#1a3a5c" },
+  permGrupo:   { border: "1px solid var(--border)", borderRadius: 8, padding: 12, background: "var(--surface-2)" },
+  permGrupoHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, color: "var(--accent)" },
   permItens:   { display: "flex", flexDirection: "column", gap: 4 },
   permLabel:   { display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: 8, fontSize: ".8rem", cursor: "pointer", padding: "4px 6px", borderRadius: 4 },
-  permCode:    { fontSize: ".68rem", color: "#94a3b8", fontFamily: "monospace" },
-  btnMini:     { background: "#dcfce7", color: "#15803d", border: "none", padding: "3px 8px", borderRadius: 4, cursor: "pointer", fontSize: ".7rem", fontWeight: 600 },
-  btnMiniClear:{ background: "#fee2e2", color: "#dc2626", border: "none", padding: "3px 8px", borderRadius: 4, cursor: "pointer", fontSize: ".7rem", fontWeight: 600 },
-  btnSalvar:   { padding: "7px 20px", background: "#f5c318", color: "#1a3a5c", border: "none", borderRadius: 7, fontWeight: 700, cursor: "pointer", fontSize: ".85rem" },
-  info:        { color: "#94a3b8", textAlign: "center", marginTop: 20, fontSize: ".88rem" },
+  permCode:    { fontSize: ".68rem", color: "var(--text-subtle)", fontFamily: "monospace" },
+  btnMini:     { background: "var(--success-bg)", color: "var(--success)", border: "none", padding: "3px 8px", borderRadius: 4, cursor: "pointer", fontSize: ".7rem", fontWeight: 600 },
+  btnMiniClear:{ background: "var(--danger-bg)", color: "var(--danger)", border: "none", padding: "3px 8px", borderRadius: 4, cursor: "pointer", fontSize: ".7rem", fontWeight: 600 },
+  btnSalvar:   { padding: "7px 20px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 7, fontWeight: 700, cursor: "pointer", fontSize: ".85rem", display: "inline-flex", alignItems: "center", gap: 6 },
+  info:        { color: "var(--text-subtle)", textAlign: "center", marginTop: 20, fontSize: ".88rem" },
   overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 },
-  modal:   { background: "#fff", borderRadius: 12, width: "100%", maxWidth: 480, boxShadow: "0 20px 60px rgba(0,0,0,.2)" },
-  mh:      { background: "#1a3a5c", padding: "14px 20px", borderRadius: "12px 12px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center" },
+  modal:   { background: "var(--card-bg)", borderRadius: 12, width: "100%", maxWidth: 480, boxShadow: "0 20px 60px rgba(0,0,0,.2)" },
+  mh:      { background: "var(--accent)", padding: "14px 20px", borderRadius: "12px 12px 0 0", display: "flex", justifyContent: "space-between", alignItems: "center" },
   mclose:  { background: "none", border: "none", color: "#fff", fontSize: "1.4rem", cursor: "pointer" },
   mform:   { padding: 20, display: "flex", flexDirection: "column", gap: 14 },
-  mlbl:    { display: "flex", flexDirection: "column", gap: 5, fontSize: ".82rem", fontWeight: 600, color: "#374151" },
-  minp:    { padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: ".9rem", outline: "none", fontFamily: "inherit" },
+  mlbl:    { display: "flex", flexDirection: "column", gap: 5, fontSize: ".82rem", fontWeight: 600, color: "var(--text)" },
+  minp:    { padding: "8px 10px", border: "1px solid var(--border-strong)", borderRadius: 6, fontSize: ".9rem", outline: "none", fontFamily: "inherit" },
   mfoot:   { display: "flex", gap: 10, justifyContent: "flex-end" },
-  mbtnCancel: { padding: "8px 18px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: ".85rem", color: "#475569" },
-  mbtnSave:   { padding: "8px 24px", background: "#f5c318", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontSize: ".85rem", color: "#1a3a5c" },
+  mbtnCancel: { padding: "8px 18px", background: "var(--surface-3)", border: "1px solid var(--border-strong)", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: ".85rem", color: "var(--text-muted)" },
+  mbtnSave:   { padding: "8px 24px", background: "var(--accent)", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontSize: ".85rem", color: "#fff" },
 };

@@ -4,9 +4,10 @@ import {
   collection, getDocs, setDoc, deleteDoc, addDoc, updateDoc,
   doc, query, orderBy,
 } from "firebase/firestore";
+import { Lock, X, CheckCircle2, Download } from "lucide-react";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
-import LogoPontual from "../components/LogoPontual";
+import ModuleHeader from "../components/ModuleHeader";
 
 // ── Catálogo de tipos de manutenção ───────────────────────────────────────
 const TIPOS = [
@@ -122,9 +123,9 @@ function maskMoeda(v) {
 
 
 const GRUPO_COLOR = {
-  "Documentação": { bg:"#dbeafe", color:"#1d4ed8", border:"#93c5fd" },
-  "Motorista":    { bg:"#fef3c7", color:"#92400e", border:"#fcd34d" },
-  "Mecânica":     { bg:"#d1fae5", color:"#065f46", border:"#6ee7b7" },
+  "Documentação": { bg:"var(--accent-soft)", color:"var(--accent)", border:"#93c5fd" },
+  "Motorista":    { bg:"var(--warning-bg)", color:"var(--warning)", border:"var(--warning-border)" },
+  "Mecânica":     { bg:"var(--success-bg)", color:"#065f46", border:"#6ee7b7" },
 };
 
 // ── Status ────────────────────────────────────────────────────────────────
@@ -141,10 +142,10 @@ function calcStatus(vencStr) {
 const STATUS_ORDER = { vencido: 0, alerta: 1, ok: 2, sem_data: 3 };
 
 const STATUS_META = {
-  vencido:  { label:"Vencido",      bg:"#fee2e2", color:"#dc2626", rowBg:"#fef2f2" },
-  alerta:   { label:"Alerta",       bg:"#fef9c3", color:"#a16207", rowBg:"#fffbeb" },
-  ok:       { label:"OK",           bg:"#dcfce7", color:"#15803d", rowBg:"#f0fdf4" },
-  sem_data: { label:"Sem registro", bg:"#f1f5f9", color:"#94a3b8", rowBg:"#f8fafc" },
+  vencido:  { label:"Vencido",      bg:"var(--danger-bg)", color:"var(--danger)", rowBg:"var(--danger-bg)" },
+  alerta:   { label:"Alerta",       bg:"var(--warning-bg)", color:"var(--warning)", rowBg:"var(--warning-bg)" },
+  ok:       { label:"OK",           bg:"var(--success-bg)", color:"var(--success)", rowBg:"var(--success-bg)" },
+  sem_data: { label:"Sem registro", bg:"var(--surface-3)", color:"var(--text-subtle)", rowBg:"var(--surface-2)" },
 };
 
 function fmtDate(str) {
@@ -196,7 +197,8 @@ const PERIODOS_LANC = [
 ];
 
 // Paleta cíclica para colorir categorias do ranking
-const PALETA_CAT = ["#1d4ed8","#15803d","#b45309","#dc2626","#7c3aed","#0891b2","#db2777","#65a30d","#c2410c","#0284c7","#9333ea","#059669"];
+// Paleta "asteroide ao luar" — tons frios/lunares, cíclica
+const PALETA_CAT = ["var(--chart-1)","var(--chart-2)","var(--chart-3)","var(--chart-4)","var(--chart-5)","var(--chart-6)","var(--chart-7)","var(--chart-8)","var(--chart-1)","var(--chart-2)","var(--chart-3)","var(--chart-4)"];
 
 function inicioPeriodo(key, agora, customIni) {
   const y = agora.getFullYear();
@@ -230,6 +232,342 @@ function fmtBRLcurto(n) {
 function nomeMes(m) {
   return ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][m];
 }
+
+// ════════════════════════════════════════════════════════════════════════
+//  DASHBOARD DE MANUTENÇÃO — KPIs + gráficos + tabela por veículo (export)
+// ════════════════════════════════════════════════════════════════════════
+const ALERTA_MENSAL = 8000; // R$ por mês → veículo "em alerta"
+
+// ── Gráfico de LINHA marcada (evolução mensal) ──────────────────────────
+function LinhaCustos({ meses, fmt }) {
+  const W = 720, H = 230, padL = 52, padR = 16, padT = 14, padB = 30;
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const max = Math.max(1, ...meses.map(m => m.valor));
+  const x = i => padL + (meses.length > 1 ? (i / (meses.length - 1)) * iw : iw / 2);
+  const y = v => padT + ih - (v / max) * ih;
+  const pts = meses.map((m, i) => [x(i), y(m.valor)]);
+  const dLine = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const dArea = `${dLine} L ${x(meses.length - 1).toFixed(1)} ${padT + ih} L ${x(0).toFixed(1)} ${padT + ih} Z`;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
+      {[0, .25, .5, .75, 1].map((g, i) => {
+        const yy = padT + ih - g * ih;
+        return (
+          <g key={i}>
+            <line x1={padL} y1={yy} x2={W - padR} y2={yy} stroke="var(--border)" strokeWidth="1" />
+            <text x={padL - 8} y={yy + 3} textAnchor="end" fontSize="9" fill="var(--text-subtle)">{fmtBRLcurto(max * g).replace("R$ ", "")}</text>
+          </g>
+        );
+      })}
+      <path d={dArea} fill="var(--chart-2)" opacity=".12" />
+      <path d={dLine} fill="none" stroke="var(--chart-2)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      {pts.map((p, i) => (
+        <g key={i}>
+          <circle cx={p[0]} cy={p[1]} r="3.6" fill="var(--card-bg)" stroke="var(--chart-2)" strokeWidth="2" />
+          <text x={p[0]} y={H - 10} textAnchor="middle" fontSize="9" fill="var(--text-muted)">{nomeMes(meses[i].mes)}</text>
+          <title>{`${nomeMes(meses[i].mes)}: ${fmt(meses[i].valor)}`}</title>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+// ── Donut / Pizza (reaproveitável) ──────────────────────────────────────
+function DonutPie({ segments, fmt, tipo = "donut", size = 190 }) {
+  const ativos = segments.filter(s => s.valor > 0);
+  const total = ativos.reduce((s, x) => s + x.valor, 0);
+  const R = size / 2, cx = R, cy = R;
+  const inner = tipo === "donut" ? R * 0.6 : 0;
+  if (total <= 0) {
+    return <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}><circle cx={cx} cy={cy} r={R - 1} fill="var(--surface-3)" />{tipo === "donut" && <circle cx={cx} cy={cy} r={inner} fill="var(--card-bg)" />}</svg>;
+  }
+  if (ativos.length === 1) {
+    return <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}><circle cx={cx} cy={cy} r={R} fill={ativos[0].cor} />{tipo === "donut" && <circle cx={cx} cy={cy} r={inner} fill="var(--card-bg)" />}</svg>;
+  }
+  let acc = 0;
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
+      {ativos.map((s, i) => {
+        const frac = s.valor / total;
+        const a0 = acc * 2 * Math.PI - Math.PI / 2; acc += frac;
+        const a1 = acc * 2 * Math.PI - Math.PI / 2;
+        const large = frac > 0.5 ? 1 : 0;
+        const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0);
+        const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
+        let d;
+        if (tipo === "donut") {
+          const xi0 = cx + inner * Math.cos(a0), yi0 = cy + inner * Math.sin(a0);
+          const xi1 = cx + inner * Math.cos(a1), yi1 = cy + inner * Math.sin(a1);
+          d = `M ${x0} ${y0} A ${R} ${R} 0 ${large} 1 ${x1} ${y1} L ${xi1} ${yi1} A ${inner} ${inner} 0 ${large} 0 ${xi0} ${yi0} Z`;
+        } else {
+          d = `M ${cx} ${cy} L ${x0} ${y0} A ${R} ${R} 0 ${large} 1 ${x1} ${y1} Z`;
+        }
+        return <path key={i} d={d} fill={s.cor} stroke="var(--card-bg)" strokeWidth="1.5"><title>{`${s.label}: ${fmt ? fmt(s.valor) : s.valor} (${(frac * 100).toFixed(1)}%)`}</title></path>;
+      })}
+    </svg>
+  );
+}
+
+// ── Legenda de segmentos ────────────────────────────────────────────────
+function LegendaSeg({ segments, fmt }) {
+  const total = segments.reduce((s, x) => s + x.valor, 0) || 1;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7, minWidth: 150 }}>
+      {segments.filter(s => s.valor > 0).map((s, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: ".78rem" }}>
+          <span style={{ width: 11, height: 11, borderRadius: 3, background: s.cor, flexShrink: 0 }} />
+          <span style={{ color: "var(--text-muted)", flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</span>
+          <span style={{ color: "var(--text)", fontWeight: 700 }}>{fmt ? fmt(s.valor) : s.valor}</span>
+          <span style={{ color: "var(--text-subtle)", fontWeight: 600, minWidth: 40, textAlign: "right" }}>{((s.valor / total) * 100).toFixed(0)}%</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Barras horizontais (Top 10 veículos) ────────────────────────────────
+function BarrasH({ items, fmt }) {
+  const max = Math.max(1, ...items.map(i => i.valor));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+      {items.map((it, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ width: 78, fontSize: ".74rem", fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-display)", flexShrink: 0 }}>{it.placa}</span>
+          <div style={{ flex: 1, height: 16, background: "var(--surface-3)", borderRadius: 6, overflow: "hidden" }}>
+            <div style={{ width: `${(it.valor / max) * 100}%`, height: "100%", borderRadius: 6, background: `linear-gradient(90deg, var(--chart-4), var(--chart-2))` }} />
+          </div>
+          <span style={{ width: 82, textAlign: "right", fontSize: ".76rem", fontWeight: 700, color: "var(--text)" }}>{fmt(it.valor)}</span>
+        </div>
+      ))}
+      {items.length === 0 && <p style={{ color: "var(--text-subtle)", fontSize: ".82rem" }}>Sem lançamentos no período.</p>}
+    </div>
+  );
+}
+
+// ── Exportações ─────────────────────────────────────────────────────────
+function baixarCSV(nome, headers, rows) {
+  const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = [headers.map(esc).join(";"), ...rows.map(r => r.map(esc).join(";"))].join("\r\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = nome; a.click();
+  URL.revokeObjectURL(url);
+}
+async function baixarPDF(el, nome) {
+  if (!el) return;
+  const html2pdf = (await import("html2pdf.js")).default;
+  await html2pdf().set({
+    margin: 8, filename: nome,
+    image: { type: "jpeg", quality: .95 },
+    html2canvas: { scale: 2, backgroundColor: "#ffffff", useCORS: true },
+    jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
+  }).from(el).save();
+}
+
+// ── Card de KPI com comparação anual ────────────────────────────────────
+function KpiCard({ label, valor, sub, pct, invert = true, alerta = false }) {
+  // invert=true → aumento de custo é ruim (vermelho); queda é bom (verde)
+  const temPct = pct != null && Number.isFinite(pct);
+  const subiu = temPct && pct > 0;
+  const bom = temPct && (invert ? pct < 0 : pct > 0);
+  const corPct = !temPct ? "var(--text-subtle)" : bom ? "var(--success)" : "var(--danger)";
+  return (
+    <div style={{ background: "var(--card-bg)", border: `1px solid ${alerta ? "var(--danger-border)" : "var(--border)"}`, borderRadius: "var(--r-lg)", padding: "16px 18px", boxShadow: "var(--sh-sm)", position: "relative", overflow: "hidden" }}>
+      <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: alerta ? "var(--danger)" : "linear-gradient(180deg, var(--chart-2), var(--chart-4))" }} />
+      <div style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-muted)" }}>{label}</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 800, color: alerta ? "var(--danger)" : "var(--text)", marginTop: 6, lineHeight: 1.1, letterSpacing: "-.02em", fontFamily: "var(--font-display)" }}>{valor}</div>
+      <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6, fontSize: ".74rem" }}>
+        {temPct && <span style={{ color: corPct, fontWeight: 700 }}>{subiu ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}%</span>}
+        {sub && <span style={{ color: "var(--text-subtle)" }}>{sub}</span>}
+      </div>
+    </div>
+  );
+}
+
+function DashboardManutencao({ lancamentos, veiculos }) {
+  const pdfRef = useRef(null);
+  const anosDisponiveis = useMemo(() => {
+    const set = new Set();
+    (lancamentos || []).forEach(l => { const d = new Date(l.criadoEm || l.dataHora); if (!isNaN(d)) set.add(d.getFullYear()); });
+    set.add(new Date().getFullYear());
+    return [...set].sort((a, b) => b - a);
+  }, [lancamentos]);
+
+  const [ano, setAno] = useState(() => new Date().getFullYear());
+  const [mesSel, setMesSel] = useState("todos");
+  useEffect(() => { if (!anosDisponiveis.includes(ano)) setAno(anosDisponiveis[0]); }, [anosDisponiveis]); // eslint-disable-line
+
+  const d = useMemo(() => {
+    const hoje = new Date();
+    const norm = (lancamentos || []).map(l => ({ ...l, _d: new Date(l.criadoEm || l.dataHora), _v: Number(l.valorTotal) || 0 })).filter(l => !isNaN(l._d));
+    const doAno = y => norm.filter(l => l._d.getFullYear() === y);
+    const atuais = doAno(ano), anteriores = doAno(ano - 1);
+
+    const totalAtual = atuais.reduce((s, l) => s + l._v, 0);
+    const totalAnt = anteriores.reduce((s, l) => s + l._v, 0);
+
+    const nVeic = (veiculos || []).filter(v => v.tipo !== "carreta").length || 1;
+    const mediaVeicAtual = totalAtual / nVeic;
+    const mediaVeicAnt = totalAnt / nVeic;
+    const mesesAno = ano === hoje.getFullYear() ? hoje.getMonth() + 1 : 12;
+
+    const porMes = Array.from({ length: 12 }, (_, m) => ({ mes: m, valor: 0 }));
+    atuais.forEach(l => { porMes[l._d.getMonth()].valor += l._v; });
+
+    const catMap = {};
+    atuais.forEach(l => { const c = (l.tipoLancamento || "Sem categoria").trim() || "Sem categoria"; catMap[c] = (catMap[c] || 0) + l._v; });
+    const porCategoria = Object.entries(catMap).map(([nome, valor], i) => ({ label: nome, valor, cor: PALETA_CAT[i % PALETA_CAT.length] })).sort((a, b) => b.valor - a.valor);
+
+    const veicMap = {};
+    atuais.forEach(l => {
+      const p = (l.placa || "—").toUpperCase();
+      if (!veicMap[p]) veicMap[p] = { placa: p, total: 0, meses: Array(12).fill(0) };
+      veicMap[p].total += l._v;
+      veicMap[p].meses[l._d.getMonth()] += l._v;
+    });
+    const porVeiculo = Object.values(veicMap).map(v => ({ ...v, media: v.total / mesesAno, maxMes: Math.max(0, ...v.meses) })).sort((a, b) => b.total - a.total);
+
+    const emAlerta = porVeiculo.filter(v => v.maxMes > ALERTA_MENSAL);
+    const maiorCusto = porVeiculo[0] || null;
+    const top10 = porVeiculo.slice(0, 10).map(v => ({ placa: v.placa, valor: v.total }));
+
+    const faixas = [
+      { label: "Até R$2k/mês", min: 0, max: 2000, cor: "var(--chart-3)", valor: 0 },
+      { label: "R$2k–5k/mês", min: 2000, max: 5000, cor: "var(--chart-2)", valor: 0 },
+      { label: "R$5k–8k/mês", min: 5000, max: 8000, cor: "var(--chart-5)", valor: 0 },
+      { label: "Acima de R$8k/mês", min: 8000, max: Infinity, cor: "var(--danger)", valor: 0 },
+    ];
+    porVeiculo.forEach(v => { (faixas.find(f => v.media >= f.min && v.media < f.max) || faixas[3]).valor++; });
+
+    const pct = (a, b) => (b > 0 ? ((a - b) / b) * 100 : null);
+    return {
+      totalAtual, mediaVeicAtual, emAlerta, maiorCusto, porMes, porCategoria, porVeiculo, top10, faixas, nVeic,
+      pctTotal: pct(totalAtual, totalAnt), pctMedia: pct(mediaVeicAtual, mediaVeicAnt),
+    };
+  }, [lancamentos, veiculos, ano]);
+
+  // Tabela por veículo (respeita seletor de mês)
+  const linhasTabela = d.porVeiculo.map(v => {
+    const gasto = mesSel === "todos" ? v.total : v.meses[Number(mesSel)];
+    return { placa: v.placa, gasto, media: v.media, maxMes: v.maxMes };
+  }).filter(r => r.gasto > 0 || mesSel === "todos");
+
+  function exportarCSV() {
+    const headers = ["Placa", mesSel === "todos" ? "Gasto no ano (R$)" : `Gasto ${nomeMes(Number(mesSel))} (R$)`, "Média mensal (R$)", "Maior mês (R$)"];
+    const rows = linhasTabela.map(r => [r.placa, r.gasto.toFixed(2).replace(".", ","), r.media.toFixed(2).replace(".", ","), r.maxMes.toFixed(2).replace(".", ",")]);
+    baixarCSV(`manutencao_${ano}${mesSel === "todos" ? "" : "_" + nomeMes(Number(mesSel))}.csv`, headers, rows);
+  }
+
+  const sd = estilosDash;
+  return (
+    <main style={s.main} className="pg-body">
+      {/* Toolbar */}
+      <div style={sd.toolbar}>
+        <div>
+          <div style={sd.h1}>Dashboard de Manutenção</div>
+          <div style={sd.h1sub}>Custos, alertas e evolução — {mesSel === "todos" ? `ano de ${ano}` : `${nomeMes(Number(mesSel))}/${ano}`}</div>
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <label style={sd.selLabel}>Ano</label>
+          <select style={sd.select} value={ano} onChange={e => setAno(Number(e.target.value))}>
+            {anosDisponiveis.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* KPIs */}
+      <div style={sd.kpiRow}>
+        <KpiCard label="Custo total do período" valor={fmtBRL(d.totalAtual)} pct={d.pctTotal} sub="vs. ano anterior" />
+        <KpiCard label="Custo médio / veículo" valor={fmtBRL(d.mediaVeicAtual)} pct={d.pctMedia} sub={`${d.nVeic} veículos · vs. ano anterior`} />
+        <KpiCard label="Veículos em alerta" valor={String(d.emAlerta.length)} sub={`acima de ${fmtBRLcurto(ALERTA_MENSAL)}/mês`} alerta={d.emAlerta.length > 0} />
+        <KpiCard label="Maior custo unitário" valor={d.maiorCusto ? fmtBRL(d.maiorCusto.total) : "—"} sub={d.maiorCusto ? `placa ${d.maiorCusto.placa}` : "sem dados"} />
+      </div>
+
+      {/* Linha (evolução) + Donut (categorias) */}
+      <div style={sd.grid2}>
+        <div style={sd.panel}>
+          <div style={sd.panelTitle}>Evolução de custos mensais — {ano}</div>
+          <LinhaCustos meses={d.porMes} fmt={fmtBRL} />
+        </div>
+        <div style={sd.panel}>
+          <div style={sd.panelTitle}>Distribuição por categoria</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", justifyContent: "center" }}>
+            <DonutPie segments={d.porCategoria} fmt={fmtBRLcurto} tipo="donut" />
+            <LegendaSeg segments={d.porCategoria} fmt={fmtBRLcurto} />
+          </div>
+        </div>
+      </div>
+
+      {/* Top 10 + Pizza (faixas) */}
+      <div style={sd.grid2}>
+        <div style={sd.panel}>
+          <div style={sd.panelTitle}>Top 10 veículos — maior custo acumulado</div>
+          <BarrasH items={d.top10} fmt={fmtBRLcurto} />
+        </div>
+        <div style={sd.panel}>
+          <div style={sd.panelTitle}>Status da frota — faixa de custo mensal médio</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", justifyContent: "center" }}>
+            <DonutPie segments={d.faixas} tipo="pizza" fmt={n => `${n} veíc.`} />
+            <LegendaSeg segments={d.faixas} fmt={n => `${n} veíc.`} />
+          </div>
+        </div>
+      </div>
+
+      {/* Tabela por veículo + export */}
+      <div style={sd.panel}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+          <div style={sd.panelTitle}>Gastos por veículo</div>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <label style={sd.selLabel}>Mês</label>
+            <select style={sd.select} value={mesSel} onChange={e => setMesSel(e.target.value)}>
+              <option value="todos">Todos</option>
+              {Array.from({ length: 12 }, (_, m) => <option key={m} value={m}>{nomeMes(m)}</option>)}
+            </select>
+            <button style={sd.btnExp} onClick={exportarCSV}><Download size={15} /> CSV</button>
+            <button style={sd.btnExp} onClick={() => baixarPDF(pdfRef.current, `manutencao_${ano}.pdf`)}><Download size={15} /> PDF</button>
+          </div>
+        </div>
+        <div ref={pdfRef} className="table-wrap" style={{ boxShadow: "none" }}>
+          <table className="modern-table">
+            <thead>
+              <tr>
+                <th>Placa</th>
+                <th style={{ textAlign: "right" }}>{mesSel === "todos" ? `Gasto no ano` : `Gasto em ${nomeMes(Number(mesSel))}`}</th>
+                <th style={{ textAlign: "right" }}>Média/mês</th>
+                <th style={{ textAlign: "right" }}>Maior mês</th>
+              </tr>
+            </thead>
+            <tbody>
+              {linhasTabela.map((r, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 700, color: "var(--accent)" }}>{r.placa}</td>
+                  <td style={{ textAlign: "right" }}>{fmtBRL(r.gasto)}</td>
+                  <td style={{ textAlign: "right" }}>{fmtBRL(r.media)}</td>
+                  <td style={{ textAlign: "right", color: r.maxMes > ALERTA_MENSAL ? "var(--danger)" : "var(--text)", fontWeight: r.maxMes > ALERTA_MENSAL ? 700 : 400 }}>{fmtBRL(r.maxMes)}</td>
+                </tr>
+              ))}
+              {linhasTabela.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--text-subtle)", padding: 24 }}>Sem lançamentos no período.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+const estilosDash = {
+  toolbar: { display: "flex", alignItems: "flex-end", gap: 12, flexWrap: "wrap", marginBottom: 8 },
+  h1: { fontSize: "1.15rem", fontWeight: 800, color: "var(--text)", letterSpacing: "-.02em", fontFamily: "var(--font-display)" },
+  h1sub: { fontSize: ".8rem", color: "var(--text-muted)", marginTop: 2 },
+  selLabel: { fontSize: ".72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", color: "var(--text-muted)" },
+  select: { padding: "7px 12px", borderRadius: "var(--r-sm)", border: "1px solid var(--input-border)", background: "var(--input-bg)", color: "var(--text)", fontSize: ".85rem", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
+  kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 16 },
+  grid2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14, marginBottom: 16 },
+  panel: { background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", boxShadow: "var(--sh-sm)", padding: "16px 18px" },
+  panelTitle: { fontSize: ".8rem", fontWeight: 700, color: "var(--text)", textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 12 },
+  btnExp: { display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: "var(--r-sm)", border: "1px solid var(--border-strong)", background: "var(--card-bg)", color: "var(--text)", fontSize: ".8rem", fontWeight: 700, cursor: "pointer" },
+};
 
 function DashboardCustos({ lancamentos, fmtBRLfn }) {
   const [periodo, setPeriodo] = useState("ano");
@@ -319,22 +657,22 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
   }, [lancamentos, periodo, customIni, customFim]);
 
   return (
-    <div style={{ background: "#fff", borderRadius: 14, padding: "1rem 1.25rem", marginBottom: "1rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" }}>
+    <div style={{ background: "var(--card-bg)", borderRadius: 14, padding: "1rem 1.25rem", marginBottom: "1rem", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" }}>
       {/* Cabeçalho do dashboard */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
         <div>
-          <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: "1rem", fontWeight: 700 }} className="manut-display">Dashboard de custos</h2>
-          <p style={{ margin: "2px 0 0 0", fontSize: ".75rem", color: "#64748b" }}>
+          <h2 style={{ margin: 0, color: "var(--accent)", fontSize: "1rem", fontWeight: 700 }} className="manut-display">Dashboard de custos</h2>
+          <p style={{ margin: "2px 0 0 0", fontSize: ".75rem", color: "var(--text-muted)" }}>
             {filtrados.length} lançamento{filtrados.length === 1 ? "" : "s"} no período selecionado
           </p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-          <div style={{ display: "flex", gap: 8, padding: 6, background: "#f1f5f9", borderRadius: 12, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, padding: 6, background: "var(--surface-3)", borderRadius: 12, flexWrap: "wrap" }}>
             {PERIODOS_LANC.map(p => (
               <button key={p.key} type="button" onClick={() => setPeriodo(p.key)}
                 style={{ padding: "7px 16px", borderRadius: 8, border: "none", fontSize: ".82rem", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-                  background: periodo === p.key ? "#1a3a5c" : "transparent",
-                  color: periodo === p.key ? "#fff" : "#64748b",
+                  background: periodo === p.key ? "var(--accent)" : "transparent",
+                  color: periodo === p.key ? "#fff" : "var(--text-muted)",
                 }}>
                 {p.label}
               </button>
@@ -342,21 +680,21 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
           </div>
           {periodo === "custom" && (
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".74rem", fontWeight: 600, color: "#64748b" }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".74rem", fontWeight: 600, color: "var(--text-muted)" }}>
                 De:
                 <input type="date" value={customIni} onChange={e => setCustomIni(e.target.value)}
-                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: ".78rem", fontFamily: "inherit" }}
+                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", fontSize: ".78rem", fontFamily: "inherit" }}
                 />
               </label>
-              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".74rem", fontWeight: 600, color: "#64748b" }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".74rem", fontWeight: 600, color: "var(--text-muted)" }}>
                 Até:
                 <input type="date" value={customFim} onChange={e => setCustomFim(e.target.value)}
-                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: ".78rem", fontFamily: "inherit" }}
+                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", fontSize: ".78rem", fontFamily: "inherit" }}
                 />
               </label>
               {(customIni || customFim) && (
                 <button type="button" onClick={() => { setCustomIni(""); setCustomFim(""); }}
-                  style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #cbd5e1", background: "transparent", fontSize: ".72rem", color: "#64748b", cursor: "pointer", fontFamily: "inherit" }}>
+                  style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "transparent", fontSize: ".72rem", color: "var(--text-muted)", cursor: "pointer", fontFamily: "inherit" }}>
                   Limpar
                 </button>
               )}
@@ -367,29 +705,29 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
 
       {/* KPIs principais */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 16 }}>
-        <div style={{ padding: "14px 16px", borderRadius: 12, background: "linear-gradient(135deg, #1a3a5c, #234775)", color: "#fff" }}>
+        <div style={{ padding: "14px 16px", borderRadius: 12, background: "linear-gradient(135deg, #18216E, #234775)", color: "#fff" }}>
           <div style={{ fontSize: ".7rem", fontWeight: 700, opacity: .75, textTransform: "uppercase", letterSpacing: ".04em" }}>Total gasto</div>
           <div style={{ fontSize: "1.6rem", fontWeight: 800, marginTop: 4, lineHeight: 1 }} className="manut-display">{fmtBRLfn(totalGeral)}</div>
         </div>
-        <div style={{ padding: "14px 16px", borderRadius: 12, background: "#f0f9ff", border: "1px solid #bae6fd" }}>
-          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "#0369a1", textTransform: "uppercase", letterSpacing: ".04em" }}>Categorias</div>
+        <div style={{ padding: "14px 16px", borderRadius: 12, background: "var(--accent-soft)", border: "1px solid #bae6fd" }}>
+          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: ".04em" }}>Categorias</div>
           <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0c4a6e", marginTop: 4, lineHeight: 1 }} className="manut-display">{ranking.length}</div>
         </div>
-        <div style={{ padding: "14px 16px", borderRadius: 12, background: "#f0fdf4", border: "1px solid #86efac" }}>
-          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "#15803d", textTransform: "uppercase", letterSpacing: ".04em" }}>Média / mês</div>
+        <div style={{ padding: "14px 16px", borderRadius: 12, background: "var(--success-bg)", border: "1px solid #86efac" }}>
+          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "var(--success)", textTransform: "uppercase", letterSpacing: ".04em" }}>Média / mês</div>
           <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#14532d", marginTop: 4, lineHeight: 1 }} className="manut-display">{fmtBRLcurto(mediaMes)}</div>
         </div>
-        <div style={{ padding: "14px 16px", borderRadius: 12, background: "#fffbeb", border: "1px solid #fcd34d" }}>
-          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "#b45309", textTransform: "uppercase", letterSpacing: ".04em" }}>Lançamentos</div>
+        <div style={{ padding: "14px 16px", borderRadius: 12, background: "var(--warning-bg)", border: "1px solid #fcd34d" }}>
+          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "var(--warning)", textTransform: "uppercase", letterSpacing: ".04em" }}>Lançamentos</div>
           <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#78350f", marginTop: 4, lineHeight: 1 }} className="manut-display">{filtrados.length}</div>
         </div>
       </div>
 
       {/* Ranking por categoria — barras horizontais */}
       <div style={{ marginBottom: 18 }}>
-        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "#1e293b", textTransform: "uppercase", letterSpacing: ".04em" }}>Gastos por categoria</h3>
+        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "var(--text)", textTransform: "uppercase", letterSpacing: ".04em" }}>Gastos por categoria</h3>
         {ranking.length === 0 ? (
-          <p style={{ fontSize: ".82rem", color: "#94a3b8", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
+          <p style={{ fontSize: ".82rem", color: "var(--text-subtle)", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {ranking.map((r, i) => {
@@ -397,15 +735,15 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
               return (
                 <div key={r.nome} style={{ padding: "6px 8px", borderRadius: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, fontSize: ".82rem" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#1e293b" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "var(--text)" }}>
                       <span style={{ width: 10, height: 10, borderRadius: 3, background: cor }} />
                       {r.nome}
                     </span>
                     <span style={{ fontWeight: 700, color: cor }} className="manut-display">
-                      {fmtBRLfn(r.valor)} <span style={{ color: "#94a3b8", fontWeight: 600, fontSize: ".72rem" }}>· {r.pct.toFixed(1)}%</span>
+                      {fmtBRLfn(r.valor)} <span style={{ color: "var(--text-subtle)", fontWeight: 600, fontSize: ".72rem" }}>· {r.pct.toFixed(1)}%</span>
                     </span>
                   </div>
-                  <div style={{ height: 8, background: "#f1f5f9", borderRadius: 6, overflow: "hidden" }}>
+                  <div style={{ height: 8, background: "var(--surface-3)", borderRadius: 6, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${Math.max(2, r.pct)}%`, background: cor, transition: "width .3s ease" }} />
                   </div>
                 </div>
@@ -417,11 +755,11 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
 
       {/* Gráfico agrupado: meses no eixo X, categorias lado a lado dentro de cada mês */}
       <div style={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}>
-        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "#1e293b", textTransform: "uppercase", letterSpacing: ".04em" }}>
+        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "var(--text)", textTransform: "uppercase", letterSpacing: ".04em" }}>
           Evolução mês a mês — categorias lado a lado
         </h3>
         {seriesPorCategoria.length === 0 ? (
-          <p style={{ fontSize: ".82rem", color: "#94a3b8", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
+          <p style={{ fontSize: ".82rem", color: "var(--text-subtle)", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
         ) : (
           <GraficoAgrupado series={seriesPorCategoria} fmtBRLfn={fmtBRLfn} />
         )}
@@ -459,13 +797,13 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
   const barW = Math.max(4, groupInner / nCats);
 
   return (
-    <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px", background: "#fff", boxShadow: "0 1px 3px rgba(15,23,42,.05)", width: "100%", maxWidth: cardMaxWidth, boxSizing: "border-box" }}>
+    <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px", background: "var(--card-bg)", boxShadow: "0 1px 3px rgba(15,23,42,.05)", width: "100%", maxWidth: cardMaxWidth, boxSizing: "border-box" }}>
       {/* Legenda — uma chip por categoria */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
         {series.map(cat => (
-          <div key={cat.nome} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 20, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+          <div key={cat.nome} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 20, background: "var(--surface-2)", border: "1px solid var(--border)" }}>
             <span style={{ width: 12, height: 12, borderRadius: 3, background: cat.cor }} />
-            <span style={{ fontSize: ".82rem", fontWeight: 700, color: "#1e293b" }}>{cat.nome}</span>
+            <span style={{ fontSize: ".82rem", fontWeight: 700, color: "var(--text)" }}>{cat.nome}</span>
             <span style={{ fontSize: ".78rem", color: cat.cor, fontWeight: 800 }} className="manut-display">{fmtBRLfn(cat.valor)}</span>
           </div>
         ))}
@@ -478,8 +816,8 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
             const y = padT + innerH * (1 - p);
             return (
               <g key={i}>
-                <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#e2e8f0" strokeWidth="1" />
-                <text x={padL - 6} y={y + 4} fontSize="12" fill="#94a3b8" textAnchor="end" fontFamily="Manrope, sans-serif">
+                <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="var(--border)" strokeWidth="1" />
+                <text x={padL - 6} y={y + 4} fontSize="12" fill="var(--text-subtle)" textAnchor="end" fontFamily="Manrope, sans-serif">
                   {fmtBRLcurto(maxVal * p).replace("R$ ", "")}
                 </text>
               </g>
@@ -503,17 +841,17 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
                           <title>{`${cat.nome} · ${m.label}/${String(m.ano).slice(2)}: ${fmtBRLfn(valor)}`}</title>
                         </rect>
                       ) : (
-                        <rect x={x + 1} y={padT + innerH - 1} width={Math.max(2, barW - 2)} height={1} fill="#e2e8f0" />
+                        <rect x={x + 1} y={padT + innerH - 1} width={Math.max(2, barW - 2)} height={1} fill="var(--border)" />
                       )}
                     </g>
                   );
                 })}
                 {/* Rótulo do mês embaixo do grupo */}
-                <text x={groupX + (groupInner) / 2} y={padT + innerH + 16} fontSize="12" fill="#64748b" textAnchor="middle" fontWeight="600" fontFamily="Manrope, sans-serif">
+                <text x={groupX + (groupInner) / 2} y={padT + innerH + 16} fontSize="12" fill="var(--text-muted)" textAnchor="middle" fontWeight="600" fontFamily="Manrope, sans-serif">
                   {m.label.slice(0, 3)}
                 </text>
                 {(m.mesIdx === 0 || mi === 0) && (
-                  <text x={groupX + (groupInner) / 2} y={padT + innerH + 32} fontSize="11" fill="#94a3b8" textAnchor="middle" fontFamily="Manrope, sans-serif">
+                  <text x={groupX + (groupInner) / 2} y={padT + innerH + 32} fontSize="11" fill="var(--text-subtle)" textAnchor="middle" fontFamily="Manrope, sans-serif">
                     {m.ano}
                   </text>
                 )}
@@ -584,20 +922,20 @@ function SearchSelect({ value, onChange, options, onAdd, placeholder }) {
             onClick={cadastrar}
             disabled={!podeCadastrar}
             title={existeExato ? "Já cadastrado" : (!v.trim() ? "Digite um nome" : "Cadastrar este nome")}
-            style={{ whiteSpace:"nowrap", padding:"8px 14px", border:"none", borderRadius:6, fontWeight:700, fontSize:".82rem", cursor: podeCadastrar ? "pointer" : "default", background: podeCadastrar ? "#dcfce7" : "#e2e8f0", color: podeCadastrar ? "#15803d" : "#94a3b8" }}
+            style={{ whiteSpace:"nowrap", padding:"8px 14px", border:"none", borderRadius:6, fontWeight:700, fontSize:".82rem", cursor: podeCadastrar ? "pointer" : "default", background: podeCadastrar ? "var(--success-bg)" : "var(--border)", color: podeCadastrar ? "var(--success)" : "var(--text-subtle)" }}
           >
             + Cadastrar
           </button>
         )}
       </div>
       {open && filtradas.length > 0 && (
-        <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:60, background:"#fff", border:"1px solid #cbd5e1", borderRadius:6, marginTop:2, maxHeight:220, overflowY:"auto", boxShadow:"0 6px 16px rgba(0,0,0,.14)" }}>
+        <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:60, background:"var(--card-bg)", border:"1px solid var(--border-strong)", borderRadius:6, marginTop:2, maxHeight:220, overflowY:"auto", boxShadow:"0 6px 16px rgba(0,0,0,.14)" }}>
           {filtradas.map(o => (
             <div
               key={o}
               onMouseDown={e => { e.preventDefault(); onChange(o); setOpen(false); }}
-              style={{ padding:"8px 12px", cursor:"pointer", fontSize:".88rem", color:"#334155" }}
-              onMouseEnter={e => (e.currentTarget.style.background = "#f1f5f9")}
+              style={{ padding:"8px 12px", cursor:"pointer", fontSize:".88rem", color:"var(--text)" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-3)")}
               onMouseLeave={e => (e.currentTarget.style.background = "#fff")}
             >
               {o}
@@ -620,7 +958,7 @@ export default function Manutencao() {
   const [legacy,         setLegacy]         = useState([]);
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
-  const [aba,            setAba]            = useState("veiculo");
+  const [aba,            setAba]            = useState("dashboard");
   const [placa,          setPlaca]          = useState("");
   const [busca,          setBusca]          = useState("");
   const [filtroSt,       setFiltroSt]       = useState("todos");
@@ -1388,8 +1726,8 @@ export default function Manutencao() {
     }
   }
 
-  const thOS = { textAlign: "left", padding: "0.7rem 0.9rem", fontSize: ".72rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em" };
-  const tdOS = { padding: "0.7rem 0.9rem", verticalAlign: "top", color: "#334155" };
+  const thOS = { textAlign: "left", padding: "0.7rem 0.9rem", fontSize: ".72rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em" };
+  const tdOS = { padding: "0.7rem 0.9rem", verticalAlign: "top", color: "var(--text)" };
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
@@ -1400,54 +1738,68 @@ export default function Manutencao() {
         .manut-page-root .manut-display { font-family: "Space Grotesk", "Manrope", system-ui, sans-serif; letter-spacing: -.01em; }
         .manut-header-btn { transition: transform .15s, background .15s; display:inline-flex; align-items:center; gap:8px; }
         .manut-header-btn:hover { transform: translateY(-1px); }
+
+        /* ── Abas (navbar interna) — estado ativo controlado por classe .ativa ── */
+        .manut-tabbar { display:flex; gap:0; background:var(--card-bg); border-bottom:1px solid var(--border); padding:0 24px; box-shadow:0 1px 3px rgba(15,23,42,.03); overflow-x:auto; }
+        .manut-tab {
+          padding:14px 18px; border:none; border-bottom:3px solid transparent; background:transparent;
+          cursor:pointer; font-size:.86rem; font-weight:700; color:var(--text-muted);
+          display:flex; align-items:center; gap:8px; font-family:inherit; white-space:nowrap;
+          transition:color .15s, border-color .15s, background .15s;
+          outline:none; -webkit-tap-highlight-color:transparent;
+        }
+        /* nenhum artefato de foco fica "grudado" no botão clicado */
+        .manut-tab:focus, .manut-tab:focus-visible { outline:none; box-shadow:none; }
+        .manut-tab:hover:not(.ativa) { color:var(--text); background:var(--surface-2); }
+        /* SOMENTE a aba atual recebe a cor; ao trocar, a anterior volta ao estado inicial */
+        .manut-tab.ativa { color:var(--accent); border-bottom-color:var(--accent); background:var(--accent-soft); }
       `}</style>
       {/* HEADER */}
-      <header style={s.header} className="pg-header">
-        <div className="pg-logo"><LogoPontual height={36} variant="white" /></div>
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <h1 style={s.headerTitle} className="manut-display">MANUTENÇÃO</h1>
-          {alertaCount > 0 && (
-            <span style={s.alertaBadge}>
-              <Ico.Alert size={11} /> {alertaCount} pendente{alertaCount>1?"s":""}
-            </span>
-          )}
-        </div>
-        <div className="pg-header-actions">
-          <button style={s.backBtn} className="manut-header-btn" onClick={() => navigate("/dashboard")}>
-            <Ico.Dash size={16} />
-            <span className="hide-mobile">Dashboard</span>
-          </button>
-        </div>
-      </header>
+      <ModuleHeader
+        title="MANUTENÇÃO"
+        actions={alertaCount > 0 && (
+          <span style={s.alertaBadge}>
+            <Ico.Alert size={11} /> {alertaCount} pendente{alertaCount>1?"s":""}
+          </span>
+        )}
+      />
 
-      {/* TABS */}
-      <div style={s.tabBar}>
-        <button style={{ ...s.tab, ...(aba==="veiculo" ? s.tabAtivo : {}) }} onClick={() => setAba("veiculo")}>
+      {/* TABS — .ativa aplica a cor só na aba atual; ao trocar, a anterior volta ao normal */}
+      <div className="manut-tabbar">
+        <button className={"manut-tab" + (aba==="dashboard" ? " ativa" : "")} onClick={() => setAba("dashboard")}>
+          Dashboard
+        </button>
+        <button className={"manut-tab" + (aba==="veiculo" ? " ativa" : "")} onClick={() => setAba("veiculo")}>
           Por Veículo
         </button>
-        <button style={{ ...s.tab, ...(aba==="tipo" ? s.tabAtivo : {}) }} onClick={() => setAba("tipo")}>
+        <button className={"manut-tab" + (aba==="tipo" ? " ativa" : "")} onClick={() => setAba("tipo")}>
           Por Tipo
         </button>
-        <button style={{ ...s.tab, ...(aba==="alertas" ? s.tabAtivo : {}) }} onClick={() => setAba("alertas")}>
+        <button className={"manut-tab" + (aba==="alertas" ? " ativa" : "")} onClick={() => setAba("alertas")}>
           Alertas
           {alertaCount > 0 && <span style={s.tabBadge}>{alertaCount}</span>}
         </button>
-        <button style={{ ...s.tab, ...(aba==="os" ? s.tabAtivo : {}) }} onClick={() => setAba("os")}>
+        <button className={"manut-tab" + (aba==="os" ? " ativa" : "")} onClick={() => setAba("os")}>
           Abertura de OS
-          {ordensServico.length > 0 && <span style={{ ...s.tabBadge, background:"#16a34a" }}>{ordensServico.length}</span>}
+          {ordensServico.length > 0 && <span style={{ ...s.tabBadge, background:"var(--success)" }}>{ordensServico.length}</span>}
         </button>
-        <button style={{ ...s.tab, ...(aba==="os_lanc" ? s.tabAtivo : {}) }} onClick={() => setAba("os_lanc")}>
+        <button className={"manut-tab" + (aba==="os_lanc" ? " ativa" : "")} onClick={() => setAba("os_lanc")}>
           Lançamento de OS
         </button>
-        <button style={{ ...s.tab, ...(aba==="lancamento" ? s.tabAtivo : {}) }} onClick={() => setAba("lancamento")}>
+        <button className={"manut-tab" + (aba==="lancamento" ? " ativa" : "")} onClick={() => setAba("lancamento")}>
           Lançamento de NF
-          {lancamentos.length > 0 && <span style={{ ...s.tabBadge, background:"#4338ca" }}>{lancamentos.length}</span>}
+          {lancamentos.length > 0 && <span style={{ ...s.tabBadge, background:"var(--accent)" }}>{lancamentos.length}</span>}
         </button>
-        <button style={{ ...s.tab, ...(aba==="cadastros" ? s.tabAtivo : {}) }} onClick={() => setAba("cadastros")}>
+        <button className={"manut-tab" + (aba==="cadastros" ? " ativa" : "")} onClick={() => setAba("cadastros")}>
           Cadastros
-          {itensCatalogo.length > 0 && <span style={{ ...s.tabBadge, background:"#64748b" }}>{itensCatalogo.length}</span>}
+          {itensCatalogo.length > 0 && <span style={{ ...s.tabBadge, background:"var(--text-muted)" }}>{itensCatalogo.length}</span>}
         </button>
       </div>
+
+      {/* ── ABA: DASHBOARD ────────────────────────────────────────────── */}
+      {aba === "dashboard" && (
+        <DashboardManutencao lancamentos={lancamentos} veiculos={veiculos} />
+      )}
 
       {/* ── ABA: POR VEÍCULO ──────────────────────────────────────────── */}
       {aba === "veiculo" && (
@@ -1470,10 +1822,10 @@ export default function Manutencao() {
             </select>
             {placa && (
                 <div style={s.resumoPills}>
-                  {summaryStatus.vencido > 0 && <span style={{ ...s.rPill, background:"#fee2e2", color:"#dc2626" }}>{summaryStatus.vencido} vencido{summaryStatus.vencido>1?"s":""}</span>}
-                  {summaryStatus.alerta  > 0 && <span style={{ ...s.rPill, background:"#fef9c3", color:"#a16207" }}>{summaryStatus.alerta} alerta{summaryStatus.alerta>1?"s":""}</span>}
-                  {summaryStatus.ok      > 0 && <span style={{ ...s.rPill, background:"#dcfce7", color:"#15803d" }}>{summaryStatus.ok} ok</span>}
-                  {summaryStatus.semReg  > 0 && <span style={{ ...s.rPill, background:"#f1f5f9", color:"#94a3b8" }}>{summaryStatus.semReg} sem reg.</span>}
+                  {summaryStatus.vencido > 0 && <span style={{ ...s.rPill, background:"var(--danger-bg)", color:"var(--danger)" }}>{summaryStatus.vencido} vencido{summaryStatus.vencido>1?"s":""}</span>}
+                  {summaryStatus.alerta  > 0 && <span style={{ ...s.rPill, background:"var(--warning-bg)", color:"var(--warning)" }}>{summaryStatus.alerta} alerta{summaryStatus.alerta>1?"s":""}</span>}
+                  {summaryStatus.ok      > 0 && <span style={{ ...s.rPill, background:"var(--success-bg)", color:"var(--success)" }}>{summaryStatus.ok} ok</span>}
+                  {summaryStatus.semReg  > 0 && <span style={{ ...s.rPill, background:"var(--surface-3)", color:"var(--text-subtle)" }}>{summaryStatus.semReg} sem reg.</span>}
                 </div>
             )}
           </div>
@@ -1483,11 +1835,11 @@ export default function Manutencao() {
           ) : (
             conjuntoComStatus.map(secao => (
               <div key={secao.placa} style={{ marginBottom: 28 }}>
-                <div style={{ fontWeight:700, fontSize:".95rem", color:"#1a3a5c", padding:"10px 0 8px", borderBottom:"2px solid #1a3a5c33", marginBottom:12 }}>
+                <div style={{ fontWeight:700, fontSize:".95rem", color:"var(--accent)", padding:"10px 0 8px", borderBottom:"2px solid #18216E33", marginBottom:12 }}>
                   {secao.label}
                 </div>
                 {Object.entries(secao.grupos).map(([grupo, tipos]) => {
-              const gc = GRUPO_COLOR[grupo] || { bg:"#f1f5f9", color:"#475569", border:"#cbd5e1" };
+              const gc = GRUPO_COLOR[grupo] || { bg:"var(--surface-3)", color:"var(--text-muted)", border:"var(--border-strong)" };
               return (
                 <div key={grupo} style={s.grupoSection}>
                   <div style={{ ...s.grupoHeader, background: gc.bg, color: gc.color, borderColor: gc.border }}>
@@ -1562,7 +1914,7 @@ export default function Manutencao() {
             })}
             {/* Filtro de status */}
             <div style={{ display:"flex", alignItems:"center", gap:8, paddingTop:4, borderTop:"1px dashed var(--border)", flexWrap:"wrap" }}>
-              <span style={{ fontSize:".7rem", fontWeight:700, color:"#64748b", whiteSpace:"nowrap" }}>Status:</span>
+              <span style={{ fontSize:".7rem", fontWeight:700, color:"var(--text-muted)", whiteSpace:"nowrap" }}>Status:</span>
               {[
                 { val:"todos",    label:"Todos" },
                 { val:"vencido",  label:"Vencido" },
@@ -1577,7 +1929,7 @@ export default function Manutencao() {
                     key={val}
                     style={{
                       ...s.filtroBtn,
-                      ...(ativo ? { background: sm?.bg || "#1a3a5c", color: sm?.color || "#fff", borderColor: "transparent" } : {}),
+                      ...(ativo ? { background: sm?.bg || "var(--accent)", color: sm?.color || "#fff", borderColor: "transparent" } : {}),
                       fontSize:".78rem",
                     }}
                     onClick={() => setFiltroStTipo(val)}
@@ -1610,9 +1962,9 @@ export default function Manutencao() {
                       const ident = r.placa || r.motorista || "—";
                       return (
                         <tr key={r.id} style={{ ...s.tr, background: sm.rowBg }}>
-                          <td style={{ ...s.td, fontWeight:700, color:"#1a3a5c" }}>
+                          <td style={{ ...s.td, fontWeight:700, color:"var(--accent)" }}>
                             {r.placa && <div>{r.placa}</div>}
-                            {r.motorista && <div style={{ fontSize:".78rem", color:"#64748b", fontWeight:400 }}>{r.motorista}</div>}
+                            {r.motorista && <div style={{ fontSize:".78rem", color:"var(--text-muted)", fontWeight:400 }}>{r.motorista}</div>}
                             {!r.placa && !r.motorista && "—"}
                           </td>
                           <td style={s.td}>{fmtDate(r.data_realiz)}</td>
@@ -1641,7 +1993,7 @@ export default function Manutencao() {
         <>
           <div style={s.toolbar} className="pg-toolbar">
             <div style={{ position:"relative", flex:1, minWidth:160 }}>
-              <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color:"#94a3b8", display:"inline-flex", pointerEvents:"none" }}>
+              <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color:"var(--text-subtle)", display:"inline-flex", pointerEvents:"none" }}>
                 <Ico.Search size={16} />
               </span>
               <input
@@ -1683,10 +2035,10 @@ export default function Manutencao() {
                       const tipo = TIPOS.find(t => t.id === r.tipo) || { id: r.tipo||"outro", label: r._label, desc:"", campos:["data_realiz","venc","local","resp","obs"] };
                       return (
                         <tr key={r.id} style={{ ...s.tr, background: sm.rowBg }}>
-                          <td style={{ ...s.td, fontWeight:700, color:"#1a3a5c" }}>{r.placa}</td>
+                          <td style={{ ...s.td, fontWeight:700, color:"var(--accent)" }}>{r.placa}</td>
                           <td style={s.td}>
                             <div style={{ fontWeight:600 }}>{r._label}</div>
-                            {r.grupo && <div style={{ fontSize:".72rem", color:"#94a3b8", marginTop:2 }}>{r.grupo}</div>}
+                            {r.grupo && <div style={{ fontSize:".72rem", color:"var(--text-subtle)", marginTop:2 }}>{r.grupo}</div>}
                           </td>
                           <td style={s.td}>{fmtDate(r.data_realiz || r.ult)}</td>
                           <td style={{ ...s.td, fontWeight:600 }}>{fmtDate(r.venc)}</td>
@@ -1713,8 +2065,8 @@ export default function Manutencao() {
       {aba === "os" && (
         <main style={s.main} className="pg-body">
           {/* Formulário de nova OS */}
-          <div style={{ background: "#fff", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ margin: "0 0 0.75rem 0", color: "#1a3a5c", fontSize: "1.05rem" }}>Abrir ordem de serviço <span style={{ fontWeight:400, fontSize:".8rem", color:"#64748b" }}>— bloqueia o veículo</span></h2>
+          <div style={{ background: "var(--card-bg)", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            <h2 style={{ margin: "0 0 0.75rem 0", color: "var(--accent)", fontSize: "1.05rem" }}>Abrir ordem de serviço <span style={{ fontWeight:400, fontSize:".8rem", color:"var(--text-muted)" }}>— bloqueia o veículo</span></h2>
             <form onSubmit={salvarOS} className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
               <label style={s.fieldLabel}>
                 Tipo de serviço
@@ -1753,14 +2105,14 @@ export default function Manutencao() {
                   <optgroup label="Cavalos">
                     {veiculos.filter(v => v.tipo !== "carreta").map(v => (
                       <option key={v.id} value={v.placa}>
-                        {v.placa}{v.bloqueio?.ativo ? " 🔒 já bloqueado" : ""}{v.modelo ? ` — ${v.modelo}` : ""}
+                        {v.placa}{v.bloqueio?.ativo ? " • já bloqueado" : ""}{v.modelo ? ` — ${v.modelo}` : ""}
                       </option>
                     ))}
                   </optgroup>
                   <optgroup label="Carretas">
                     {veiculos.filter(v => v.tipo === "carreta").map(v => (
                       <option key={v.id} value={v.placa}>
-                        {v.placa}{v.bloqueio?.ativo ? " 🔒 já bloqueado" : ""}
+                        {v.placa}{v.bloqueio?.ativo ? " • já bloqueado" : ""}
                       </option>
                     ))}
                   </optgroup>
@@ -1794,11 +2146,11 @@ export default function Manutencao() {
               </label>
 
               <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 4 }}>
-                <div style={{ fontSize: ".75rem", color: "#64748b" }}>
-                  Data/hora: <strong style={{ color: "#1a3a5c" }}>preenchida automaticamente ao salvar</strong>
+                <div style={{ fontSize: ".75rem", color: "var(--text-muted)" }}>
+                  Data/hora: <strong style={{ color: "var(--accent)" }}>preenchida automaticamente ao salvar</strong>
                 </div>
-                <div style={{ fontSize: ".75rem", color: "#64748b" }}>
-                  Próximo número: <strong style={{ color: "#1a3a5c" }}>{proximoNumeroOS()}</strong>
+                <div style={{ fontSize: ".75rem", color: "var(--text-muted)" }}>
+                  Próximo número: <strong style={{ color: "var(--accent)" }}>{proximoNumeroOS()}</strong>
                 </div>
               </div>
 
@@ -1812,8 +2164,9 @@ export default function Manutencao() {
                 />
               </label>
 
-              <p style={{ gridColumn:"1 / -1", margin:0, fontSize:".75rem", color:"#b45309", background:"#fffbeb", border:"1px solid #fcd34d", borderRadius:8, padding:"8px 10px", lineHeight:1.5 }}>
-                🔒 Ao abrir a OS, o veículo é <strong>bloqueado automaticamente</strong> no sistema (não gera OC) e só é liberado quando a OS for <strong>finalizada</strong>. Depois de aberta, a OS só pode ser editada por <strong>24h</strong>.
+              <p style={{ gridColumn:"1 / -1", margin:0, fontSize:".75rem", color:"var(--warning)", background:"var(--warning-bg)", border:"1px solid #fcd34d", borderRadius:8, padding:"8px 10px", lineHeight:1.5, display:"flex", alignItems:"flex-start", gap:8 }}>
+                <Lock size={15} style={{ flexShrink:0, marginTop:2 }} />
+                <span>Ao abrir a OS, o veículo é <strong>bloqueado automaticamente</strong> no sistema (não gera OC) e só é liberado quando a OS for <strong>finalizada</strong>. Depois de aberta, a OS só pode ser editada por <strong>24h</strong>.</span>
               </p>
 
               {erroOS && <p style={{ ...s.erroMsg, gridColumn: "1 / -1" }}>{erroOS}</p>}
@@ -1834,14 +2187,14 @@ export default function Manutencao() {
           </div>
 
           {/* Lista de OSs */}
-          <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between" }}>
-              <h3 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem" }}>Histórico de OS ({ordensServico.length})</h3>
+          <div style={{ background: "var(--card-bg)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between" }}>
+              <h3 style={{ margin: 0, color: "var(--accent)", fontSize: ".98rem" }}>Histórico de OS ({ordensServico.length})</h3>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".88rem" }}>
                 <thead>
-                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                  <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
                     <th style={thOS}>OS</th>
                     <th style={thOS}>Data / hora</th>
                     <th style={thOS}>Tipo</th>
@@ -1854,44 +2207,44 @@ export default function Manutencao() {
                 </thead>
                 <tbody>
                   {ordensServico.length === 0 ? (
-                    <tr><td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Nenhuma OS criada ainda</td></tr>
+                    <tr><td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "var(--text-subtle)" }}>Nenhuma OS criada ainda</td></tr>
                   ) : ordensServico.map(os => {
                     const st        = osStatus(os);
                     const finalizada = st === "finalizada";
                     const editavel  = osEditavel(os);
                     const limite    = osLimiteEdicao(os);
                     return (
-                    <tr key={os.id} style={{ borderBottom: "1px solid #f1f5f9", background: finalizada ? "#f8fafc" : "#fff" }}>
-                      <td style={tdOS}><strong style={{ color: "#1a3a5c" }}>{os.numero}</strong></td>
+                    <tr key={os.id} style={{ borderBottom: "1px solid #f1f5f9", background: finalizada ? "var(--surface-2)" : "#fff" }}>
+                      <td style={tdOS}><strong style={{ color: "var(--accent)" }}>{os.numero}</strong></td>
                       <td style={tdOS}>
                         {fmtDateTimeBR(os.dataHora)}
-                        {os.criadoPor && <div style={{ fontSize:".68rem", color:"#94a3b8", marginTop:3 }}>por {os.criadoPor}</div>}
+                        {os.criadoPor && <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:3 }}>por {os.criadoPor}</div>}
                       </td>
                       <td style={tdOS}>{os.tipoServico}</td>
                       <td style={tdOS}><strong>{os.placa}</strong></td>
                       <td style={tdOS}>{os.motoristaNome}</td>
                       <td style={tdOS}>
                         {finalizada ? (
-                          <span style={{ ...s.osBadge, background:"#dcfce7", color:"#15803d" }}>✓ Finalizada</span>
+                          <span style={{ ...s.osBadge, display:"inline-flex", alignItems:"center", gap:5, background:"var(--success-bg)", color:"var(--success)" }}><CheckCircle2 size={12} /> Finalizada</span>
                         ) : (
-                          <span style={{ ...s.osBadge, background:"#fef9c3", color:"#a16207" }}>🔧 Aberta</span>
+                          <span style={{ ...s.osBadge, display:"inline-flex", alignItems:"center", gap:5, background:"var(--warning-bg)", color:"var(--warning)" }}><Ico.Wrench size={12} /> Aberta</span>
                         )}
                         {finalizada && os.finalizadaEm && (
-                          <div style={{ fontSize:".68rem", color:"#94a3b8", marginTop:3 }}>{fmtDateTimeBR(os.finalizadaEm)}</div>
+                          <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:3 }}>{fmtDateTimeBR(os.finalizadaEm)}</div>
                         )}
                         {!finalizada && limite && (
-                          <div style={{ fontSize:".68rem", color: editavel ? "#64748b" : "#dc2626", marginTop:3 }}>
+                          <div style={{ fontSize:".68rem", color: editavel ? "var(--text-muted)" : "var(--danger)", marginTop:3 }}>
                             {editavel ? `edição até ${fmtDateTimeBR(limite)}` : "edição encerrada (24h)"}
                           </div>
                         )}
                       </td>
-                      <td style={{ ...tdOS, maxWidth: 360, whiteSpace: "normal", color: "#475569" }}>{os.obs || "—"}</td>
+                      <td style={{ ...tdOS, maxWidth: 360, whiteSpace: "normal", color: "var(--text-muted)" }}>{os.obs || "—"}</td>
                       <td style={tdOS}>
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                           {editavel && (
                             <button
                               onClick={() => abrirEditOS(os)}
-                              style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}
+                              style={{ background:"var(--accent-soft)", border:"none", color:"var(--accent)", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}
                             >
                               Editar
                             </button>
@@ -1899,7 +2252,7 @@ export default function Manutencao() {
                           {canDelete && (
                             <button
                               onClick={() => excluirOS(os)}
-                              style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}
+                              style={{ background:"transparent", border:"none", color:"var(--danger)", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}
                             >
                               Excluir
                             </button>
@@ -1918,19 +2271,19 @@ export default function Manutencao() {
       {/* ── ABA: LANÇAMENTO DE OS (conclusão — registra KM saída, mecânico, oficina, serviço executado) ── */}
       {aba === "os_lanc" && (
         <main style={s.main} className="pg-body">
-          <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
-              <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem" }}>
+          <div style={{ background: "var(--card-bg)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid var(--border)" }}>
+              <h2 style={{ margin: 0, color: "var(--accent)", fontSize: ".98rem" }}>
                 OSs abertas — registrar conclusão ({ordensServico.filter(o => osStatus(o) !== "finalizada").length})
               </h2>
-              <p style={{ margin: "4px 0 0 0", fontSize: ".75rem", color: "#64748b" }}>
+              <p style={{ margin: "4px 0 0 0", fontSize: ".75rem", color: "var(--text-muted)" }}>
                 Concluir a OS registra KM de saída, mecânico, oficina e serviço executado, e libera o veículo.
               </p>
             </div>
             <div style={{ overflowX: "auto" }} className="table-wrap">
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".88rem" }}>
                 <thead>
-                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                  <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
                     <th style={thOS}>OS</th>
                     <th style={thOS}>Abertura</th>
                     <th style={thOS}>Placa</th>
@@ -1945,14 +2298,14 @@ export default function Manutencao() {
                     const abertas = ordensServico.filter(o => osStatus(o) !== "finalizada");
                     if (abertas.length === 0) {
                       return (
-                        <tr><td colSpan={7} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+                        <tr><td colSpan={7} style={{ padding: "2rem", textAlign: "center", color: "var(--text-subtle)" }}>
                           Nenhuma OS aberta — todas finalizadas
                         </td></tr>
                       );
                     }
                     return abertas.map(os => (
                       <tr key={os.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={tdOS}><strong style={{ color: "#1a3a5c" }}>{os.numero}</strong></td>
+                        <td style={tdOS}><strong style={{ color: "var(--accent)" }}>{os.numero}</strong></td>
                         <td style={tdOS}>{fmtDateTimeBR(os.dataHora)}</td>
                         <td style={tdOS}><strong>{os.placa}</strong></td>
                         <td style={tdOS}>{os.tipoServico}</td>
@@ -1961,7 +2314,7 @@ export default function Manutencao() {
                         <td style={tdOS}>
                           <button
                             onClick={() => abrirConclusaoOS(os)}
-                            style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
+                            style={{ background:"var(--success-bg)", border:"none", color:"var(--success)", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
                           >
                             Concluir
                           </button>
@@ -1983,9 +2336,9 @@ export default function Manutencao() {
           <DashboardCustos lancamentos={lancamentos} fmtBRLfn={fmtBRL} />
 
           {/* Formulário de novo lançamento */}
-          <div style={{ background: "#fff", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ margin: "0 0 0.25rem 0", color: "#1a3a5c", fontSize: "1.05rem" }}>Lançamento de NF</h2>
-            <p style={{ margin: "0 0 0.75rem 0", fontSize: ".78rem", color: "#64748b" }}>Registro de serviço e custo. <strong>Não bloqueia o veículo.</strong></p>
+          <div style={{ background: "var(--card-bg)", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            <h2 style={{ margin: "0 0 0.25rem 0", color: "var(--accent)", fontSize: "1.05rem" }}>Lançamento de NF</h2>
+            <p style={{ margin: "0 0 0.75rem 0", fontSize: ".78rem", color: "var(--text-muted)" }}>Registro de serviço e custo. <strong>Não bloqueia o veículo.</strong></p>
             <form onSubmit={salvarLanc}>
               {/* Cabeçalho */}
               <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
@@ -2045,8 +2398,8 @@ export default function Manutencao() {
               </div>
 
               {/* Itens (serviços/peças) */}
-              <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, padding: 12 }}>
-                <div style={{ fontWeight: 700, color: "#1a3a5c", fontSize: ".9rem", marginBottom: 8 }}>Serviços / Peças deste lançamento</div>
+              <div style={{ marginTop: 14, border: "1px solid var(--border)", borderRadius: 10, padding: 12 }}>
+                <div style={{ fontWeight: 700, color: "var(--accent)", fontSize: ".9rem", marginBottom: 8 }}>Serviços / Peças deste lançamento</div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
                   <label style={{ ...s.fieldLabel, minWidth: 120 }}>
                     Tipo
@@ -2085,19 +2438,19 @@ export default function Manutencao() {
                   <div style={{ marginTop: 10, overflowX: "auto" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".85rem" }}>
                       <thead>
-                        <tr style={{ background: "#f8fafc" }}>
+                        <tr style={{ background: "var(--surface-2)" }}>
                           <th style={thOS}>Tipo</th><th style={thOS}>Item</th><th style={thOS}>Qtd</th><th style={thOS}>Unit.</th><th style={thOS}>Total</th><th style={thOS}></th>
                         </tr>
                       </thead>
                       <tbody>
                         {lancItens.map((it, idx) => (
                           <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                            <td style={tdOS}><span style={{ ...s.osBadge, background: it.tipoItem === "peca" ? "#fef3c7" : "#dbeafe", color: it.tipoItem === "peca" ? "#92400e" : "#1d4ed8" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span></td>
+                            <td style={tdOS}><span style={{ ...s.osBadge, background: it.tipoItem === "peca" ? "var(--warning-bg)" : "var(--accent-soft)", color: it.tipoItem === "peca" ? "var(--warning)" : "var(--accent)" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span></td>
                             <td style={tdOS}>{it.item}</td>
                             <td style={tdOS}>{it.quantidade}</td>
                             <td style={tdOS}>{fmtBRL(it.valorUnitario)}</td>
                             <td style={tdOS}><strong>{fmtBRL(it.valorTotal)}</strong></td>
-                            <td style={tdOS}><button type="button" onClick={() => removerItemLanc(idx)} title="Remover" style={{ background: "transparent", border: "none", color: "#dc2626", cursor: "pointer", fontWeight: 700, fontSize: ".9rem" }}>✕</button></td>
+                            <td style={tdOS}><button type="button" onClick={() => removerItemLanc(idx)} title="Remover" style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "none", color: "var(--danger)", cursor: "pointer", fontWeight: 700, fontSize: ".9rem" }}><X size={15} /></button></td>
                           </tr>
                         ))}
                       </tbody>
@@ -2108,10 +2461,10 @@ export default function Manutencao() {
 
               {/* Total + meta */}
               <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                <div style={{ fontSize: ".75rem", color: "#64748b" }}>
-                  Data/hora automática · Lançado por <strong style={{ color: "#1a3a5c" }}>{quemSou()}</strong> · Nº <strong style={{ color: "#1a3a5c" }}>{proximoNumeroLanc()}</strong>
+                <div style={{ fontSize: ".75rem", color: "var(--text-muted)" }}>
+                  Data/hora automática · Lançado por <strong style={{ color: "var(--accent)" }}>{quemSou()}</strong> · Nº <strong style={{ color: "var(--accent)" }}>{proximoNumeroLanc()}</strong>
                 </div>
-                <div style={{ fontSize: ".95rem", color: "#1a3a5c", fontWeight: 700, background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: "8px 12px" }}>
+                <div style={{ fontSize: ".95rem", color: "var(--accent)", fontWeight: 700, background: "var(--success-bg)", border: "1px solid #86efac", borderRadius: 8, padding: "8px 12px" }}>
                   Total do lançamento: <span style={{ fontSize: "1.1rem" }}>{fmtBRL(lancItens.reduce((sum, it) => sum + (Number(it.valorTotal) || 0), 0))}</span>
                 </div>
               </div>
@@ -2140,14 +2493,14 @@ export default function Manutencao() {
           </div>
 
           {/* Lista de lançamentos */}
-          <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
-              <h3 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem" }}>Histórico de lançamentos ({lancamentos.length})</h3>
+          <div style={{ background: "var(--card-bg)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid var(--border)" }}>
+              <h3 style={{ margin: 0, color: "var(--accent)", fontSize: ".98rem" }}>Histórico de lançamentos ({lancamentos.length})</h3>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".88rem" }}>
                 <thead>
-                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                  <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
                     <th style={thOS}>Nº</th>
                     <th style={thOS}>Data / hora</th>
                     <th style={thOS}>Lançamento</th>
@@ -2160,54 +2513,54 @@ export default function Manutencao() {
                 </thead>
                 <tbody>
                   {lancamentos.length === 0 ? (
-                    <tr><td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Nenhum lançamento ainda</td></tr>
+                    <tr><td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "var(--text-subtle)" }}>Nenhum lançamento ainda</td></tr>
                   ) : lancamentos.map(l => (
                     <tr key={l.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                      <td style={tdOS}><strong style={{ color: "#1a3a5c" }}>{l.numero}</strong></td>
+                      <td style={tdOS}><strong style={{ color: "var(--accent)" }}>{l.numero}</strong></td>
                       <td style={tdOS}>
                         {fmtDateTimeBR(l.dataHora)}
-                        {l.criadoPor && <div style={{ fontSize:".68rem", color:"#94a3b8", marginTop:3 }}>por {l.criadoPor}</div>}
+                        {l.criadoPor && <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:3 }}>por {l.criadoPor}</div>}
                       </td>
                       <td style={tdOS}>
-                        {l.tipoLancamento && <span style={{ ...s.osBadge, background:"#e0e7ff", color:"#4338ca" }}>{l.tipoLancamento}</span>}
+                        {l.tipoLancamento && <span style={{ ...s.osBadge, background:"var(--accent-soft)", color:"var(--accent)" }}>{l.tipoLancamento}</span>}
                       </td>
                       <td style={{ ...tdOS, maxWidth: 340, whiteSpace: "normal" }}>
                         {Array.isArray(l.itens) && l.itens.length ? (
                           l.itens.map((it, i) => (
                             <div key={i} style={{ marginBottom: 3 }}>
-                              <span style={{ ...s.osBadge, marginRight: 5, background: it.tipoItem === "peca" ? "#fef3c7" : "#dbeafe", color: it.tipoItem === "peca" ? "#92400e" : "#1d4ed8" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span>
-                              <strong style={{ color: "#334155" }}>{it.item}</strong>
-                              <span style={{ color: "#94a3b8", fontSize: ".74rem" }}> &nbsp;{numOS(it.quantidade)}× {fmtBRL(it.valorUnitario)}</span>
+                              <span style={{ ...s.osBadge, marginRight: 5, background: it.tipoItem === "peca" ? "var(--warning-bg)" : "var(--accent-soft)", color: it.tipoItem === "peca" ? "var(--warning)" : "var(--accent)" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span>
+                              <strong style={{ color: "var(--text)" }}>{it.item}</strong>
+                              <span style={{ color: "var(--text-subtle)", fontSize: ".74rem" }}> &nbsp;{numOS(it.quantidade)}× {fmtBRL(it.valorUnitario)}</span>
                             </div>
                           ))
                         ) : (
-                          <strong style={{ color: "#334155" }}>{l.item || "—"}</strong>
+                          <strong style={{ color: "var(--text)" }}>{l.item || "—"}</strong>
                         )}
-                        {l.servicoFeito && <div style={{ fontSize: ".74rem", color: "#64748b", marginTop: 2 }}>{l.servicoFeito}</div>}
+                        {l.servicoFeito && <div style={{ fontSize: ".74rem", color: "var(--text-muted)", marginTop: 2 }}>{l.servicoFeito}</div>}
                       </td>
                       <td style={tdOS}>
                         <strong>{l.placa}</strong>
-                        {l.hodometro ? <div style={{ fontSize: ".68rem", color: "#94a3b8", marginTop: 2 }}>{Number(l.hodometro).toLocaleString("pt-BR")} km</div> : null}
+                        {l.hodometro ? <div style={{ fontSize: ".68rem", color: "var(--text-subtle)", marginTop: 2 }}>{Number(l.hodometro).toLocaleString("pt-BR")} km</div> : null}
                       </td>
                       <td style={tdOS}>{l.fornecedor || "—"}</td>
                       <td style={tdOS}>
-                        <strong style={{ color: "#1a3a5c" }}>{fmtBRL(l.valorTotal != null ? l.valorTotal : somaItens(l))}</strong>
+                        <strong style={{ color: "var(--accent)" }}>{fmtBRL(l.valorTotal != null ? l.valorTotal : somaItens(l))}</strong>
                         {Array.isArray(l.itens) && l.itens.length > 0 && (
-                          <div style={{ fontSize: ".68rem", color: "#94a3b8", marginTop: 2 }}>{l.itens.length} {l.itens.length === 1 ? "item" : "itens"}</div>
+                          <div style={{ fontSize: ".68rem", color: "var(--text-subtle)", marginTop: 2 }}>{l.itens.length} {l.itens.length === 1 ? "item" : "itens"}</div>
                         )}
                       </td>
                       <td style={tdOS}>
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                           <button
                             onClick={() => abrirEditLanc(l)}
-                            style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}
+                            style={{ background:"var(--accent-soft)", border:"none", color:"var(--accent)", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}
                           >
                             Editar
                           </button>
                           {canDelete && (
                             <button
                               onClick={() => excluirLanc(l)}
-                              style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}
+                              style={{ background:"transparent", border:"none", color:"var(--danger)", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}
                             >
                               Excluir
                             </button>
@@ -2228,17 +2581,17 @@ export default function Manutencao() {
         <main style={s.main} className="pg-body">
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))", gap:16 }}>
             {[
-              { tipo:"tipo_lancamento", titulo:"Tipos de lançamento", singular:"tipo de lançamento", cor:"#4338ca", bg:"#e0e7ff" },
-              { tipo:"servico",         titulo:"Serviços",            singular:"serviço",             cor:"#1d4ed8", bg:"#dbeafe" },
-              { tipo:"peca",            titulo:"Peças",               singular:"peça",                cor:"#92400e", bg:"#fef3c7" },
-              { tipo:"fornecedor",      titulo:"Fornecedores",        singular:"fornecedor",          cor:"#15803d", bg:"#dcfce7" },
+              { tipo:"tipo_lancamento", titulo:"Tipos de lançamento", singular:"tipo de lançamento", cor:"var(--accent)", bg:"var(--accent-soft)" },
+              { tipo:"servico",         titulo:"Serviços",            singular:"serviço",             cor:"var(--accent)", bg:"var(--accent-soft)" },
+              { tipo:"peca",            titulo:"Peças",               singular:"peça",                cor:"var(--warning)", bg:"var(--warning-bg)" },
+              { tipo:"fornecedor",      titulo:"Fornecedores",        singular:"fornecedor",          cor:"var(--success)", bg:"var(--success-bg)" },
             ].map(sec => {
               const itens = itensCatalogo.filter(i => i.tipo === sec.tipo).sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
               return (
-                <div key={sec.tipo} style={{ background:"#fff", borderRadius:12, boxShadow:"0 1px 3px rgba(0,0,0,0.06)", overflow:"hidden", display:"flex", flexDirection:"column" }}>
-                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0", display:"flex", alignItems:"center", gap:8 }}>
+                <div key={sec.tipo} style={{ background:"var(--card-bg)", borderRadius:12, boxShadow:"0 1px 3px rgba(0,0,0,0.06)", overflow:"hidden", display:"flex", flexDirection:"column" }}>
+                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"center", gap:8 }}>
                     <span style={{ ...s.osBadge, background:sec.bg, color:sec.cor }}>{itens.length}</span>
-                    <h3 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>{sec.titulo}</h3>
+                    <h3 style={{ margin:0, color:"var(--accent)", fontSize:".98rem" }}>{sec.titulo}</h3>
                   </div>
                   <div style={{ padding:"0.85rem 1rem", display:"flex", gap:8, borderBottom:"1px solid #f1f5f9" }}>
                     <input
@@ -2252,7 +2605,7 @@ export default function Manutencao() {
                   </div>
                   <div style={{ padding:"0.4rem 0", maxHeight:380, overflowY:"auto" }}>
                     {itens.length === 0 ? (
-                      <p style={{ textAlign:"center", color:"#94a3b8", fontSize:".85rem", padding:"1rem" }}>Nenhum cadastrado</p>
+                      <p style={{ textAlign:"center", color:"var(--text-subtle)", fontSize:".85rem", padding:"1rem" }}>Nenhum cadastrado</p>
                     ) : itens.map(i => (
                       <div key={i.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 1rem", borderBottom:"1px solid #f8fafc" }}>
                         {editItemCat?.id === i.id ? (
@@ -2269,11 +2622,11 @@ export default function Manutencao() {
                           </>
                         ) : (
                           <>
-                            <span style={{ flex:1, color:"#334155", fontSize:".9rem" }}>{i.nome}</span>
+                            <span style={{ flex:1, color:"var(--text)", fontSize:".9rem" }}>{i.nome}</span>
                             {canDelete && (
                               <>
-                                <button type="button" onClick={() => setEditItemCat({ id:i.id, nome:i.nome })} style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}>Editar</button>
-                                <button type="button" onClick={() => excluirItemCat(i)} style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}>Excluir</button>
+                                <button type="button" onClick={() => setEditItemCat({ id:i.id, nome:i.nome })} style={{ background:"var(--accent-soft)", border:"none", color:"var(--accent)", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}>Editar</button>
+                                <button type="button" onClick={() => excluirItemCat(i)} style={{ background:"transparent", border:"none", color:"var(--danger)", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}>Excluir</button>
                               </>
                             )}
                           </>
@@ -2286,7 +2639,7 @@ export default function Manutencao() {
             })}
           </div>
           {!canDelete && (
-            <p style={{ marginTop:12, fontSize:".78rem", color:"#64748b" }}>Você pode adicionar itens. Editar e excluir é restrito a administradores.</p>
+            <p style={{ marginTop:12, fontSize:".78rem", color:"var(--text-muted)" }}>Você pode adicionar itens. Editar e excluir é restrito a administradores.</p>
           )}
         </main>
       )}
@@ -2300,7 +2653,7 @@ export default function Manutencao() {
                 <div style={s.modalTitulo}>{modal.placa} — {modal.tipo.label}</div>
                 <div style={s.modalSubtitulo}>{modal.tipo.desc}</div>
               </div>
-              <button style={s.closeBtn} onClick={fecharModal}>✕</button>
+              <button style={s.closeBtn} onClick={fecharModal}><X size={18} /></button>
             </div>
 
             <form onSubmit={salvar} style={s.form}>
@@ -2335,7 +2688,7 @@ export default function Manutencao() {
                 {modal.record && canDelete && (
                   <button
                     type="button"
-                    style={{ ...s.cancelBtn, color:"#dc2626", borderColor:"#fca5a5" }}
+                    style={{ ...s.cancelBtn, color:"var(--danger)", borderColor:"var(--danger-border)" }}
                     onClick={() => { excluir(modal.record.id, modal.tipo.label); fecharModal(); }}
                   >
                     Excluir
@@ -2365,7 +2718,7 @@ export default function Manutencao() {
                   {concluindoOS.hodometro != null && ` · KM entrada: ${concluindoOS.hodometro}`}
                 </div>
               </div>
-              <button style={s.closeBtn} onClick={fecharConclusaoOS}>✕</button>
+              <button style={s.closeBtn} onClick={fecharConclusaoOS}><X size={18} /></button>
             </div>
 
             <form onSubmit={salvarConclusaoOS} style={s.form}>
@@ -2436,7 +2789,7 @@ export default function Manutencao() {
                 <div style={s.modalTitulo}>Editar {editOS.numero}</div>
                 <div style={s.modalSubtitulo}>Edição permitida até {fmtDateTimeBR(osLimiteEdicao(editOS))} (24h após a abertura)</div>
               </div>
-              <button style={s.closeBtn} onClick={fecharEditOS}>✕</button>
+              <button style={s.closeBtn} onClick={fecharEditOS}><X size={18} /></button>
             </div>
 
             <form onSubmit={salvarEditOS} style={s.form}>
@@ -2519,7 +2872,7 @@ export default function Manutencao() {
                 />
               </label>
 
-              <p style={{ margin:0, fontSize:".72rem", color:"#64748b" }}>
+              <p style={{ margin:0, fontSize:".72rem", color:"var(--text-muted)" }}>
                 Trocar a placa transfere o bloqueio: libera o veículo anterior e bloqueia o novo.
               </p>
 
@@ -2546,7 +2899,7 @@ export default function Manutencao() {
                 <div style={s.modalTitulo}>Editar {editLanc.numero}</div>
                 <div style={s.modalSubtitulo}>Lançamento de serviço/custo</div>
               </div>
-              <button style={s.closeBtn} onClick={fecharEditLanc}>✕</button>
+              <button style={s.closeBtn} onClick={fecharEditLanc}><X size={18} /></button>
             </div>
 
             <form onSubmit={salvarEditLanc} style={s.form}>
@@ -2605,8 +2958,8 @@ export default function Manutencao() {
               </label>
 
               {/* Itens */}
-              <div style={{ border:"1px solid #e2e8f0", borderRadius:10, padding:12 }}>
-                <div style={{ fontWeight:700, color:"#1a3a5c", fontSize:".9rem", marginBottom:8 }}>Serviços / Peças</div>
+              <div style={{ border:"1px solid var(--border)", borderRadius:10, padding:12 }}>
+                <div style={{ fontWeight:700, color:"var(--accent)", fontSize:".9rem", marginBottom:8 }}>Serviços / Peças</div>
                 <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"flex-end" }}>
                   <label style={{ ...s.fieldLabel, minWidth:110 }}>
                     Tipo
@@ -2645,19 +2998,19 @@ export default function Manutencao() {
                   <div style={{ marginTop:10, overflowX:"auto" }}>
                     <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".85rem" }}>
                       <thead>
-                        <tr style={{ background:"#f8fafc" }}>
+                        <tr style={{ background:"var(--surface-2)" }}>
                           <th style={thOS}>Tipo</th><th style={thOS}>Item</th><th style={thOS}>Qtd</th><th style={thOS}>Unit.</th><th style={thOS}>Total</th><th style={thOS}></th>
                         </tr>
                       </thead>
                       <tbody>
                         {lancItensEdit.map((it, idx) => (
                           <tr key={idx} style={{ borderBottom:"1px solid #f1f5f9" }}>
-                            <td style={tdOS}><span style={{ ...s.osBadge, background: it.tipoItem === "peca" ? "#fef3c7" : "#dbeafe", color: it.tipoItem === "peca" ? "#92400e" : "#1d4ed8" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span></td>
+                            <td style={tdOS}><span style={{ ...s.osBadge, background: it.tipoItem === "peca" ? "var(--warning-bg)" : "var(--accent-soft)", color: it.tipoItem === "peca" ? "var(--warning)" : "var(--accent)" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span></td>
                             <td style={tdOS}>{it.item}</td>
                             <td style={tdOS}>{it.quantidade}</td>
                             <td style={tdOS}>{fmtBRL(it.valorUnitario)}</td>
                             <td style={tdOS}><strong>{fmtBRL(it.valorTotal)}</strong></td>
-                            <td style={tdOS}><button type="button" onClick={() => removerItemEditLanc(idx)} title="Remover" style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontWeight:700, fontSize:".9rem" }}>✕</button></td>
+                            <td style={tdOS}><button type="button" onClick={() => removerItemEditLanc(idx)} title="Remover" style={{ display:"inline-flex", alignItems:"center", background:"transparent", border:"none", color:"var(--danger)", cursor:"pointer", fontWeight:700, fontSize:".9rem" }}><X size={15} /></button></td>
                           </tr>
                         ))}
                       </tbody>
@@ -2666,7 +3019,7 @@ export default function Manutencao() {
                 )}
               </div>
 
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:8, fontSize:".95rem", color:"#1a3a5c", fontWeight:700, background:"#f0fdf4", border:"1px solid #86efac", borderRadius:8, padding:"8px 12px" }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:8, fontSize:".95rem", color:"var(--accent)", fontWeight:700, background:"var(--success-bg)", border:"1px solid #86efac", borderRadius:8, padding:"8px 12px" }}>
                 Total: <span style={{ fontSize:"1.1rem" }}>{fmtBRL(lancItensEdit.reduce((sum, it) => sum + (Number(it.valorTotal) || 0), 0))}</span>
               </div>
 
@@ -2701,22 +3054,22 @@ const s = {
   wrap:        { minHeight:"100vh", background:"#f5f7fb" },
 
   // header
-  header:      { background:"linear-gradient(105deg, #1a3a5c, #234775)", color:"#fff", borderBottom:"4px solid transparent", borderImage:"linear-gradient(90deg,#3d6b47,#6aaa5e,#b5d947,#f5c318,#f0a500) 1", padding:"14px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 4px 14px rgba(15,23,42,.18)" },
+  header:      { background:"var(--header-bg)", color:"#fff", borderBottom: "1px solid var(--accent-800)", padding:"14px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 4px 14px rgba(15,23,42,.18)" },
   headerTitle: { color:"#fff", fontSize:"1.15rem", fontWeight:700, margin:0, lineHeight:1.1 },
-  alertaBadge: { background:"#dc2626", color:"#fff", borderRadius:20, fontSize:".7rem", fontWeight:700, padding:"3px 10px", display:"inline-flex", alignItems:"center", gap:5 },
-  backBtn:     { padding:"8px 14px", background:"#f5c318", border:"none", borderRadius:8, fontSize:".82rem", cursor:"pointer", color:"#1a3a5c", fontWeight:700, whiteSpace:"nowrap", boxShadow:"0 1px 3px rgba(0,0,0,.1)" },
+  alertaBadge: { background:"var(--danger)", color:"#fff", borderRadius:20, fontSize:".7rem", fontWeight:700, padding:"3px 10px", display:"inline-flex", alignItems:"center", gap:5 },
+  backBtn:     { display:"inline-flex", alignItems:"center", gap:8, padding:"8px 14px", background:"var(--header-btn-bg)", border:"none", borderRadius:8, fontSize:".82rem", cursor:"pointer", color:"var(--accent)", fontWeight:700, whiteSpace:"nowrap", boxShadow:"0 1px 3px rgba(0,0,0,.1)" },
 
   // tabs
-  tabBar:      { display:"flex", gap:0, background:"#fff", borderBottom:"1px solid #e2e8f0", padding:"0 24px", boxShadow:"0 1px 3px rgba(15,23,42,.03)", overflowX:"auto" },
-  tab:         { padding:"14px 18px", border:"none", borderBottom:"3px solid transparent", background:"none", cursor:"pointer", fontSize:".86rem", fontWeight:700, color:"#64748b", display:"flex", alignItems:"center", gap:8, fontFamily:"inherit", whiteSpace:"nowrap", transition:"color .15s, border-color .15s" },
-  tabAtivo:    { color:"#1a3a5c", borderBottomColor:"#1a3a5c" },
-  tabBadge:    { background:"#dc2626", color:"#fff", borderRadius:20, fontSize:".64rem", fontWeight:800, padding:"2px 7px", minWidth:18, textAlign:"center", lineHeight:1.2 },
+  tabBar:      { display:"flex", gap:0, background:"var(--card-bg)", borderBottom:"1px solid var(--border)", padding:"0 24px", boxShadow:"0 1px 3px rgba(15,23,42,.03)", overflowX:"auto" },
+  tab:         { padding:"14px 18px", border:"none", borderBottom:"3px solid transparent", background:"none", cursor:"pointer", fontSize:".86rem", fontWeight:700, color:"var(--text-muted)", display:"flex", alignItems:"center", gap:8, fontFamily:"inherit", whiteSpace:"nowrap", transition:"color .15s, border-color .15s", outline:"none", WebkitTapHighlightColor:"transparent" },
+  tabAtivo:    { color:"var(--accent)", borderBottomColor:"var(--accent)" },
+  tabBadge:    { background:"var(--danger)", color:"#fff", borderRadius:20, fontSize:".64rem", fontWeight:800, padding:"2px 7px", minWidth:18, textAlign:"center", lineHeight:1.2 },
 
   // seletor veículo
   main:        { padding:"24px", maxWidth:1300, margin:"0 auto" },
   veiculoRow:  { display:"flex", alignItems:"center", gap:14, marginBottom:28, flexWrap:"wrap" },
   veiculoLabel:{ fontWeight:700, fontSize:".85rem", color:"var(--text)", whiteSpace:"nowrap" },
-  veiculoSelect:{ padding:"10px 14px", border:"1px solid #e2e8f0", borderRadius:10, fontSize:".9rem", fontWeight:700, background:"#fff", color:"#1e293b", cursor:"pointer", minWidth:200, boxShadow:"0 1px 3px rgba(15,23,42,.04)", fontFamily:"inherit" },
+  veiculoSelect:{ padding:"10px 14px", border:"1px solid var(--border)", borderRadius:10, fontSize:".9rem", fontWeight:700, background:"var(--card-bg)", color:"var(--text)", cursor:"pointer", minWidth:200, boxShadow:"0 1px 3px rgba(15,23,42,.04)", fontFamily:"inherit" },
   resumoPills: { display:"flex", gap:6, flexWrap:"wrap" },
   rPill:       { padding:"3px 10px", borderRadius:20, fontSize:".72rem", fontWeight:700 },
 
@@ -2724,46 +3077,46 @@ const s = {
   grupoSection:{ marginBottom:28 },
   grupoHeader: { display:"inline-block", padding:"4px 16px", borderRadius:20, fontSize:".78rem", fontWeight:700, marginBottom:12, border:"1px solid" },
   tipoGrid:    { display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(270px, 1fr))", gap:14 },
-  tipoCard:    { background:"#fff", border:"1px solid", borderRadius:14, padding:"16px 18px", cursor:"pointer", display:"flex", flexDirection:"column", gap:6, transition:"transform .2s ease, box-shadow .2s ease", boxShadow:"0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" },
+  tipoCard:    { background:"var(--card-bg)", border:"1px solid", borderRadius:14, padding:"16px 18px", cursor:"pointer", display:"flex", flexDirection:"column", gap:6, transition:"transform .2s ease, box-shadow .2s ease", boxShadow:"0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" },
   tipoCardTop: { display:"flex", justifyContent:"space-between", alignItems:"center", gap:8 },
   tipoNome:    { fontWeight:700, fontSize:".92rem", color:"var(--text)" },
   sPill:       { padding:"2px 9px", borderRadius:20, fontSize:".68rem", fontWeight:700, whiteSpace:"nowrap" },
   tipoDesc:    { fontSize:".75rem", color:"var(--text-muted)", lineHeight:1.4 },
   tipoMeta:    { display:"flex", flexDirection:"column", gap:3, marginTop:4, fontSize:".75rem", color:"var(--text-muted)" },
-  tipoVazio:   { fontSize:".72rem", color:"#94a3b8", fontStyle:"italic", marginTop:2 },
+  tipoVazio:   { fontSize:".72rem", color:"var(--text-subtle)", fontStyle:"italic", marginTop:2 },
 
   // toolbar alertas
   toolbar:     { display:"flex", alignItems:"center", gap:12, padding:"14px 24px", background:"transparent", flexWrap:"wrap" },
-  inputBusca:  { flex:1, minWidth:160, padding:"10px 14px", border:"1px solid #e2e8f0", borderRadius:10, fontSize:".9rem", outline:"none", background:"#fff", color:"#1e293b", boxShadow:"0 1px 3px rgba(15,23,42,.04)", fontFamily:"inherit" },
-  filtros:     { display:"flex", gap:4, padding:4, background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, boxShadow:"0 1px 3px rgba(15,23,42,.04)" },
-  filtroBtn:   { padding:"6px 14px", border:"none", borderRadius:8, background:"transparent", cursor:"pointer", fontSize:".8rem", color:"#64748b", fontWeight:700, fontFamily:"inherit" },
-  filtroBtnAtivo:{ background:"#1a3a5c", color:"#fff" },
+  inputBusca:  { flex:1, minWidth:160, padding:"10px 14px", border:"1px solid var(--border)", borderRadius:10, fontSize:".9rem", outline:"none", background:"var(--card-bg)", color:"var(--text)", boxShadow:"0 1px 3px rgba(15,23,42,.04)", fontFamily:"inherit" },
+  filtros:     { display:"flex", gap:4, padding:4, background:"var(--card-bg)", border:"1px solid var(--border)", borderRadius:12, boxShadow:"0 1px 3px rgba(15,23,42,.04)" },
+  filtroBtn:   { padding:"6px 14px", border:"none", borderRadius:8, background:"transparent", cursor:"pointer", fontSize:".8rem", color:"var(--text-muted)", fontWeight:700, fontFamily:"inherit" },
+  filtroBtnAtivo:{ background:"var(--accent)", color:"#fff" },
 
   // tabela
   info:        { color:"var(--text-muted)", textAlign:"center", marginTop:40 },
-  tableWrap:   { overflowX:"auto", background:"#fff", borderRadius:14, border:"1px solid #e2e8f0", boxShadow:"0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" },
+  tableWrap:   { overflowX:"auto", background:"var(--card-bg)", borderRadius:14, border:"1px solid var(--border)", boxShadow:"0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" },
   table:       { width:"100%", borderCollapse:"collapse", minWidth:780 },
-  theadRow:    { background:"#1a3a5c" },
+  theadRow:    { background:"var(--accent)" },
   th:          { padding:"13px 16px", textAlign:"left", color:"#fff", fontSize:".78rem", fontWeight:700, whiteSpace:"nowrap", textTransform:"uppercase", letterSpacing:".04em" },
   tr:          { borderBottom:"1px solid #f1f5f9" },
-  td:          { padding:"12px 16px", fontSize:".88rem", color:"#1e293b", verticalAlign:"middle" },
+  td:          { padding:"12px 16px", fontSize:".88rem", color:"var(--text)", verticalAlign:"middle" },
   statusBadge: { padding:"2px 10px", borderRadius:20, fontSize:".72rem", fontWeight:700 },
   osBadge:     { display:"inline-block", padding:"2px 9px", borderRadius:20, fontSize:".7rem", fontWeight:700, whiteSpace:"nowrap" },
   acoes:       { display:"flex", gap:6 },
-  editBtn:     { padding:"4px 12px", background:"#dbeafe", color:"#1d4ed8", border:"none", borderRadius:5, cursor:"pointer", fontWeight:600, fontSize:".78rem" },
+  editBtn:     { padding:"4px 12px", background:"var(--accent-soft)", color:"var(--accent)", border:"none", borderRadius:5, cursor:"pointer", fontWeight:600, fontSize:".78rem" },
 
   // modal
   overlay:     { position:"fixed", inset:0, background:"rgba(0,0,0,.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:16 },
   modal:       { background:"var(--card-bg)", borderRadius:14, width:"100%", maxWidth:520, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.25)" },
   modalHeader: { display:"flex", justifyContent:"space-between", alignItems:"flex-start", padding:"20px 24px 0", gap:12 },
-  modalTitulo: { fontSize:"1.05rem", fontWeight:700, color:"#1a3a5c", marginBottom:3 },
+  modalTitulo: { fontSize:"1.05rem", fontWeight:700, color:"var(--accent)", marginBottom:3 },
   modalSubtitulo:{ fontSize:".78rem", color:"var(--text-muted)", lineHeight:1.4 },
-  closeBtn:    { background:"none", border:"none", fontSize:"1.1rem", cursor:"pointer", color:"var(--text-muted)", padding:"0 4px" },
+  closeBtn:    { display:"inline-flex", alignItems:"center", justifyContent:"center", background:"none", border:"none", fontSize:"1.1rem", cursor:"pointer", color:"var(--text-muted)", padding:"0 4px" },
   form:        { padding:24, display:"flex", flexDirection:"column", gap:14 },
-  fieldLabel:  { display:"flex", flexDirection:"column", gap:5, fontSize:".85rem", fontWeight:600, color:"#374151" },
-  fieldInput:  { padding:"8px 10px", border:"1px solid #cbd5e1", borderRadius:6, fontSize:".9rem", outline:"none", fontFamily:"inherit", background:"var(--bg)", color:"var(--text)" },
-  erroMsg:     { color:"#dc2626", fontSize:".82rem", background:"#fee2e2", padding:"6px 10px", borderRadius:6 },
+  fieldLabel:  { display:"flex", flexDirection:"column", gap:5, fontSize:".85rem", fontWeight:600, color:"var(--text)" },
+  fieldInput:  { padding:"8px 10px", border:"1px solid var(--border-strong)", borderRadius:6, fontSize:".9rem", outline:"none", fontFamily:"inherit", background:"var(--bg)", color:"var(--text)" },
+  erroMsg:     { color:"var(--danger)", fontSize:".82rem", background:"var(--danger-bg)", padding:"6px 10px", borderRadius:6 },
   formFooter:  { display:"flex", gap:10, alignItems:"center", paddingTop:4 },
-  cancelBtn:   { padding:"8px 20px", background:"#f1f5f9", border:"1px solid #cbd5e1", borderRadius:6, cursor:"pointer", fontWeight:600, fontSize:".85rem", color:"#475569" },
-  saveBtn:     { padding:"8px 24px", background:"#f5c318", border:"none", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".85rem", color:"#1a3a5c" },
+  cancelBtn:   { padding:"8px 20px", background:"var(--surface-3)", border:"1px solid var(--border-strong)", borderRadius:6, cursor:"pointer", fontWeight:600, fontSize:".85rem", color:"var(--text-muted)" },
+  saveBtn:     { padding:"8px 24px", background:"var(--accent)", border:"none", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".85rem", color:"#fff" },
 };

@@ -23,8 +23,8 @@ export default function RotaProtegida({
 
   if (loading) {
     return (
-      <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#f0f4f8" }}>
-        <div style={{ color:"#1a3a5c", fontWeight:700, fontSize:"1rem", fontFamily:"system-ui" }}>Carregando...</div>
+      <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"var(--bg)" }}>
+        <div style={{ color:"var(--accent)", fontWeight:700, fontSize:"1rem", fontFamily:"var(--font)" }}>Carregando...</div>
       </div>
     );
   }

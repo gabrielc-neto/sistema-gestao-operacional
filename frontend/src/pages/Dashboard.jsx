@@ -1,195 +1,84 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { usePermissions } from "../contexts/PermissionsContext";
 import { useNavigate } from "react-router-dom";
-import SettingsMenu from "../components/SettingsMenu";
 import LogoPontual from "../components/LogoPontual";
+import MenuNavegacao from "../components/MenuNavegacao";
+import MapaFrota from "../components/MapaFrota";
+import GraficoEvolucaoCustos from "../components/GraficoEvolucaoCustos";
+import { useSascarPosicoes } from "../hooks/useSascarPosicoes";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase/config";
-import {
-  Truck, Link2, ClipboardList, Users, Wrench,
-  History, Palmtree, MapPin, UserCog, ShieldCheck,
-  Lock, AlertTriangle, ChevronRight, Building2, Briefcase, Clock,
-} from "lucide-react";
-import { useRBAC } from "../rbac/RBACContext";
+import { ClipboardList, Wrench, MapPin, Navigation, AlertTriangle, Activity } from "lucide-react";
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
-function dataHoje() { return new Date().toISOString().split("T")[0]; }
-
 function fmtData(iso) {
   if (!iso) return "—";
   const [y, m, d] = iso.slice(0, 10).split("-");
   return `${d}/${m}/${y}`;
 }
 
-function calcManuStatus(vencStr) {
-  if (!vencStr) return "ok";
-  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-  const venc  = new Date(vencStr + "T00:00:00");
-  const diff  = Math.ceil((venc - hoje) / 86400000);
-  if (diff < 0)   return "vencido";
-  if (diff <= 30) return "alerta";
-  return "ok";
-}
-
-
 const ROLE_LABEL = {
   master:"Administrador", admin:"Administrador", diretor:"Diretor",
   superintendente:"Superintendente", gestao:"Gestão", logistica:"Logística",
   comercial:"Comercial", faturamento:"Faturamento", rh:"RH", motorista:"Motorista",
 };
-const ROLE_COLOR = {
-  master:"#1a3a5c", admin:"#1a3a5c", diretor:"#7c3aed", superintendente:"#6d28d9",
-  gestao:"#0369a1", logistica:"#0e7490", comercial:"#b45309",
-  faturamento:"#be185d", rh:"#15803d", motorista:"#166534",
-};
 
-/* ─── KPI Card ────────────────────────────────────────────────────────────── */
-function KpiCard({ icon: Icon, color, bg, label, value, sub, alert, onClick }) {
+/* ─── Donut (gráfico SVG, sem dependências) ───────────────────────────────── */
+function Donut({ segments, size = 148, stroke = 20 }) {
+  const total = segments.reduce((a, s) => a + s.value, 0);
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  let acc = 0;
   return (
-    <div
-      onClick={onClick}
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
-      style={{
-        background: alert ? "#fff5f5" : "var(--card-bg)",
-        borderRadius: 14,
-        padding: "20px 22px",
-        border: `1px solid ${alert ? "#fca5a5" : "var(--border)"}`,
-        borderLeft: `4px solid ${alert ? "#dc2626" : color}`,
-        display: "flex", flexDirection: "column", gap: 6,
-        cursor: onClick ? "pointer" : "default",
-        transition: "box-shadow .15s",
-        boxShadow: "0 1px 4px rgba(0,0,0,.06)",
-      }}
-      onMouseEnter={e => { if (onClick) e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,.1)"; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,.06)"; }}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ width: 38, height: 38, borderRadius: 10, background: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon size={18} color={color} strokeWidth={2} />
-        </div>
-        {alert && <AlertTriangle size={16} color="#dc2626" />}
-      </div>
-      <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--text)", lineHeight: 1, marginTop: 4 }}>
-        {value ?? "…"}
-      </div>
-      <div style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>{label}</div>
-      {sub && <div style={{ fontSize: ".72rem", color: alert ? "#dc2626" : "#94a3b8", fontWeight: 600 }}>{sub}</div>}
-    </div>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={stroke} />
+      <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+        {total > 0 && segments.map((s, i) => {
+          const len = (s.value / total) * c;
+          const el = (
+            <circle key={i} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={s.color}
+              strokeWidth={stroke} strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-acc} strokeLinecap="butt" />
+          );
+          acc += len;
+          return el;
+        })}
+      </g>
+    </svg>
   );
 }
 
-/* ─── Módulo Card ─────────────────────────────────────────────────────────── */
-function ModuloCard({ Icon, color, bg, label, desc, stat, statAlert, link, onClick }) {
-  return (
-    <div
-      onClick={onClick}
-      role={link ? "button" : undefined}
-      tabIndex={link ? 0 : undefined}
-      onKeyDown={link ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
-      style={{
-        background: "var(--card-bg)",
-        borderRadius: 14,
-        padding: "18px 20px",
-        border: "1px solid var(--border)",
-        display: "flex", flexDirection: "column", gap: 10,
-        cursor: link ? "pointer" : "default",
-        opacity: link ? 1 : .55,
-        transition: "all .15s",
-        boxShadow: "0 1px 4px rgba(0,0,0,.05)",
-        position: "relative", overflow: "hidden",
-      }}
-      onMouseEnter={e => { if (link) { e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,.1)"; e.currentTarget.style.transform = "translateY(-2px)"; } }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,.05)"; e.currentTarget.style.transform = "translateY(0)"; }}
-    >
-      <div style={{ position: "absolute", top: 0, right: 0, width: 80, height: 80, borderRadius: "0 14px 0 80px", background: bg, opacity: .5 }} />
-      <div style={{ width: 44, height: 44, borderRadius: 12, background: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Icon size={22} color={color} strokeWidth={1.8} />
-      </div>
-      <div>
-        <div style={{ fontWeight: 700, fontSize: ".95rem", color: "var(--text)" }}>{label}</div>
-        <div style={{ fontSize: ".75rem", color: "var(--text-muted)", marginTop: 2 }}>{desc}</div>
-      </div>
-      {stat && (
-        <div style={{ fontSize: ".75rem", fontWeight: 700, color: statAlert ? "#dc2626" : color, background: statAlert ? "#fef2f2" : bg, padding: "3px 10px", borderRadius: 20, alignSelf: "flex-start" }}>
-          {stat}
-        </div>
-      )}
-      {link && (
-        <div style={{ display: "flex", alignItems: "center", gap: 4, color: color, fontSize: ".75rem", fontWeight: 700, marginTop: "auto" }}>
-          Abrir <ChevronRight size={14} />
-        </div>
-      )}
-      {!link && (
-        <div style={{ fontSize: ".72rem", color: "#94a3b8", fontWeight: 600 }}>Em breve</div>
-      )}
-    </div>
-  );
-}
-
-/* ─── Dashboard ───────────────────────────────────────────────────────────── */
+/* ─── Dashboard — visão geral (mapa + frota + históricos) ─────────────────── */
 export default function Dashboard() {
   const { user, profile } = useAuth();
-  const { canView, isAdmin } = usePermissions();
-  const { temPermissao } = useRBAC();
   const navigate = useNavigate();
+  const { data: sascar, error: sascarErro } = useSascarPosicoes();
 
-  const [kpi,       setKpi]       = useState({});
+  const [frota,     setFrota]     = useState({});
   const [recentOCs, setRecentOCs] = useState([]);
   const [recentOS,  setRecentOS]  = useState([]);
   const [erro,      setErro]      = useState(false);
 
   useEffect(() => {
     function fetchDados() {
-      const hoje = dataHoje();
-      const now  = new Date(); now.setHours(0, 0, 0, 0);
-      const merge = patch => setKpi(prev => ({ ...prev, ...patch }));
-      const falhas = { v:false, m:false, f:false, oc:false, manu:false, os:false };
-      const marcarErro = () => setErro(falhas.v && falhas.m && falhas.f && falhas.oc && falhas.manu && falhas.os);
+      const falhas = { v:false, oc:false, os:false };
+      const marcarErro = () => setErro(falhas.oc && falhas.os);
 
-      // Cada query atualiza sua fatia assim que volta — UI pinta em ondas.
       getDocs(collection(db, "veiculos")).then(snap => {
         const veiculos = snap.docs.map(d => d.data());
-        merge({
+        setFrota({
           frotaAtiva: veiculos.filter(v => ["ativo","disponivel"].includes(v.status) && v.tipo !== "carreta").length,
           totalFrota: veiculos.filter(v => v.tipo !== "carreta").length,
           bloqueados: veiculos.filter(v => v.bloqueio?.ativo && v.tipo !== "carreta").length,
         });
-      }).catch(() => { falhas.v = true; marcarErro(); });
+      }).catch(() => { falhas.v = true; });
 
-      getDocs(collection(db, "motoristas")).then(snap => {
-        merge({ mAtivos: snap.docs.map(d => d.data()).filter(m => m.status === "ativo").length });
-      }).catch(() => { falhas.m = true; marcarErro(); });
+      getDocs(query(collection(db, "ordens_carregamento"), orderBy("data", "desc"), limit(5)))
+        .then(snap => setRecentOCs(snap.docs.map(d => ({ id: d.id, ...d.data() })).slice(0, 5)))
+        .catch(() => { falhas.oc = true; marcarErro(); });
 
-      getDocs(collection(db, "ferias")).then(snap => {
-        const emFerias = snap.docs.map(d => d.data()).filter(f => {
-          if (!f.inicio || !f.fim) return false;
-          const ini = new Date(f.inicio + "T00:00:00");
-          const fim = new Date(f.fim   + "T00:00:00");
-          return now >= ini && now <= fim;
-        }).length;
-        merge({ emFerias });
-      }).catch(() => { falhas.f = true; marcarErro(); });
-
-      getDocs(query(collection(db, "ordens_carregamento"), orderBy("data", "desc"), limit(5))).then(snap => {
-        const ocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        merge({ ocsHoje: ocs.filter(o => o.data === hoje).length, totalOCs: ocs.length });
-        setRecentOCs(ocs.slice(0, 5));
-      }).catch(() => { falhas.oc = true; marcarErro(); });
-
-      getDocs(collection(db, "manutencoes")).then(snap => {
-        const manus = snap.docs.map(d => d.data());
-        merge({
-          manuPend: manus.filter(r => ["vencido","alerta"].includes(calcManuStatus(r.venc))).length,
-          manuVenc: manus.filter(r => calcManuStatus(r.venc) === "vencido").length,
-        });
-      }).catch(() => { falhas.manu = true; marcarErro(); });
-
-      getDocs(query(collection(db, "ordens_servico"), orderBy("criadoEm", "desc"), limit(5))).then(snap => {
-        setRecentOS(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      }).catch(() => { falhas.os = true; marcarErro(); });
+      getDocs(query(collection(db, "ordens_servico"), orderBy("criadoEm", "desc"), limit(5)))
+        .then(snap => setRecentOS(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+        .catch(() => { falhas.os = true; marcarErro(); });
     }
 
     let interval = null;
@@ -211,90 +100,129 @@ export default function Dashboard() {
 
   const role      = profile?.role || "visualizador";
   const roleLabel = ROLE_LABEL[role] || role;
-  const roleColor = ROLE_COLOR[role] || "#64748b";
+  const agora     = new Date();
+  const dataFmt   = agora.toLocaleDateString("pt-BR", { weekday:"long", day:"2-digit", month:"long" });
 
-  const MODULES = useMemo(() => [
-    { Icon:Truck,         color:"#2563eb", bg:"#dbeafe", label:"Frota",                  desc:"Gestão de veículos e bloqueios",    module:"frota",       link:"/frota",
-      stat: kpi.frotaAtiva != null ? `${kpi.frotaAtiva} ativos${kpi.bloqueados > 0 ? ` · ${kpi.bloqueados} bloqueados` : ""}` : null,
-      statAlert: kpi.bloqueados > 0 },
-    { Icon:Link2,         color:"#7c3aed", bg:"#ede9fe", label:"Atrelamento",             desc:"Conjuntos cavalo + carreta",         module:"atrelamento", link:"/atrelamento", stat: null },
-    { Icon:ClipboardList, color:"#d97706", bg:"#fef3c7", label:"Ordens de Carregamento",  desc:"Emitir e controlar OCs",             module:"oc",          link:"/oc",
-      stat: kpi.ocsHoje != null ? `${kpi.ocsHoje} hoje · ${kpi.totalOCs} total` : null },
-    { Icon:Users,         color:"#059669", bg:"#d1fae5", label:"Motoristas",              desc:"Cadastro, CNH e documentos",         module:"motoristas",  link:"/motoristas",
-      stat: kpi.mAtivos != null ? `${kpi.mAtivos} ativos${kpi.emFerias > 0 ? ` · ${kpi.emFerias} em férias` : ""}` : null },
-    { Icon:Wrench,        color:"#dc2626", bg:"#fee2e2", label:"Manutenção",              desc:"Vencimentos e revisões",             module:"manutencao",  link:"/manutencao",
-      stat: kpi.manuPend != null ? (kpi.manuVenc > 0 ? `${kpi.manuVenc} vencidos · ${kpi.manuPend} pendentes` : kpi.manuPend > 0 ? `${kpi.manuPend} em alerta` : "Tudo em dia") : null,
-      statAlert: kpi.manuVenc > 0 },
-    { Icon:History,       color:"#7c3aed", bg:"#f3e8ff", label:"Histórico",              desc:"Registro de todas as operações",     module:"historico",   link:"/historico", stat: null },
-    { Icon:Palmtree,      color:"#0891b2", bg:"#cffafe", label:"Férias",                 desc:"Controle e alertas eSocial",         module:"ferias",      link:"/ferias",
-      stat: kpi.emFerias > 0 ? `${kpi.emFerias} em férias hoje` : null },
-    { Icon:MapPin,        color:"#ea580c", bg:"#ffedd5", label:"Rastreamento",           desc:"Posição em tempo real (SASCAR)",     module:null,          link:"/rastreamento",  stat: null },
-    { Icon:Clock,         color:"#1d4ed8", bg:"#dbeafe", label:"Jornada & Extras",        desc:"Lei 13.103 + CLT (tablet SasMDT)",   module:null,          link:"/jornada",       stat: null },
-    { Icon:Building2,     color:"#0891b2", bg:"#cffafe", label:"Setores",                desc:"Departamentos da empresa",           module:null,          link:"/admin/setores", perm:"setores.ver", stat: null },
-    { Icon:Briefcase,     color:"#9333ea", bg:"#f3e8ff", label:"Cargos & Permissões",    desc:"Funções e seus acessos",             module:null,          link:"/admin/cargos",  perm:"cargos.ver", stat: null },
-    { Icon:UserCog,       color:"#475569", bg:"#f1f5f9", label:"Usuários",               desc:"Contas e acessos",                   module:null,          link:"/usuarios",      perm:"usuarios.ver", stat: null },
-    { Icon:ShieldCheck,   color:"#0f766e", bg:"#ccfbf1", label:"Permissões (legado)",    desc:"Matriz antiga role × módulo",        module:null,          link:"/permissoes",    perm:"permissoes.ver", stat: null },
-  ], [kpi]);
-
-  const visibleModules = useMemo(() =>
-    MODULES.filter(m => {
-      if (m.perm)   return temPermissao(m.perm);
-      if (m.module) return canView(m.module);
-      return isAdmin;
-    }),
-    [MODULES, isAdmin, canView, temPermissao]
+  // ── Rastreamento (SASCAR) para o mapa embutido ──
+  const posicoes = sascar?.posicoes ?? [];
+  const emMovimento = useMemo(
+    () => posicoes.filter(p => p.statusTexto === "EM_MOVIMENTO").length,
+    [posicoes]
   );
 
-  const agora = new Date();
-  const dataFmt = agora.toLocaleDateString("pt-BR", { weekday:"long", day:"2-digit", month:"long" });
+  // ── Segmentos do gráfico de controle de frota ──
+  const ativos = frota.frotaAtiva ?? 0;
+  const bloq   = frota.bloqueados ?? 0;
+  const outros = Math.max(0, (frota.totalFrota ?? 0) - ativos - bloq);
+  const frotaSeg = [
+    { label: "Ativos / Disponíveis", value: ativos, color: "var(--chart-2)" },
+    { label: "Bloqueados",           value: bloq,   color: "var(--chart-5)" },
+    { label: "Outros",               value: outros, color: "var(--chart-8)" },
+  ];
 
   return (
-    <div style={{ minHeight:"100vh", background:"var(--bg)", fontFamily:"system-ui, sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:"var(--bg)", fontFamily:"var(--font)" }}>
+
+      {/* Mobile: mantém logo + menu na MESMA linha (evita quebra do pg-header-actions) */}
+      <style>{`
+        @media (max-width: 640px) {
+          .pg-header.dash-header { flex-wrap: nowrap !important; }
+          .dash-header .pg-header-actions { width: auto !important; margin-left: auto !important; justify-content: flex-end !important; }
+        }
+      `}</style>
 
       {/* HEADER */}
-      <header style={st.header} className="pg-header">
+      <header style={st.header} className="pg-header dash-header">
         <div style={{ display:"flex", alignItems:"center", gap:14 }} className="pg-logo">
-          <LogoPontual height={42} variant="white" />
-          <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
-            <span style={{ color:"#fff", fontWeight:800, fontSize:"1rem", letterSpacing:.3 }}>PONTUAL LOGÍSTICA</span>
-            <span style={{ color:"rgba(255,255,255,.55)", fontSize:".7rem", fontWeight:500 }}>Sistema de Gestão Operacional</span>
+          <LogoPontual height={40} variant="white" />
+          <div style={{ display:"flex", flexDirection:"column", gap:1 }} className="hide-mobile">
+            <span style={{ color:"#fff", fontWeight:700, fontSize:"1rem", letterSpacing:"-0.01em" }}>Logística</span>
+            <span style={{ color:"rgba(255,255,255,.6)", fontSize:".72rem", fontWeight:500 }}>Sistema de Gestão Operacional</span>
           </div>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:14 }} className="pg-header-actions">
+        <div style={{ display:"flex", alignItems:"center", gap:14, marginLeft:"auto" }} className="pg-header-actions">
           <div style={{ textAlign:"right" }} className="hide-mobile">
             <div style={{ color:"#fff", fontSize:".85rem", fontWeight:600 }}>{profile?.nome || user?.email}</div>
             <div style={{ color:"rgba(255,255,255,.6)", fontSize:".7rem" }}>
-              <span style={{ background: roleColor, borderRadius:4, padding:"1px 7px", fontSize:".65rem", fontWeight:700, marginRight:6 }}>{roleLabel}</span>
+              <span style={{ background:"rgba(255,255,255,.14)", color:"#fff", borderRadius:5, padding:"1px 8px", fontSize:".65rem", fontWeight:700, marginRight:6 }}>{roleLabel}</span>
               {dataFmt}
             </div>
           </div>
-          <SettingsMenu />
+          <MenuNavegacao />
         </div>
       </header>
 
       <div style={{ maxWidth:1400, margin:"0 auto", padding:"28px 24px" }} className="pg-body">
 
+        {/* Título da visão geral */}
+        <div style={{ marginBottom:20 }}>
+          <h1 style={{ fontSize:"1.35rem", fontWeight:700, color:"var(--text)", letterSpacing:"-0.02em", margin:0 }}>Visão Geral</h1>
+          <p style={{ fontSize:".85rem", color:"var(--text-muted)", marginTop:4 }}>
+            Olá, {profile?.nome?.split(" ")[0] || "usuário"} — rastreamento e histórico operacional em tempo real.
+          </p>
+        </div>
+
+        {/* Topo: Evolução de custos (esq) + Controle de Frota (dir) */}
+        <div className="dash-grid-2" style={{ display:"grid", gridTemplateColumns:"1.7fr 1fr", gap:14, marginBottom:20, alignItems:"stretch" }}>
+          {/* Resumo de evolução de custos mensais (módulo de manutenção) */}
+          <GraficoEvolucaoCustos style={{ height:"100%" }} />
+
+          {/* Controle de frota (gráfico) */}
+          <div style={st.panel}>
+            <div style={st.panelHeader}>
+              <Activity size={16} color="var(--accent)" />
+              <span style={st.panelTitle}>Controle de Frota</span>
+              <button style={st.panelLink} onClick={() => navigate("/frota")}>Abrir →</button>
+            </div>
+            <div style={{ padding:"22px 20px", display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
+              <div style={{ position:"relative", width:148, height:148 }}>
+                <Donut segments={frotaSeg} />
+                <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ fontSize:"1.9rem", fontWeight:800, color:"var(--text)", lineHeight:1 }}>{frota.totalFrota ?? "…"}</span>
+                  <span style={{ fontSize:".68rem", color:"var(--text-muted)", fontWeight:600, textTransform:"uppercase", letterSpacing:".05em" }}>cavalos</span>
+                </div>
+              </div>
+              <div style={{ width:"100%", display:"flex", flexDirection:"column", gap:9 }}>
+                {frotaSeg.map(s => (
+                  <div key={s.label} style={{ display:"flex", alignItems:"center", gap:10, fontSize:".82rem" }}>
+                    <span style={{ width:10, height:10, borderRadius:3, background:s.color, flexShrink:0 }} />
+                    <span style={{ color:"var(--text-muted)", flex:1 }}>{s.label}</span>
+                    <span style={{ color:"var(--text)", fontWeight:700 }}>{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Rastreamento em tempo real — bloco exclusivo, estendido (largura total) */}
+        <div style={{ ...st.panel, marginBottom:20 }}>
+          <div style={st.panelHeader}>
+            <MapPin size={16} color="var(--accent)" />
+            <span style={st.panelTitle}>Rastreamento em tempo real</span>
+            <span style={st.chip}><Navigation size={11} /> {emMovimento} em movimento</span>
+            <button style={st.panelLink} onClick={() => navigate("/rastreamento")}>Abrir →</button>
+          </div>
+          {sascarErro ? (
+            <div style={{ ...st.emptyMsg, display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"40px 16px" }}>
+              <AlertTriangle size={16} color="var(--danger)" /> Falha ao carregar posições SASCAR.
+            </div>
+          ) : (
+            <MapaFrota posicoes={posicoes} height={520} />
+          )}
+        </div>
+
         {erro && (
-          <div role="alert" style={{ display:"flex", alignItems:"center", gap:8, background:"#fef2f2", border:"1px solid #fca5a5", color:"#b91c1c", borderRadius:10, padding:"10px 14px", marginBottom:20, fontSize:".82rem", fontWeight:600 }}>
-            <AlertTriangle size={16} /> Não foi possível carregar os dados. Verifique a conexão e tente novamente.
+          <div role="alert" style={{ display:"flex", alignItems:"center", gap:8, background:"var(--danger-bg)", border:"1px solid var(--danger-border)", color:"var(--danger)", borderRadius:10, padding:"10px 14px", marginBottom:20, fontSize:".82rem", fontWeight:600 }}>
+            <AlertTriangle size={16} /> Não foi possível carregar os históricos. Verifique a conexão e tente novamente.
           </div>
         )}
 
-        {/* KPIs */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:14, marginBottom:28 }} className="dash-kpi">
-          <KpiCard icon={Truck}         color="#2563eb" bg="#dbeafe" label="Frota Ativa"            value={kpi.frotaAtiva ?? "…"} sub={kpi.totalFrota != null ? `de ${kpi.totalFrota} cavalos` : null} onClick={() => navigate("/frota")} />
-          <KpiCard icon={Lock}          color="#dc2626" bg="#fee2e2" label="Bloqueados"              value={kpi.bloqueados ?? "…"} alert={kpi.bloqueados > 0} sub={kpi.bloqueados == null ? null : kpi.bloqueados > 0 ? "Requer atenção" : "Nenhum"} onClick={() => navigate("/frota")} />
-          <KpiCard icon={Users}         color="#059669" bg="#d1fae5" label="Motoristas Ativos"       value={kpi.mAtivos ?? "…"}   sub={kpi.emFerias == null ? null : kpi.emFerias > 0 ? `${kpi.emFerias} em férias` : "Sem férias hoje"} onClick={() => navigate("/motoristas")} />
-          <KpiCard icon={ClipboardList} color="#d97706" bg="#fef3c7" label="OCs Hoje"                value={kpi.ocsHoje ?? "…"}   sub={kpi.totalOCs != null ? `${kpi.totalOCs} total` : null} onClick={() => navigate("/oc")} />
-          <KpiCard icon={Palmtree}      color="#0891b2" bg="#cffafe" label="Em Férias Hoje"          value={kpi.emFerias ?? "…"}  sub={null} onClick={() => navigate("/ferias")} />
-          <KpiCard icon={Wrench}        color={kpi.manuVenc > 0 ? "#dc2626" : "#f59e0b"} bg={kpi.manuVenc > 0 ? "#fee2e2" : "#fef3c7"} label="Manutenções Pendentes" value={kpi.manuPend ?? "…"} alert={kpi.manuVenc > 0} sub={kpi.manuVenc == null ? null : kpi.manuVenc > 0 ? `${kpi.manuVenc} vencida${kpi.manuVenc > 1 ? "s" : ""}` : "Sem vencidos"} onClick={() => navigate("/manutencao")} />
-        </div>
-
         {/* Últimas OCs + Últimas OS lado a lado */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(420px,1fr))", gap:14, marginBottom:28 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(420px,1fr))", gap:14 }}>
           <div style={st.panel}>
             <div style={st.panelHeader}>
-              <ClipboardList size={16} color="#d97706" />
+              <ClipboardList size={16} color="var(--accent)" />
               <span style={st.panelTitle}>Últimas Ordens de Carregamento</span>
               <button style={st.panelLink} onClick={() => navigate("/oc")}>Ver todas →</button>
             </div>
@@ -304,21 +232,21 @@ export default function Dashboard() {
               <div className="dash-table-wrap">
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".78rem", minWidth:420 }}>
                 <thead>
-                  <tr style={{ background:"#f8fafc" }}>
+                  <tr style={{ background:"var(--surface-2)" }}>
                     {["Nº","Data","Cavalo","Motorista","Base"].map(h => (
-                      <th key={h} style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:"#64748b", fontSize:".7rem", textTransform:"uppercase", letterSpacing:.4 }}>{h}</th>
+                      <th key={h} style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:"var(--text-muted)", fontSize:".7rem", textTransform:"uppercase", letterSpacing:.4 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {recentOCs.map((oc, i) => (
-                    <tr key={oc.id} style={{ borderTop:"1px solid var(--border)", background: i % 2 === 0 ? "var(--card-bg)" : "#f8fafc" }}>
-                      <td style={{ padding:"9px 12px", fontWeight:800, color:"#1a3a5c" }}>{oc.num}</td>
+                    <tr key={oc.id} style={{ borderTop:"1px solid var(--border)", background: i % 2 === 0 ? "var(--card-bg)" : "var(--surface-2)" }}>
+                      <td style={{ padding:"9px 12px", fontWeight:800, color:"var(--accent)" }}>{oc.num}</td>
                       <td style={{ padding:"9px 12px", color:"var(--text-muted)" }}>{fmtData(oc.data)}</td>
                       <td style={{ padding:"9px 12px", fontWeight:600 }}>{oc.cavaloPlaca || "—"}</td>
                       <td style={{ padding:"9px 12px", color:"var(--text-muted)", maxWidth:130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{oc.motoristaNome || "—"}</td>
                       <td style={{ padding:"9px 12px" }}>
-                        <span style={{ background: oc.base === "REPLAN" ? "#dcfce7" : "#dbeafe", color: oc.base === "REPLAN" ? "#15803d" : "#1d4ed8", borderRadius:4, padding:"2px 7px", fontWeight:700, fontSize:".68rem" }}>
+                        <span style={{ background: oc.base === "REPLAN" ? "var(--success-bg)" : "var(--accent-soft)", color: oc.base === "REPLAN" ? "var(--success)" : "var(--accent)", borderRadius:4, padding:"2px 7px", fontWeight:700, fontSize:".68rem" }}>
                           {oc.base || "—"}
                         </span>
                       </td>
@@ -332,7 +260,7 @@ export default function Dashboard() {
 
           <div style={st.panel}>
             <div style={st.panelHeader}>
-              <Wrench size={16} color="#dc2626" />
+              <Wrench size={16} color="var(--accent)" />
               <span style={st.panelTitle}>Últimas Ordens de Serviço</span>
               <button style={st.panelLink} onClick={() => navigate("/manutencao")}>Ver todas →</button>
             </div>
@@ -342,20 +270,20 @@ export default function Dashboard() {
               <div className="dash-table-wrap">
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".78rem", minWidth:420 }}>
                 <thead>
-                  <tr style={{ background:"#f8fafc" }}>
+                  <tr style={{ background:"var(--surface-2)" }}>
                     {["Nº","Data","Placa","Motorista","Status"].map(h => (
-                      <th key={h} style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:"#64748b", fontSize:".7rem", textTransform:"uppercase", letterSpacing:.4 }}>{h}</th>
+                      <th key={h} style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:"var(--text-muted)", fontSize:".7rem", textTransform:"uppercase", letterSpacing:.4 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {recentOS.map((os, i) => {
-                    const stCfg = os.status === "concluida" ? { bg:"#dcfce7", fg:"#15803d", label:"Concluída" }
-                                : os.status === "cancelada" ? { bg:"#f1f5f9", fg:"#475569", label:"Cancelada" }
-                                : { bg:"#fef3c7", fg:"#b45309", label:"Aberta" };
+                    const stCfg = os.status === "concluida" ? { bg:"var(--success-bg)", fg:"var(--success)", label:"Concluída" }
+                                : os.status === "cancelada" ? { bg:"var(--surface-3)", fg:"var(--text-muted)", label:"Cancelada" }
+                                : { bg:"var(--warning-bg)", fg:"var(--warning)", label:"Aberta" };
                     return (
-                      <tr key={os.id} style={{ borderTop:"1px solid var(--border)", background: i % 2 === 0 ? "var(--card-bg)" : "#f8fafc" }}>
-                        <td style={{ padding:"9px 12px", fontWeight:800, color:"#1a3a5c" }}>{os.numero || "—"}</td>
+                      <tr key={os.id} style={{ borderTop:"1px solid var(--border)", background: i % 2 === 0 ? "var(--card-bg)" : "var(--surface-2)" }}>
+                        <td style={{ padding:"9px 12px", fontWeight:800, color:"var(--accent)" }}>{os.numero || "—"}</td>
                         <td style={{ padding:"9px 12px", color:"var(--text-muted)" }}>{fmtData(os.dataHora || os.criadoEm)}</td>
                         <td style={{ padding:"9px 12px", fontWeight:600 }}>{os.placa || "—"}</td>
                         <td style={{ padding:"9px 12px", color:"var(--text-muted)", maxWidth:130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{os.motoristaNome || "—"}</td>
@@ -374,52 +302,32 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* MÓDULOS */}
-        <div style={{ marginBottom:10 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
-            <div style={{ height:2, width:24, background:"#1a3a5c", borderRadius:2 }} />
-            <span style={{ fontWeight:800, fontSize:".8rem", letterSpacing:".1em", textTransform:"uppercase", color:"#64748b" }}>Módulos do Sistema</span>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:14 }} className="dash-modules">
-            {visibleModules.map((m) => (
-              <ModuloCard
-                key={m.label}
-                Icon={m.Icon}
-                color={m.color}
-                bg={m.bg}
-                label={m.label}
-                desc={m.desc}
-                stat={m.stat}
-                statAlert={m.statAlert}
-                link={m.link}
-                onClick={() => m.link && navigate(m.link)}
-              />
-            ))}
-          </div>
-        </div>
-
       </div>
 
+      <style>{`
+        @media (max-width: 900px) {
+          .dash-grid-2 { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }
 
 const st = {
   header: {
-    background:"#1a3a5c",
-    borderBottom:"4px solid transparent",
-    borderImage:"linear-gradient(90deg,#3d6b47,#6aaa5e,#b5d947,#f5c318,#f0a500) 1",
-    padding:"12px 28px",
-    display:"flex", alignItems:"center", justifyContent:"space-between",
-    boxShadow:"0 2px 12px rgba(0,0,0,.2)",
+    background:"var(--header-bg)",
+    borderBottom:"1px solid var(--header-border)",
+    padding:"14px 28px",
+    display:"flex", alignItems:"center", gap:16,
+    boxShadow:"var(--sh-md)",
     position:"sticky", top:0, zIndex:100,
   },
   panel: {
     background:"var(--card-bg)",
-    borderRadius:14,
+    borderRadius:"var(--r-lg)",
     border:"1px solid var(--border)",
     overflow:"hidden",
-    boxShadow:"0 1px 4px rgba(0,0,0,.06)",
+    boxShadow:"var(--sh-sm)",
   },
   panelHeader: {
     display:"flex", alignItems:"center", gap:8,
@@ -428,6 +336,12 @@ const st = {
     background:"var(--card-bg)",
   },
   panelTitle: { fontWeight:700, fontSize:".88rem", color:"var(--text)", flex:1 },
-  panelLink:  { background:"none", border:"none", color:"#2563eb", fontSize:".75rem", fontWeight:700, cursor:"pointer", padding:0 },
-  emptyMsg:   { padding:"28px 16px", textAlign:"center", color:"#94a3b8", fontSize:".82rem" },
+  panelLink:  { background:"none", border:"none", color:"var(--accent)", fontSize:".75rem", fontWeight:700, cursor:"pointer", padding:0, whiteSpace:"nowrap" },
+  emptyMsg:   { padding:"28px 16px", textAlign:"center", color:"var(--text-subtle)", fontSize:".82rem" },
+  chip: {
+    display:"inline-flex", alignItems:"center", gap:4,
+    background:"var(--tech-soft)", color:"var(--tech-text)", border:"1px solid var(--tech-border)",
+    fontSize:".68rem", fontWeight:700, padding:"3px 9px", borderRadius:"var(--r-full)",
+    whiteSpace:"nowrap",
+  },
 };

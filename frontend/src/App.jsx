@@ -25,8 +25,10 @@ const Setores     = lazy(() => import("./pages/admin/Setores"));
 const Cargos      = lazy(() => import("./pages/admin/Cargos"));
 
 const Loading = () => (
-  <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#f0f4f8" }}>
-    <div style={{ color:"#1a3a5c", fontWeight:700, fontSize:"1rem", fontFamily:"system-ui" }}>Carregando...</div>
+  <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16, background:"var(--bg)" }}>
+    <div style={{ width:34, height:34, borderRadius:"50%", border:"3px solid var(--border)", borderTopColor:"var(--accent)", animation:"spin 0.7s linear infinite" }} />
+    <div style={{ color:"var(--text-muted)", fontWeight:600, fontSize:".9rem", fontFamily:"var(--font)" }}>Carregando…</div>
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
   </div>
 );
 

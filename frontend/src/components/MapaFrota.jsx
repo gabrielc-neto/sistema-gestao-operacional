@@ -6,6 +6,7 @@ import CercaEletronica, { areaDoPonto } from "./CercaEletronica";
 import { useCercas } from "../hooks/useCercas";
 import { buscarSugestoes, calcularRotaCaminhao, fmtDistancia, fmtDuracao } from "../utils/roteamento";
 import { tempoDecorrido } from "../utils/format";
+import { Camera, Map as MapIcon, MapPin, Ruler } from "lucide-react";
 
 // Distância em graus acima da qual consideramos "teleport" (≈ 5 km) — sem animar
 const TELEPORT_THRESHOLD_DEG = 0.045;
@@ -103,8 +104,8 @@ function AnimatedTruckMarker({ posicao, icon, children, ...rest }) {
 const STATUS = {
   EM_MOVIMENTO:  { color: "#16a34a", label: "Em movimento",   pulse: true  },
   PARADO_LIGADO: { color: "#eab308", label: "Parado / ligado", pulse: false },
-  ESTACIONADO:   { color: "#475569", label: "Estacionado",     pulse: false },
-  SEM_DADOS:     { color: "#94a3b8", label: "Sem comunicação", pulse: false },
+  ESTACIONADO:   { color: "var(--text-muted)", label: "Estacionado",     pulse: false },
+  SEM_DADOS:     { color: "var(--text-subtle)", label: "Sem comunicação", pulse: false },
 };
 
 function minutosDecorridos(iso) {
@@ -290,9 +291,9 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
             zIndexOffset={p.placa === focusPlaca ? 1000 : 0}
           >
             <Popup>
-              <div style={{ fontFamily: "system-ui", minWidth: 230 }}>
+              <div style={{ fontFamily: "var(--font)", minWidth: 230 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                  <strong style={{ fontSize: "1.02rem", color: "#1a3a5c" }}>{p.placa || `id ${p.idVeiculo}`}</strong>
+                  <strong style={{ fontSize: "1.02rem", color: "var(--accent)" }}>{p.placa || `id ${p.idVeiculo}`}</strong>
                   <span style={{
                     background: (STATUS[p.statusTexto] || STATUS.ESTACIONADO).color,
                     color: "#fff", padding: "2px 8px", borderRadius: 6,
@@ -301,7 +302,7 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
                     {(STATUS[p.statusTexto] || STATUS.ESTACIONADO).label}
                   </span>
                 </div>
-                <div style={{ fontSize: ".84rem", color: "#475569", lineHeight: 1.55 }}>
+                <div style={{ fontSize: ".84rem", color: "var(--text-muted)", lineHeight: 1.55 }}>
                   <Row label="Motorista" value={p.motoristaLogado ? formatarMotorista(p.motoristaLogado) : "Não logado"} highlight={!!p.motoristaLogado} />
                   <Row label="Velocidade" value={`${p.velocidade ?? 0} km/h`} highlight={p.velocidade > 0} />
                   <Row label="Direção" value={bussola(p.direcao)} extra />
@@ -323,14 +324,14 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
                     target="_blank" rel="noopener noreferrer"
                     style={btnExt}
                   >
-                    📷 Street View
+                    <Camera size={14} /> Street View
                   </a>
                   <a
                     href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`}
                     target="_blank" rel="noopener noreferrer"
                     style={btnExt}
                   >
-                    🗺️ Google Maps
+                    <MapIcon size={14} /> Google Maps
                   </a>
                 </div>
 
@@ -341,11 +342,11 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
                 />
 
                 {oc && (
-                  <div style={{ marginTop: 10, padding: "8px 10px", background: "#f8fafc", borderLeft: "3px solid #d97706", borderRadius: 4 }}>
+                  <div style={{ marginTop: 10, padding: "8px 10px", background: "var(--surface-2)", borderLeft: "3px solid #d97706", borderRadius: 4 }}>
                     <div style={{ fontSize: ".72rem", color: "#854d0e", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em", marginBottom: 4 }}>
                       OC ativa · {oc.num}
                     </div>
-                    <div style={{ fontSize: ".78rem", color: "#475569", lineHeight: 1.45 }}>
+                    <div style={{ fontSize: ".78rem", color: "var(--text-muted)", lineHeight: 1.45 }}>
                       <div><strong>Responsável:</strong> {oc.resp || "—"}</div>
                       <div><strong>Carga:</strong> {(oc.totalLitros ?? 0).toLocaleString("pt-BR")} L · {oc.entregas?.length || 0} entrega(s)</div>
                       <div><strong>Base:</strong> {oc.base || "—"}</div>
@@ -426,7 +427,7 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
           gap: 1px;
         }
         .truck-placa {
-          background: #1a3a5c;
+          background: var(--accent);
           color: #fff;
           font-size: 10.5px;
           font-weight: 800;
@@ -439,7 +440,7 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
         }
         .truck-driver {
           background: rgba(255,255,255,0.95);
-          color: #1a3a5c;
+          color: var(--accent);
           font-size: 9.5px;
           font-weight: 600;
           padding: 0px 5px;
@@ -526,7 +527,7 @@ export default function MapaFrota({ posicoes, height = 560, focusPlaca = null, o
 const btnExt = {
   display: "inline-flex", alignItems: "center", gap: 4,
   padding: "5px 9px",
-  background: "#1a3a5c", color: "#fff",
+  background: "var(--accent)", color: "#fff",
   borderRadius: 6, fontSize: ".74rem", fontWeight: 600,
   textDecoration: "none",
 };
@@ -537,10 +538,10 @@ function Row({ label, value, highlight, alert, extra }) {
       className={extra ? "popup-row popup-row-extra" : "popup-row"}
       style={{ display: "flex", justifyContent: "space-between", gap: 8 }}
     >
-      <span style={{ color: "#64748b" }}>{label}</span>
+      <span style={{ color: "var(--text-muted)" }}>{label}</span>
       <span style={{
         fontWeight: 600,
-        color: alert ? "#dc2626" : highlight ? "#16a34a" : "#1a3a5c"
+        color: alert ? "#dc2626" : highlight ? "#16a34a" : "var(--accent)"
       }}>{value}</span>
     </div>
   );
@@ -581,33 +582,33 @@ function PainelDestino({ destino, onDefinir, onLimpar }) {
     onDefinir({ endereco: item.label, lat: item.lat, lng: item.lng });
   }
 
-  const labelRotulo = { fontSize: ".7rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: ".03em", marginBottom: 4 };
-  const inputStyle = { width: "100%", padding: "6px 8px", border: "1px solid #cbd5e1", borderRadius: 5, fontSize: ".82rem", fontFamily: "inherit", outline: "none", boxSizing: "border-box" };
-  const sugStyle = { padding: "5px 8px", fontSize: ".78rem", cursor: "pointer", borderBottom: "1px solid #f1f5f9", color: "#1a3a5c" };
+  const labelRotulo = { fontSize: ".7rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".03em", marginBottom: 4 };
+  const inputStyle = { width: "100%", padding: "6px 8px", border: "1px solid var(--border-strong)", borderRadius: 5, fontSize: ".82rem", fontFamily: "inherit", outline: "none", boxSizing: "border-box" };
+  const sugStyle = { padding: "5px 8px", fontSize: ".78rem", cursor: "pointer", borderBottom: "1px solid #f1f5f9", color: "var(--accent)" };
 
   return (
     <div style={{ marginTop: 10, padding: "8px 10px", background: "#f0f9ff", borderLeft: "3px solid #0284c7", borderRadius: 4 }}>
-      <div style={labelRotulo}>📍 Destino · ETA</div>
+      <div style={{ ...labelRotulo, display: "inline-flex", alignItems: "center", gap: 6 }}><MapPin size={14} /> Destino · ETA</div>
 
       {destino ? (
         <div>
-          <div style={{ fontSize: ".78rem", color: "#1a3a5c", lineHeight: 1.4, marginBottom: 6 }}>
+          <div style={{ fontSize: ".78rem", color: "var(--accent)", lineHeight: 1.4, marginBottom: 6 }}>
             <strong>Para:</strong> {destino.endereco}
           </div>
-          {destino.loading && <div style={{ fontSize: ".78rem", color: "#64748b" }}>Calculando rota…</div>}
+          {destino.loading && <div style={{ fontSize: ".78rem", color: "var(--text-muted)" }}>Calculando rota…</div>}
           {destino.erro && <div style={{ fontSize: ".78rem", color: "#dc2626" }}>Erro: {destino.erro}</div>}
           {!destino.loading && !destino.erro && destino.dist != null && (
             <div style={{ display: "flex", gap: 10, fontSize: ".88rem", fontWeight: 700, color: "#0284c7", marginBottom: 4 }}>
-              <span>📏 {fmtDistancia(destino.dist)}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Ruler size={14} /> {fmtDistancia(destino.dist)}</span>
               <span>⏱ {fmtDuracao(destino.dur)}</span>
             </div>
           )}
           {destino.perfil && (
-            <div style={{ fontSize: ".68rem", color: "#64748b", fontStyle: "italic" }}>{destino.perfil}</div>
+            <div style={{ fontSize: ".68rem", color: "var(--text-muted)", fontStyle: "italic" }}>{destino.perfil}</div>
           )}
           <button
             onClick={() => { onLimpar(); setQ(""); }}
-            style={{ marginTop: 6, background: "transparent", border: "1px solid #cbd5e1", color: "#64748b", padding: "3px 10px", borderRadius: 4, fontSize: ".72rem", cursor: "pointer" }}
+            style={{ marginTop: 6, background: "transparent", border: "1px solid var(--border-strong)", color: "var(--text-muted)", padding: "3px 10px", borderRadius: 4, fontSize: ".72rem", cursor: "pointer" }}
           >
             Limpar destino
           </button>
@@ -623,11 +624,11 @@ function PainelDestino({ destino, onDefinir, onLimpar }) {
             onBlur={() => setTimeout(() => setOpen(false), 180)}
             style={inputStyle}
           />
-          {buscando && <div style={{ fontSize: ".7rem", color: "#94a3b8", marginTop: 3 }}>Buscando…</div>}
+          {buscando && <div style={{ fontSize: ".7rem", color: "var(--text-subtle)", marginTop: 3 }}>Buscando…</div>}
           {open && sugest.length > 0 && (
             <div style={{
               position: "absolute", top: "100%", left: 0, right: 0, marginTop: 2,
-              background: "#fff", border: "1px solid #cbd5e1", borderRadius: 5,
+              background: "var(--card-bg)", border: "1px solid var(--border-strong)", borderRadius: 5,
               maxHeight: 180, overflowY: "auto", zIndex: 1100, boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             }}>
               {sugest.map((s, i) => (
@@ -653,7 +654,7 @@ function Legenda() {
   const itens = [
     ["#16a34a", "Em movimento"],
     ["#eab308", "Parado / ligado"],
-    ["#475569", "Estacionado"],
+    ["var(--text-muted)", "Estacionado"],
     ["#dc2626", "Bloqueado"],
   ];
   return (
@@ -666,14 +667,14 @@ function Legenda() {
       padding: "8px 12px",
       boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
       fontSize: ".74rem",
-      fontFamily: "system-ui",
+      fontFamily: "var(--font)",
       zIndex: 1000,
     }}>
-      <div style={{ fontWeight: 700, color: "#475569", marginBottom: 4 }}>Status</div>
+      <div style={{ fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>Status</div>
       {itens.map(([c, l]) => (
         <div key={l} style={{ display: "flex", alignItems: "center", gap: 6, lineHeight: 1.6 }}>
           <span style={{ width: 10, height: 10, borderRadius: 2, background: c, display: "inline-block" }} />
-          <span style={{ color: "#475569" }}>{l}</span>
+          <span style={{ color: "var(--text-muted)" }}>{l}</span>
         </div>
       ))}
     </div>
