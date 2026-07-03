@@ -96,7 +96,7 @@ function buildHtml(os) {
       </div>
 
       <!-- ASSINATURAS -->
-      <table style="width:100%; border-collapse:collapse; margin-top:24px;">
+      <table style="width:100%; border-collapse:collapse; margin-top:72px;">
         <tr>
           <td style="width:50%; padding:0 14px; text-align:center;">
             <div style="border-top:1px solid #64748b; padding-top:6px; font-size:10px; color:#64748b; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">Motorista</div>
