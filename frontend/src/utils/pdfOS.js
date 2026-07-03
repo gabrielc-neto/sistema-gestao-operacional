@@ -33,7 +33,7 @@ function buildHtml(os) {
   const obs       = os.obs || "";
 
   return `
-    <div style="font-family: 'Segoe UI', system-ui, sans-serif; color:#0f172a; padding: 24px 28px; width: 794px; box-sizing: border-box;">
+    <div style="font-family: 'Segoe UI', system-ui, sans-serif; color:#0f172a; padding: 12px 14px; width: 720px; box-sizing: border-box;">
       <!-- CABEÇALHO -->
       <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
         <tr>
@@ -97,7 +97,7 @@ function buildHtml(os) {
       </div>
 
       <!-- ASSINATURAS -->
-      <table style="width:100%; border-collapse:collapse; margin-top:32px;">
+      <table style="width:100%; border-collapse:collapse; margin-top:24px;">
         <tr>
           <td style="width:50%; padding:0 14px; text-align:center;">
             <div style="border-top:1px solid #64748b; padding-top:6px; font-size:10px; color:#64748b; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">Motorista</div>
@@ -132,10 +132,11 @@ export async function gerarPdfOS(os) {
     const { default: html2pdf } = await import("html2pdf.js");
     await html2pdf().set({
       filename: `OS-${os.numero || "sem-numero"}.pdf`,
-      margin: 8,
+      margin: [12, 10, 12, 10], // top, right, bottom, left (mm)
       image: { type: "jpeg", quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: 720 },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
+      pagebreak: { mode: ["avoid-all", "css", "legacy"] },
     }).from(wrap.firstElementChild).save();
   } finally {
     wrap.remove();
