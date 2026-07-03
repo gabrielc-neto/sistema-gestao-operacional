@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   collection, getDocs, setDoc, deleteDoc, addDoc, updateDoc,
@@ -966,30 +966,47 @@ export default function Manutencao() {
   const [lancamentos,     setLancamentos]     = useState([]);
   const [formLanc,        setFormLanc]        = useState({ ...EMPTY_LANC });
 
-  // Auto-preenche hodômetro com o odômetro atual da SASCAR quando a placa muda,
-  // mas só se o campo ainda estiver vazio (respeita edição manual).
+  // Resolve o odômetro SASCAR de uma placa. Se for carreta (sem rastreador),
+  // acha o cavalo atrelado (via campos c1/c2/c3) e usa o odômetro dele.
+  // Retorna { km, fonte } ou null.
+  const resolverKmSascar = useCallback((placa) => {
+    if (!placa) return null;
+    const alvo = String(placa).trim().toUpperCase();
+    // 1) Tenta direto (cavalo com rastreador)
+    let km = odometroDe(alvo);
+    if (km != null && km > 0) return { km, fonte: alvo, dados: dadosDe(alvo) };
+    // 2) Carreta: acha o cavalo que tem essa placa em c1/c2/c3
+    const cavalo = veiculos.find(v => {
+      const carretas = [v.c1, v.c2, v.c3].map(p => String(p || "").trim().toUpperCase());
+      return carretas.includes(alvo);
+    });
+    if (cavalo) {
+      km = odometroDe(cavalo.placa);
+      if (km != null && km > 0) return { km, fonte: `via cavalo ${cavalo.placa}`, dados: dadosDe(cavalo.placa) };
+    }
+    return null;
+  }, [odometroDe, dadosDe, veiculos]);
+
+  // Auto-preenche hodômetro ao mudar a placa (só se campo estiver vazio)
   useEffect(() => {
-    const placa = formOS.placa;
-    if (!placa || formOS.hodometro) return;
-    const km = odometroDe(placa);
-    if (km != null && km > 0) setFormOS(f => ({ ...f, hodometro: String(km) }));
-  }, [formOS.placa, odometroDe]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!formOS.placa || formOS.hodometro) return;
+    const r = resolverKmSascar(formOS.placa);
+    if (r) setFormOS(f => ({ ...f, hodometro: String(r.km) }));
+  }, [formOS.placa, resolverKmSascar]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const placa = formLanc.placa;
-    if (!placa || formLanc.hodometro) return;
-    const km = odometroDe(placa);
-    if (km != null && km > 0) setFormLanc(f => ({ ...f, hodometro: String(km) }));
-  }, [formLanc.placa, odometroDe]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!formLanc.placa || formLanc.hodometro) return;
+    const r = resolverKmSascar(formLanc.placa);
+    if (r) setFormLanc(f => ({ ...f, hodometro: String(r.km) }));
+  }, [formLanc.placa, resolverKmSascar]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Helper: puxa manualmente da SASCAR (sobrescreve o campo)
   async function puxarOdometroSascar(campo) {
     await refetchSascar();
     const placa = campo === "os" ? formOS.placa : formLanc.placa;
-    const km = odometroDe(placa);
-    if (km == null) { alert("Sem posição SASCAR pra essa placa no momento."); return; }
-    if (campo === "os")   setFormOS(f => ({ ...f, hodometro: String(km) }));
-    if (campo === "lanc") setFormLanc(f => ({ ...f, hodometro: String(km) }));
+    const r = resolverKmSascar(placa);
+    if (!r) { alert("Sem posição SASCAR pra essa placa (nem para o cavalo atrelado)."); return; }
+    if (campo === "os")   setFormOS(f => ({ ...f, hodometro: String(r.km) }));
+    if (campo === "lanc") setFormLanc(f => ({ ...f, hodometro: String(r.km) }));
   }
 
   const [lancItens,       setLancItens]       = useState([]);                 // itens do lançamento sendo criado
@@ -2542,7 +2559,14 @@ export default function Manutencao() {
                     style={{ ...s.fieldInput, flex: 1 }}
                     value={formOS.hodometro}
                     onChange={e => setFormOS({ ...formOS, hodometro: e.target.value.replace(/\D/g, "") })}
-                    placeholder={formOS.placa ? (sascarLoading ? "Buscando SASCAR..." : (odometroDe(formOS.placa) != null ? `SASCAR: ${odometroDe(formOS.placa).toLocaleString("pt-BR")}` : "Ex: 350000")) : "Selecione a placa"}
+                    placeholder={
+                      formOS.placa
+                        ? (sascarLoading ? "Buscando SASCAR..." : (() => {
+                            const r = resolverKmSascar(formOS.placa);
+                            return r ? `SASCAR: ${r.km.toLocaleString("pt-BR")}${r.fonte.startsWith("via") ? ` (${r.fonte})` : ""}` : "Ex: 350000";
+                          })())
+                        : "Selecione a placa"
+                    }
                   />
                   <button
                     type="button"
@@ -2554,11 +2578,16 @@ export default function Manutencao() {
                     {sascarLoading ? "..." : "🛰 SASCAR"}
                   </button>
                 </div>
-                {formOS.placa && dadosDe(formOS.placa) && (
-                  <div style={{ fontSize: ".7rem", color: "#64748b", marginTop: 3 }}>
-                    Última posição: {dadosDe(formOS.placa).cidade || "—"}/{dadosDe(formOS.placa).uf || "--"} · {dadosDe(formOS.placa).dataPosicao ? new Date(dadosDe(formOS.placa).dataPosicao).toLocaleString("pt-BR") : "—"}
-                  </div>
-                )}
+                {(() => {
+                  const r = formOS.placa ? resolverKmSascar(formOS.placa) : null;
+                  if (!r?.dados) return null;
+                  return (
+                    <div style={{ fontSize: ".7rem", color: "#64748b", marginTop: 3 }}>
+                      {r.fonte.startsWith("via") && <strong style={{ color: "#ea580c" }}>Carreta — km puxado {r.fonte} · </strong>}
+                      Última posição: {r.dados.cidade || "—"}/{r.dados.uf || "--"} · {r.dados.dataPosicao ? new Date(r.dados.dataPosicao).toLocaleString("pt-BR") : "—"}
+                    </div>
+                  );
+                })()}
               </label>
 
               <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 4 }}>
@@ -2824,7 +2853,14 @@ export default function Manutencao() {
                       style={{ ...s.fieldInput, flex: 1 }}
                       value={formLanc.hodometro}
                       onChange={e => setFormLanc({ ...formLanc, hodometro: e.target.value.replace(/\D/g, "") })}
-                      placeholder={formLanc.placa ? (sascarLoading ? "Buscando SASCAR..." : (odometroDe(formLanc.placa) != null ? `SASCAR: ${odometroDe(formLanc.placa).toLocaleString("pt-BR")}` : "Ex: 350000")) : "Selecione a placa"}
+                      placeholder={
+                        formLanc.placa
+                          ? (sascarLoading ? "Buscando SASCAR..." : (() => {
+                              const r = resolverKmSascar(formLanc.placa);
+                              return r ? `SASCAR: ${r.km.toLocaleString("pt-BR")}${r.fonte.startsWith("via") ? ` (${r.fonte})` : ""}` : "Ex: 350000";
+                            })())
+                          : "Selecione a placa"
+                      }
                     />
                     <button
                       type="button"
@@ -2836,11 +2872,16 @@ export default function Manutencao() {
                       {sascarLoading ? "..." : "🛰 SASCAR"}
                     </button>
                   </div>
-                  {formLanc.placa && dadosDe(formLanc.placa) && (
-                    <div style={{ fontSize: ".7rem", color: "#64748b", marginTop: 3 }}>
-                      Última posição: {dadosDe(formLanc.placa).cidade || "—"}/{dadosDe(formLanc.placa).uf || "--"} · {dadosDe(formLanc.placa).dataPosicao ? new Date(dadosDe(formLanc.placa).dataPosicao).toLocaleString("pt-BR") : "—"}
-                    </div>
-                  )}
+                  {(() => {
+                    const r = formLanc.placa ? resolverKmSascar(formLanc.placa) : null;
+                    if (!r?.dados) return null;
+                    return (
+                      <div style={{ fontSize: ".7rem", color: "#64748b", marginTop: 3 }}>
+                        {r.fonte.startsWith("via") && <strong style={{ color: "#ea580c" }}>Carreta — km puxado {r.fonte} · </strong>}
+                        Última posição: {r.dados.cidade || "—"}/{r.dados.uf || "--"} · {r.dados.dataPosicao ? new Date(r.dados.dataPosicao).toLocaleString("pt-BR") : "—"}
+                      </div>
+                    );
+                  })()}
                 </label>
               </div>
 
