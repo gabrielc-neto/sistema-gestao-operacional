@@ -1014,8 +1014,21 @@ export default function Manutencao() {
     return null;
   }, [odometroDe, dadosDe, veiculos]);
 
-  // Auto-preenche/atualiza hodômetro toda vez que a placa muda.
-  // Sobrescreve o valor anterior (usuário pode digitar manual depois se quiser).
+  // Ao trocar a placa: refetch da SASCAR (backend tem cache 30s, seguro).
+  // O effect abaixo (que reage a resolverKmSascar) vai preencher assim que
+  // o hook atualizar o state.
+  useEffect(() => {
+    if (!formOS.placa) return;
+    refetchSascar();
+  }, [formOS.placa]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!formLanc.placa) return;
+    refetchSascar();
+  }, [formLanc.placa]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Preenche/atualiza hodômetro sempre que resolver retornar novo km
+  // (dispara na mudança de placa E quando o refetch da SASCAR completar).
   useEffect(() => {
     if (!formOS.placa) return;
     const r = resolverKmSascar(formOS.placa);
