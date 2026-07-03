@@ -40,6 +40,16 @@ EXTRAS = [
     ("financeiro.aprovar",  "Aprovar lancamentos financeiros",  "financeiro", "aprovar"),
     ("oc.aprovar",          "Aprovar ordens de carregamento",   "oc",         "aprovar"),
     ("historico.exportar",  "Exportar historico de auditoria",  "historico",  "exportar"),
+
+    # Manutencao granular por aba (retrocompat: quem nao tem NENHUMA dessas ve tudo)
+    ("manutencao.dashboard",     "Ver aba Dashboard (analytics)",         "manutencao", "aba_dashboard"),
+    ("manutencao.por_veiculo",   "Ver aba Por Veiculo (dashboard placa)", "manutencao", "aba_por_veiculo"),
+    ("manutencao.por_tipo",      "Ver aba Por Tipo",                       "manutencao", "aba_por_tipo"),
+    ("manutencao.alertas",       "Ver aba Alertas",                        "manutencao", "aba_alertas"),
+    ("manutencao.os_abertura",   "Ver aba Abertura de OS",                 "manutencao", "aba_os_abertura"),
+    ("manutencao.os_lancamento", "Ver aba Lancamento de OS (+ PDF/Ver)",   "manutencao", "aba_os_lancamento"),
+    ("manutencao.nf",            "Ver aba Lancamento de NF",               "manutencao", "aba_nf"),
+    ("manutencao.cadastros",     "Ver aba Cadastros",                      "manutencao", "aba_cadastros"),
 ]
 
 def build_permissoes():

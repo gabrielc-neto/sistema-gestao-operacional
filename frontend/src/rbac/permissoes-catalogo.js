@@ -33,6 +33,16 @@ const EXTRAS = [
   { nome: "financeiro.aprovar",  descricao: "Aprovar lançamentos financeiros", modulo: "financeiro", acao: "aprovar"  },
   { nome: "oc.aprovar",          descricao: "Aprovar ordens de carregamento",  modulo: "oc",         acao: "aprovar"  },
   { nome: "historico.exportar",  descricao: "Exportar histórico de auditoria", modulo: "historico",  acao: "exportar" },
+
+  // Manutenção — granular por aba (retrocompat: quem não tem NENHUMA dessas vê tudo)
+  { nome: "manutencao.dashboard",     descricao: "Ver aba Dashboard (analytics)",         modulo: "manutencao", acao: "aba_dashboard" },
+  { nome: "manutencao.por_veiculo",   descricao: "Ver aba Por Veículo (dashboard placa)", modulo: "manutencao", acao: "aba_por_veiculo" },
+  { nome: "manutencao.por_tipo",      descricao: "Ver aba Por Tipo",                       modulo: "manutencao", acao: "aba_por_tipo" },
+  { nome: "manutencao.alertas",       descricao: "Ver aba Alertas",                        modulo: "manutencao", acao: "aba_alertas" },
+  { nome: "manutencao.os_abertura",   descricao: "Ver aba Abertura de OS",                 modulo: "manutencao", acao: "aba_os_abertura" },
+  { nome: "manutencao.os_lancamento", descricao: "Ver aba Lançamento de OS (+ PDF/Ver)",   modulo: "manutencao", acao: "aba_os_lancamento" },
+  { nome: "manutencao.nf",            descricao: "Ver aba Lançamento de NF",               modulo: "manutencao", acao: "aba_nf" },
+  { nome: "manutencao.cadastros",     descricao: "Ver aba Cadastros",                      modulo: "manutencao", acao: "aba_cadastros" },
 ];
 
 function rotulo(modulo, acao) {
