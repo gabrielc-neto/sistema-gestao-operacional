@@ -2599,7 +2599,10 @@ export default function Manutencao() {
                   required
                 >
                   <option value="">— Selecione —</option>
-                  {Array.from(new Set(TIPOS_TODOS.map(t => t.grupo || "Outros"))).sort().map(grupo => (
+                  {/* OS é do veículo — grupo "Motorista" (NR-20, NR-35, CNH etc.) fica fora */}
+                  {Array.from(new Set(
+                    TIPOS_TODOS.filter(t => t.grupo !== "Motorista").map(t => t.grupo || "Outros")
+                  )).sort().map(grupo => (
                     <optgroup key={grupo} label={grupo}>
                       {TIPOS_TODOS.filter(t => (t.grupo || "Outros") === grupo).map(t => (
                         <option key={t.id} value={t.label}>{t.label}</option>
@@ -3641,7 +3644,10 @@ export default function Manutencao() {
                   required
                 >
                   <option value="">— Selecione —</option>
-                  {Array.from(new Set(TIPOS_TODOS.map(t => t.grupo || "Outros"))).sort().map(grupo => (
+                  {/* OS é do veículo — grupo "Motorista" (NR-20, NR-35, CNH etc.) fica fora */}
+                  {Array.from(new Set(
+                    TIPOS_TODOS.filter(t => t.grupo !== "Motorista").map(t => t.grupo || "Outros")
+                  )).sort().map(grupo => (
                     <optgroup key={grupo} label={grupo}>
                       {TIPOS_TODOS.filter(t => (t.grupo || "Outros") === grupo).map(t => (
                         <option key={t.id} value={t.label}>{t.label}</option>
