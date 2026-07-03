@@ -8,9 +8,10 @@ import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "fi
 import { db, storage } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
+import { gerarPdfOS } from "../utils/pdfOS";
 import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
-  FileText, Receipt, Settings, TrendingUp,
+  FileText, Receipt, Settings, TrendingUp, FileDown,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -2648,12 +2649,21 @@ export default function Manutencao() {
                         <td style={tdOS}>{os.motoristaNome}</td>
                         <td style={tdOS}>{os.hodometro != null ? os.hodometro : "—"}</td>
                         <td style={tdOS}>
-                          <button
-                            onClick={() => abrirConclusaoOS(os)}
-                            style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
-                          >
-                            Concluir
-                          </button>
+                          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                            <button
+                              onClick={() => gerarPdfOS(os)}
+                              style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 12px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:5 }}
+                              title="Gerar PDF pra enviar ao motorista"
+                            >
+                              <FileDown size={14} /> PDF
+                            </button>
+                            <button
+                              onClick={() => abrirConclusaoOS(os)}
+                              style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
+                            >
+                              Concluir
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ));
