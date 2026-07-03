@@ -7,6 +7,7 @@ import {
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
+import { useRBAC } from "../rbac/RBACContext";
 import LogoPontual from "../components/LogoPontual";
 import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import {
@@ -900,15 +901,32 @@ function SeletorAno({ anos, valor, onChange }) {
 // ── Componente ─────────────────────────────────────────────────────────────
 export default function Manutencao() {
   const { profile } = useAuth();
+  const { temPermissao } = useRBAC();
   const navigate    = useNavigate();
   const canDelete   = ["master","admin"].includes(profile?.role);
+
+  // Permissões granulares por aba (retrocompat: quem NÃO tem nenhuma sub-perm vê tudo)
+  const SUB_ABAS = ["dashboard","por_veiculo","por_tipo","alertas","os_abertura","os_lancamento","nf","cadastros"];
+  const usaSubPerms = SUB_ABAS.some(k => temPermissao(`manutencao.${k}`));
+  const podeVerAba = (sub) => !usaSubPerms || temPermissao(`manutencao.${sub}`);
 
   const [registros,      setRegistros]      = useState({});
   const [todosRegistros, setTodosRegistros] = useState([]);
   const [legacy,         setLegacy]         = useState([]);
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
-  const [aba,            setAba]            = useState("veiculo");
+  // Default de aba: primeira que o cargo tem permissão de ver
+  const primeiraAba = (
+    podeVerAba("por_veiculo")    ? "veiculo" :
+    podeVerAba("dashboard")      ? "dashboard" :
+    podeVerAba("por_tipo")       ? "tipo" :
+    podeVerAba("alertas")        ? "alertas" :
+    podeVerAba("os_abertura")    ? "os" :
+    podeVerAba("os_lancamento")  ? "os_lanc" :
+    podeVerAba("nf")             ? "lancamento" :
+    podeVerAba("cadastros")      ? "cadastros" : "veiculo"
+  );
+  const [aba,            setAba]            = useState(primeiraAba);
   const [placa,          setPlaca]          = useState("");
   const [busca,          setBusca]          = useState("");
   const [filtroSt,       setFiltroSt]       = useState("todos");
@@ -2077,55 +2095,70 @@ export default function Manutencao() {
         </div>
       </header>
 
-      {/* NAVBAR REFORMADA — ícones + agrupamento por função */}
+      {/* NAVBAR REFORMADA — ícones + agrupamento por função + guard RBAC */}
       <div style={s.navGroups} className="manut-navgroups">
-        {/* Grupo 1 — Visão executiva */}
-        <div style={s.navGroup}>
-          <span style={s.navGroupLabel}>Visão</span>
-          <NavTab icon={LayoutDashboard} label="Dashboard" active={aba==="dashboard"} onClick={() => setAba("dashboard")} accent="#0891b2" />
-        </div>
+        {podeVerAba("dashboard") && (
+          <div style={s.navGroup}>
+            <span style={s.navGroupLabel}>Visão</span>
+            <NavTab icon={LayoutDashboard} label="Dashboard" active={aba==="dashboard"} onClick={() => setAba("dashboard")} accent="#0891b2" />
+          </div>
+        )}
 
-        {/* Grupo 2 — Manutenção operacional */}
-        <div style={s.navGroup}>
-          <span style={s.navGroupLabel}>Manutenção</span>
-          <NavTab icon={Truck} label="Por Veículo" active={aba==="veiculo"} onClick={() => setAba("veiculo")} accent="#2563eb" />
-          <NavTab icon={ListChecks} label="Por Tipo" active={aba==="tipo"} onClick={() => setAba("tipo")} accent="#2563eb" />
-          <NavTab icon={AlertTriangle} label="Alertas" active={aba==="alertas"} onClick={() => setAba("alertas")} accent="#dc2626"
-            badge={alertaCount > 0 ? { text: alertaCount, color: "#dc2626" } : null} />
-        </div>
+        {(podeVerAba("por_veiculo") || podeVerAba("por_tipo") || podeVerAba("alertas")) && (
+          <div style={s.navGroup}>
+            <span style={s.navGroupLabel}>Manutenção</span>
+            {podeVerAba("por_veiculo") && (
+              <NavTab icon={Truck} label="Por Veículo" active={aba==="veiculo"} onClick={() => setAba("veiculo")} accent="#2563eb" />
+            )}
+            {podeVerAba("por_tipo") && (
+              <NavTab icon={ListChecks} label="Por Tipo" active={aba==="tipo"} onClick={() => setAba("tipo")} accent="#2563eb" />
+            )}
+            {podeVerAba("alertas") && (
+              <NavTab icon={AlertTriangle} label="Alertas" active={aba==="alertas"} onClick={() => setAba("alertas")} accent="#dc2626"
+                badge={alertaCount > 0 ? { text: alertaCount, color: "#dc2626" } : null} />
+            )}
+          </div>
+        )}
 
-        {/* Grupo 3 — Ordens de Serviço */}
-        <div style={s.navGroup}>
-          <span style={s.navGroupLabel}>Ordens de Serviço</span>
-          <NavTab icon={FilePlus2} label="Abertura" active={aba==="os"} onClick={() => setAba("os")} accent="#16a34a"
-            badge={ordensServico.length > 0 ? { text: ordensServico.length, color: "#16a34a" } : null} />
-          <NavTab icon={FileText} label="Lançamento" active={aba==="os_lanc"} onClick={() => setAba("os_lanc")} accent="#16a34a" />
-        </div>
+        {(podeVerAba("os_abertura") || podeVerAba("os_lancamento")) && (
+          <div style={s.navGroup}>
+            <span style={s.navGroupLabel}>Ordens de Serviço</span>
+            {podeVerAba("os_abertura") && (
+              <NavTab icon={FilePlus2} label="Abertura" active={aba==="os"} onClick={() => setAba("os")} accent="#16a34a"
+                badge={ordensServico.length > 0 ? { text: ordensServico.length, color: "#16a34a" } : null} />
+            )}
+            {podeVerAba("os_lancamento") && (
+              <NavTab icon={FileText} label="Lançamento" active={aba==="os_lanc"} onClick={() => setAba("os_lanc")} accent="#16a34a" />
+            )}
+          </div>
+        )}
 
-        {/* Grupo 4 — Financeiro */}
-        <div style={s.navGroup}>
-          <span style={s.navGroupLabel}>Financeiro</span>
-          <NavTab icon={Receipt} label="Lançamento de NF" active={aba==="lancamento"} onClick={() => setAba("lancamento")} accent="#4338ca"
-            badge={lancamentos.length > 0 ? { text: lancamentos.length, color: "#4338ca" } : null} />
-        </div>
+        {podeVerAba("nf") && (
+          <div style={s.navGroup}>
+            <span style={s.navGroupLabel}>Financeiro</span>
+            <NavTab icon={Receipt} label="Lançamento de NF" active={aba==="lancamento"} onClick={() => setAba("lancamento")} accent="#4338ca"
+              badge={lancamentos.length > 0 ? { text: lancamentos.length, color: "#4338ca" } : null} />
+          </div>
+        )}
 
-        {/* Grupo 5 — Config */}
-        <div style={s.navGroup}>
-          <span style={s.navGroupLabel}>Config</span>
-          <NavTab icon={Settings} label="Cadastros" active={aba==="cadastros"} onClick={() => setAba("cadastros")} accent="#64748b"
-            badge={itensCatalogo.length > 0 ? { text: itensCatalogo.length, color: "#64748b" } : null} />
-        </div>
+        {podeVerAba("cadastros") && (
+          <div style={s.navGroup}>
+            <span style={s.navGroupLabel}>Config</span>
+            <NavTab icon={Settings} label="Cadastros" active={aba==="cadastros"} onClick={() => setAba("cadastros")} accent="#64748b"
+              badge={itensCatalogo.length > 0 ? { text: itensCatalogo.length, color: "#64748b" } : null} />
+          </div>
+        )}
       </div>
 
       {/* ── ABA: DASHBOARD ANALYTICS ─────────────────────────────────── */}
-      {aba === "dashboard" && (
+      {aba === "dashboard" && podeVerAba("dashboard") && (
         <main style={s.main} className="pg-body">
           <DashboardAnalytics lancamentos={lancamentos} fmtBRLfn={fmtBRL} />
         </main>
       )}
 
       {/* ── ABA: POR VEÍCULO ──────────────────────────────────────────── */}
-      {aba === "veiculo" && (
+      {aba === "veiculo" && podeVerAba("por_veiculo") && (
         <main style={s.main} className="pg-body">
           <div style={s.veiculoRow}>
             <label style={s.veiculoLabel}>Veículo</label>
@@ -2223,7 +2256,7 @@ export default function Manutencao() {
       )}
 
       {/* ── ABA: POR TIPO ─────────────────────────────────────────────── */}
-      {aba === "tipo" && (
+      {aba === "tipo" && podeVerAba("por_tipo") && (
         <>
           <div style={{ padding:"12px 16px", borderBottom:"1px solid var(--border)", display:"flex", flexDirection:"column", gap:10 }}>
             {["Documentação","Motorista","Mecânica"].map(grupo => {
@@ -2327,7 +2360,7 @@ export default function Manutencao() {
       )}
 
       {/* ── ABA: ALERTAS ──────────────────────────────────────────────── */}
-      {aba === "alertas" && (
+      {aba === "alertas" && podeVerAba("alertas") && (
         <>
           <div style={s.toolbar} className="pg-toolbar">
             <div style={{ position:"relative", flex:1, minWidth:160 }}>
@@ -2400,7 +2433,7 @@ export default function Manutencao() {
       )}
 
       {/* ── ABA: ORDENS DE SERVIÇO ────────────────────────────────────── */}
-      {aba === "os" && (
+      {aba === "os" && podeVerAba("os_abertura") && (
         <main style={s.main} className="pg-body">
           {/* Formulário de nova OS */}
           <div style={{ background: "#fff", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
@@ -2606,7 +2639,7 @@ export default function Manutencao() {
       )}
 
       {/* ── ABA: LANÇAMENTO DE OS (conclusão — registra KM saída, mecânico, oficina, serviço executado) ── */}
-      {aba === "os_lanc" && (
+      {aba === "os_lanc" && podeVerAba("os_lancamento") && (
         <main style={s.main} className="pg-body">
           <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
@@ -2683,7 +2716,7 @@ export default function Manutencao() {
       )}
 
       {/* ── ABA: LANÇAMENTO DE NF (registro de nota fiscal/custo) ─────────── */}
-      {aba === "lancamento" && (
+      {aba === "lancamento" && podeVerAba("nf") && (
         <main style={s.main} className="pg-body">
           {/* Dashboard de custos (visão diretoria) */}
           <DashboardCustos lancamentos={lancamentos} fmtBRLfn={fmtBRL} />
@@ -2935,7 +2968,7 @@ export default function Manutencao() {
       )}
 
       {/* ── ABA: CADASTROS (catálogo de tipos / serviços / peças) ─────── */}
-      {aba === "cadastros" && (
+      {aba === "cadastros" && podeVerAba("cadastros") && (
         <main style={s.main} className="pg-body">
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))", gap:16 }}>
             {[
