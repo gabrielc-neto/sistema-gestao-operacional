@@ -2854,10 +2854,24 @@ export default function Manutencao() {
                       <td style={{ ...tdOS, maxWidth: 360, whiteSpace: "normal", color: "#475569" }}>{os.obs || "—"}</td>
                       <td style={tdOS}>
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                          <button
+                            onClick={() => visualizarPdfOS(os)}
+                            style={{ background:"#f1f5f9", border:"none", color:"#334155", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:4 }}
+                            title="Visualizar em nova aba"
+                          >
+                            <Eye size={12} /> Ver
+                          </button>
+                          <button
+                            onClick={() => gerarPdfOS(os)}
+                            style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:4 }}
+                            title="Baixar PDF"
+                          >
+                            <FileDown size={12} /> PDF
+                          </button>
                           {editavel && (
                             <button
                               onClick={() => abrirEditOS(os)}
-                              style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}
+                              style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}
                             >
                               Editar
                             </button>
@@ -2925,28 +2939,12 @@ export default function Manutencao() {
                         <td style={tdOS}>{os.motoristaNome}</td>
                         <td style={tdOS}>{os.hodometro != null ? os.hodometro : "—"}</td>
                         <td style={tdOS}>
-                          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                            <button
-                              onClick={() => visualizarPdfOS(os)}
-                              style={{ background:"#f1f5f9", border:"none", color:"#334155", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 12px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:5 }}
-                              title="Visualizar em nova aba (imprimir/salvar pelo browser)"
-                            >
-                              <Eye size={14} /> Ver
-                            </button>
-                            <button
-                              onClick={() => gerarPdfOS(os)}
-                              style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 12px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:5 }}
-                              title="Baixar PDF direto"
-                            >
-                              <FileDown size={14} /> PDF
-                            </button>
-                            <button
-                              onClick={() => abrirConclusaoOS(os)}
-                              style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
-                            >
-                              Concluir
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => abrirConclusaoOS(os)}
+                            style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
+                          >
+                            Concluir
+                          </button>
                         </td>
                       </tr>
                     ));
