@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   collection, getDocs, setDoc, deleteDoc, addDoc, updateDoc,
   doc, query, orderBy,
@@ -962,6 +962,8 @@ export default function Manutencao() {
   const { temPermissao } = useRBAC();
   const { odometroDe, dadosDe, loading: sascarLoading, ultima: sascarUltima, refetch: refetchSascar } = useOdometrosSascar();
   const navigate    = useNavigate();
+  const [searchParams] = useSearchParams();
+  const abaInicialUrl = searchParams.get("aba"); // ?aba=os vem do Dashboard "Ver todas"
   const canDelete   = ["master","admin"].includes(profile?.role);
 
   // Permissões granulares por aba (retrocompat: quem NÃO tem nenhuma sub-perm vê tudo)
@@ -974,8 +976,11 @@ export default function Manutencao() {
   const [legacy,         setLegacy]         = useState([]);
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
-  // Default de aba: primeira que o cargo tem permissão de ver
+  // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","os","os_lanc","lancamento","cadastros"];
+  const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
+    (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
     podeVerAba("por_veiculo")    ? "veiculo" :
     podeVerAba("dashboard")      ? "dashboard" :
     podeVerAba("por_tipo")       ? "tipo" :
