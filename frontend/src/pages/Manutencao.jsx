@@ -622,17 +622,33 @@ function SearchSelect({ value, onChange, options, onAdd, placeholder }) {
 // ── Dashboard Analytics — visão executiva com gráficos recharts ───────────
 const CORES_STATUS = { normal: "#16a34a", atencao: "#f59e0b", critico: "#dc2626" };
 
-function DashboardAnalytics({ lancamentos, fmtBRLfn }) {
+function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
   const agoraAno = new Date().getFullYear();
-  // Anos disponíveis a partir dos dados
+
+  // Filtro de período (aplica antes de tudo)
+  const [periodo, setPeriodo] = useState("ano");
+  const [customIni, setCustomIni] = useState("");
+  const [customFim, setCustomFim] = useState("");
+
+  const lancamentos = useMemo(() => {
+    const agora = new Date();
+    const ini = inicioPeriodo(periodo, agora, customIni);
+    const fim = fimPeriodo(periodo, agora, customFim);
+    return (lancamentosRaw || []).filter(l => {
+      const t = new Date(l.criadoEm || l.dataHora).getTime();
+      return Number.isFinite(t) && t >= ini && t <= fim;
+    });
+  }, [lancamentosRaw, periodo, customIni, customFim]);
+
+  // Anos disponíveis a partir dos dados brutos (sem filtro — o seletor precisa ver todos)
   const anosDisponiveis = useMemo(() => {
     const set = new Set([agoraAno]);
-    for (const l of (lancamentos || [])) {
+    for (const l of (lancamentosRaw || [])) {
       const t = new Date(l.criadoEm || l.dataHora);
       if (Number.isFinite(t.getTime())) set.add(t.getFullYear());
     }
     return Array.from(set).sort((a, b) => b - a);
-  }, [lancamentos, agoraAno]);
+  }, [lancamentosRaw, agoraAno]);
 
   const [anoBarras, setAnoBarras] = useState(agoraAno);
   const [anoLinhas, setAnoLinhas] = useState(agoraAno);
@@ -728,6 +744,47 @@ function DashboardAnalytics({ lancamentos, fmtBRLfn }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* TOOLBAR DE PERÍODO */}
+      <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+        <div>
+          <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: "1rem", fontWeight: 700 }}>Dashboard analytics</h2>
+          <p style={{ margin: "3px 0 0", fontSize: ".75rem", color: "#64748b" }}>
+            {lancamentos.length} lançamento{lancamentos.length === 1 ? "" : "s"} no período selecionado
+          </p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+          <div style={{ display: "flex", gap: 6, padding: 6, background: "#f1f5f9", borderRadius: 10, flexWrap: "wrap" }}>
+            {PERIODOS_LANC.map(p => (
+              <button key={p.key} type="button" onClick={() => setPeriodo(p.key)}
+                style={{ padding: "6px 14px", borderRadius: 7, border: "none", fontSize: ".8rem", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                  background: periodo === p.key ? "#1a3a5c" : "transparent",
+                  color: periodo === p.key ? "#fff" : "#64748b",
+                }}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+          {periodo === "custom" && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".72rem", fontWeight: 600, color: "#64748b" }}>
+                De: <input type="date" value={customIni} onChange={e => setCustomIni(e.target.value)}
+                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: ".78rem", fontFamily: "inherit" }} />
+              </label>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".72rem", fontWeight: 600, color: "#64748b" }}>
+                Até: <input type="date" value={customFim} onChange={e => setCustomFim(e.target.value)}
+                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: ".78rem", fontFamily: "inherit" }} />
+              </label>
+              {(customIni || customFim) && (
+                <button type="button" onClick={() => { setCustomIni(""); setCustomFim(""); }}
+                  style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #cbd5e1", background: "transparent", fontSize: ".7rem", color: "#64748b", cursor: "pointer", fontFamily: "inherit" }}>
+                  Limpar
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <div style={{ ...cardStyle, background: "linear-gradient(135deg, #1a3a5c, #234775)", color: "#fff", border: "none" }}>
