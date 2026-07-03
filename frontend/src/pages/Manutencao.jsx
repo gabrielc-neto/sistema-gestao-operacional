@@ -1014,15 +1014,16 @@ export default function Manutencao() {
     return null;
   }, [odometroDe, dadosDe, veiculos]);
 
-  // Auto-preenche hodômetro ao mudar a placa (só se campo estiver vazio)
+  // Auto-preenche/atualiza hodômetro toda vez que a placa muda.
+  // Sobrescreve o valor anterior (usuário pode digitar manual depois se quiser).
   useEffect(() => {
-    if (!formOS.placa || formOS.hodometro) return;
+    if (!formOS.placa) return;
     const r = resolverKmSascar(formOS.placa);
     if (r?.km) setFormOS(f => ({ ...f, hodometro: String(r.km) }));
   }, [formOS.placa, resolverKmSascar]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!formLanc.placa || formLanc.hodometro) return;
+    if (!formLanc.placa) return;
     const r = resolverKmSascar(formLanc.placa);
     if (r?.km) setFormLanc(f => ({ ...f, hodometro: String(r.km) }));
   }, [formLanc.placa, resolverKmSascar]); // eslint-disable-line react-hooks/exhaustive-deps
