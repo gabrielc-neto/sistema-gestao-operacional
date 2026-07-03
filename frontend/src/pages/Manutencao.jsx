@@ -68,7 +68,7 @@ const EMPTY_FORM = { data_realiz:"", venc:"", local:"", numero_doc:"", km_atual:
 
 // Abertura de OS — form vazio (bloqueia o veículo, NÃO tem custo)
 const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "", fornecedor: "", fornecedorCnpj: "" };
-const EMPTY_CONCLUSAO = { kmSaida: "", mecanico: "", oficina: "", servicoExecutado: "" };
+const EMPTY_CONCLUSAO = { kmSaida: "", mecanico: "", oficina: "", servicoExecutado: "", fornecedor: "", fornecedorCnpj: "" };
 
 // Lançamento de NF — registro de nota fiscal/custo (NÃO bloqueia o veículo)
 // Sugestões iniciais do "Tipo de lançamento" (campo é cadastrável — aceita novos)
@@ -1019,6 +1019,8 @@ export default function Manutencao() {
   const [formConclusao,   setFormConclusao]   = useState({ ...EMPTY_CONCLUSAO });
   const [erroConclusao,   setErroConclusao]   = useState("");
   const [salvandoConclusao, setSalvandoConclusao] = useState(false);
+  const [conclusaoItens,  setConclusaoItens]  = useState([]);                    // itens (servico/peca) do serviço executado
+  const [itemDraftConcl,  setItemDraftConcl]  = useState({ ...EMPTY_ITEM });     // item sendo digitado
   // Lançamento de NF (registro de nota fiscal/custo — NÃO bloqueia veículo)
   const [lancamentos,     setLancamentos]     = useState([]);
   const [formLanc,        setFormLanc]        = useState({ ...EMPTY_LANC });
@@ -1857,13 +1859,35 @@ export default function Manutencao() {
       mecanico: "",
       oficina: "",
       servicoExecutado: os.tipoServico || "",
+      fornecedor: os.fornecedor || "",
+      fornecedorCnpj: os.fornecedorCnpj || cnpjDoFornecedor(os.fornecedor || ""),
     });
+    setConclusaoItens([]);
+    setItemDraftConcl({ ...EMPTY_ITEM });
     setErroConclusao("");
   }
 
   function fecharConclusaoOS() {
     setConcluindoOS(null);
     setErroConclusao("");
+    setConclusaoItens([]);
+    setItemDraftConcl({ ...EMPTY_ITEM });
+  }
+
+  function adicionarItemConclusao() {
+    const item = (itemDraftConcl.item || "").trim();
+    if (!itemDraftConcl.tipoItem) { setErroConclusao("No item: escolha Serviço ou Peça."); return; }
+    if (!item) { setErroConclusao(`No item: informe o ${itemDraftConcl.tipoItem === "peca" ? "nome da peça" : "serviço"}.`); return; }
+    const quantidade = numOS(itemDraftConcl.quantidade) || 1;
+    const valorUnitario = numOS(itemDraftConcl.valorUnitario);
+    garantirItemCatalogo(itemDraftConcl.tipoItem, item);
+    setConclusaoItens(prev => [...prev, { tipoItem: itemDraftConcl.tipoItem, item, quantidade, valorUnitario, valorTotal: quantidade * valorUnitario }]);
+    setItemDraftConcl({ ...EMPTY_ITEM });
+    setErroConclusao("");
+  }
+
+  function removerItemConclusao(idx) {
+    setConclusaoItens(prev => prev.filter((_, i) => i !== idx));
   }
 
   async function salvarConclusaoOS(e) {
@@ -1882,6 +1906,19 @@ export default function Manutencao() {
     }
     setSalvandoConclusao(true);
     try {
+      const fornecedorNome = (formConclusao.fornecedor || "").trim();
+      const fornecedorCnpj = (formConclusao.fornecedorCnpj || "").trim();
+      if (fornecedorNome) {
+        await garantirItemCatalogo("fornecedor", fornecedorNome, { cnpj: fornecedorCnpj });
+      }
+      const itens = conclusaoItens.map(it => ({
+        tipoItem: it.tipoItem,
+        item: it.item,
+        quantidade: numOS(it.quantidade),
+        valorUnitario: numOS(it.valorUnitario),
+        valorTotal: numOS(it.quantidade) * numOS(it.valorUnitario),
+      }));
+      const valorTotal = itens.reduce((s, it) => s + it.valorTotal, 0);
       const agora = new Date().toISOString();
       const dados = {
         status: "finalizada",
@@ -1891,6 +1928,10 @@ export default function Manutencao() {
         mecanico: formConclusao.mecanico.trim(),
         oficina: formConclusao.oficina.trim(),
         servicoExecutado: formConclusao.servicoExecutado.trim(),
+        fornecedor: fornecedorNome,
+        fornecedorCnpj,
+        itens,
+        valorTotal,
       };
       await updateDoc(doc(db, "ordens_servico", os.id), dados);
       setOrdensServico(prev => prev.map(o => o.id === os.id ? { ...o, ...dados } : o));
@@ -2917,6 +2958,8 @@ export default function Manutencao() {
                     <th style={thOS}>Tipo</th>
                     <th style={thOS}>Motorista</th>
                     <th style={thOS}>KM entrada</th>
+                    <th style={thOS}>Fornecedor</th>
+                    <th style={thOS}>Total R$</th>
                     <th style={thOS}>Ações</th>
                   </tr>
                 </thead>
@@ -2925,7 +2968,7 @@ export default function Manutencao() {
                     const abertas = ordensServico.filter(o => osStatus(o) !== "finalizada");
                     if (abertas.length === 0) {
                       return (
-                        <tr><td colSpan={7} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+                        <tr><td colSpan={9} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
                           Nenhuma OS aberta — todas finalizadas
                         </td></tr>
                       );
@@ -2938,6 +2981,10 @@ export default function Manutencao() {
                         <td style={tdOS}>{os.tipoServico}</td>
                         <td style={tdOS}>{os.motoristaNome}</td>
                         <td style={tdOS}>{os.hodometro != null ? os.hodometro : "—"}</td>
+                        <td style={tdOS}>{os.fornecedor || <span style={{color:"#94a3b8"}}>—</span>}</td>
+                        <td style={{ ...tdOS, fontWeight: 700, color: os.valorTotal > 0 ? "#1a3a5c" : "#94a3b8" }}>
+                          {os.valorTotal > 0 ? fmtBRL(os.valorTotal) : "—"}
+                        </td>
                         <td style={tdOS}>
                           <button
                             onClick={() => abrirConclusaoOS(os)}
@@ -3658,15 +3705,138 @@ export default function Manutencao() {
               </label>
 
               <label style={s.fieldLabel}>
-                Serviço executado
+                Serviço executado (resumo)
                 <textarea
-                  style={{ ...s.fieldInput, resize: "vertical", minHeight: 80 }}
+                  style={{ ...s.fieldInput, resize: "vertical", minHeight: 60 }}
                   value={formConclusao.servicoExecutado}
                   onChange={e => setFormConclusao({ ...formConclusao, servicoExecutado: e.target.value })}
-                  placeholder="O que foi feito (peças trocadas, ajustes, diagnóstico…)"
+                  placeholder="Ex: revisão dos 60mil km, troca de filtros e óleo…"
                   required
                 />
               </label>
+
+              {/* Fornecedor + CNPJ */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div style={s.fieldLabel}>
+                  Fornecedor / Oficina
+                  <SearchSelect
+                    value={formConclusao.fornecedor}
+                    onChange={val => setFormConclusao({ ...formConclusao, fornecedor: val, fornecedorCnpj: cnpjDoFornecedor(val) || formConclusao.fornecedorCnpj })}
+                    options={opcoesCatalogo(itensCatalogo, "fornecedor")}
+                    onAdd={nome => garantirItemCatalogo("fornecedor", nome, { cnpj: formConclusao.fornecedorCnpj })}
+                    placeholder="Buscar ou cadastrar"
+                  />
+                </div>
+                <label style={s.fieldLabel}>
+                  CNPJ do fornecedor
+                  <input
+                    type="text"
+                    style={s.fieldInput}
+                    value={formConclusao.fornecedorCnpj}
+                    onChange={e => setFormConclusao({ ...formConclusao, fornecedorCnpj: e.target.value })}
+                    placeholder="Ex: 12.345.678/0001-90"
+                  />
+                </label>
+              </div>
+
+              {/* BLOCO ITENS (serviços/peças com valor) */}
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, marginTop: 4 }}>
+                <div style={{ fontSize: ".82rem", fontWeight: 700, color: "#1a3a5c", marginBottom: 8 }}>
+                  Itens do serviço (peças e mão de obra)
+                </div>
+
+                {/* Draft do próximo item */}
+                <div style={{ display: "grid", gridTemplateColumns: "110px 1fr 70px 110px auto", gap: 6, alignItems: "end", marginBottom: 8 }}>
+                  <label style={{ ...s.fieldLabel, fontSize: ".72rem" }}>
+                    Tipo
+                    <select
+                      style={s.fieldInput}
+                      value={itemDraftConcl.tipoItem}
+                      onChange={e => setItemDraftConcl({ ...itemDraftConcl, tipoItem: e.target.value })}
+                    >
+                      <option value="">—</option>
+                      <option value="servico">Serviço</option>
+                      <option value="peca">Peça</option>
+                    </select>
+                  </label>
+                  <div style={{ ...s.fieldLabel, fontSize: ".72rem" }}>
+                    {itemDraftConcl.tipoItem === "peca" ? "Peça" : "Serviço / descrição"}
+                    <SearchSelect
+                      value={itemDraftConcl.item}
+                      onChange={val => setItemDraftConcl({ ...itemDraftConcl, item: val })}
+                      options={opcoesCatalogo(itensCatalogo, itemDraftConcl.tipoItem || "servico")}
+                      onAdd={nome => itemDraftConcl.tipoItem && garantirItemCatalogo(itemDraftConcl.tipoItem, nome)}
+                      placeholder={itemDraftConcl.tipoItem === "peca" ? "Nome da peça" : "Descrição do serviço"}
+                    />
+                  </div>
+                  <label style={{ ...s.fieldLabel, fontSize: ".72rem" }}>
+                    Qtd
+                    <input
+                      type="number" min="0" step="0.01" inputMode="decimal"
+                      style={s.fieldInput}
+                      value={itemDraftConcl.quantidade}
+                      onChange={e => setItemDraftConcl({ ...itemDraftConcl, quantidade: e.target.value })}
+                      placeholder="1"
+                    />
+                  </label>
+                  <label style={{ ...s.fieldLabel, fontSize: ".72rem" }}>
+                    Valor unit. (R$)
+                    <input
+                      type="number" min="0" step="0.01" inputMode="decimal"
+                      style={s.fieldInput}
+                      value={itemDraftConcl.valorUnitario}
+                      onChange={e => setItemDraftConcl({ ...itemDraftConcl, valorUnitario: e.target.value })}
+                      placeholder="0,00"
+                    />
+                  </label>
+                  <button type="button" onClick={adicionarItemConclusao}
+                    style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: "#1a3a5c", color: "#fff", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: ".8rem" }}>
+                    + Add
+                  </button>
+                </div>
+
+                {/* Lista de itens já adicionados */}
+                {conclusaoItens.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: ".75rem", color: "#94a3b8", textAlign: "center", padding: "10px 0" }}>
+                    Nenhum item adicionado. Adicione peças e serviços com valores acima.
+                  </p>
+                ) : (
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".82rem" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>
+                        <th style={{ padding: 5, textAlign: "left", fontSize: ".7rem", fontWeight: 700 }}>Tipo</th>
+                        <th style={{ padding: 5, textAlign: "left", fontSize: ".7rem", fontWeight: 700 }}>Descrição</th>
+                        <th style={{ padding: 5, textAlign: "right", fontSize: ".7rem", fontWeight: 700 }}>Qtd</th>
+                        <th style={{ padding: 5, textAlign: "right", fontSize: ".7rem", fontWeight: 700 }}>Unit.</th>
+                        <th style={{ padding: 5, textAlign: "right", fontSize: ".7rem", fontWeight: 700 }}>Total</th>
+                        <th style={{ padding: 5, width: 24 }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {conclusaoItens.map((it, i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: 5, color: it.tipoItem === "peca" ? "#7c3aed" : "#0891b2", fontWeight: 600, textTransform: "capitalize" }}>{it.tipoItem}</td>
+                          <td style={{ padding: 5, color: "#0f172a" }}>{it.item}</td>
+                          <td style={{ padding: 5, textAlign: "right" }}>{it.quantidade}</td>
+                          <td style={{ padding: 5, textAlign: "right" }}>{fmtBRL(it.valorUnitario)}</td>
+                          <td style={{ padding: 5, textAlign: "right", fontWeight: 700, color: "#0f172a" }}>{fmtBRL(it.valorTotal)}</td>
+                          <td style={{ padding: 5 }}>
+                            <button type="button" onClick={() => removerItemConclusao(i)}
+                              style={{ background: "transparent", border: "none", color: "#dc2626", cursor: "pointer", fontSize: ".95rem" }}>✕</button>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr>
+                        <td colSpan={4} style={{ padding: 8, textAlign: "right", fontWeight: 700, color: "#1a3a5c" }}>Total geral:</td>
+                        <td style={{ padding: 8, textAlign: "right", fontWeight: 800, color: "#1a3a5c", fontSize: ".95rem" }}>
+                          {fmtBRL(conclusaoItens.reduce((s, it) => s + it.valorTotal, 0))}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                )}
+              </div>
 
               {erroConclusao && <p style={s.erroMsg}>{erroConclusao}</p>}
 
