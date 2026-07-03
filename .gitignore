@@ -46,3 +46,7 @@ docs/_jornada-seg.html
 # Python
 __pycache__/
 *.pyc
+
+# Tooling local (Claude Flow / orquestração — metadata de sessão, regenerado)
+.claude-flow/
+**/.claude-flow/
