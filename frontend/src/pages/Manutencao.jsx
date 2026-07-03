@@ -972,7 +972,13 @@ export default function Manutencao() {
   // carreta1/carreta2/carreta3, cavalo, atrelado_a, etc). Normaliza tudo
   // (remove hífen/espaços/pontuação) pra bater com o formato salvo.
   const CAMPOS_CARRETA = ["c1", "c2", "c3", "carreta1", "carreta2", "carreta3", "carreta"];
-  const normPlaca = (p) => String(p || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  // Remove sufixo "-N" que a SASCAR anexa (ex: "BBE9593-3" -> "BBE9593")
+  // e depois qualquer não-alfanumérico. Precisa bater com o hook useOdometrosSascar.
+  const normPlaca = (p) => String(p || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[-\s]\d+$/, "")
+    .replace(/[^A-Z0-9]/g, "");
 
   const resolverKmSascar = useCallback((placa) => {
     if (!placa) return null;
