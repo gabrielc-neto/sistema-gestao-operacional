@@ -2599,16 +2599,17 @@ export default function Manutencao() {
                   required
                 >
                   <option value="">— Selecione —</option>
-                  <optgroup label="Mecânica">
-                    {TIPOS_TODOS.filter(t => t.grupo === "Mecânica").map(t => (
-                      <option key={t.id} value={t.label}>{t.label}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Outro">
+                  {Array.from(new Set(TIPOS_TODOS.map(t => t.grupo || "Outros"))).sort().map(grupo => (
+                    <optgroup key={grupo} label={grupo}>
+                      {TIPOS_TODOS.filter(t => (t.grupo || "Outros") === grupo).map(t => (
+                        <option key={t.id} value={t.label}>{t.label}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                  <optgroup label="Rápidos (sem cadastro)">
                     <option value="Reparo geral">Reparo geral</option>
                     <option value="Limpeza">Limpeza</option>
                     <option value="Borracharia">Borracharia</option>
-                    <option value="Elétrica">Elétrica</option>
                     <option value="Lanternagem / Pintura">Lanternagem / Pintura</option>
                     <option value="Outro">Outro</option>
                   </optgroup>
@@ -3640,13 +3641,15 @@ export default function Manutencao() {
                   required
                 >
                   <option value="">— Selecione —</option>
-                  <optgroup label="Mecânica">
-                    {TIPOS_TODOS.filter(t => t.grupo === "Mecânica").map(t => (
-                      <option key={t.id} value={t.label}>{t.label}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Outro">
-                    {["Reparo geral","Limpeza","Borracharia","Elétrica","Lanternagem / Pintura","Outro"].map(o => (
+                  {Array.from(new Set(TIPOS_TODOS.map(t => t.grupo || "Outros"))).sort().map(grupo => (
+                    <optgroup key={grupo} label={grupo}>
+                      {TIPOS_TODOS.filter(t => (t.grupo || "Outros") === grupo).map(t => (
+                        <option key={t.id} value={t.label}>{t.label}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                  <optgroup label="Rápidos (sem cadastro)">
+                    {["Reparo geral","Limpeza","Borracharia","Lanternagem / Pintura","Outro"].map(o => (
                       <option key={o} value={o}>{o}</option>
                     ))}
                   </optgroup>
