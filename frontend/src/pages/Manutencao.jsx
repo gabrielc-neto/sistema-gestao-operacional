@@ -8,10 +8,10 @@ import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "fi
 import { db, storage } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
-import { gerarPdfOS } from "../utils/pdfOS";
+import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
-  FileText, Receipt, Settings, TrendingUp, FileDown,
+  FileText, Receipt, Settings, TrendingUp, FileDown, Eye,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -2651,9 +2651,16 @@ export default function Manutencao() {
                         <td style={tdOS}>
                           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                             <button
+                              onClick={() => visualizarPdfOS(os)}
+                              style={{ background:"#f1f5f9", border:"none", color:"#334155", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 12px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:5 }}
+                              title="Visualizar em nova aba (imprimir/salvar pelo browser)"
+                            >
+                              <Eye size={14} /> Ver
+                            </button>
+                            <button
                               onClick={() => gerarPdfOS(os)}
                               style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 12px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:5 }}
-                              title="Gerar PDF pra enviar ao motorista"
+                              title="Baixar PDF direto"
                             >
                               <FileDown size={14} /> PDF
                             </button>
