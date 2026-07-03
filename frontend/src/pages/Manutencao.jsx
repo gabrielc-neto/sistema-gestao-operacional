@@ -1081,6 +1081,19 @@ export default function Manutencao() {
     refetchSascar();
   }, [formOS.placa]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Ao abrir modal Concluir OS, força refetch SASCAR pra ter KM mais fresco possível
+  useEffect(() => {
+    if (concluindoOS?.placa) refetchSascar();
+  }, [concluindoOS?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-preenche kmSaida com odômetro atual SASCAR sempre que resolver
+  // retornar novo valor (mudança de placa ou refetch completar)
+  useEffect(() => {
+    if (!concluindoOS?.placa) return;
+    const r = resolverKmSascar(concluindoOS.placa);
+    if (r?.km) setFormConclusao(f => ({ ...f, kmSaida: String(r.km) }));
+  }, [concluindoOS?.id, resolverKmSascar]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!formLanc.placa) return;
     refetchSascar();
@@ -3670,16 +3683,36 @@ export default function Manutencao() {
 
             <form onSubmit={salvarConclusaoOS} style={s.form}>
               <label style={s.fieldLabel}>
-                KM de saída
-                <input
-                  type="number" min="0" step="1" inputMode="numeric"
-                  style={s.fieldInput}
-                  value={formConclusao.kmSaida}
-                  onChange={e => setFormConclusao({ ...formConclusao, kmSaida: e.target.value.replace(/\D/g, "") })}
-                  placeholder={concluindoOS.hodometro != null ? `≥ ${concluindoOS.hodometro}` : "Ex: 350500"}
-                  required
-                  autoFocus
-                />
+                KM de saída {(() => {
+                  const r = resolverKmSascar(concluindoOS.placa);
+                  if (r?.km) return <span style={{ fontSize: ".7rem", color: "#ea580c", fontWeight: 600 }}> · 🛰 SASCAR</span>;
+                  return null;
+                })()}
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    type="number" min="0" step="1" inputMode="numeric"
+                    style={{ ...s.fieldInput, flex: 1 }}
+                    value={formConclusao.kmSaida}
+                    onChange={e => setFormConclusao({ ...formConclusao, kmSaida: e.target.value.replace(/\D/g, "") })}
+                    placeholder={concluindoOS.hodometro != null ? `≥ ${concluindoOS.hodometro}` : "Ex: 350500"}
+                    required
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await refetchSascar();
+                      const r = resolverKmSascar(concluindoOS.placa);
+                      if (!r?.km) { alert("Sem posição SASCAR disponível pra essa placa (nem via cavalo atrelado)."); return; }
+                      setFormConclusao(f => ({ ...f, kmSaida: String(r.km) }));
+                    }}
+                    disabled={sascarLoading}
+                    title="Atualizar KM pela SASCAR"
+                    style={{ padding: "0 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: sascarLoading ? "#f1f5f9" : "#ea580c", color: sascarLoading ? "#94a3b8" : "#fff", fontWeight: 700, fontSize: ".78rem", cursor: sascarLoading ? "not-allowed" : "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+                  >
+                    {sascarLoading ? "..." : "🛰"}
+                  </button>
+                </div>
               </label>
 
               <label style={s.fieldLabel}>
