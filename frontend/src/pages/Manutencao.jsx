@@ -1152,7 +1152,8 @@ export default function Manutencao() {
   const [itensCatalogo,   setItensCatalogo]   = useState([]);
   // tela de Cadastros (gerenciar catálogo)
   const [novoCat,         setNovoCat]         = useState({ tipo_lancamento: "", servico: "", peca: "", fornecedor: "" });
-  const [editItemCat,     setEditItemCat]     = useState(null); // { id, nome }
+  const [novoCatCnpj,     setNovoCatCnpj]     = useState(""); // CNPJ do novo fornecedor (só a seção fornecedor usa)
+  const [editItemCat,     setEditItemCat]     = useState(null); // { id, nome, cnpj }
   // tipos de manutenção personalizados (criados pelo usuário, gravados no Firestore)
   const [tiposCustom,     setTiposCustom]     = useState([]);
   const [novoTipo,        setNovoTipo]        = useState({ label: "", grupo: "Mecânica", desc: "", campos: ["data_realiz","venc","local","resp","obs"] });
@@ -2129,9 +2130,11 @@ export default function Manutencao() {
     }
     try {
       const payload = { tipo, nome: nm, criadoEm: new Date().toISOString(), criadoPor: quemSou() };
+      if (tipo === "fornecedor" && novoCatCnpj.trim()) payload.cnpj = novoCatCnpj.trim();
       const ref = await addDoc(collection(db, "itens_manutencao"), payload);
       setItensCatalogo(prev => [...prev, { id: ref.id, ...payload }].sort((a, b) => (a.nome || "").localeCompare(b.nome || "")));
       setNovoCat(prev => ({ ...prev, [tipo]: "" }));
+      if (tipo === "fornecedor") setNovoCatCnpj("");
     } catch (e) {
       alert("Erro ao cadastrar: " + e.message);
     }
@@ -2141,9 +2144,12 @@ export default function Manutencao() {
     if (!editItemCat) return;
     const nm = (editItemCat.nome || "").trim();
     if (!nm) return;
+    const cnpj = (editItemCat.cnpj || "").trim();
     try {
-      await updateDoc(doc(db, "itens_manutencao", editItemCat.id), { nome: nm, editadoEm: new Date().toISOString(), editadoPor: quemSou() });
-      setItensCatalogo(prev => prev.map(i => (i.id === editItemCat.id ? { ...i, nome: nm } : i)).sort((a, b) => (a.nome || "").localeCompare(b.nome || "")));
+      const patch = { nome: nm, editadoEm: new Date().toISOString(), editadoPor: quemSou() };
+      if (cnpj !== undefined) patch.cnpj = cnpj;
+      await updateDoc(doc(db, "itens_manutencao", editItemCat.id), patch);
+      setItensCatalogo(prev => prev.map(i => (i.id === editItemCat.id ? { ...i, nome: nm, cnpj } : i)).sort((a, b) => (a.nome || "").localeCompare(b.nome || "")));
       setEditItemCat(null);
     } catch (e) {
       alert("Erro ao renomear: " + e.message);
@@ -3318,15 +3324,26 @@ export default function Manutencao() {
                     <span style={{ ...s.osBadge, background:sec.bg, color:sec.cor }}>{itens.length}</span>
                     <h3 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>{sec.titulo}</h3>
                   </div>
-                  <div style={{ padding:"0.85rem 1rem", display:"flex", gap:8, borderBottom:"1px solid #f1f5f9" }}>
-                    <input
-                      style={{ ...s.fieldInput, flex:1 }}
-                      value={novoCat[sec.tipo]}
-                      onChange={e => setNovoCat(prev => ({ ...prev, [sec.tipo]: e.target.value }))}
-                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addItemCat(sec.tipo); } }}
-                      placeholder={`Novo ${sec.singular}...`}
-                    />
-                    <button type="button" style={s.saveBtn} onClick={() => addItemCat(sec.tipo)}>Adicionar</button>
+                  <div style={{ padding:"0.85rem 1rem", display:"flex", flexDirection:"column", gap:8, borderBottom:"1px solid #f1f5f9" }}>
+                    <div style={{ display:"flex", gap:8 }}>
+                      <input
+                        style={{ ...s.fieldInput, flex:1 }}
+                        value={novoCat[sec.tipo]}
+                        onChange={e => setNovoCat(prev => ({ ...prev, [sec.tipo]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addItemCat(sec.tipo); } }}
+                        placeholder={sec.tipo === "fornecedor" ? "Nome / razão social..." : `Novo ${sec.singular}...`}
+                      />
+                      <button type="button" style={s.saveBtn} onClick={() => addItemCat(sec.tipo)}>Adicionar</button>
+                    </div>
+                    {sec.tipo === "fornecedor" && (
+                      <input
+                        style={{ ...s.fieldInput }}
+                        value={novoCatCnpj}
+                        onChange={e => setNovoCatCnpj(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addItemCat("fornecedor"); } }}
+                        placeholder="CNPJ (opcional) — ex: 12.345.678/0001-90"
+                      />
+                    )}
                   </div>
                   <div style={{ padding:"0.4rem 0", maxHeight:380, overflowY:"auto" }}>
                     {itens.length === 0 ? (
@@ -3334,23 +3351,39 @@ export default function Manutencao() {
                     ) : itens.map(i => (
                       <div key={i.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 1rem", borderBottom:"1px solid #f8fafc" }}>
                         {editItemCat?.id === i.id ? (
-                          <>
+                          <div style={{ flex:1, display:"flex", flexDirection:"column", gap:6 }}>
                             <input
-                              style={{ ...s.fieldInput, flex:1 }}
+                              style={{ ...s.fieldInput }}
                               value={editItemCat.nome}
                               onChange={e => setEditItemCat({ ...editItemCat, nome: e.target.value })}
                               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); renomearItemCat(); } }}
                               autoFocus
                             />
-                            <button type="button" style={{ ...s.saveBtn, padding:"4px 12px" }} onClick={renomearItemCat}>Salvar</button>
-                            <button type="button" style={{ ...s.cancelBtn, padding:"4px 12px" }} onClick={() => setEditItemCat(null)}>Cancelar</button>
-                          </>
+                            {sec.tipo === "fornecedor" && (
+                              <input
+                                style={{ ...s.fieldInput }}
+                                value={editItemCat.cnpj || ""}
+                                onChange={e => setEditItemCat({ ...editItemCat, cnpj: e.target.value })}
+                                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); renomearItemCat(); } }}
+                                placeholder="CNPJ (opcional)"
+                              />
+                            )}
+                            <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
+                              <button type="button" style={{ ...s.saveBtn, padding:"4px 12px" }} onClick={renomearItemCat}>Salvar</button>
+                              <button type="button" style={{ ...s.cancelBtn, padding:"4px 12px" }} onClick={() => setEditItemCat(null)}>Cancelar</button>
+                            </div>
+                          </div>
                         ) : (
                           <>
-                            <span style={{ flex:1, color:"#334155", fontSize:".9rem" }}>{i.nome}</span>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ color:"#334155", fontSize:".9rem", fontWeight: sec.tipo === "fornecedor" ? 600 : 400 }}>{i.nome}</div>
+                              {sec.tipo === "fornecedor" && i.cnpj && (
+                                <div style={{ fontSize:".72rem", color:"#64748b", marginTop:2 }}>CNPJ: {i.cnpj}</div>
+                              )}
+                            </div>
                             {canDelete && (
                               <>
-                                <button type="button" onClick={() => setEditItemCat({ id:i.id, nome:i.nome })} style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}>Editar</button>
+                                <button type="button" onClick={() => setEditItemCat({ id:i.id, nome:i.nome, cnpj: i.cnpj || "" })} style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}>Editar</button>
                                 <button type="button" onClick={() => excluirItemCat(i)} style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}>Excluir</button>
                               </>
                             )}
