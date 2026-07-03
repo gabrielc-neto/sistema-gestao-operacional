@@ -42,7 +42,6 @@ function buildHtml(os) {
           </td>
           <td style="vertical-align:top; padding-left:16px; border-left:3px solid #1a3a5c;">
             <div style="font-size:13px; font-weight:800; color:#1a3a5c; letter-spacing:0.01em;">${esc(EMPRESA.razao)}</div>
-            <div style="font-size:11px; color:#475569; margin-top:2px;">CNPJ: <strong>${esc(EMPRESA.cnpj)}</strong> · IE: ${esc(EMPRESA.ie)}</div>
             <div style="font-size:11px; color:#475569; margin-top:2px;">${esc(EMPRESA.endereco)}</div>
             <div style="font-size:11px; color:#475569; margin-top:2px;">Tel: ${esc(EMPRESA.telefone)} · ${esc(EMPRESA.email)}</div>
           </td>
@@ -91,8 +90,8 @@ function buildHtml(os) {
       <!-- INSTRUÇÕES -->
       <div style="border:1px solid #fbbf24; background:#fffbeb; border-radius:6px; padding:10px 14px; margin-bottom:16px;">
         <div style="font-size:11px; font-weight:800; color:#78350f; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px;">Orientações ao motorista</div>
-        <div style="font-size:11px; color:#78350f; line-height:1.45;">
-          Apresentar este documento na oficina · Não iniciar viagem antes da conclusão · Comunicar imediatamente qualquer intercorrência à Logística Pontual pelo telefone <strong>${esc(EMPRESA.telefone)}</strong>.
+        <div style="font-size:11px; color:#78350f; line-height:1.5;">
+          Apresentar este documento na oficina. Não iniciar a viagem antes da conclusão do serviço. Comunicar imediatamente qualquer intercorrência ao responsável pela manutenção.
         </div>
       </div>
 
