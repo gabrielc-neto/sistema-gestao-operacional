@@ -966,25 +966,45 @@ export default function Manutencao() {
   const [lancamentos,     setLancamentos]     = useState([]);
   const [formLanc,        setFormLanc]        = useState({ ...EMPTY_LANC });
 
-  // Resolve o odômetro SASCAR de uma placa. Se for carreta (sem rastreador),
-  // acha o cavalo atrelado (via campos c1/c2/c3) e usa o odômetro dele.
-  // IMPORTANTE: normaliza tudo (remove hífen/espaços) porque as placas nas
-  // colunas c1/c2/c3 podem estar com formato diferente (ex: "SEF1H29-2" vs "SEF1H292").
+  // Resolve o odômetro SASCAR de uma placa.
+  // Se placa é carreta (sem rastreador), acha o cavalo que tem ela atrelada
+  // (procura em QUALQUER campo do cavalo — c1/c2/c3 mais comum, mas também
+  // carreta1/carreta2/carreta3, cavalo, atrelado_a, etc). Normaliza tudo
+  // (remove hífen/espaços/pontuação) pra bater com o formato salvo.
+  const CAMPOS_CARRETA = ["c1", "c2", "c3", "carreta1", "carreta2", "carreta3", "carreta"];
+  const normPlaca = (p) => String(p || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+
   const resolverKmSascar = useCallback((placa) => {
     if (!placa) return null;
-    const norm = (p) => String(p || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const alvoN = norm(placa);
-    // 1) Tenta direto (cavalo com rastreador)
+    const alvoN = normPlaca(placa);
+    if (!alvoN) return null;
+    // 1) Tenta direto (a placa em si tem rastreador?)
     let km = odometroDe(alvoN);
     if (km != null && km > 0) return { km, fonte: alvoN, dados: dadosDe(alvoN) };
-    // 2) Carreta: acha o cavalo que tem essa placa em c1/c2/c3 (comparação normalizada)
-    const cavalo = veiculos.find(v =>
-      [v.c1, v.c2, v.c3].some(p => norm(p) === alvoN)
-    );
+
+    // 2) A placa é uma carreta: acha qual cavalo (veiculos.tipo !== 'carreta')
+    // tem essa placa como carreta atrelada
+    const cavalo = veiculos.find(v => {
+      if (v.tipo === "carreta") return false;
+      return CAMPOS_CARRETA.some(k => normPlaca(v[k]) === alvoN);
+    });
     if (cavalo) {
       km = odometroDe(cavalo.placa);
       if (km != null && km > 0) return { km, fonte: `via cavalo ${cavalo.placa}`, dados: dadosDe(cavalo.placa) };
+      // Cavalo encontrado mas sem posição SASCAR — mesmo assim informa a fonte
+      return { km: null, fonte: `cavalo ${cavalo.placa} sem posição SASCAR`, dados: null };
     }
+
+    // 3) Debug: log detalhado no console pra diagnosticar
+    console.warn("[SASCAR] Placa sem match:", {
+      alvo: alvoN,
+      placaOriginal: placa,
+      totalVeiculos: veiculos.length,
+      cavalosComCarretas: veiculos
+        .filter(v => v.tipo !== "carreta" && CAMPOS_CARRETA.some(k => v[k]))
+        .map(v => ({ placa: v.placa, ...Object.fromEntries(CAMPOS_CARRETA.filter(k => v[k]).map(k => [k, v[k]])) }))
+        .slice(0, 5),
+    });
     return null;
   }, [odometroDe, dadosDe, veiculos]);
 
@@ -992,20 +1012,27 @@ export default function Manutencao() {
   useEffect(() => {
     if (!formOS.placa || formOS.hodometro) return;
     const r = resolverKmSascar(formOS.placa);
-    if (r) setFormOS(f => ({ ...f, hodometro: String(r.km) }));
+    if (r?.km) setFormOS(f => ({ ...f, hodometro: String(r.km) }));
   }, [formOS.placa, resolverKmSascar]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!formLanc.placa || formLanc.hodometro) return;
     const r = resolverKmSascar(formLanc.placa);
-    if (r) setFormLanc(f => ({ ...f, hodometro: String(r.km) }));
+    if (r?.km) setFormLanc(f => ({ ...f, hodometro: String(r.km) }));
   }, [formLanc.placa, resolverKmSascar]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function puxarOdometroSascar(campo) {
     await refetchSascar();
     const placa = campo === "os" ? formOS.placa : formLanc.placa;
     const r = resolverKmSascar(placa);
-    if (!r) { alert("Sem posição SASCAR pra essa placa (nem para o cavalo atrelado)."); return; }
+    if (!r) {
+      alert(`Placa ${placa} não tem posição SASCAR e não achei cavalo atrelado a ela. Confere no cadastro da Frota se a carreta está preenchida em algum cavalo (campos c1/c2/c3).`);
+      return;
+    }
+    if (r.km == null) {
+      alert(`Achei o ${r.fonte}, mas ele também está sem posição SASCAR no momento.`);
+      return;
+    }
     if (campo === "os")   setFormOS(f => ({ ...f, hodometro: String(r.km) }));
     if (campo === "lanc") setFormLanc(f => ({ ...f, hodometro: String(r.km) }));
   }
