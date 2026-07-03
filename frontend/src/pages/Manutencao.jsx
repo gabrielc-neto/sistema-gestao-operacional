@@ -8,6 +8,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "fi
 import { db, storage } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import { useRBAC } from "../rbac/RBACContext";
+import { useOdometrosSascar } from "../hooks/useOdometrosSascar";
 import LogoPontual from "../components/LogoPontual";
 import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import {
@@ -902,6 +903,7 @@ function SeletorAno({ anos, valor, onChange }) {
 export default function Manutencao() {
   const { profile } = useAuth();
   const { temPermissao } = useRBAC();
+  const { odometroDe, dadosDe, loading: sascarLoading, ultima: sascarUltima, refetch: refetchSascar } = useOdometrosSascar();
   const navigate    = useNavigate();
   const canDelete   = ["master","admin"].includes(profile?.role);
 
@@ -963,6 +965,33 @@ export default function Manutencao() {
   // Lançamento de NF (registro de nota fiscal/custo — NÃO bloqueia veículo)
   const [lancamentos,     setLancamentos]     = useState([]);
   const [formLanc,        setFormLanc]        = useState({ ...EMPTY_LANC });
+
+  // Auto-preenche hodômetro com o odômetro atual da SASCAR quando a placa muda,
+  // mas só se o campo ainda estiver vazio (respeita edição manual).
+  useEffect(() => {
+    const placa = formOS.placa;
+    if (!placa || formOS.hodometro) return;
+    const km = odometroDe(placa);
+    if (km != null && km > 0) setFormOS(f => ({ ...f, hodometro: String(km) }));
+  }, [formOS.placa, odometroDe]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const placa = formLanc.placa;
+    if (!placa || formLanc.hodometro) return;
+    const km = odometroDe(placa);
+    if (km != null && km > 0) setFormLanc(f => ({ ...f, hodometro: String(km) }));
+  }, [formLanc.placa, odometroDe]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Helper: puxa manualmente da SASCAR (sobrescreve o campo)
+  async function puxarOdometroSascar(campo) {
+    await refetchSascar();
+    const placa = campo === "os" ? formOS.placa : formLanc.placa;
+    const km = odometroDe(placa);
+    if (km == null) { alert("Sem posição SASCAR pra essa placa no momento."); return; }
+    if (campo === "os")   setFormOS(f => ({ ...f, hodometro: String(km) }));
+    if (campo === "lanc") setFormLanc(f => ({ ...f, hodometro: String(km) }));
+  }
+
   const [lancItens,       setLancItens]       = useState([]);                 // itens do lançamento sendo criado
   const [itemDraft,       setItemDraft]       = useState({ ...EMPTY_ITEM });  // item em digitação
   const [salvandoLanc,    setSalvandoLanc]    = useState(false);
@@ -2507,13 +2536,29 @@ export default function Manutencao() {
 
               <label style={s.fieldLabel}>
                 Hodômetro (km)
-                <input
-                  type="number" min="0" step="1" inputMode="numeric"
-                  style={s.fieldInput}
-                  value={formOS.hodometro}
-                  onChange={e => setFormOS({ ...formOS, hodometro: e.target.value.replace(/\D/g, "") })}
-                  placeholder="Ex: 350000"
-                />
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    type="number" min="0" step="1" inputMode="numeric"
+                    style={{ ...s.fieldInput, flex: 1 }}
+                    value={formOS.hodometro}
+                    onChange={e => setFormOS({ ...formOS, hodometro: e.target.value.replace(/\D/g, "") })}
+                    placeholder={formOS.placa ? (sascarLoading ? "Buscando SASCAR..." : (odometroDe(formOS.placa) != null ? `SASCAR: ${odometroDe(formOS.placa).toLocaleString("pt-BR")}` : "Ex: 350000")) : "Selecione a placa"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => puxarOdometroSascar("os")}
+                    disabled={!formOS.placa || sascarLoading}
+                    title="Puxar hodômetro atual da SASCAR"
+                    style={{ padding: "0 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: formOS.placa && !sascarLoading ? "#ea580c" : "#f1f5f9", color: formOS.placa && !sascarLoading ? "#fff" : "#94a3b8", fontWeight: 700, fontSize: ".78rem", cursor: formOS.placa && !sascarLoading ? "pointer" : "not-allowed", fontFamily: "inherit", whiteSpace: "nowrap" }}
+                  >
+                    {sascarLoading ? "..." : "🛰 SASCAR"}
+                  </button>
+                </div>
+                {formOS.placa && dadosDe(formOS.placa) && (
+                  <div style={{ fontSize: ".7rem", color: "#64748b", marginTop: 3 }}>
+                    Última posição: {dadosDe(formOS.placa).cidade || "—"}/{dadosDe(formOS.placa).uf || "--"} · {dadosDe(formOS.placa).dataPosicao ? new Date(dadosDe(formOS.placa).dataPosicao).toLocaleString("pt-BR") : "—"}
+                  </div>
+                )}
               </label>
 
               <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 4 }}>
@@ -2773,13 +2818,29 @@ export default function Manutencao() {
 
                 <label style={s.fieldLabel}>
                   Hodômetro (km)
-                  <input
-                    type="number" min="0" step="1" inputMode="numeric"
-                    style={s.fieldInput}
-                    value={formLanc.hodometro}
-                    onChange={e => setFormLanc({ ...formLanc, hodometro: e.target.value.replace(/\D/g, "") })}
-                    placeholder="Ex: 350000"
-                  />
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input
+                      type="number" min="0" step="1" inputMode="numeric"
+                      style={{ ...s.fieldInput, flex: 1 }}
+                      value={formLanc.hodometro}
+                      onChange={e => setFormLanc({ ...formLanc, hodometro: e.target.value.replace(/\D/g, "") })}
+                      placeholder={formLanc.placa ? (sascarLoading ? "Buscando SASCAR..." : (odometroDe(formLanc.placa) != null ? `SASCAR: ${odometroDe(formLanc.placa).toLocaleString("pt-BR")}` : "Ex: 350000")) : "Selecione a placa"}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => puxarOdometroSascar("lanc")}
+                      disabled={!formLanc.placa || sascarLoading}
+                      title="Puxar hodômetro atual da SASCAR"
+                      style={{ padding: "0 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: formLanc.placa && !sascarLoading ? "#ea580c" : "#f1f5f9", color: formLanc.placa && !sascarLoading ? "#fff" : "#94a3b8", fontWeight: 700, fontSize: ".78rem", cursor: formLanc.placa && !sascarLoading ? "pointer" : "not-allowed", fontFamily: "inherit", whiteSpace: "nowrap" }}
+                    >
+                      {sascarLoading ? "..." : "🛰 SASCAR"}
+                    </button>
+                  </div>
+                  {formLanc.placa && dadosDe(formLanc.placa) && (
+                    <div style={{ fontSize: ".7rem", color: "#64748b", marginTop: 3 }}>
+                      Última posição: {dadosDe(formLanc.placa).cidade || "—"}/{dadosDe(formLanc.placa).uf || "--"} · {dadosDe(formLanc.placa).dataPosicao ? new Date(dadosDe(formLanc.placa).dataPosicao).toLocaleString("pt-BR") : "—"}
+                    </div>
+                  )}
                 </label>
               </div>
 
