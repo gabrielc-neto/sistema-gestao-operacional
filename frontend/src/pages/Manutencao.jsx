@@ -3310,7 +3310,7 @@ export default function Manutencao() {
       {/* ── ABA: CADASTROS (catálogo de tipos / serviços / peças) ─────── */}
       {aba === "cadastros" && podeVerAba("cadastros") && (
         <main style={s.main} className="pg-body">
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))", gap:16 }}>
+          <div className="grid-auto-280 cadastros-grid">
             {[
               { tipo:"tipo_lancamento", titulo:"Tipos de lançamento", singular:"tipo de lançamento", cor:"#4338ca", bg:"#e0e7ff" },
               { tipo:"servico",         titulo:"Serviços",            singular:"serviço",             cor:"#1d4ed8", bg:"#dbeafe" },
@@ -3319,7 +3319,7 @@ export default function Manutencao() {
             ].map(sec => {
               const itens = itensCatalogo.filter(i => i.tipo === sec.tipo).sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
               return (
-                <div key={sec.tipo} style={{ background:"#fff", borderRadius:12, boxShadow:"0 1px 3px rgba(0,0,0,0.06)", overflow:"hidden", display:"flex", flexDirection:"column" }}>
+                <div key={sec.tipo} className="cadastro-card" style={{ background:"#fff", borderRadius:12, boxShadow:"0 1px 3px rgba(0,0,0,0.06)", overflow:"hidden", display:"flex", flexDirection:"column", minWidth: 0 }}>
                   <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0", display:"flex", alignItems:"center", gap:8 }}>
                     <span style={{ ...s.osBadge, background:sec.bg, color:sec.cor }}>{itens.length}</span>
                     <h3 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>{sec.titulo}</h3>
@@ -3349,7 +3349,7 @@ export default function Manutencao() {
                     {itens.length === 0 ? (
                       <p style={{ textAlign:"center", color:"#94a3b8", fontSize:".85rem", padding:"1rem" }}>Nenhum cadastrado</p>
                     ) : itens.map(i => (
-                      <div key={i.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 1rem", borderBottom:"1px solid #f8fafc" }}>
+                      <div key={i.id} className="cadastro-item" style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 1rem", borderBottom:"1px solid #f8fafc" }}>
                         {editItemCat?.id === i.id ? (
                           <div style={{ flex:1, display:"flex", flexDirection:"column", gap:6 }}>
                             <input

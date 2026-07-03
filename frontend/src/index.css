@@ -102,6 +102,35 @@ input, select, textarea, button { font-family: inherit; }
   }
 }
 
+/* Aba Cadastros — Manutenção. Impede que os cards e itens
+   cortem/estourem em telas pequenas. */
+.cadastros-grid { min-width: 0; }
+.cadastro-card { min-width: 0; }
+.cadastro-item { min-width: 0; flex-wrap: nowrap; }
+.cadastro-item > div:first-child { min-width: 0; }
+.cadastro-item > div:first-child > div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 480px) {
+  .cadastro-item {
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    padding: 10px 12px !important;
+  }
+  .cadastro-item > div:first-child {
+    flex-basis: 100%;
+    margin-bottom: 6px;
+  }
+  .cadastro-item > div:first-child > div {
+    white-space: normal !important;
+    overflow: visible !important;
+  }
+  .cadastro-item > button {
+    flex: 1;
+    font-size: .78rem !important;
+    padding: 6px 10px !important;
+  }
+}
+
 /* Layout sidebar+content — colapsa em mobile */
 .layout-sidebar {
   display: grid;
