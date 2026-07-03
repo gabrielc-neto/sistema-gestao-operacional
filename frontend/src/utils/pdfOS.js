@@ -118,25 +118,60 @@ function buildHtml(os) {
   `;
 }
 
-export async function gerarPdfOS(os) {
-  const html = buildHtml(os);
-  // Cria container off-screen
+function buildPipeline(wrap, os) {
+  // Config compartilhada entre baixar e visualizar.
+  return {
+    filename: `OS-${os.numero || "sem-numero"}.pdf`,
+    margin: [12, 10, 12, 10],
+    image: { type: "jpeg", quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: 720 },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
+    pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+    source: wrap.firstElementChild,
+  };
+}
+
+function mountOffscreen(html) {
   const wrap = document.createElement("div");
   wrap.style.position = "fixed";
   wrap.style.left = "-10000px";
   wrap.style.top  = "0";
   wrap.innerHTML = html;
   document.body.appendChild(wrap);
+  return wrap;
+}
+
+export async function gerarPdfOS(os) {
+  const wrap = mountOffscreen(buildHtml(os));
   try {
     const { default: html2pdf } = await import("html2pdf.js");
-    await html2pdf().set({
-      filename: `OS-${os.numero || "sem-numero"}.pdf`,
-      margin: [12, 10, 12, 10], // top, right, bottom, left (mm)
-      image: { type: "jpeg", quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: 720 },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
-      pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-    }).from(wrap.firstElementChild).save();
+    const cfg = buildPipeline(wrap, os);
+    await html2pdf().set(cfg).from(cfg.source).save();
+  } finally {
+    wrap.remove();
+  }
+}
+
+// Abre o PDF em nova aba com o visualizador nativo do browser (com botões
+// de imprimir e baixar já embutidos). Não força download.
+export async function visualizarPdfOS(os) {
+  const wrap = mountOffscreen(buildHtml(os));
+  try {
+    const { default: html2pdf } = await import("html2pdf.js");
+    const cfg = buildPipeline(wrap, os);
+    const blob = await html2pdf().set(cfg).from(cfg.source).outputPdf("blob");
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank");
+    if (!win) {
+      // Popup bloqueado — cai no download como fallback e avisa
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = cfg.filename;
+      a.click();
+      alert("O navegador bloqueou a nova aba. Liberei o download do PDF.");
+    }
+    // Libera o blob após 1min (tempo do browser terminar de ler)
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   } finally {
     wrap.remove();
   }
