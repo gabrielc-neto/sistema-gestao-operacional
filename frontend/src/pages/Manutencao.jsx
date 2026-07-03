@@ -968,18 +968,19 @@ export default function Manutencao() {
 
   // Resolve o odômetro SASCAR de uma placa. Se for carreta (sem rastreador),
   // acha o cavalo atrelado (via campos c1/c2/c3) e usa o odômetro dele.
-  // Retorna { km, fonte } ou null.
+  // IMPORTANTE: normaliza tudo (remove hífen/espaços) porque as placas nas
+  // colunas c1/c2/c3 podem estar com formato diferente (ex: "SEF1H29-2" vs "SEF1H292").
   const resolverKmSascar = useCallback((placa) => {
     if (!placa) return null;
-    const alvo = String(placa).trim().toUpperCase();
+    const norm = (p) => String(p || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const alvoN = norm(placa);
     // 1) Tenta direto (cavalo com rastreador)
-    let km = odometroDe(alvo);
-    if (km != null && km > 0) return { km, fonte: alvo, dados: dadosDe(alvo) };
-    // 2) Carreta: acha o cavalo que tem essa placa em c1/c2/c3
-    const cavalo = veiculos.find(v => {
-      const carretas = [v.c1, v.c2, v.c3].map(p => String(p || "").trim().toUpperCase());
-      return carretas.includes(alvo);
-    });
+    let km = odometroDe(alvoN);
+    if (km != null && km > 0) return { km, fonte: alvoN, dados: dadosDe(alvoN) };
+    // 2) Carreta: acha o cavalo que tem essa placa em c1/c2/c3 (comparação normalizada)
+    const cavalo = veiculos.find(v =>
+      [v.c1, v.c2, v.c3].some(p => norm(p) === alvoN)
+    );
     if (cavalo) {
       km = odometroDe(cavalo.placa);
       if (km != null && km > 0) return { km, fonte: `via cavalo ${cavalo.placa}`, dados: dadosDe(cavalo.placa) };
