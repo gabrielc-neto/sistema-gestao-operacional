@@ -1079,15 +1079,6 @@ export default function Manutencao() {
     refetchSascar();
   }, [formOS.placa]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-preenche CNPJ do fornecedor ao selecionar um do catálogo
-  useEffect(() => {
-    if (!formOS.fornecedor) return;
-    const cnpj = cnpjDoFornecedor(formOS.fornecedor);
-    if (cnpj && cnpj !== formOS.fornecedorCnpj) {
-      setFormOS(f => ({ ...f, fornecedorCnpj: cnpj }));
-    }
-  }, [formOS.fornecedor, itensCatalogo]); // eslint-disable-line react-hooks/exhaustive-deps
-
   useEffect(() => {
     if (!formLanc.placa) return;
     refetchSascar();
@@ -2058,6 +2049,16 @@ export default function Manutencao() {
     const f = itensCatalogo.find(i => i.tipo === "fornecedor" && normNome(i.nome) === normNome(nm));
     return f?.cnpj || "";
   }
+
+  // Auto-preenche CNPJ do fornecedor ao selecionar um do catálogo
+  // (posicionado depois de itensCatalogo + cnpjDoFornecedor pra evitar TDZ)
+  useEffect(() => {
+    if (!formOS.fornecedor) return;
+    const cnpj = cnpjDoFornecedor(formOS.fornecedor);
+    if (cnpj && cnpj !== formOS.fornecedorCnpj) {
+      setFormOS(f => ({ ...f, fornecedorCnpj: cnpj }));
+    }
+  }, [formOS.fornecedor, itensCatalogo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // adiciona item ao catálogo pela tela de Cadastros (avisa se duplicado)
   async function addItemCat(tipo) {
