@@ -187,8 +187,11 @@ export default function Dashboard() {
         });
       }).catch(() => { falhas.manu = true; marcarErro(); });
 
-      getDocs(query(collection(db, "ordens_servico"), orderBy("criadoEm", "desc"), limit(5))).then(snap => {
-        setRecentOS(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      // Puxa 20 mais recentes e filtra client-side pra pegar só ABERTAS (5 primeiras)
+      getDocs(query(collection(db, "ordens_servico"), orderBy("criadoEm", "desc"), limit(20))).then(snap => {
+        const todas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const abertas = todas.filter(o => o.status !== "finalizada" && o.status !== "cancelada").slice(0, 5);
+        setRecentOS(abertas);
       }).catch(() => { falhas.os = true; marcarErro(); });
     }
 
@@ -333,11 +336,14 @@ export default function Dashboard() {
           <div style={st.panel}>
             <div style={st.panelHeader}>
               <Wrench size={16} color="#dc2626" />
-              <span style={st.panelTitle}>Últimas Ordens de Serviço</span>
-              <button style={st.panelLink} onClick={() => navigate("/manutencao")}>Ver todas →</button>
+              <span style={st.panelTitle}>
+                Ordens de Serviço abertas
+                {recentOS.length > 0 && <span style={{ marginLeft: 8, background: "#fee2e2", color: "#b91c1c", borderRadius: 20, padding: "2px 8px", fontSize: ".68rem", fontWeight: 800 }}>{recentOS.length}</span>}
+              </span>
+              <button style={st.panelLink} onClick={() => navigate("/manutencao?aba=os")}>Ver todas →</button>
             </div>
             {recentOS.length === 0 ? (
-              <div style={st.emptyMsg}>Nenhuma OS registrada</div>
+              <div style={st.emptyMsg}>Nenhuma OS aberta 🎉</div>
             ) : (
               <div className="dash-table-wrap">
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".78rem", minWidth:420 }}>
@@ -350,7 +356,7 @@ export default function Dashboard() {
                 </thead>
                 <tbody>
                   {recentOS.map((os, i) => {
-                    const stCfg = os.status === "concluida" ? { bg:"#dcfce7", fg:"#15803d", label:"Concluída" }
+                    const stCfg = os.status === "finalizada" ? { bg:"#dcfce7", fg:"#15803d", label:"Concluída" }
                                 : os.status === "cancelada" ? { bg:"#f1f5f9", fg:"#475569", label:"Cancelada" }
                                 : { bg:"#fef3c7", fg:"#b45309", label:"Aberta" };
                     return (
