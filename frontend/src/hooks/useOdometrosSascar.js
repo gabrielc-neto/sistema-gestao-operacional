@@ -15,7 +15,13 @@ export function useOdometrosSascar() {
   const [ultima,  setUltima]    = useState(null);
   const inflight = useRef(false);
 
-  const normPlaca = (p) => String(p || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  // Remove sufixo "-N" que a SASCAR anexa (ex: "BBE9593-3" -> "BBE9593")
+  // e depois qualquer não-alfanumérico restante.
+  const normPlaca = (p) => String(p || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[-\s]\d+$/, "")
+    .replace(/[^A-Z0-9]/g, "");
 
   const buscar = useCallback(async () => {
     if (inflight.current) return;
