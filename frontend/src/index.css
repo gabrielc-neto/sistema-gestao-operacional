@@ -102,33 +102,34 @@ input, select, textarea, button { font-family: inherit; }
   }
 }
 
-/* Aba Cadastros — Manutenção. Impede que os cards e itens
-   cortem/estourem em telas pequenas. */
+/* Aba Cadastros — Manutenção. Cards e itens respondem bem em qualquer largura,
+   sem cortar nomes nem esconder botões. */
 .cadastros-grid { min-width: 0; }
 .cadastro-card { min-width: 0; }
-.cadastro-item { min-width: 0; flex-wrap: nowrap; }
-.cadastro-item > div:first-child { min-width: 0; }
-.cadastro-item > div:first-child > div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Header do card (input Novo + botão Adicionar) — nunca corta o botão */
+.cadastro-card .cadastro-add-row { display: flex; gap: 8px; }
+.cadastro-card .cadastro-add-row input { min-width: 0; flex: 1; }
+.cadastro-card .cadastro-add-row button { flex-shrink: 0; }
+
+/* Linha do item na lista — nome quebra linha se preciso, sem ellipsis */
+.cadastro-item { min-width: 0; flex-wrap: wrap; row-gap: 4px; }
+.cadastro-item > div:first-child { min-width: 0; flex: 1 1 100%; }
+.cadastro-item > div:first-child > div { word-break: break-word; }
 
 @media (max-width: 480px) {
   .cadastro-item {
-    flex-wrap: wrap !important;
     align-items: flex-start !important;
     padding: 10px 12px !important;
-  }
-  .cadastro-item > div:first-child {
-    flex-basis: 100%;
-    margin-bottom: 6px;
-  }
-  .cadastro-item > div:first-child > div {
-    white-space: normal !important;
-    overflow: visible !important;
   }
   .cadastro-item > button {
     flex: 1;
     font-size: .78rem !important;
     padding: 6px 10px !important;
   }
+}
+@media (min-width: 481px) {
+  .cadastro-item > div:first-child { flex: 1 1 60%; }
 }
 
 /* Layout sidebar+content — colapsa em mobile */
