@@ -10,6 +10,7 @@ import {
   Truck, Link2, ClipboardList, Users, Wrench,
   History, Palmtree, MapPin, UserCog, ShieldCheck,
   Lock, AlertTriangle, ChevronRight, Building2, Briefcase, Clock,
+  CircleDot,
 } from "lucide-react";
 import { useRBAC } from "../rbac/RBACContext";
 
@@ -225,6 +226,7 @@ export default function Dashboard() {
       stat: kpi.ocsHoje != null ? `${kpi.ocsHoje} hoje · ${kpi.totalOCs} total` : null },
     { Icon:Users,         color:"#059669", bg:"#d1fae5", label:"Motoristas",              desc:"Cadastro, CNH e documentos",         module:"motoristas",  link:"/motoristas",
       stat: kpi.mAtivos != null ? `${kpi.mAtivos} ativos${kpi.emFerias > 0 ? ` · ${kpi.emFerias} em férias` : ""}` : null },
+    { Icon:CircleDot,     color:"#0f172a", bg:"#e2e8f0", label:"Gestão de Pneus",         desc:"Estoque, mapa por posição e CPK",    module:"pneus",       link:"/pneus",         stat: null },
     { Icon:Wrench,        color:"#dc2626", bg:"#fee2e2", label:"Manutenção",              desc:"Vencimentos e revisões",             module:"manutencao",  link:"/manutencao",
       stat: kpi.manuPend != null ? (kpi.manuVenc > 0 ? `${kpi.manuVenc} vencidos · ${kpi.manuPend} pendentes` : kpi.manuPend > 0 ? `${kpi.manuPend} em alerta` : "Tudo em dia") : null,
       statAlert: kpi.manuVenc > 0 },

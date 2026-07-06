@@ -14,6 +14,7 @@ export const MODULOS = [
   { id: "atrelamento", label: "Atrelamento" },
   { id: "oc",          label: "Ordens de Carregamento" },
   { id: "manutencao",  label: "Manutenção" },
+  { id: "pneus",       label: "Pneus" },
   { id: "ferias",      label: "Férias" },
   { id: "historico",   label: "Histórico" },
   { id: "relatorios",  label: "Relatórios" },

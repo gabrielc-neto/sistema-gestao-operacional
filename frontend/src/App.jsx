@@ -13,6 +13,7 @@ const Motoristas  = lazy(() => import("./pages/Motoristas"));
 const Atrelamento = lazy(() => import("./pages/Atrelamento"));
 const OC          = lazy(() => import("./pages/OC"));
 const Manutencao  = lazy(() => import("./pages/Manutencao"));
+const Pneus       = lazy(() => import("./pages/Pneus"));
 const Historico   = lazy(() => import("./pages/Historico"));
 const Permissoes  = lazy(() => import("./pages/Permissoes"));
 const Ferias      = lazy(() => import("./pages/Ferias"));
@@ -75,6 +76,7 @@ export default function App() {
                   <Route path="/atrelamento" element={<Privada permissao="atrelamento.ver"><Atrelamento /></Privada>} />
                   <Route path="/oc"          element={<Privada permissao="oc.ver"><OC /></Privada>} />
                   <Route path="/manutencao"  element={<Privada permissao="manutencao.ver"><Manutencao /></Privada>} />
+                  <Route path="/pneus"       element={<Privada permissao="pneus.ver"><Pneus /></Privada>} />
                   <Route path="/historico"   element={<Privada permissao="historico.ver"><Historico /></Privada>} />
                   <Route path="/ferias"      element={<Privada permissao="ferias.ver"><Ferias /></Privada>} />
                   <Route path="/rastreamento" element={<PrivateRoute><Rastreamento /></PrivateRoute>} />
