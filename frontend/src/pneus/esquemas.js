@@ -65,6 +65,23 @@ export const ESQUEMAS = {
     temEstepe: true,
     estepeLado: "direita",
   },
+  carreta_4eixos: {
+    label: "Carreta 4 eixos",
+    posicoes: [
+      "1°EEE","1°EEI","1°EDI","1°EDE",
+      "2°EEE","2°EEI","2°EDI","2°EDE",
+      "3°EEE","3°EEI","3°EDI","3°EDE",
+      "4°EEE","4°EEI","4°EDI","4°EDE",
+    ],
+    eixos: [
+      { nome: "1º eixo", posicoes: ["1°EEE","1°EEI","1°EDI","1°EDE"] },
+      { nome: "2º eixo", posicoes: ["2°EEE","2°EEI","2°EDI","2°EDE"] },
+      { nome: "3º eixo", posicoes: ["3°EEE","3°EEI","3°EDI","3°EDE"] },
+      { nome: "4º eixo", posicoes: ["4°EEE","4°EEI","4°EDI","4°EDE"] },
+    ],
+    temEstepe: true,
+    estepeLado: "direita",
+  },
   dolly: {
     label: "Dolly (1 eixo)",
     posicoes: ["1°EEE","1°EEI","1°EDI","1°EDE"],
@@ -85,6 +102,9 @@ export const ESQUEMAS = {
 };
 
 // Heurística pra sugerir esquema a partir do cadastro atual do veículo.
+// Regra Pontual: TODAS as carretas são 3 eixos por padrão.
+// Só cai em carreta_simples (2 eixos) quando o cadastro indicar explicitamente
+// (bitrem, "2 eixos" no tipo_conjunto, ou total_eixos = 2).
 export function sugerirEsquema(veiculo) {
   if (!veiculo) return null;
   const tipo = String(veiculo.tipo || "").toLowerCase();
@@ -93,8 +113,12 @@ export function sugerirEsquema(veiculo) {
   if (tipo === "carreta") {
     if (conj.includes("dolly") && eixos === 2) return "dolly_2eixos";
     if (conj.includes("dolly"))                return "dolly";
-    if (eixos === 3 || conj.includes("3 eixos") || conj.includes("três eixos")) return "carreta_3eixos";
-    return "carreta_simples";
+    // Carreta 4 eixos (raras — Pontual tem algumas)
+    if (eixos === 4 || conj.includes("4 eixos") || conj.includes("quatro eixos")) return "carreta_4eixos";
+    // Bitrem OU 2 eixos explicitos = carreta_simples
+    if (eixos === 2 || conj.includes("bitrem") || conj.includes("2 eixos")) return "carreta_simples";
+    // Default Pontual: sempre 3 eixos
+    return "carreta_3eixos";
   }
   if (conj.includes("truque") || eixos === 4) return "cavalo_4eixos";
   if (conj.includes("truck") || conj.includes("trucado") || eixos === 3) return "cavalo_trucado";
