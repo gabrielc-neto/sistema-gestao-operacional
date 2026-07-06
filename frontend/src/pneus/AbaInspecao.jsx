@@ -219,12 +219,28 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
         </div>
       </div>
 
+      {/* BLOCO DO ESTEPE (separado do grid dos pneus, alinhado ao lado) */}
+      {esquema.temEstepe && (
+        <div style={{
+          display: "flex",
+          justifyContent: eLado === "direita" ? "flex-end" : "flex-start",
+          marginBottom: 12,
+        }}>
+          <div style={{ width: 130 }}>
+            <div style={{ fontSize: ".64rem", color: "#64748b", fontWeight: 800, textAlign: "center", marginBottom: 4, textTransform: "uppercase", letterSpacing: ".06em" }}>Estepe</div>
+            <CardPneu posicao="EST" dados={dados?.estepe || {}} onChange={setEstepe} />
+          </div>
+        </div>
+      )}
+
+      {/* GRID DE EIXOS — 3 colunas: pneus esq | odômetro | pneus dir */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "140px 1fr 110px 1fr 140px",
-        gap: 12,
+        gridTemplateColumns: "1fr 120px 1fr",
+        gap: 14,
         alignItems: "start",
         padding: "6px 0",
+        justifyContent: "center",
       }}>
         {linhas.map((eixo, i) => {
           const meio = Math.floor(eixo.posicoes.length / 2);
@@ -233,16 +249,8 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
 
           return (
             <>
-              {/* col 1: estepe (só se lado=esquerda, na primeira linha) */}
-              {i === 0 && esquema.temEstepe && eLado === "esquerda" ? (
-                <div key={`est-esq-${i}`}>
-                  <CardPneu posicao="EST" dados={dados?.estepe || {}} onChange={setEstepe} />
-                  <div style={{ fontSize: ".62rem", color: "#64748b", fontWeight: 800, textAlign: "center", marginTop: 4, textTransform: "uppercase", letterSpacing: ".06em" }}>Estepe</div>
-                </div>
-              ) : <div key={`c1-${i}`} />}
-
-              {/* col 2: pneus esquerda */}
-              <div key={`esq-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${esq.length}, 1fr)`, gap: 6 }}>
+              {/* pneus esquerda */}
+              <div key={`esq-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${esq.length}, 1fr)`, gap: 8 }}>
                 {esq.map(pos => (
                   <CardPneu key={pos} posicao={pos}
                     dados={(dados?.pneus || {})[pos] || {}}
@@ -250,13 +258,14 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
                 ))}
               </div>
 
-              {/* col 3: odômetro (só na primeira linha) */}
+              {/* odômetro (só na primeira linha; nas outras: divisão do chassi) */}
               {i === 0 ? (
                 <div key={`odom-${i}`} style={{
                   display: "flex", flexDirection: "column",
                   alignItems: "center", gap: 4,
-                  padding: 8, border: "1.5px solid #f59e0b",
-                  borderRadius: 8, background: "linear-gradient(180deg, #fff7ed, #fef3c7)",
+                  padding: 10, border: "1.5px solid #f59e0b",
+                  borderRadius: 10, background: "linear-gradient(180deg, #fff7ed, #fef3c7)",
+                  minHeight: 118, justifyContent: "center",
                 }}>
                   <div style={s.odomLabel}>ODÔMETRO</div>
                   <input
@@ -266,24 +275,27 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
                   />
                   <div style={{ fontSize: ".62rem", color: "#92400e", fontStyle: "italic" }}>Manual</div>
                 </div>
-              ) : <div key={`c3-${i}`} />}
+              ) : (
+                <div key={`odom-empty-${i}`} style={{
+                  minHeight: 118,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <div style={{
+                    width: 30, height: "80%",
+                    background: "repeating-linear-gradient(180deg, #cbd5e1 0 6px, transparent 6px 12px)",
+                    borderRadius: 4,
+                  }} />
+                </div>
+              )}
 
-              {/* col 4: pneus direita */}
-              <div key={`dir-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${dir.length}, 1fr)`, gap: 6 }}>
+              {/* pneus direita */}
+              <div key={`dir-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${dir.length}, 1fr)`, gap: 8 }}>
                 {dir.map(pos => (
                   <CardPneu key={pos} posicao={pos}
                     dados={(dados?.pneus || {})[pos] || {}}
                     onChange={v => setPneu(pos, v)} />
                 ))}
               </div>
-
-              {/* col 5: estepe (só se lado=direita, na primeira linha) */}
-              {i === 0 && esquema.temEstepe && eLado === "direita" ? (
-                <div key={`est-dir-${i}`}>
-                  <CardPneu posicao="EST" dados={dados?.estepe || {}} onChange={setEstepe} />
-                  <div style={{ fontSize: ".62rem", color: "#64748b", fontWeight: 800, textAlign: "center", marginTop: 4, textTransform: "uppercase", letterSpacing: ".06em" }}>Estepe</div>
-                </div>
-              ) : <div key={`c5-${i}`} />}
             </>
           );
         })}
