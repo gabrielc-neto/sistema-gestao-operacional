@@ -219,16 +219,39 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
         </div>
       </div>
 
-      {/* BLOCO DO ESTEPE (separado do grid dos pneus, alinhado ao lado) */}
+      {/* BLOCO DO ESTEPE (simplificado — só o número de fogo) */}
       {esquema.temEstepe && (
         <div style={{
           display: "flex",
           justifyContent: eLado === "direita" ? "flex-end" : "flex-start",
           marginBottom: 12,
         }}>
-          <div style={{ width: 130 }}>
-            <div style={{ fontSize: ".64rem", color: "#64748b", fontWeight: 800, textAlign: "center", marginBottom: 4, textTransform: "uppercase", letterSpacing: ".06em" }}>Estepe</div>
-            <CardPneu posicao="EST" dados={dados?.estepe || {}} onChange={setEstepe} />
+          <div style={{
+            width: 180,
+            border: "2px dashed #94a3b8",
+            borderRadius: 10,
+            padding: "8px 10px",
+            background: "#f8fafc",
+            display: "flex", alignItems: "center", gap: 10,
+          }}>
+            <div style={{
+              background: "#94a3b8", color: "#fff",
+              fontSize: ".62rem", fontWeight: 900,
+              padding: "2px 8px", borderRadius: 5,
+              letterSpacing: ".05em",
+            }}>ESTEPE</div>
+            <input
+              type="text"
+              value={dados?.estepe?.fogo ?? ""}
+              onChange={e => setEstepe({ ...(dados?.estepe || {}), fogo: e.target.value.toUpperCase() })}
+              placeholder="Nº de fogo"
+              style={{
+                flex: 1, padding: "5px 8px",
+                border: "1px dashed #cbd5e1", borderRadius: 4,
+                fontSize: ".82rem", fontWeight: 700, textAlign: "center",
+                color: "#1a3a5c", background: "#fff", fontFamily: "inherit",
+              }}
+            />
           </div>
         </div>
       )}

@@ -13,9 +13,9 @@
 export const ESQUEMAS = {
   cavalo_toco: {
     label: "Cavalo toco (4x2)",
-    posicoes: ["TEE","TEI","TDI","TDE","2°EEE","2°EEI","2°EDI","2°EDE"],
+    posicoes: ["TE","TD","2°EEE","2°EEI","2°EDI","2°EDE"],
     eixos: [
-      { nome: "1º eixo — Direção", posicoes: ["TEE","TEI","TDI","TDE"] },
+      { nome: "1º eixo — Direção", posicoes: ["TE","TD"] },
       { nome: "2º eixo — Tração",  posicoes: ["2°EEE","2°EEI","2°EDI","2°EDE"] },
     ],
     temEstepe: true,
@@ -23,9 +23,9 @@ export const ESQUEMAS = {
   },
   cavalo_trucado: {
     label: "Cavalo trucado (6x2 / 6x4)",
-    posicoes: ["TEE","TEI","TDI","TDE","2°EEE","2°EEI","2°EDI","2°EDE","3°EEE","3°EEI","3°EDI","3°EDE"],
+    posicoes: ["TE","TD","2°EEE","2°EEI","2°EDI","2°EDE","3°EEE","3°EEI","3°EDI","3°EDE"],
     eixos: [
-      { nome: "1º eixo — Direção", posicoes: ["TEE","TEI","TDI","TDE"] },
+      { nome: "1º eixo — Direção", posicoes: ["TE","TD"] },
       { nome: "2º eixo — Tração",  posicoes: ["2°EEE","2°EEI","2°EDI","2°EDE"] },
       { nome: "3º eixo — Tração",  posicoes: ["3°EEE","3°EEI","3°EDI","3°EDE"] },
     ],
@@ -34,9 +34,9 @@ export const ESQUEMAS = {
   },
   cavalo_4eixos: {
     label: "Cavalo 8x2 / 8x4 (com truque)",
-    posicoes: ["TEE","TEI","TDI","TDE","2°EEE","2°EEI","2°EDI","2°EDE","3°EEE","3°EEI","3°EDI","3°EDE","TRKEE","TRKEI","TRKDI","TRKDE"],
+    posicoes: ["TE","TD","2°EEE","2°EEI","2°EDI","2°EDE","3°EEE","3°EEI","3°EDI","3°EDE","TRKEE","TRKEI","TRKDI","TRKDE"],
     eixos: [
-      { nome: "1º eixo — Direção", posicoes: ["TEE","TEI","TDI","TDE"] },
+      { nome: "1º eixo — Direção", posicoes: ["TE","TD"] },
       { nome: "2º eixo — Tração",  posicoes: ["2°EEE","2°EEI","2°EDI","2°EDE"] },
       { nome: "3º eixo — Tração",  posicoes: ["3°EEE","3°EEI","3°EDI","3°EDE"] },
       { nome: "4º eixo — Truque",  posicoes: ["TRKEE","TRKEI","TRKDI","TRKDE"] },
