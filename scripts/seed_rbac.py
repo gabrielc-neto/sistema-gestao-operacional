@@ -24,6 +24,7 @@ MODULOS = [
     ("atrelamento", "Atrelamento"),
     ("oc",          "Ordens de Carregamento"),
     ("manutencao",  "Manutencao"),
+    ("pneus",       "Pneus"),
     ("ferias",      "Ferias"),
     ("historico",   "Historico"),
     ("relatorios",  "Relatorios"),
