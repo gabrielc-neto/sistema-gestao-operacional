@@ -81,70 +81,86 @@ const s = {
   ok:  { background: "#dcfce7", border: "1px solid #86efac", color: "#14532d", padding: "10px 14px", borderRadius: 8, fontWeight: 600, fontSize: ".85rem", marginTop: 12 },
 };
 
-// ── CARD DO PNEU ────────────────────────────────────────────────────────
-function CardPneu({ posicao, dados, onChange, vazio = false }) {
-  const s = dados?.sulco;
-  const sulcoNum = Number(s);
+// ── CARD DO PNEU (formato de pneu real — retângulo com cantos arredondados) ─
+function CardPneu({ posicao, dados, onChange }) {
+  const sulcoNum = Number(dados?.sulco);
   const status = !Number.isFinite(sulcoNum) || sulcoNum <= 0
     ? "vazio"
     : sulcoNum < SULCO_CRITICO ? "critico"
     : sulcoNum < SULCO_ALERTA  ? "atencao"
     : "ok";
 
-  const borderCor = {
-    vazio: "#cbd5e1", ok: "#22c55e", atencao: "#f59e0b", critico: "#dc2626",
-  }[status];
-  const bgGrad = {
-    vazio: "#f8fafc",
-    ok:      "linear-gradient(180deg, #f0fdf4, #fff)",
-    atencao: "linear-gradient(180deg, #fffbeb, #fff)",
-    critico: "linear-gradient(180deg, #fef2f2, #fff)",
+  const cores = {
+    vazio:   { border: "#94a3b8", bg: "#f8fafc",           accent: "#94a3b8" },
+    ok:      { border: "#16a34a", bg: "linear-gradient(180deg, #f0fdf4, #fff)", accent: "#16a34a" },
+    atencao: { border: "#d97706", bg: "linear-gradient(180deg, #fffbeb, #fff)", accent: "#d97706" },
+    critico: { border: "#dc2626", bg: "linear-gradient(180deg, #fef2f2, #fff)", accent: "#dc2626" },
   }[status];
 
   return (
     <div style={{
-      border: `2px ${vazio ? "dashed" : "solid"} ${borderCor}`,
-      borderRadius: 5, background: bgGrad, padding: 5,
-      display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-      minHeight: 140, position: "relative",
+      border: `2px solid ${cores.border}`,
+      borderRadius: 10,
+      background: cores.bg,
+      padding: "5px 6px",
+      display: "flex", flexDirection: "column", gap: 3,
+      minHeight: 118, width: "100%",
+      boxShadow: "inset 0 -2px 4px rgba(0,0,0,.05)",
+      position: "relative",
     }}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, width: "100%" }}>
-        <label style={{ fontSize: ".58rem", color: "#64748b", fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>PSI</label>
-        <NumericInput value={dados?.psi ?? ""} onChange={v => onChange({ ...dados, psi: v })} />
+      {/* etiqueta da posição no topo */}
+      <div style={{
+        background: cores.accent, color: "#fff",
+        fontSize: ".64rem", fontWeight: 900, textAlign: "center",
+        padding: "2px 4px", borderRadius: 5, letterSpacing: ".04em",
+        marginBottom: 2,
+      }}>{posicao}</div>
+
+      {/* PSI */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 1 }}>
+        <span style={{ fontSize: ".52rem", color: "#64748b", fontWeight: 800, letterSpacing: ".05em", textAlign: "center" }}>PSI</span>
+        <NumericInput value={dados?.psi ?? ""} onChange={v => onChange({ ...dados, psi: v })} small />
       </div>
-      <div style={{ fontSize: ".66rem", fontWeight: 900, color: "#1a3a5c", background: "rgba(255,255,255,.85)", padding: "1px 4px", borderRadius: 3, letterSpacing: ".04em" }}>{posicao}</div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, width: "100%" }}>
-        <label style={{ fontSize: ".58rem", color: "#64748b", fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>MM</label>
-        <NumericInput value={dados?.sulco ?? ""} step="0.1" onChange={v => onChange({ ...dados, sulco: v })} />
+
+      {/* SULCO */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 1 }}>
+        <span style={{ fontSize: ".52rem", color: "#64748b", fontWeight: 800, letterSpacing: ".05em", textAlign: "center" }}>SULCO (mm)</span>
+        <NumericInput value={dados?.sulco ?? ""} step="0.1" onChange={v => onChange({ ...dados, sulco: v })} small />
       </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, width: "100%", marginTop: 4, paddingTop: 4, borderTop: "1px dashed #e2e8f0" }}>
-        <label style={{ fontSize: ".58rem", color: "#64748b", fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>Fogo</label>
+
+      {/* FOGO */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 1, marginTop: 2, paddingTop: 3, borderTop: "1px dashed #e2e8f0" }}>
+        <span style={{ fontSize: ".52rem", color: "#64748b", fontWeight: 800, letterSpacing: ".05em", textAlign: "center" }}>Nº FOGO</span>
         <input
           type="text"
           value={dados?.fogo ?? ""}
           onChange={e => onChange({ ...dados, fogo: e.target.value.toUpperCase() })}
           placeholder="—"
-          style={{ width: "100%", padding: "6px 6px", border: "1px dashed #cbd5e1", borderRadius: 4, fontSize: ".88rem", fontWeight: 600, textAlign: "center", color: "#1a3a5c", background: "#fff", fontFamily: "inherit" }}
+          style={{ width: "100%", padding: "3px 4px", border: "1px dashed #cbd5e1", borderRadius: 3, fontSize: ".78rem", fontWeight: 700, textAlign: "center", color: "#1a3a5c", background: "#fff", fontFamily: "inherit" }}
         />
       </div>
     </div>
   );
 }
 
-function NumericInput({ value, onChange, step = "1" }) {
+function NumericInput({ value, onChange, step = "1", small = false }) {
   return (
     <input
       type="number" step={step} value={value} onChange={e => onChange(e.target.value)}
       style={{
-        width: "100%", padding: "6px 4px", border: "1px solid #cbd5e1", borderRadius: 4,
-        fontFamily: "inherit", fontSize: ".95rem", fontWeight: 700, textAlign: "center",
+        width: "100%",
+        padding: small ? "3px 3px" : "6px 4px",
+        border: "1px solid #cbd5e1", borderRadius: 3,
+        fontFamily: "inherit",
+        fontSize: small ? ".84rem" : ".95rem",
+        fontWeight: 700, textAlign: "center",
         background: "#fff", color: "#0f172a", MozAppearance: "textfield",
       }}
     />
   );
 }
 
-// ── QUADRO DE 1 VEÍCULO ─────────────────────────────────────────────────
+// ── QUADRO DE 1 VEÍCULO — layout tabular do preview v2 ───────────────────
 function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
   if (!veiculo) {
     return (
@@ -180,12 +196,19 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
     );
   }
 
-  const setPneu = (pos, v) => {
-    onChange({ ...dados, pneus: { ...(dados?.pneus || {}), [pos]: v } });
-  };
+  const setPneu = (pos, v) => onChange({ ...dados, pneus: { ...(dados?.pneus || {}), [pos]: v } });
   const setEstepe = (v) => onChange({ ...dados, estepe: v });
   const setOdom = (v) => onChange({ ...dados, odometro: v });
 
+  const eLado = esquema.estepeLado; // "esquerda" | "direita" | undefined
+  const linhas = esquema.eixos;
+
+  // Layout: grid 5 colunas
+  //   col1: estepe (só no 1º eixo se lado=esquerda)
+  //   col2: pneus esquerda do eixo
+  //   col3: odômetro (só no 1º eixo)
+  //   col4: pneus direita do eixo
+  //   col5: estepe (só no 1º eixo se lado=direita)
   return (
     <div style={s.quadro}>
       <div style={s.qHead}>
@@ -196,32 +219,75 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
         </div>
       </div>
 
-      <div style={s.odomBar}>
-        <span style={s.odomLabel}>Odômetro</span>
-        <input type="number" value={dados?.odometro ?? ""} onChange={e => setOdom(e.target.value)} placeholder="Digite o KM" style={s.odomInp} />
-        <span style={{ fontSize: ".68rem", color: "#92400e", fontStyle: "italic" }}>Manual</span>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "140px 1fr 110px 1fr 140px",
+        gap: 12,
+        alignItems: "start",
+        padding: "6px 0",
+      }}>
+        {linhas.map((eixo, i) => {
+          const meio = Math.floor(eixo.posicoes.length / 2);
+          const esq  = eixo.posicoes.slice(0, meio);
+          const dir  = eixo.posicoes.slice(meio);
+
+          return (
+            <>
+              {/* col 1: estepe (só se lado=esquerda, na primeira linha) */}
+              {i === 0 && esquema.temEstepe && eLado === "esquerda" ? (
+                <div key={`est-esq-${i}`}>
+                  <CardPneu posicao="EST" dados={dados?.estepe || {}} onChange={setEstepe} />
+                  <div style={{ fontSize: ".62rem", color: "#64748b", fontWeight: 800, textAlign: "center", marginTop: 4, textTransform: "uppercase", letterSpacing: ".06em" }}>Estepe</div>
+                </div>
+              ) : <div key={`c1-${i}`} />}
+
+              {/* col 2: pneus esquerda */}
+              <div key={`esq-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${esq.length}, 1fr)`, gap: 6 }}>
+                {esq.map(pos => (
+                  <CardPneu key={pos} posicao={pos}
+                    dados={(dados?.pneus || {})[pos] || {}}
+                    onChange={v => setPneu(pos, v)} />
+                ))}
+              </div>
+
+              {/* col 3: odômetro (só na primeira linha) */}
+              {i === 0 ? (
+                <div key={`odom-${i}`} style={{
+                  display: "flex", flexDirection: "column",
+                  alignItems: "center", gap: 4,
+                  padding: 8, border: "1.5px solid #f59e0b",
+                  borderRadius: 8, background: "linear-gradient(180deg, #fff7ed, #fef3c7)",
+                }}>
+                  <div style={s.odomLabel}>ODÔMETRO</div>
+                  <input
+                    type="number" value={dados?.odometro ?? ""}
+                    onChange={e => setOdom(e.target.value)} placeholder="KM"
+                    style={{ ...s.odomInp, width: "100%", fontSize: ".95rem" }}
+                  />
+                  <div style={{ fontSize: ".62rem", color: "#92400e", fontStyle: "italic" }}>Manual</div>
+                </div>
+              ) : <div key={`c3-${i}`} />}
+
+              {/* col 4: pneus direita */}
+              <div key={`dir-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${dir.length}, 1fr)`, gap: 6 }}>
+                {dir.map(pos => (
+                  <CardPneu key={pos} posicao={pos}
+                    dados={(dados?.pneus || {})[pos] || {}}
+                    onChange={v => setPneu(pos, v)} />
+                ))}
+              </div>
+
+              {/* col 5: estepe (só se lado=direita, na primeira linha) */}
+              {i === 0 && esquema.temEstepe && eLado === "direita" ? (
+                <div key={`est-dir-${i}`}>
+                  <CardPneu posicao="EST" dados={dados?.estepe || {}} onChange={setEstepe} />
+                  <div style={{ fontSize: ".62rem", color: "#64748b", fontWeight: 800, textAlign: "center", marginTop: 4, textTransform: "uppercase", letterSpacing: ".06em" }}>Estepe</div>
+                </div>
+              ) : <div key={`c5-${i}`} />}
+            </>
+          );
+        })}
       </div>
-
-      {esquema.temEstepe && (
-        <div style={s.estepeWrap}>
-          <div style={s.estepeLbl}>ESTEPE</div>
-          <CardPneu posicao="EST" dados={dados?.estepe || {}} onChange={setEstepe} vazio />
-        </div>
-      )}
-
-      {esquema.eixos.map((eixo, i) => (
-        <div key={i} style={s.eixo}>
-          <div style={s.eixoHead}>
-            <span style={{ display: "inline-block", width: 4, height: 14, background: "#1a3a5c", borderRadius: 2 }} />
-            {eixo.nome}
-          </div>
-          <div style={s.eixoBody}>
-            {eixo.posicoes.map(pos => (
-              <CardPneu key={pos} posicao={pos} dados={(dados?.pneus || {})[pos] || {}} onChange={v => setPneu(pos, v)} />
-            ))}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
