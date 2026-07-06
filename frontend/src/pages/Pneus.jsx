@@ -1,11 +1,15 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, addDoc, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
 import { Package, MapPin, ClipboardCheck, RefreshCw, LayoutDashboard } from "lucide-react";
 import { STATUS_PNEU } from "../pneus/esquemas";
+import AbaEstoque from "../pneus/AbaEstoque";
+
+// Normaliza nome pra comparação (case + espaço)
+const normNome = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
 
 // ── Estilos base compartilhados ───────────────────────────────────────
 const s = {
@@ -47,14 +51,48 @@ export default function Pneus() {
   const [aba, setAba] = useState(abaUrl && ABAS.some(a => a.id === abaUrl) ? abaUrl : "estoque");
 
   const [pneus, setPneus] = useState([]);
+  const [fornecedores, setFornecedores] = useState([]); // catálogo (reusa itens_manutencao tipo=fornecedor)
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDocs(query(collection(db, "pneus"), orderBy("criadoEm", "desc"))).then(snap => {
-      setPneus(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }).catch(e => console.warn("[pneus] falha ao carregar:", e))
-      .finally(() => setLoading(false));
+    Promise.all([
+      getDocs(query(collection(db, "pneus"), orderBy("criadoEm", "desc"))).catch(() => null),
+      getDocs(collection(db, "itens_manutencao")).catch(() => null),
+    ]).then(([pSnap, iSnap]) => {
+      if (pSnap) setPneus(pSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      if (iSnap) {
+        const forn = iSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(i => i.tipo === "fornecedor")
+          .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+        setFornecedores(forn);
+      }
+    }).finally(() => setLoading(false));
   }, []);
+
+  // Helper: garante fornecedor no catálogo (cria se novo; atualiza CNPJ se antes vazio)
+  const garantirFornecedor = useCallback(async (nome, cnpj) => {
+    const nm = (nome || "").trim();
+    if (!nm) return;
+    const existente = fornecedores.find(f => normNome(f.nome) === normNome(nm));
+    if (existente) {
+      if (cnpj && !existente.cnpj) {
+        try {
+          await updateDoc(doc(db, "itens_manutencao", existente.id), { cnpj });
+          setFornecedores(prev => prev.map(f => f.id === existente.id ? { ...f, cnpj } : f));
+        } catch (e) { console.warn("[fornecedores] falha update cnpj:", e); }
+      }
+      return;
+    }
+    try {
+      const payload = { tipo: "fornecedor", nome: nm, criadoEm: new Date().toISOString(), criadoPor: quemSou() };
+      if (cnpj) payload.cnpj = cnpj;
+      const ref = await addDoc(collection(db, "itens_manutencao"), payload);
+      setFornecedores(prev => [...prev, { id: ref.id, ...payload }].sort((a, b) => (a.nome || "").localeCompare(b.nome || "")));
+    } catch (e) { console.warn("[fornecedores] falha cadastro:", e); }
+  }, [fornecedores]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const quemSou = () => profile?.email || profile?.nome || "—";
 
   const contadores = useMemo(() => ({
     total:      pneus.length,
@@ -126,7 +164,7 @@ export default function Pneus() {
         </div>
 
         {/* Conteúdo por aba — placeholders serão substituídos nas próximas fases */}
-        {aba === "estoque"   && <PlaceholderAba titulo="Estoque de pneus" desc="Cadastro de pneus (fogo, marca, medida, DOT, custo). Filtros por marca/medida. Instalar de aqui na aba Frota." fase="Fase 2" />}
+        {aba === "estoque"   && <AbaEstoque pneus={pneus} setPneus={setPneus} fornecedores={fornecedores} garantirFornecedor={garantirFornecedor} quemSou={quemSou} />}
         {aba === "frota"     && <PlaceholderAba titulo="Mapa da frota" desc="Escolha uma placa e visualize o esquema de posições. Clique em qualquer posição pra instalar, remover, rodizar ou enviar pra recapagem." fase="Fase 3" />}
         {aba === "inspecao"  && <PlaceholderAba titulo="Inspeção semanal (mobile)" desc="Otimizado pra celular. Escolhe veículo, mede sulco e pressão de cada posição, salva. Alerta automático em sulco < 3mm." fase="Fase 4" />}
         {aba === "recapagem" && <PlaceholderAba titulo="Recapagem" desc="Pneus que estão na recapadora. Envia com data e custo, recebe com nova vida e sulco atualizado." fase="Fase 5" />}
