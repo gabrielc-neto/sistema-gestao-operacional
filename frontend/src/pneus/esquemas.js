@@ -6,92 +6,100 @@
 //   2E/3E    = 2º/3º eixo (tração/reboque), com -int/-ext         (pneus geminados)
 //   Sobressalente conta como posição separada quando existe.
 
+// Nomenclatura Pontual (batida com a ficha nº 1470 em papel):
+//   Cavalo — TEE/TEI/TDI/TDE no 1º eixo (direção), depois 2°EEE/EEI/EDI/EDE, etc.
+//   T = Traseira do padrão da ficha (1º eixo do cavalo), 2°/3°/TRK = eixos seguintes
+//   E = Esquerdo · D = Direito · E = Externo · I = Interno
 export const ESQUEMAS = {
   cavalo_toco: {
     label: "Cavalo toco (4x2)",
-    posicoes: ["1DE", "1DD", "2DE-int", "2DE-ext", "2DD-int", "2DD-ext"],
+    posicoes: ["TEE","TEI","TDI","TDE","2°EEE","2°EEI","2°EDI","2°EDE"],
     eixos: [
-      { nome: "1º eixo (direção)",  posicoes: ["1DE", "1DD"] },
-      { nome: "2º eixo (tração)",   posicoes: ["2DE-int", "2DE-ext", "2DD-int", "2DD-ext"] },
+      { nome: "1º eixo — Direção", posicoes: ["TEE","TEI","TDI","TDE"] },
+      { nome: "2º eixo — Tração",  posicoes: ["2°EEE","2°EEI","2°EDI","2°EDE"] },
     ],
+    temEstepe: true,
+    estepeLado: "esquerda",
   },
   cavalo_trucado: {
     label: "Cavalo trucado (6x2 / 6x4)",
-    posicoes: ["1DE", "1DD", "2DE-int", "2DE-ext", "2DD-int", "2DD-ext", "3DE-int", "3DE-ext", "3DD-int", "3DD-ext"],
+    posicoes: ["TEE","TEI","TDI","TDE","2°EEE","2°EEI","2°EDI","2°EDE","3°EEE","3°EEI","3°EDI","3°EDE"],
     eixos: [
-      { nome: "1º eixo (direção)",  posicoes: ["1DE", "1DD"] },
-      { nome: "2º eixo (tração)",   posicoes: ["2DE-int", "2DE-ext", "2DD-int", "2DD-ext"] },
-      { nome: "3º eixo (tração)",   posicoes: ["3DE-int", "3DE-ext", "3DD-int", "3DD-ext"] },
+      { nome: "1º eixo — Direção", posicoes: ["TEE","TEI","TDI","TDE"] },
+      { nome: "2º eixo — Tração",  posicoes: ["2°EEE","2°EEI","2°EDI","2°EDE"] },
+      { nome: "3º eixo — Tração",  posicoes: ["3°EEE","3°EEI","3°EDI","3°EDE"] },
     ],
+    temEstepe: true,
+    estepeLado: "esquerda",
+  },
+  cavalo_4eixos: {
+    label: "Cavalo 8x2 / 8x4 (com truque)",
+    posicoes: ["TEE","TEI","TDI","TDE","2°EEE","2°EEI","2°EDI","2°EDE","3°EEE","3°EEI","3°EDI","3°EDE","TRKEE","TRKEI","TRKDI","TRKDE"],
+    eixos: [
+      { nome: "1º eixo — Direção", posicoes: ["TEE","TEI","TDI","TDE"] },
+      { nome: "2º eixo — Tração",  posicoes: ["2°EEE","2°EEI","2°EDI","2°EDE"] },
+      { nome: "3º eixo — Tração",  posicoes: ["3°EEE","3°EEI","3°EDI","3°EDE"] },
+      { nome: "4º eixo — Truque",  posicoes: ["TRKEE","TRKEI","TRKDI","TRKDE"] },
+    ],
+    temEstepe: true,
+    estepeLado: "esquerda",
   },
   carreta_simples: {
     label: "Carreta simples (2 eixos)",
-    posicoes: ["1DE-int", "1DE-ext", "1DD-int", "1DD-ext", "2DE-int", "2DE-ext", "2DD-int", "2DD-ext"],
+    posicoes: ["1°EEE","1°EEI","1°EDI","1°EDE","2°EEE","2°EEI","2°EDI","2°EDE"],
     eixos: [
-      { nome: "1º eixo", posicoes: ["1DE-int", "1DE-ext", "1DD-int", "1DD-ext"] },
-      { nome: "2º eixo", posicoes: ["2DE-int", "2DE-ext", "2DD-int", "2DD-ext"] },
+      { nome: "1º eixo", posicoes: ["1°EEE","1°EEI","1°EDI","1°EDE"] },
+      { nome: "2º eixo", posicoes: ["2°EEE","2°EEI","2°EDI","2°EDE"] },
     ],
+    temEstepe: true,
+    estepeLado: "direita",
   },
   carreta_3eixos: {
     label: "Carreta 3 eixos",
-    posicoes: ["1DE-int","1DE-ext","1DD-int","1DD-ext","2DE-int","2DE-ext","2DD-int","2DD-ext","3DE-int","3DE-ext","3DD-int","3DD-ext"],
+    posicoes: ["1°EEE","1°EEI","1°EDI","1°EDE","2°EEE","2°EEI","2°EDI","2°EDE","3°EEE","3°EEI","3°EDI","3°EDE"],
     eixos: [
-      { nome: "1º eixo", posicoes: ["1DE-int","1DE-ext","1DD-int","1DD-ext"] },
-      { nome: "2º eixo", posicoes: ["2DE-int","2DE-ext","2DD-int","2DD-ext"] },
-      { nome: "3º eixo", posicoes: ["3DE-int","3DE-ext","3DD-int","3DD-ext"] },
+      { nome: "1º eixo", posicoes: ["1°EEE","1°EEI","1°EDI","1°EDE"] },
+      { nome: "2º eixo", posicoes: ["2°EEE","2°EEI","2°EDI","2°EDE"] },
+      { nome: "3º eixo", posicoes: ["3°EEE","3°EEI","3°EDI","3°EDE"] },
     ],
+    temEstepe: true,
+    estepeLado: "direita",
   },
-  bitrem: {
-    label: "Bitrem (12 pneus)",
-    posicoes: [
-      "A1DE-int","A1DE-ext","A1DD-int","A1DD-ext",
-      "A2DE-int","A2DE-ext","A2DD-int","A2DD-ext",
-      "B1DE-int","B1DE-ext","B1DD-int","B1DD-ext",
-    ],
+  dolly: {
+    label: "Dolly (1 eixo)",
+    posicoes: ["1°EEE","1°EEI","1°EDI","1°EDE"],
     eixos: [
-      { nome: "Carreta A — 1º",  posicoes: ["A1DE-int","A1DE-ext","A1DD-int","A1DD-ext"] },
-      { nome: "Carreta A — 2º",  posicoes: ["A2DE-int","A2DE-ext","A2DD-int","A2DD-ext"] },
-      { nome: "Carreta B — 1º",  posicoes: ["B1DE-int","B1DE-ext","B1DD-int","B1DD-ext"] },
+      { nome: "1º eixo", posicoes: ["1°EEE","1°EEI","1°EDI","1°EDE"] },
     ],
+    temEstepe: false,
   },
-  rodotrem: {
-    label: "Rodotrem (24 pneus)",
-    posicoes: [
-      "A1DE-int","A1DE-ext","A1DD-int","A1DD-ext",
-      "A2DE-int","A2DE-ext","A2DD-int","A2DD-ext",
-      "A3DE-int","A3DE-ext","A3DD-int","A3DD-ext",
-      "B1DE-int","B1DE-ext","B1DD-int","B1DD-ext",
-      "B2DE-int","B2DE-ext","B2DD-int","B2DD-ext",
-      "B3DE-int","B3DE-ext","B3DD-int","B3DD-ext",
-    ],
+  dolly_2eixos: {
+    label: "Dolly (2 eixos)",
+    posicoes: ["1°EEE","1°EEI","1°EDI","1°EDE","2°EEE","2°EEI","2°EDI","2°EDE"],
     eixos: [
-      { nome: "Carreta A — 1º", posicoes: ["A1DE-int","A1DE-ext","A1DD-int","A1DD-ext"] },
-      { nome: "Carreta A — 2º", posicoes: ["A2DE-int","A2DE-ext","A2DD-int","A2DD-ext"] },
-      { nome: "Carreta A — 3º", posicoes: ["A3DE-int","A3DE-ext","A3DD-int","A3DD-ext"] },
-      { nome: "Carreta B — 1º", posicoes: ["B1DE-int","B1DE-ext","B1DD-int","B1DD-ext"] },
-      { nome: "Carreta B — 2º", posicoes: ["B2DE-int","B2DE-ext","B2DD-int","B2DD-ext"] },
-      { nome: "Carreta B — 3º", posicoes: ["B3DE-int","B3DE-ext","B3DD-int","B3DD-ext"] },
+      { nome: "1º eixo", posicoes: ["1°EEE","1°EEI","1°EDI","1°EDE"] },
+      { nome: "2º eixo", posicoes: ["2°EEE","2°EEI","2°EDI","2°EDE"] },
     ],
+    temEstepe: false,
   },
 };
 
 // Heurística pra sugerir esquema a partir do cadastro atual do veículo.
-// veiculo.tipo_conjunto ou veiculo.total_eixos podem indicar. Se não bater, cai no cavalo_trucado ou carreta_simples.
 export function sugerirEsquema(veiculo) {
   if (!veiculo) return null;
   const tipo = String(veiculo.tipo || "").toLowerCase();
   const conj = String(veiculo.tipo_conjunto || "").toLowerCase();
   const eixos = Number(veiculo.total_eixos);
   if (tipo === "carreta") {
-    if (eixos === 3 || conj.includes("3 eixos")) return "carreta_3eixos";
+    if (conj.includes("dolly") && eixos === 2) return "dolly_2eixos";
+    if (conj.includes("dolly"))                return "dolly";
+    if (eixos === 3 || conj.includes("3 eixos") || conj.includes("três eixos")) return "carreta_3eixos";
     return "carreta_simples";
   }
-  if (conj.includes("rodotrem")) return "rodotrem";
-  if (conj.includes("bitrem"))   return "bitrem";
-  if (conj.includes("truck")   || conj.includes("trucado") || eixos === 3) return "cavalo_trucado";
-  if (conj.includes("toco")    || eixos === 2) return "cavalo_toco";
-  // default seguro
-  return tipo === "carreta" ? "carreta_simples" : "cavalo_trucado";
+  if (conj.includes("truque") || eixos === 4) return "cavalo_4eixos";
+  if (conj.includes("truck") || conj.includes("trucado") || eixos === 3) return "cavalo_trucado";
+  if (conj.includes("toco")  || eixos === 2) return "cavalo_toco";
+  return "cavalo_trucado";
 }
 
 export function posicoesDoEsquema(esquemaId) {
