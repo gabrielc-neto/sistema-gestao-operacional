@@ -9,6 +9,7 @@ import { STATUS_PNEU } from "../pneus/esquemas";
 import AbaEstoque from "../pneus/AbaEstoque";
 import AbaInspecao from "../pneus/AbaInspecao";
 import AbaRecapagem from "../pneus/AbaRecapagem";
+import AbaDashboard from "../pneus/AbaDashboard";
 
 // Normaliza nome pra comparação (case + espaço)
 const normNome = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -170,7 +171,7 @@ export default function Pneus() {
         {aba === "frota"     && <PlaceholderAba titulo="Mapa da frota" desc="Escolha uma placa e visualize o esquema de posições. Clique em qualquer posição pra instalar, remover, rodizar ou enviar pra recapagem." fase="Fase 3" />}
         {aba === "inspecao"  && <AbaInspecao pneus={pneus} setPneus={setPneus} profile={profile} />}
         {aba === "recapagem" && <AbaRecapagem pneus={pneus} setPneus={setPneus} fornecedores={fornecedores} garantirFornecedor={garantirFornecedor} quemSou={quemSou} />}
-        {aba === "dashboard" && <PlaceholderAba titulo="Analytics de pneus" desc="CPK médio, custo por marca, ranking de fornecedores, top 10 pneus com pior CPK, sugestão de rodízio." fase="Fase 6" />}
+        {aba === "dashboard" && <AbaDashboard pneus={pneus} />}
       </main>
     </div>
   );
