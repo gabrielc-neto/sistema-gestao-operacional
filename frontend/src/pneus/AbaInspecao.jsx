@@ -256,12 +256,14 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
         </div>
       )}
 
-      {/* GRID DE EIXOS — 3 colunas: pneus esq | odômetro | pneus dir */}
+      {/* GRID DE EIXOS — 3 colunas: pneus esq | odômetro | pneus dir
+          align-items: center pra garantir alinhamento horizontal perfeito
+          entre pneus esquerdos e direitos de cada eixo */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "1fr 120px 1fr",
         gap: 14,
-        alignItems: "start",
+        alignItems: "center",
         padding: "6px 0",
         justifyContent: "center",
       }}>
@@ -272,8 +274,8 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
 
           return (
             <>
-              {/* pneus esquerda */}
-              <div key={`esq-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${esq.length}, 1fr)`, gap: 8 }}>
+              {/* pneus esquerda — alinhamento à direita pra encostar no chassi central */}
+              <div key={`esq-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${esq.length}, minmax(0, 100px))`, gap: 8, justifyContent: "end" }}>
                 {esq.map(pos => (
                   <CardPneu key={pos} posicao={pos}
                     dados={(dados?.pneus || {})[pos] || {}}
@@ -311,8 +313,8 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
                 </div>
               )}
 
-              {/* pneus direita */}
-              <div key={`dir-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${dir.length}, 1fr)`, gap: 8 }}>
+              {/* pneus direita — alinhamento à esquerda pra encostar no chassi central */}
+              <div key={`dir-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${dir.length}, minmax(0, 100px))`, gap: 8, justifyContent: "start" }}>
                 {dir.map(pos => (
                   <CardPneu key={pos} posicao={pos}
                     dados={(dados?.pneus || {})[pos] || {}}
