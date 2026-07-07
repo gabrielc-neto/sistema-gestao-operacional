@@ -279,91 +279,138 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
         </div>
       </div>
 
-      {/* CONTAINER DO DESENHO ESQUEMÁTICO */}
+      {/* Odômetro em barra separada em cima (não interfere no desenho) */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: "center", padding: "8px 12px", background: "linear-gradient(90deg, #fff7ed, #fef3c7)", border: "1.5px solid #f59e0b", borderRadius: 10 }}>
+        <span style={{ fontSize: ".72rem", fontWeight: 800, color: "#7c2d12", textTransform: "uppercase", letterSpacing: ".04em" }}>Odômetro</span>
+        <input
+          type="number" value={dados?.odometro ?? ""}
+          onChange={e => setOdom(e.target.value)} placeholder="Digite o KM"
+          style={{ padding: "6px 12px", border: "1.5px solid #f59e0b", borderRadius: 6, fontFamily: "inherit", fontSize: ".95rem", fontWeight: 800, textAlign: "center", background: "#fff", color: "#7c2d12", width: 140, MozAppearance: "textfield" }}
+        />
+        <span style={{ fontSize: ".68rem", color: "#92400e", fontStyle: "italic" }}>Manual</span>
+      </div>
+
+      {/* CONTAINER DO DESENHO ESQUEMÁTICO — idêntico à imagem WhatsApp 16:53 */}
       <div style={{
         position: "relative",
-        padding: "16px 16px 12px",
-        background: "linear-gradient(180deg, #f8fafc, #fff)",
-        border: "1px solid #e2e8f0",
+        padding: "0",
+        background: "linear-gradient(180deg, #dbeafe, #eef2f7)",
+        border: "1.5px solid #cbd5e1",
         borderRadius: 12,
+        overflow: "hidden",
       }}>
-        {/* Estepe (canto sup esquerdo pro cavalo, sup direito pra carreta) */}
-        {esquema.temEstepe && (
-          <div style={{
-            position: "absolute",
-            top: 12,
-            ...(eLado === "direita" ? { right: 12 } : { left: 12 }),
-            background: "#fff", border: "2px dashed #94a3b8",
-            borderRadius: 8, padding: "4px 6px",
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-            zIndex: 5,
-          }}>
-            <div style={{ fontSize: ".55rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Estepe</div>
-            <CardPneu posicao="EST" dados={dados?.estepe || {}}
-              onClick={() => setEditando({ posicao: "EST", dados: dados?.estepe || {}, isEstepe: true })} />
-          </div>
-        )}
-
-        {/* Cabine (só cavalo) */}
+        {/* Cabine no topo azul-navy */}
         {esquemaId?.startsWith("cavalo") && (
           <div style={{
-            background: "linear-gradient(180deg, #1e3a8a, #1a3a5c)",
+            background: "linear-gradient(180deg, #1e40af, #1a3a5c)",
             color: "#fff", textAlign: "center",
-            padding: "6px 12px", borderRadius: "8px 8px 0 0",
-            fontSize: ".68rem", fontWeight: 800, letterSpacing: ".05em",
-            marginBottom: 6, marginTop: esquema.temEstepe && eLado === "esquerda" ? 100 : 0,
+            padding: "8px 16px",
+            fontSize: ".8rem", fontWeight: 800, letterSpacing: ".05em",
           }}>
             ◄ CABINE / FRENTE
           </div>
         )}
 
-        {/* Eixos */}
-        <div style={{ marginTop: esquema.temEstepe && !esquemaId?.startsWith("cavalo") && eLado === "direita" ? 100 : 0 }}>
+        {/* Estepe canto superior direito */}
+        {esquema.temEstepe && (
+          <div style={{
+            position: "absolute",
+            top: esquemaId?.startsWith("cavalo") ? 38 : 8,
+            right: 8,
+            background: "#fff", border: "2px dashed #94a3b8",
+            borderRadius: 8, padding: "3px 5px",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+            zIndex: 5,
+          }}>
+            <div style={{ fontSize: ".55rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Estepe</div>
+            <div
+              onClick={() => setEditando({ posicao: "EST", dados: dados?.estepe || {}, isEstepe: true })}
+              style={{
+                width: 32, height: 52, borderRadius: 5,
+                background: "repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #f1f5f9 4px, #f1f5f9 8px)",
+                border: "1.5px dashed #94a3b8",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer",
+                fontSize: ".5rem", fontWeight: 800, color: "#64748b",
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+            >
+              {dados?.estepe?.fogo || "—"}
+            </div>
+          </div>
+        )}
+
+        {/* CORPO com chassi vertical + eixos */}
+        <div style={{ position: "relative", padding: "20px 20px 20px" }}>
+          {/* CHASSI vertical cinza no meio */}
+          <div style={{
+            position: "absolute",
+            left: "50%", top: 20, bottom: 20,
+            width: 16, transform: "translateX(-50%)",
+            background: "linear-gradient(90deg, #cbd5e1, #94a3b8 50%, #cbd5e1)",
+            border: "1px solid #64748b",
+            borderRadius: 3,
+            zIndex: 0,
+          }} />
+
+          {/* EIXOS */}
           {linhas.map((eixo, i) => {
             const meio = Math.floor(eixo.posicoes.length / 2);
             const esq  = eixo.posicoes.slice(0, meio);
             const dir  = eixo.posicoes.slice(meio);
             return (
               <div key={i} style={{
+                position: "relative",
                 display: "grid",
                 gridTemplateColumns: "1fr 100px 1fr",
-                gap: 8, alignItems: "center",
+                gap: 4,
+                alignItems: "center",
                 padding: "18px 0",
-                borderBottom: i < linhas.length - 1 ? "1px dashed #e2e8f0" : "none",
               }}>
-                {/* pneus esquerda */}
-                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+                {/* TRAVESSA horizontal do eixo */}
+                <div style={{
+                  position: "absolute",
+                  left: "5%", right: "5%", top: "50%",
+                  height: 8,
+                  background: "linear-gradient(180deg, #94a3b8, #64748b)",
+                  border: "1px solid #475569",
+                  borderRadius: 4,
+                  transform: "translateY(-50%)",
+                  zIndex: 1,
+                }} />
+
+                {/* PNEUS ESQUERDA + CUBO */}
+                <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center", position: "relative", zIndex: 2 }}>
                   {esq.map(pos => (
                     <CardPneu key={pos} posicao={pos}
                       dados={(dados?.pneus || {})[pos] || {}}
                       onClick={() => setEditando({ posicao: pos, dados: (dados?.pneus || {})[pos] || {}, isEstepe: false })} />
                   ))}
+                  {/* Cubo esquerdo (roda conectando ao eixo) */}
+                  <div style={{
+                    width: 24, height: 24,
+                    background: "radial-gradient(circle at 40% 40%, #94a3b8 20%, #334155 100%)",
+                    border: "2px solid #1e293b",
+                    borderRadius: "50%",
+                    boxShadow: "inset 0 -2px 4px rgba(0,0,0,.4)",
+                    flexShrink: 0,
+                  }} />
                 </div>
 
-                {/* centro: odômetro na primeira linha; espaço nas demais */}
-                {i === 0 ? (
-                  <div style={{
-                    display: "flex", flexDirection: "column",
-                    alignItems: "center", gap: 3,
-                    padding: 8, border: "1.5px solid #f59e0b",
-                    borderRadius: 8, background: "linear-gradient(180deg, #fff7ed, #fef3c7)",
-                  }}>
-                    <div style={{ fontSize: ".58rem", color: "#7c2d12", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".04em" }}>Odômetro</div>
-                    <input
-                      type="number" value={dados?.odometro ?? ""}
-                      onChange={e => setOdom(e.target.value)} placeholder="KM"
-                      style={{ width: "100%", padding: "4px 4px", border: "1px solid #f59e0b", borderRadius: 4, fontFamily: "inherit", fontSize: ".85rem", fontWeight: 800, textAlign: "center", background: "#fff", color: "#7c2d12", MozAppearance: "textfield" }}
-                    />
-                    <div style={{ fontSize: ".55rem", color: "#92400e", fontStyle: "italic" }}>Manual</div>
-                  </div>
-                ) : (
-                  <div style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".58rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase" }}>
-                    {eixo.nome.split("—")[0].trim()}
-                  </div>
-                )}
+                {/* Centro vazio (chassi passa por trás) */}
+                <div />
 
-                {/* pneus direita */}
-                <div style={{ display: "flex", gap: 8, justifyContent: "flex-start", alignItems: "center" }}>
+                {/* CUBO + PNEUS DIREITA */}
+                <div style={{ display: "flex", gap: 6, justifyContent: "flex-start", alignItems: "center", position: "relative", zIndex: 2 }}>
+                  <div style={{
+                    width: 24, height: 24,
+                    background: "radial-gradient(circle at 60% 40%, #94a3b8 20%, #334155 100%)",
+                    border: "2px solid #1e293b",
+                    borderRadius: "50%",
+                    boxShadow: "inset 0 -2px 4px rgba(0,0,0,.4)",
+                    flexShrink: 0,
+                  }} />
                   {dir.map(pos => (
                     <CardPneu key={pos} posicao={pos}
                       dados={(dados?.pneus || {})[pos] || {}}
