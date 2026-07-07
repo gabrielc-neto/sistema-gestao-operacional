@@ -368,26 +368,24 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
                 alignItems: "center",
                 padding: "18px 0",
               }}>
-                {/* TRAVESSA horizontal do eixo */}
-                <div style={{
-                  position: "absolute",
-                  left: "5%", right: "5%", top: "50%",
-                  height: 8,
-                  background: "linear-gradient(180deg, #94a3b8, #64748b)",
-                  border: "1px solid #475569",
-                  borderRadius: 4,
-                  transform: "translateY(-50%)",
-                  zIndex: 1,
-                }} />
-
-                {/* PNEUS ESQUERDA + CUBO */}
-                <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center", position: "relative", zIndex: 2 }}>
-                  {esq.map(pos => (
-                    <CardPneu key={pos} posicao={pos}
-                      dados={(dados?.pneus || {})[pos] || {}}
-                      onClick={() => setEditando({ posicao: pos, dados: (dados?.pneus || {})[pos] || {}, isEstepe: false })} />
-                  ))}
-                  {/* Cubo esquerdo (roda conectando ao eixo) */}
+                {/* PNEUS ESQUERDA + TRAVESSA + CUBO */}
+                <div style={{ display: "flex", gap: 0, justifyContent: "flex-end", alignItems: "center", position: "relative", zIndex: 2 }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    {esq.map(pos => (
+                      <CardPneu key={pos} posicao={pos}
+                        dados={(dados?.pneus || {})[pos] || {}}
+                        onClick={() => setEditando({ posicao: pos, dados: (dados?.pneus || {})[pos] || {}, isEstepe: false })} />
+                    ))}
+                  </div>
+                  {/* Travessa esquerda — só do pneu mais externo até o cubo */}
+                  <div style={{
+                    flex: "0 1 60px",
+                    height: 8,
+                    background: "linear-gradient(180deg, #94a3b8, #64748b)",
+                    border: "1px solid #475569",
+                    borderRadius: 4,
+                  }} />
+                  {/* Cubo esquerdo */}
                   <div style={{
                     width: 24, height: 24,
                     background: "radial-gradient(circle at 40% 40%, #94a3b8 20%, #334155 100%)",
@@ -395,14 +393,16 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
                     borderRadius: "50%",
                     boxShadow: "inset 0 -2px 4px rgba(0,0,0,.4)",
                     flexShrink: 0,
+                    marginLeft: -4,
                   }} />
                 </div>
 
-                {/* Centro vazio (chassi passa por trás) */}
+                {/* Centro vazio (chassi vertical passa por trás) */}
                 <div />
 
-                {/* CUBO + PNEUS DIREITA */}
-                <div style={{ display: "flex", gap: 6, justifyContent: "flex-start", alignItems: "center", position: "relative", zIndex: 2 }}>
+                {/* CUBO + TRAVESSA + PNEUS DIREITA */}
+                <div style={{ display: "flex", gap: 0, justifyContent: "flex-start", alignItems: "center", position: "relative", zIndex: 2 }}>
+                  {/* Cubo direito */}
                   <div style={{
                     width: 24, height: 24,
                     background: "radial-gradient(circle at 60% 40%, #94a3b8 20%, #334155 100%)",
@@ -410,12 +410,23 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
                     borderRadius: "50%",
                     boxShadow: "inset 0 -2px 4px rgba(0,0,0,.4)",
                     flexShrink: 0,
+                    marginRight: -4,
                   }} />
-                  {dir.map(pos => (
-                    <CardPneu key={pos} posicao={pos}
-                      dados={(dados?.pneus || {})[pos] || {}}
-                      onClick={() => setEditando({ posicao: pos, dados: (dados?.pneus || {})[pos] || {}, isEstepe: false })} />
-                  ))}
+                  {/* Travessa direita */}
+                  <div style={{
+                    flex: "0 1 60px",
+                    height: 8,
+                    background: "linear-gradient(180deg, #94a3b8, #64748b)",
+                    border: "1px solid #475569",
+                    borderRadius: 4,
+                  }} />
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    {dir.map(pos => (
+                      <CardPneu key={pos} posicao={pos}
+                        dados={(dados?.pneus || {})[pos] || {}}
+                        onClick={() => setEditando({ posicao: pos, dados: (dados?.pneus || {})[pos] || {}, isEstepe: false })} />
+                    ))}
+                  </div>
                 </div>
               </div>
             );
