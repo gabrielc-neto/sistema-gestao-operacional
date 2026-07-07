@@ -363,8 +363,8 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
               <div key={i} style={{
                 position: "relative",
                 display: "grid",
-                gridTemplateColumns: "1fr 100px 1fr",
-                gap: 4,
+                gridTemplateColumns: "1fr 24px 1fr",
+                gap: 0,
                 alignItems: "center",
                 padding: "18px 0",
               }}>
