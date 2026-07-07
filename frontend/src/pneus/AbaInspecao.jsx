@@ -81,22 +81,21 @@ const s = {
   ok:  { background: "#dcfce7", border: "1px solid #86efac", color: "#14532d", padding: "10px 14px", borderRadius: 8, fontWeight: 600, fontSize: ".85rem", marginTop: 12 },
 };
 
-// ── CARD DO PNEU (estilo esquemático — retângulo colorido clicável) ─────
-function CardPneu({ posicao, dados, onChange, onClick }) {
+// ── CARD DO PNEU (idêntico ao preview aprovado — 42x70) ─────────────────
+function CardPneu({ posicao, dados, onClick }) {
   const sulcoNum = Number(dados?.sulco);
+  // Thresholds da legenda do preview
   const status = !Number.isFinite(sulcoNum) || sulcoNum <= 0
     ? "vazio"
-    : sulcoNum < SULCO_CRITICO ? "critico"
-    : sulcoNum < SULCO_ALERTA  ? "atencao"
-    : sulcoNum < 6             ? "entre46"
-    : sulcoNum < 15            ? "entre6"
+    : sulcoNum < 4  ? "critico"
+    : sulcoNum < 6  ? "entre4"
+    : sulcoNum < 15 ? "entre6"
     : "novo";
 
   const bg = {
     vazio:   "repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #f1f5f9 4px, #f1f5f9 8px)",
     critico: "linear-gradient(180deg, #dc2626, #7f1d1d)",
-    atencao: "linear-gradient(180deg, #f97316, #c2410c)",
-    entre46: "linear-gradient(180deg, #f59e0b, #b45309)",
+    entre4:  "linear-gradient(180deg, #f97316, #c2410c)",
     entre6:  "linear-gradient(180deg, #eab308, #a16207)",
     novo:    "linear-gradient(180deg, #22c55e, #15803d)",
   }[status];
@@ -104,38 +103,32 @@ function CardPneu({ posicao, dados, onChange, onClick }) {
   return (
     <div
       onClick={onClick}
+      title={`${posicao}${dados?.sulco ? ` — Sulco: ${dados.sulco}mm` : ""}`}
       style={{
-        width: 52, height: 80, borderRadius: 8,
+        width: 42, height: 70, borderRadius: 8,
         background: bg,
         border: status === "vazio" ? "1.5px dashed #94a3b8" : "1px solid rgba(0,0,0,.3)",
         boxShadow: "0 2px 4px rgba(0,0,0,.15), inset 0 -3px 6px rgba(0,0,0,.2)",
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        gap: 2, cursor: "pointer",
+        cursor: "pointer",
         transition: "transform .12s",
         position: "relative",
         color: status === "vazio" ? "#64748b" : "#fff",
+        fontSize: ".58rem", fontWeight: 900,
         animation: status === "critico" ? "pulsePneu 1.5s infinite" : "none",
+        flexShrink: 0,
       }}
       onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.08)"; e.currentTarget.style.zIndex = 10; }}
       onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.zIndex = 1; }}
     >
-      {/* sulcos decorativos */}
       <div style={{ position: "absolute", left: 3, right: 3, top: 8, height: 1.5, background: "rgba(255,255,255,.4)" }} />
       <div style={{ position: "absolute", left: 3, right: 3, bottom: 8, height: 1.5, background: "rgba(255,255,255,.4)" }} />
-
-      {/* Fogo */}
-      <div style={{
+      <span style={{
         background: "rgba(0,0,0,.4)", padding: "1px 5px", borderRadius: 3,
-        fontSize: ".55rem", fontWeight: 900, letterSpacing: ".02em",
-      }}>
-        {dados?.fogo || "—"}
-      </div>
-
-      {/* Posição */}
-      <div style={{ fontSize: ".5rem", opacity: .9, fontWeight: 700, marginTop: 1 }}>
-        {posicao}
-      </div>
+        fontSize: ".55rem", letterSpacing: ".02em",
+      }}>{dados?.fogo || "—"}</span>
+      <span style={{ fontSize: ".48rem", opacity: .85, marginTop: 2, fontWeight: 700 }}>{posicao}</span>
     </div>
   );
 }
