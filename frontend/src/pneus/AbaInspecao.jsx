@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { collection, getDocs, addDoc, updateDoc, doc, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { ESQUEMAS, sugerirEsquema, SULCO_ALERTA, SULCO_CRITICO } from "./esquemas";
-import { Check, X, Save, Pen, FileDown } from "lucide-react";
+import { Check, X, Save, Pen, FileDown, Eye } from "lucide-react";
+import { baixarPdfInspecao, visualizarPdfInspecao } from "../utils/pdfInspecao";
 
 const CHECKLIST_ITENS = [
   "Alinhamento",
@@ -517,6 +518,49 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
     nome:  profile?.nome || profile?.email || "—",
   });
 
+  function montarPayload() {
+    const agora = new Date();
+    const supervisor = quemSou();
+    const motorista = motoristas.find(m => m.id === motoristaId) || null;
+    const buildVeicPayload = (slot, v, esquemaId) => {
+      const dv = dadosVeic[slot] || {};
+      return {
+        slot, placa: v?.placa || "", tipo: v?.tipo || "", esquemaId,
+        odometro: dv.odometro ? Number(dv.odometro) : null,
+        estepe: dv.estepe || null,
+        pneus: dv.pneus || {},
+      };
+    };
+    const veicsPayload = [];
+    if (cavalo)      veicsPayload.push({ slot: "cavalo",   ordem: 1, titulo: "Cavalo Mecânico", ...buildVeicPayload("cavalo",   cavalo,       sugerirEsquema(cavalo)) });
+    if (carretas.c1) veicsPayload.push({ slot: "carreta1", ordem: 2, titulo: "1ª Carreta",       ...buildVeicPayload("carreta1", carretas.c1, sugerirEsquema(carretas.c1)) });
+    if (carretas.c2) veicsPayload.push({ slot: "carreta2", ordem: 3, titulo: "2ª Carreta",       ...buildVeicPayload("carreta2", carretas.c2, sugerirEsquema(carretas.c2)) });
+    if (carretas.c3) veicsPayload.push({ slot: "carreta3", ordem: 4, titulo: "3ª Carreta",       ...buildVeicPayload("carreta3", carretas.c3, sugerirEsquema(carretas.c3)) });
+    return {
+      numero,
+      data: dataFicha,
+      horaInicio,
+      horaFinal: horaFinal || agora.toTimeString().slice(0, 5),
+      supervisor,
+      motorista: motorista ? { id: motorista.id, nome: motorista.nome } : null,
+      checklist,
+      observacoes: observacoes.trim(),
+      veiculos: veicsPayload,
+      respostaOrdem: ordemOK,
+    };
+  }
+
+  async function gerarPdfAgora(modo) {
+    if (!placaCavalo) { alert("Selecione o veículo (cavalo) antes de gerar o PDF."); return; }
+    const payload = montarPayload();
+    try {
+      if (modo === "ver") await visualizarPdfInspecao(payload, ESQUEMAS);
+      else                await baixarPdfInspecao(payload, ESQUEMAS);
+    } catch (e) {
+      alert("Erro ao gerar PDF: " + e.message);
+    }
+  }
+
   async function salvar() {
     setErro(""); setSucesso("");
     if (!placaCavalo)     { setErro("Selecione o veículo (cavalo)."); return; }
@@ -752,8 +796,11 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
         <button type="button" style={s.btnCancel} onClick={() => { setPlacaCavalo(""); setMotoristaId(""); setChecklist({}); setObservacoes(""); setDadosVeic({}); setOrdemOK(null); }}>
           Limpar
         </button>
-        <button type="button" style={s.btnPdf} onClick={() => alert("PDF idêntico ao papel chega na Fase 5")}>
-          <FileDown size={16} /> Gerar PDF
+        <button type="button" style={s.btnPdf} onClick={() => gerarPdfAgora("baixar")}>
+          <FileDown size={16} /> Baixar PDF
+        </button>
+        <button type="button" style={{ ...s.btnPdf, background: "#0f172a" }} onClick={() => gerarPdfAgora("ver")}>
+          <Eye size={16} /> Visualizar PDF
         </button>
         <button type="button" style={{ ...s.btnSalvar, opacity: salvando ? 0.6 : 1 }} onClick={salvar} disabled={salvando}>
           <Save size={16} /> {salvando ? "Salvando…" : "Salvar Inspeção"}
