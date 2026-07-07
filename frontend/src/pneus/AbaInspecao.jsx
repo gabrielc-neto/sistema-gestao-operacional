@@ -81,66 +81,71 @@ const s = {
   ok:  { background: "#dcfce7", border: "1px solid #86efac", color: "#14532d", padding: "10px 14px", borderRadius: 8, fontWeight: 600, fontSize: ".85rem", marginTop: 12 },
 };
 
-// ── CARD DO PNEU (formato de pneu real — retângulo com cantos arredondados) ─
-function CardPneu({ posicao, dados, onChange }) {
+// ── CARD DO PNEU (estilo esquemático — retângulo colorido clicável) ─────
+function CardPneu({ posicao, dados, onChange, onClick }) {
   const sulcoNum = Number(dados?.sulco);
   const status = !Number.isFinite(sulcoNum) || sulcoNum <= 0
     ? "vazio"
     : sulcoNum < SULCO_CRITICO ? "critico"
     : sulcoNum < SULCO_ALERTA  ? "atencao"
-    : "ok";
+    : sulcoNum < 6             ? "entre46"
+    : sulcoNum < 15            ? "entre6"
+    : "novo";
 
-  const cores = {
-    vazio:   { border: "#94a3b8", bg: "#f8fafc",           accent: "#94a3b8" },
-    ok:      { border: "#16a34a", bg: "linear-gradient(180deg, #f0fdf4, #fff)", accent: "#16a34a" },
-    atencao: { border: "#d97706", bg: "linear-gradient(180deg, #fffbeb, #fff)", accent: "#d97706" },
-    critico: { border: "#dc2626", bg: "linear-gradient(180deg, #fef2f2, #fff)", accent: "#dc2626" },
+  const bg = {
+    vazio:   "repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #f1f5f9 4px, #f1f5f9 8px)",
+    critico: "linear-gradient(180deg, #dc2626, #7f1d1d)",
+    atencao: "linear-gradient(180deg, #f97316, #c2410c)",
+    entre46: "linear-gradient(180deg, #f59e0b, #b45309)",
+    entre6:  "linear-gradient(180deg, #eab308, #a16207)",
+    novo:    "linear-gradient(180deg, #22c55e, #15803d)",
   }[status];
 
   return (
-    <div style={{
-      border: `2px solid ${cores.border}`,
-      borderRadius: 10,
-      background: cores.bg,
-      padding: "5px 6px",
-      display: "flex", flexDirection: "column", gap: 3,
-      minHeight: 118, width: "100%",
-      boxShadow: "inset 0 -2px 4px rgba(0,0,0,.05)",
-      position: "relative",
-    }}>
-      {/* etiqueta da posição no topo */}
+    <div
+      onClick={onClick}
+      style={{
+        width: 52, height: 80, borderRadius: 8,
+        background: bg,
+        border: status === "vazio" ? "1.5px dashed #94a3b8" : "1px solid rgba(0,0,0,.3)",
+        boxShadow: "0 2px 4px rgba(0,0,0,.15), inset 0 -3px 6px rgba(0,0,0,.2)",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        gap: 2, cursor: "pointer",
+        transition: "transform .12s",
+        position: "relative",
+        color: status === "vazio" ? "#64748b" : "#fff",
+        animation: status === "critico" ? "pulsePneu 1.5s infinite" : "none",
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.08)"; e.currentTarget.style.zIndex = 10; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.zIndex = 1; }}
+    >
+      {/* sulcos decorativos */}
+      <div style={{ position: "absolute", left: 3, right: 3, top: 8, height: 1.5, background: "rgba(255,255,255,.4)" }} />
+      <div style={{ position: "absolute", left: 3, right: 3, bottom: 8, height: 1.5, background: "rgba(255,255,255,.4)" }} />
+
+      {/* Fogo */}
       <div style={{
-        background: cores.accent, color: "#fff",
-        fontSize: ".64rem", fontWeight: 900, textAlign: "center",
-        padding: "2px 4px", borderRadius: 5, letterSpacing: ".04em",
-        marginBottom: 2,
-      }}>{posicao}</div>
-
-      {/* PSI */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 1 }}>
-        <span style={{ fontSize: ".52rem", color: "#64748b", fontWeight: 800, letterSpacing: ".05em", textAlign: "center" }}>PSI</span>
-        <NumericInput value={dados?.psi ?? ""} onChange={v => onChange({ ...dados, psi: v })} small />
+        background: "rgba(0,0,0,.4)", padding: "1px 5px", borderRadius: 3,
+        fontSize: ".55rem", fontWeight: 900, letterSpacing: ".02em",
+      }}>
+        {dados?.fogo || "—"}
       </div>
 
-      {/* SULCO */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 1 }}>
-        <span style={{ fontSize: ".52rem", color: "#64748b", fontWeight: 800, letterSpacing: ".05em", textAlign: "center" }}>SULCO (mm)</span>
-        <NumericInput value={dados?.sulco ?? ""} step="0.1" onChange={v => onChange({ ...dados, sulco: v })} small />
-      </div>
-
-      {/* FOGO */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 1, marginTop: 2, paddingTop: 3, borderTop: "1px dashed #e2e8f0" }}>
-        <span style={{ fontSize: ".52rem", color: "#64748b", fontWeight: 800, letterSpacing: ".05em", textAlign: "center" }}>Nº FOGO</span>
-        <input
-          type="text"
-          value={dados?.fogo ?? ""}
-          onChange={e => onChange({ ...dados, fogo: e.target.value.toUpperCase() })}
-          placeholder="—"
-          style={{ width: "100%", padding: "3px 4px", border: "1px dashed #cbd5e1", borderRadius: 3, fontSize: ".78rem", fontWeight: 700, textAlign: "center", color: "#1a3a5c", background: "#fff", fontFamily: "inherit" }}
-        />
+      {/* Posição */}
+      <div style={{ fontSize: ".5rem", opacity: .9, fontWeight: 700, marginTop: 1 }}>
+        {posicao}
       </div>
     </div>
   );
+}
+
+// Keyframes globais uma vez
+if (typeof document !== "undefined" && !document.getElementById("pneus-inspecao-keyframes")) {
+  const st = document.createElement("style");
+  st.id = "pneus-inspecao-keyframes";
+  st.textContent = `@keyframes pulsePneu { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,.5); } 50% { box-shadow: 0 0 0 5px rgba(220,38,38,.1); } }`;
+  document.head.appendChild(st);
 }
 
 function NumericInput({ value, onChange, step = "1", small = false }) {
@@ -160,7 +165,67 @@ function NumericInput({ value, onChange, step = "1", small = false }) {
   );
 }
 
-// ── QUADRO DE 1 VEÍCULO — layout tabular do preview v2 ───────────────────
+// ── MODAL DE EDIÇÃO DO PNEU (abre ao clicar) ────────────────────────────
+function ModalEditPneu({ posicao, dados, onSave, onClose }) {
+  const [psi, setPsi] = useState(dados?.psi ?? "");
+  const [sulco, setSulco] = useState(dados?.sulco ?? "");
+  const [fogo, setFogo] = useState(dados?.fogo ?? "");
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.55)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: 20, width: 340, boxShadow: "0 24px 60px rgba(0,0,0,.35)" }}>
+        <div style={{ marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h3 style={{ margin: 0, color: "#1a3a5c", fontSize: "1rem", fontWeight: 800 }}>Editando: {posicao}</h3>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: "1.2rem" }}>×</button>
+        </div>
+        <div style={{ display: "grid", gap: 10 }}>
+          <div>
+            <label style={{ fontSize: ".72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Nº de Fogo</label>
+            <input type="text" value={fogo} onChange={e => setFogo(e.target.value.toUpperCase())} autoFocus style={{ width: "100%", padding: "9px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontFamily: "inherit", fontSize: "1rem", fontWeight: 700, color: "#1a3a5c" }} />
+          </div>
+          <div>
+            <label style={{ fontSize: ".72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>PSI</label>
+            <input type="number" value={psi} onChange={e => setPsi(e.target.value)} style={{ width: "100%", padding: "9px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontFamily: "inherit", fontSize: "1rem", fontWeight: 700 }} />
+          </div>
+          <div>
+            <label style={{ fontSize: ".72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Sulco (mm)</label>
+            <input type="number" step="0.1" value={sulco} onChange={e => setSulco(e.target.value)} style={{ width: "100%", padding: "9px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontFamily: "inherit", fontSize: "1rem", fontWeight: 700 }} />
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+          <button onClick={onClose} style={{ padding: "10px 18px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#f1f5f9", color: "#475569", fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
+          <button onClick={() => { onSave({ psi, sulco, fogo }); onClose(); }} style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Salvar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── LEGENDA DE CORES ────────────────────────────────────────────────────
+function LegendaCores() {
+  const items = [
+    { bg: "linear-gradient(180deg, #22c55e, #15803d)", label: "≥ 15 mm (novo)" },
+    { bg: "linear-gradient(180deg, #eab308, #a16207)", label: "6 – 15 mm" },
+    { bg: "linear-gradient(180deg, #f59e0b, #b45309)", label: "4 – 6 mm (atenção)" },
+    { bg: "linear-gradient(180deg, #f97316, #c2410c)", label: "3 – 4 mm (crítico atenção)" },
+    { bg: "linear-gradient(180deg, #dc2626, #7f1d1d)", label: "< 3 mm (crítico troca)" },
+    { bg: "repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #f1f5f9 4px, #f1f5f9 8px)", label: "Vazio (não medido)" },
+  ];
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+      <div style={{ fontSize: ".72rem", fontWeight: 800, color: "#1a3a5c", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Legenda de sulco</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px" }}>
+        {items.map((i, k) => (
+          <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: ".72rem", color: "#475569" }}>
+            <span style={{ width: 14, height: 14, borderRadius: 3, border: "1px solid rgba(0,0,0,.15)", background: i.bg, display: "inline-block" }} />
+            {i.label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── QUADRO DE 1 VEÍCULO — layout esquemático (aprovado do preview) ──────
 function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
   if (!veiculo) {
     return (
@@ -200,7 +265,9 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
   const setEstepe = (v) => onChange({ ...dados, estepe: v });
   const setOdom = (v) => onChange({ ...dados, odometro: v });
 
-  const eLado = esquema.estepeLado; // "esquerda" | "direita" | undefined
+  const [editando, setEditando] = useState(null); // { posicao, dados, isEstepe }
+
+  const eLado = esquema.estepeLado;
   const linhas = esquema.eixos;
 
   // Layout: grid 5 colunas
@@ -219,112 +286,111 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
         </div>
       </div>
 
-      {/* BLOCO DO ESTEPE (simplificado — só o número de fogo) */}
-      {esquema.temEstepe && (
-        <div style={{
-          display: "flex",
-          justifyContent: eLado === "direita" ? "flex-end" : "flex-start",
-          marginBottom: 12,
-        }}>
-          <div style={{
-            width: 180,
-            border: "2px dashed #94a3b8",
-            borderRadius: 10,
-            padding: "8px 10px",
-            background: "#f8fafc",
-            display: "flex", alignItems: "center", gap: 10,
-          }}>
-            <div style={{
-              background: "#94a3b8", color: "#fff",
-              fontSize: ".62rem", fontWeight: 900,
-              padding: "2px 8px", borderRadius: 5,
-              letterSpacing: ".05em",
-            }}>ESTEPE</div>
-            <input
-              type="text"
-              value={dados?.estepe?.fogo ?? ""}
-              onChange={e => setEstepe({ ...(dados?.estepe || {}), fogo: e.target.value.toUpperCase() })}
-              placeholder="Nº de fogo"
-              style={{
-                flex: 1, padding: "5px 8px",
-                border: "1px dashed #cbd5e1", borderRadius: 4,
-                fontSize: ".82rem", fontWeight: 700, textAlign: "center",
-                color: "#1a3a5c", background: "#fff", fontFamily: "inherit",
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* GRID DE EIXOS — 3 colunas: pneus esq | odômetro | pneus dir
-          align-items: center pra garantir alinhamento horizontal perfeito
-          entre pneus esquerdos e direitos de cada eixo */}
+      {/* CONTAINER DO DESENHO ESQUEMÁTICO */}
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 120px 1fr",
-        gap: 14,
-        alignItems: "center",
-        padding: "6px 0",
-        justifyContent: "center",
+        position: "relative",
+        padding: "16px 16px 12px",
+        background: "linear-gradient(180deg, #f8fafc, #fff)",
+        border: "1px solid #e2e8f0",
+        borderRadius: 12,
       }}>
-        {linhas.map((eixo, i) => {
-          const meio = Math.floor(eixo.posicoes.length / 2);
-          const esq  = eixo.posicoes.slice(0, meio);
-          const dir  = eixo.posicoes.slice(meio);
+        {/* Estepe (canto sup esquerdo pro cavalo, sup direito pra carreta) */}
+        {esquema.temEstepe && (
+          <div style={{
+            position: "absolute",
+            top: 12,
+            ...(eLado === "direita" ? { right: 12 } : { left: 12 }),
+            background: "#fff", border: "2px dashed #94a3b8",
+            borderRadius: 8, padding: "4px 6px",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+            zIndex: 5,
+          }}>
+            <div style={{ fontSize: ".55rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Estepe</div>
+            <CardPneu posicao="EST" dados={dados?.estepe || {}}
+              onClick={() => setEditando({ posicao: "EST", dados: dados?.estepe || {}, isEstepe: true })} />
+          </div>
+        )}
 
-          return (
-            <>
-              {/* pneus esquerda — alinhamento à direita pra encostar no chassi central */}
-              <div key={`esq-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${esq.length}, minmax(0, 100px))`, gap: 8, justifyContent: "end" }}>
-                {esq.map(pos => (
-                  <CardPneu key={pos} posicao={pos}
-                    dados={(dados?.pneus || {})[pos] || {}}
-                    onChange={v => setPneu(pos, v)} />
-                ))}
-              </div>
+        {/* Cabine (só cavalo) */}
+        {esquemaId?.startsWith("cavalo") && (
+          <div style={{
+            background: "linear-gradient(180deg, #1e3a8a, #1a3a5c)",
+            color: "#fff", textAlign: "center",
+            padding: "6px 12px", borderRadius: "8px 8px 0 0",
+            fontSize: ".68rem", fontWeight: 800, letterSpacing: ".05em",
+            marginBottom: 6, marginTop: esquema.temEstepe && eLado === "esquerda" ? 100 : 0,
+          }}>
+            ◄ CABINE / FRENTE
+          </div>
+        )}
 
-              {/* odômetro (só na primeira linha; nas outras: divisão do chassi) */}
-              {i === 0 ? (
-                <div key={`odom-${i}`} style={{
-                  display: "flex", flexDirection: "column",
-                  alignItems: "center", gap: 4,
-                  padding: 10, border: "1.5px solid #f59e0b",
-                  borderRadius: 10, background: "linear-gradient(180deg, #fff7ed, #fef3c7)",
-                  minHeight: 118, justifyContent: "center",
-                }}>
-                  <div style={s.odomLabel}>ODÔMETRO</div>
-                  <input
-                    type="number" value={dados?.odometro ?? ""}
-                    onChange={e => setOdom(e.target.value)} placeholder="KM"
-                    style={{ ...s.odomInp, width: "100%", fontSize: ".95rem" }}
-                  />
-                  <div style={{ fontSize: ".62rem", color: "#92400e", fontStyle: "italic" }}>Manual</div>
+        {/* Eixos */}
+        <div style={{ marginTop: esquema.temEstepe && !esquemaId?.startsWith("cavalo") && eLado === "direita" ? 100 : 0 }}>
+          {linhas.map((eixo, i) => {
+            const meio = Math.floor(eixo.posicoes.length / 2);
+            const esq  = eixo.posicoes.slice(0, meio);
+            const dir  = eixo.posicoes.slice(meio);
+            return (
+              <div key={i} style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 100px 1fr",
+                gap: 8, alignItems: "center",
+                padding: "18px 0",
+                borderBottom: i < linhas.length - 1 ? "1px dashed #e2e8f0" : "none",
+              }}>
+                {/* pneus esquerda */}
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+                  {esq.map(pos => (
+                    <CardPneu key={pos} posicao={pos}
+                      dados={(dados?.pneus || {})[pos] || {}}
+                      onClick={() => setEditando({ posicao: pos, dados: (dados?.pneus || {})[pos] || {}, isEstepe: false })} />
+                  ))}
                 </div>
-              ) : (
-                <div key={`odom-empty-${i}`} style={{
-                  minHeight: 118,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
+
+                {/* centro: odômetro na primeira linha; espaço nas demais */}
+                {i === 0 ? (
                   <div style={{
-                    width: 30, height: "80%",
-                    background: "repeating-linear-gradient(180deg, #cbd5e1 0 6px, transparent 6px 12px)",
-                    borderRadius: 4,
-                  }} />
-                </div>
-              )}
+                    display: "flex", flexDirection: "column",
+                    alignItems: "center", gap: 3,
+                    padding: 8, border: "1.5px solid #f59e0b",
+                    borderRadius: 8, background: "linear-gradient(180deg, #fff7ed, #fef3c7)",
+                  }}>
+                    <div style={{ fontSize: ".58rem", color: "#7c2d12", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".04em" }}>Odômetro</div>
+                    <input
+                      type="number" value={dados?.odometro ?? ""}
+                      onChange={e => setOdom(e.target.value)} placeholder="KM"
+                      style={{ width: "100%", padding: "4px 4px", border: "1px solid #f59e0b", borderRadius: 4, fontFamily: "inherit", fontSize: ".85rem", fontWeight: 800, textAlign: "center", background: "#fff", color: "#7c2d12", MozAppearance: "textfield" }}
+                    />
+                    <div style={{ fontSize: ".55rem", color: "#92400e", fontStyle: "italic" }}>Manual</div>
+                  </div>
+                ) : (
+                  <div style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".58rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase" }}>
+                    {eixo.nome.split("—")[0].trim()}
+                  </div>
+                )}
 
-              {/* pneus direita — alinhamento à esquerda pra encostar no chassi central */}
-              <div key={`dir-${i}`} style={{ display: "grid", gridTemplateColumns: `repeat(${dir.length}, minmax(0, 100px))`, gap: 8, justifyContent: "start" }}>
-                {dir.map(pos => (
-                  <CardPneu key={pos} posicao={pos}
-                    dados={(dados?.pneus || {})[pos] || {}}
-                    onChange={v => setPneu(pos, v)} />
-                ))}
+                {/* pneus direita */}
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-start", alignItems: "center" }}>
+                  {dir.map(pos => (
+                    <CardPneu key={pos} posicao={pos}
+                      dados={(dados?.pneus || {})[pos] || {}}
+                      onClick={() => setEditando({ posicao: pos, dados: (dados?.pneus || {})[pos] || {}, isEstepe: false })} />
+                  ))}
+                </div>
               </div>
-            </>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
+
+      {editando && (
+        <ModalEditPneu
+          posicao={editando.posicao}
+          dados={editando.dados}
+          onSave={v => editando.isEstepe ? setEstepe(v) : setPneu(editando.posicao, v)}
+          onClose={() => setEditando(null)}
+        />
+      )}
     </div>
   );
 }
@@ -510,8 +576,10 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
   return (
     <div>
       <div style={s.info}>
-        Preencha a ficha. Ao salvar, o sulco de cada pneu identificado por fogo é atualizado automaticamente e a inspeção fica arquivada em <strong>pneu_inspecoes</strong>. Assinaturas digitais e PDF chegam em breve.
+        Clique em cada pneu do desenho pra editar PSI, sulco e nº de fogo. Cor muda automática pelo sulco. Ao salvar, o sulco de cada pneu é gravado no cadastro dele.
       </div>
+
+      <LegendaCores />
 
       <div style={s.ficha}>
         {/* HEADER */}
