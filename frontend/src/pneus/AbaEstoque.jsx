@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { addDoc, updateDoc, deleteDoc, doc, collection } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { Plus, Search, Package, Edit3, Trash2, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, Search, Package, Edit3, Trash2, X, ExternalLink } from "lucide-react";
 import { VIDAS, STATUS_PNEU } from "./esquemas";
 
 // Estilos compartilhados na aba
@@ -60,6 +61,7 @@ const EMPTY_PNEU = {
 const fmtBRL = (v) => (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export default function AbaEstoque({ pneus, setPneus, fornecedores, garantirFornecedor, quemSou }) {
+  const navigate = useNavigate();
   const [busca,    setBusca]    = useState("");
   const [filtroMarca,  setFiltroMarca]  = useState("todas");
   const [filtroMedida, setFiltroMedida] = useState("todas");
@@ -231,6 +233,9 @@ export default function AbaEstoque({ pneus, setPneus, fornecedores, garantirForn
           {lista.map(p => (
             <div key={p.id} style={st.card}>
               <div style={st.cardActions}>
+                <button style={st.iconBtn} onClick={() => navigate(`/pneus/${p.id}`)} title="Ver ficha completa">
+                  <ExternalLink size={15} />
+                </button>
                 <button style={st.iconBtn} onClick={() => abrirEdit(p)} title="Editar">
                   <Edit3 size={15} />
                 </button>

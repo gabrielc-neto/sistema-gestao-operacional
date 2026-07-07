@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { addDoc, updateDoc, doc, collection } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { Send, PackageCheck, X, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Send, PackageCheck, X, RefreshCw, ExternalLink } from "lucide-react";
 import { VIDAS } from "./esquemas";
 
 const fmtBRL = (v) => (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -52,6 +53,7 @@ const s = {
 };
 
 export default function AbaRecapagem({ pneus, setPneus, fornecedores, garantirFornecedor, quemSou }) {
+  const navigate = useNavigate();
   const emRecapagem = useMemo(() => pneus.filter(p => p.status === "recapagem"), [pneus]);
   const emUso       = useMemo(() => pneus.filter(p => p.status === "em_uso"), [pneus]);
 
@@ -82,7 +84,9 @@ export default function AbaRecapagem({ pneus, setPneus, fornecedores, garantirFo
               <div key={p.id} style={s.card}>
                 <div style={s.cardTop}>
                   <div>
-                    <div style={s.cardFogo}>Fogo · {p.fogo}</div>
+                    <div style={s.cardFogo} onClick={() => navigate(`/pneus/${p.id}`)} title="Abrir ficha" role="button" tabIndex={0}>
+                      Fogo · {p.fogo} <ExternalLink size={11} style={{ marginLeft: 3, verticalAlign: "-1px", color: "#94a3b8" }} />
+                    </div>
                     <div style={s.cardMarca}>{p.marca} {p.modelo}</div>
                   </div>
                   <button style={{ ...s.actionBtn, background: "#dcfce7", color: "#166534" }} onClick={() => setModal({ modo: "receber", pneu: p })}>
@@ -114,7 +118,9 @@ export default function AbaRecapagem({ pneus, setPneus, fornecedores, garantirFo
               <div key={p.id} style={s.card}>
                 <div style={s.cardTop}>
                   <div>
-                    <div style={s.cardFogo}>Fogo · {p.fogo}</div>
+                    <div style={s.cardFogo} onClick={() => navigate(`/pneus/${p.id}`)} title="Abrir ficha" role="button" tabIndex={0}>
+                      Fogo · {p.fogo} <ExternalLink size={11} style={{ marginLeft: 3, verticalAlign: "-1px", color: "#94a3b8" }} />
+                    </div>
                     <div style={s.cardMarca}>{p.marca} {p.modelo}</div>
                   </div>
                   <button style={{ ...s.actionBtn, background: "#fef3c7", color: "#78350f" }} onClick={() => setModal({ modo: "enviar", pneu: p })}>
