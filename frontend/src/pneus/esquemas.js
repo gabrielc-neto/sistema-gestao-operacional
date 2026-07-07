@@ -32,14 +32,14 @@ export const ESQUEMAS = {
     temEstepe: true,
     estepeLado: "esquerda",
   },
-  cavalo_4eixos: {
-    label: "Cavalo 8x2 / 8x4 (com truque)",
-    posicoes: ["TE","TD","2°EEE","2°EEI","2°EDI","2°EDE","3°EEE","3°EEI","3°EDI","3°EDE","TRKEE","TRKEI","TRKDI","TRKDE"],
+  cavalo_duplodir: {
+    label: "Cavalo com 2 eixos direcionais (8x2 / 8x4)",
+    posicoes: ["1TE","1TD","2TE","2TD","3°EEE","3°EEI","3°EDI","3°EDE","4°EEE","4°EEI","4°EDI","4°EDE"],
     eixos: [
-      { nome: "1º eixo — Direção", posicoes: ["TE","TD"] },
-      { nome: "2º eixo — Tração",  posicoes: ["2°EEE","2°EEI","2°EDI","2°EDE"] },
+      { nome: "1º eixo — Direção", posicoes: ["1TE","1TD"] },
+      { nome: "2º eixo — Direção", posicoes: ["2TE","2TD"] },
       { nome: "3º eixo — Tração",  posicoes: ["3°EEE","3°EEI","3°EDI","3°EDE"] },
-      { nome: "4º eixo — Truque",  posicoes: ["TRKEE","TRKEI","TRKDI","TRKDE"] },
+      { nome: "4º eixo — Tração",  posicoes: ["4°EEE","4°EEI","4°EDI","4°EDE"] },
     ],
     temEstepe: true,
     estepeLado: "esquerda",
@@ -120,7 +120,7 @@ export function sugerirEsquema(veiculo) {
     // Default Pontual: sempre 3 eixos
     return "carreta_3eixos";
   }
-  if (conj.includes("truque") || eixos === 4) return "cavalo_4eixos";
+  if (conj.includes("duplo dir") || conj.includes("8x2") || conj.includes("8x4") || eixos === 4) return "cavalo_duplodir";
   if (conj.includes("truck") || conj.includes("trucado") || eixos === 3) return "cavalo_trucado";
   if (conj.includes("toco")  || eixos === 2) return "cavalo_toco";
   return "cavalo_trucado";
