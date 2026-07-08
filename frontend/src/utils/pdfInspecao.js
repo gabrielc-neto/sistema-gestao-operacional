@@ -34,7 +34,7 @@ function cardPneu(d = {}) {
   const fogo  = d.fogo  ? esc(d.fogo)  : "—";
   const psi   = d.psi   ? esc(d.psi)   : "—";
   const sulco = d.sulco ? esc(d.sulco) + "mm" : "—";
-  return `<div style="width:38px; height:62px; border-radius:5px; border:1.5px solid ${c.border}; background:${c.bg}; color:${c.cor}; display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800; line-height:1.1; gap:2px; overflow:hidden;">
+  return `<div style="width:34px; height:52px; border-radius:5px; border:1.5px solid ${c.border}; background:${c.bg}; color:${c.cor}; display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800; line-height:1.1; gap:1px; overflow:hidden;">
     <div style="font-size:8.5px;">${fogo}</div>
     <div style="font-size:7px; opacity:.9;">${psi}</div>
     <div style="font-size:7px; opacity:.9;">${sulco}</div>
@@ -86,7 +86,7 @@ function quadroVisual(veic, esquemasMap) {
     </div>` : "";
 
   return `
-    <div style="border:1.5px solid #1a3a5c; border-radius:6px; background:#fff; min-height:300px; display:flex; flex-direction:column;">
+    <div style="border:1.5px solid #1a3a5c; border-radius:6px; overflow:hidden; background:#fff; height:285px; display:flex; flex-direction:column;">
       <div style="background:#f8fafc; padding:5px 10px; display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #1a3a5c;">
         <div style="font-size:9px; font-weight:800; color:#1a3a5c; text-transform:uppercase; letter-spacing:.03em;"><span style="background:#1a3a5c; color:#fff; padding:1px 8px; border-radius:3px; margin-right:6px; font-size:8px;">${veic.ordem}º</span>${esc(veic.titulo)}</div>
         <div style="font-size:9px;"><span style="color:#64748b; font-weight:700;">PLACA</span> <strong style="letter-spacing:.05em;">${esc(veic.placa)}</strong></div>
@@ -145,7 +145,7 @@ function checklistTabela(checklist) {
 
 function slotVazio(i) {
   return `
-    <div style="border:1.5px solid #1a3a5c; border-radius:6px; background:#fff; min-height:300px; display:flex; flex-direction:column;">
+    <div style="border:1.5px solid #1a3a5c; border-radius:6px; overflow:hidden; background:#fff; height:285px; display:flex; flex-direction:column;">
       <div style="background:#f8fafc; padding:5px 10px; display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #1a3a5c;">
         <div style="font-size:9px; font-weight:800; color:#1a3a5c; text-transform:uppercase;"><span style="background:#1a3a5c; color:#fff; padding:1px 8px; border-radius:3px; margin-right:6px; font-size:8px;">${i+1}º</span>${i === 0 ? "Cavalo Mecânico" : `${i}ª Carreta`}</div>
         <div style="font-size:9px;"><span style="color:#64748b;">PLACA</span> <strong>—</strong></div>
@@ -175,7 +175,7 @@ function buildHtml(inspecao, esquemasMap) {
   const cell = (i) => slots[i] ? quadroVisual(slots[i], esquemasMap) : slotVazio(i);
 
   return `
-    <div style="font-family: 'Segoe UI', system-ui, sans-serif; color:#0f172a; padding: 6px 10px; width: 1120px; min-height: 792px; box-sizing: border-box; background:#fff;">
+    <div style="font-family: 'Segoe UI', system-ui, sans-serif; color:#0f172a; padding: 6px 10px; width: 1120px; height: 792px; box-sizing: border-box; background:#fff; overflow: hidden;">
       <!-- CABEÇALHO SUPER COMPACTO (uma linha) -->
       <table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
         <tr>
@@ -273,16 +273,8 @@ async function gerarPdfBlob(inspecao, esquemasMap) {
     const pageW = pdf.internal.pageSize.getWidth();   // 297
     const pageH = pdf.internal.pageSize.getHeight();  // 210
     const imgData = canvas.toDataURL("image/jpeg", 0.95);
-    // Ajusta imagem preservando aspect ratio — evita cortar 4º eixo quando quadro cresce.
-    const canvasRatio = canvas.width / canvas.height;
-    const pageRatio   = pageW / pageH;
-    let w, h, x, y;
-    if (canvasRatio >= pageRatio) {
-      w = pageW; h = pageW / canvasRatio; x = 0; y = (pageH - h) / 2;
-    } else {
-      h = pageH; w = pageH * canvasRatio; x = (pageW - w) / 2; y = 0;
-    }
-    pdf.addImage(imgData, "JPEG", x, y, w, h, undefined, "FAST");
+    // Container já está exato 1120x792 (aspect ratio A4L) — preenche página inteira.
+    pdf.addImage(imgData, "JPEG", 0, 0, pageW, pageH, undefined, "FAST");
     return pdf.output("blob");
   } finally {
     wrap.remove();
