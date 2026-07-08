@@ -286,34 +286,60 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
         flexDirection: "column",
       }}>
         {/* Estepe canto superior direito */}
-        {esquema.temEstepe && (
-          <div style={{
-            position: "absolute",
-            top: esquemaId?.startsWith("cavalo") ? 38 : 8,
-            right: 8,
-            background: "#fff", border: "2px dashed #94a3b8",
-            borderRadius: 8, padding: "3px 5px",
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-            zIndex: 5,
-          }}>
-            <div style={{ fontSize: ".55rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Estepe</div>
-            <div
-              onClick={() => setEditando({ posicao: "EST", dados: dados?.estepe || {}, isEstepe: true })}
-              style={{
-                width: 32, height: 52, borderRadius: 5,
-                background: "repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #f1f5f9 4px, #f1f5f9 8px)",
-                border: "1.5px dashed #94a3b8",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer",
-                fontSize: ".5rem", fontWeight: 800, color: "#64748b",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-            >
-              {dados?.estepe?.fogo || "—"}
+        {esquema.temEstepe && (() => {
+          const est = dados?.estepe || {};
+          const sN = Number(est.sulco);
+          const st = !Number.isFinite(sN) || sN <= 0 ? "vazio"
+                    : sN < 4  ? "critico"
+                    : sN < 6  ? "entre4"
+                    : sN < 15 ? "entre6"
+                    : "novo";
+          const bg = {
+            vazio:   "repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #f1f5f9 4px, #f1f5f9 8px)",
+            critico: "linear-gradient(180deg, #dc2626, #7f1d1d)",
+            entre4:  "linear-gradient(180deg, #f97316, #c2410c)",
+            entre6:  "linear-gradient(180deg, #eab308, #a16207)",
+            novo:    "linear-gradient(180deg, #22c55e, #15803d)",
+          }[st];
+          const parts = [];
+          if (est.fogo)  parts.push(`Fogo: ${est.fogo}`);
+          if (est.sulco) parts.push(`Sulco: ${est.sulco}mm`);
+          if (est.psi)   parts.push(`PSI: ${est.psi}`);
+          const tip = `Estepe${parts.length ? " — " + parts.join(" | ") : " (vazio)"}`;
+          return (
+            <div style={{
+              position: "absolute",
+              top: esquemaId?.startsWith("cavalo") ? 38 : 8,
+              right: 8,
+              background: "#fff", border: "2px dashed #94a3b8",
+              borderRadius: 8, padding: "3px 5px",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+              zIndex: 5,
+            }}>
+              <div style={{ fontSize: ".55rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Estepe</div>
+              <div
+                onClick={() => setEditando({ posicao: "EST", dados: est, isEstepe: true })}
+                title={tip}
+                style={{
+                  width: 32, height: 52, borderRadius: 5,
+                  background: bg,
+                  border: st === "vazio" ? "1.5px dashed #94a3b8" : "1px solid rgba(0,0,0,.3)",
+                  boxShadow: st === "vazio" ? "none" : "0 2px 4px rgba(0,0,0,.15), inset 0 -3px 6px rgba(0,0,0,.2)",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                  color: st === "vazio" ? "#64748b" : "#fff",
+                  fontSize: ".5rem", fontWeight: 800,
+                  gap: 1,
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                <span style={{ background: st === "vazio" ? "transparent" : "rgba(0,0,0,.4)", padding: st === "vazio" ? 0 : "1px 4px", borderRadius: 3 }}>{est.fogo || "—"}</span>
+                {est.sulco && <span style={{ fontSize: ".42rem", opacity: .9 }}>{est.sulco}mm</span>}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* CORPO com chassi vertical + eixos — altura fixa pra padronizar cards */}
         <div style={{
