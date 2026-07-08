@@ -63,7 +63,7 @@ function quadroVisual(veic, esquemasMap) {
     const cardsEsq = esq.map(pos => cardPneu(veic.pneus?.[pos] || {})).join('<div style="width:3px;"></div>');
     const cardsDir = dir.map(pos => cardPneu(veic.pneus?.[pos] || {})).join('<div style="width:3px;"></div>');
     return `
-      <div style="display:flex; align-items:center; justify-content:center; padding:5px 0; position:relative;">
+      <div style="display:flex; align-items:center; justify-content:center; padding:2px 0; position:relative;">
         <div style="flex:1; display:flex; justify-content:flex-end; align-items:center;">
           <div style="display:flex; align-items:center;">${cardsEsq}</div>
           <div style="width:22px; height:2px; background:#94a3b8;"></div>
@@ -86,7 +86,7 @@ function quadroVisual(veic, esquemasMap) {
     </div>` : "";
 
   return `
-    <div style="border:1.5px solid #1a3a5c; border-radius:6px; overflow:hidden; background:#fff; height:265px; display:flex; flex-direction:column;">
+    <div style="border:1.5px solid #1a3a5c; border-radius:6px; background:#fff; min-height:300px; display:flex; flex-direction:column;">
       <div style="background:#f8fafc; padding:5px 10px; display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #1a3a5c;">
         <div style="font-size:9px; font-weight:800; color:#1a3a5c; text-transform:uppercase; letter-spacing:.03em;"><span style="background:#1a3a5c; color:#fff; padding:1px 8px; border-radius:3px; margin-right:6px; font-size:8px;">${veic.ordem}º</span>${esc(veic.titulo)}</div>
         <div style="font-size:9px;"><span style="color:#64748b; font-weight:700;">PLACA</span> <strong style="letter-spacing:.05em;">${esc(veic.placa)}</strong></div>
@@ -95,7 +95,7 @@ function quadroVisual(veic, esquemasMap) {
         <div style="font-size:8px; font-weight:800; color:#7c2d12; text-transform:uppercase;">Odômetro</div>
         <div style="flex:1; text-align:right; font-size:10px; font-weight:900; color:#7c2d12;">${veic.odometro != null ? veic.odometro.toLocaleString("pt-BR") + " km" : "—"}</div>
       </div>
-      <div style="position:relative; background:linear-gradient(180deg, #dbeafe, #eef2f7); padding:8px 10px; flex:1; display:flex; flex-direction:column; justify-content:space-around;">
+      <div style="position:relative; background:linear-gradient(180deg, #dbeafe, #eef2f7); padding:4px 10px; flex:1; display:flex; flex-direction:column; justify-content:space-around;">
         <div style="position:absolute; left:50%; top:8px; bottom:8px; width:10px; transform:translateX(-50%); background:linear-gradient(90deg, #cbd5e1, #94a3b8 50%, #cbd5e1); border:1px solid #64748b; border-radius:2px; z-index:0;"></div>
         ${estepe}
         <div style="position:relative; z-index:2; display:flex; flex-direction:column; justify-content:space-around; flex:1;">${eixosHtml}</div>
@@ -145,7 +145,7 @@ function checklistTabela(checklist) {
 
 function slotVazio(i) {
   return `
-    <div style="border:1.5px solid #1a3a5c; border-radius:6px; overflow:hidden; background:#fff; height:265px; display:flex; flex-direction:column;">
+    <div style="border:1.5px solid #1a3a5c; border-radius:6px; background:#fff; min-height:300px; display:flex; flex-direction:column;">
       <div style="background:#f8fafc; padding:5px 10px; display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #1a3a5c;">
         <div style="font-size:9px; font-weight:800; color:#1a3a5c; text-transform:uppercase;"><span style="background:#1a3a5c; color:#fff; padding:1px 8px; border-radius:3px; margin-right:6px; font-size:8px;">${i+1}º</span>${i === 0 ? "Cavalo Mecânico" : `${i}ª Carreta`}</div>
         <div style="font-size:9px;"><span style="color:#64748b;">PLACA</span> <strong>—</strong></div>
@@ -175,7 +175,7 @@ function buildHtml(inspecao, esquemasMap) {
   const cell = (i) => slots[i] ? quadroVisual(slots[i], esquemasMap) : slotVazio(i);
 
   return `
-    <div style="font-family: 'Segoe UI', system-ui, sans-serif; color:#0f172a; padding: 6px 10px; width: 1120px; height: 792px; box-sizing: border-box; background:#fff; overflow: hidden;">
+    <div style="font-family: 'Segoe UI', system-ui, sans-serif; color:#0f172a; padding: 6px 10px; width: 1120px; min-height: 792px; box-sizing: border-box; background:#fff;">
       <!-- CABEÇALHO SUPER COMPACTO (uma linha) -->
       <table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
         <tr>
@@ -273,8 +273,16 @@ async function gerarPdfBlob(inspecao, esquemasMap) {
     const pageW = pdf.internal.pageSize.getWidth();   // 297
     const pageH = pdf.internal.pageSize.getHeight();  // 210
     const imgData = canvas.toDataURL("image/jpeg", 0.95);
-    // Preenche a página inteira — o container HTML já está com aspect ratio A4L.
-    pdf.addImage(imgData, "JPEG", 0, 0, pageW, pageH, undefined, "FAST");
+    // Ajusta imagem preservando aspect ratio — evita cortar 4º eixo quando quadro cresce.
+    const canvasRatio = canvas.width / canvas.height;
+    const pageRatio   = pageW / pageH;
+    let w, h, x, y;
+    if (canvasRatio >= pageRatio) {
+      w = pageW; h = pageW / canvasRatio; x = 0; y = (pageH - h) / 2;
+    } else {
+      h = pageH; w = pageH * canvasRatio; x = (pageW - w) / 2; y = 0;
+    }
+    pdf.addImage(imgData, "JPEG", x, y, w, h, undefined, "FAST");
     return pdf.output("blob");
   } finally {
     wrap.remove();
