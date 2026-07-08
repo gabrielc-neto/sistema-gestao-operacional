@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs, addDoc, updateDoc, doc, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { ESQUEMAS, sugerirEsquema, SULCO_ALERTA, SULCO_CRITICO } from "./esquemas";
+import { ESQUEMAS, sugerirEsquema } from "./esquemas";
 import { Check, X, Save, Pen, FileDown, Eye } from "lucide-react";
 import { baixarPdfInspecao, visualizarPdfInspecao } from "../utils/pdfInspecao";
 
@@ -43,8 +43,8 @@ const s = {
   obs: { padding: "14px 16px", display: "flex", flexDirection: "column" },
   txt: { flex: 1, width: "100%", minHeight: 190, border: "1px solid #cbd5e1", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: ".88rem", resize: "vertical" },
 
-  gridVeic: { display: "grid", gridTemplateColumns: "1fr 1fr" },
-  quadro: { borderRight: "1.5px solid #1a3a5c", borderBottom: "1.5px solid #1a3a5c", padding: "12px 14px" },
+  gridVeic: { display: "grid", gridTemplateColumns: "1fr 1fr", gridAutoRows: "1fr" },
+  quadro: { borderRight: "1.5px solid #1a3a5c", borderBottom: "1.5px solid #1a3a5c", padding: "12px 14px", display: "flex", flexDirection: "column" },
   qHead: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 10, paddingBottom: 6, borderBottom: "1.5px solid #1a3a5c" },
   qTit: { fontSize: ".88rem", fontWeight: 800, color: "#1a3a5c", textTransform: "uppercase", letterSpacing: ".03em", display: "inline-flex", alignItems: "center", gap: 8 },
   qNum: { display: "inline-block", background: "#1a3a5c", color: "#fff", padding: "3px 12px", borderRadius: 6, fontSize: ".82rem" },
@@ -142,23 +142,6 @@ if (typeof document !== "undefined" && !document.getElementById("pneus-inspecao-
   document.head.appendChild(st);
 }
 
-function NumericInput({ value, onChange, step = "1", small = false }) {
-  return (
-    <input
-      type="number" step={step} value={value} onChange={e => onChange(e.target.value)}
-      style={{
-        width: "100%",
-        padding: small ? "3px 3px" : "6px 4px",
-        border: "1px solid #cbd5e1", borderRadius: 3,
-        fontFamily: "inherit",
-        fontSize: small ? ".84rem" : ".95rem",
-        fontWeight: 700, textAlign: "center",
-        background: "#fff", color: "#0f172a", MozAppearance: "textfield",
-      }}
-    />
-  );
-}
-
 // ── MODAL DE EDIÇÃO DO PNEU (abre ao clicar) ────────────────────────────
 function ModalEditPneu({ posicao, dados, onSave, onClose }) {
   const [psi, setPsi] = useState(dados?.psi ?? "");
@@ -221,6 +204,9 @@ function LegendaCores() {
 
 // ── QUADRO DE 1 VEÍCULO — layout esquemático (aprovado do preview) ──────
 function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
+  // IMPORTANTE: hooks devem ser chamados sempre no topo, antes de qualquer return
+  const [editando, setEditando] = useState(null);
+
   if (!veiculo) {
     return (
       <div style={s.quadro}>
@@ -259,9 +245,6 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
   const setEstepe = (v) => onChange({ ...dados, estepe: v });
   const setOdom = (v) => onChange({ ...dados, odometro: v });
 
-  const [editando, setEditando] = useState(null); // { posicao, dados, isEstepe }
-
-  const eLado = esquema.estepeLado;
   const linhas = esquema.eixos;
 
   // Layout: grid 5 colunas
@@ -288,7 +271,6 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
           onChange={e => setOdom(e.target.value)} placeholder="Digite o KM"
           style={{ padding: "6px 12px", border: "1.5px solid #f59e0b", borderRadius: 6, fontFamily: "inherit", fontSize: ".95rem", fontWeight: 800, textAlign: "center", background: "#fff", color: "#7c2d12", width: 140, MozAppearance: "textfield" }}
         />
-        <span style={{ fontSize: ".68rem", color: "#92400e", fontStyle: "italic" }}>Manual</span>
       </div>
 
       {/* CONTAINER DO DESENHO ESQUEMÁTICO — idêntico à imagem WhatsApp 16:53 */}
@@ -299,19 +281,10 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
         border: "1.5px solid #cbd5e1",
         borderRadius: 12,
         overflow: "hidden",
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
       }}>
-        {/* Cabine no topo azul-navy */}
-        {esquemaId?.startsWith("cavalo") && (
-          <div style={{
-            background: "linear-gradient(180deg, #1e40af, #1a3a5c)",
-            color: "#fff", textAlign: "center",
-            padding: "8px 16px",
-            fontSize: ".8rem", fontWeight: 800, letterSpacing: ".05em",
-          }}>
-            ◄ CABINE / FRENTE
-          </div>
-        )}
-
         {/* Estepe canto superior direito */}
         {esquema.temEstepe && (
           <div style={{
@@ -342,8 +315,16 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
           </div>
         )}
 
-        {/* CORPO com chassi vertical + eixos */}
-        <div style={{ position: "relative", padding: "20px 20px 20px" }}>
+        {/* CORPO com chassi vertical + eixos — altura fixa pra padronizar cards */}
+        <div style={{
+          position: "relative",
+          padding: "20px 20px 20px",
+          minHeight: 460,
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-around",
+        }}>
           {/* CHASSI vertical cinza no meio */}
           <div style={{
             position: "absolute",
@@ -367,7 +348,7 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
                 gridTemplateColumns: "1fr 24px 1fr",
                 gap: 0,
                 alignItems: "center",
-                padding: "18px 0",
+                padding: "8px 0",
               }}>
                 {/* PNEUS ESQUERDA + TRAVESSA + CUBO */}
                 <div style={{ display: "flex", gap: 0, justifyContent: "flex-end", alignItems: "center", position: "relative", zIndex: 2 }}>
@@ -498,11 +479,25 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
 
   const carretas = useMemo(() => {
     if (!cavalo) return { c1: null, c2: null, c3: null };
-    const acha = (p) => {
+    // Regra Pontual: quando o conjunto for Bitrem ou Rodotrem, TODAS as carretas
+    // atreladas herdam o mesmo tipo — não faz sentido bitrem ter só 1 carreta curta.
+    // Basta que UM dos campos (t1/t2/t3 ou tipo_conjunto do cavalo) indique o tipo.
+    const labels = [cavalo.t1, cavalo.t2, cavalo.t3, cavalo.tipo_conjunto].map(x => String(x || "").toLowerCase());
+    const isBitrem   = labels.some(l => l.includes("bitrem"));
+    const isRodotrem = labels.some(l => l.includes("rodotrem") || l.includes("rodo trem"));
+    const tipoGlobal = isBitrem ? "Bitrem" : (isRodotrem ? "Rodotrem" : "");
+    // Se não for bitrem/rodotrem, cada carreta usa o próprio label (LS / 4° Eixo).
+    const tipoDe = (proprio) => tipoGlobal || proprio || cavalo.tipo_conjunto || "";
+    const acha = (p, tipoLabel) => {
       if (!p) return null;
-      return veiculos.find(v => normPlaca(v.placa) === normPlaca(p)) || { placa: p };
+      const base = veiculos.find(v => normPlaca(v.placa) === normPlaca(p)) || { placa: p };
+      return { ...base, tipo: "carreta", tipo_conjunto: tipoDe(tipoLabel) || base.tipo_conjunto || "" };
     };
-    return { c1: acha(cavalo.c1), c2: acha(cavalo.c2), c3: acha(cavalo.c3) };
+    return {
+      c1: acha(cavalo.c1, cavalo.t1),
+      c2: acha(cavalo.c2, cavalo.t2),
+      c3: acha(cavalo.c3, cavalo.t3),
+    };
   }, [cavalo, veiculos]);
 
   const cavalosFrota  = useMemo(() => veiculos.filter(v => v.tipo !== "carreta"), [veiculos]);
@@ -768,10 +763,10 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
           <div style={s.ordem}>
             <div style={s.ordemP}>O veículo está em ordem para seguir viagem?</div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button type="button" style={ordemOK === "sim" ? s.btnSimAct : s.btnSim} onClick={() => setOrdemOK("sim")}>
+              <button type="button" style={ordemOK === "sim" ? s.btnSimAct : s.btnSim} onClick={() => { setOrdemOK("sim"); if (!horaFinal) setHoraFinal(new Date().toTimeString().slice(0, 5)); }}>
                 <Check size={16} /> SIM
               </button>
-              <button type="button" style={ordemOK === "nao" ? s.btnNaoAct : s.btnNao} onClick={() => setOrdemOK("nao")}>
+              <button type="button" style={ordemOK === "nao" ? s.btnNaoAct : s.btnNao} onClick={() => { setOrdemOK("nao"); if (!horaFinal) setHoraFinal(new Date().toTimeString().slice(0, 5)); }}>
                 <X size={16} /> NÃO
               </button>
             </div>
@@ -779,12 +774,6 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
               <label style={{ fontSize: ".72rem", fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>Hora Final:</label>
               <input type="time" value={horaFinal} onChange={e => setHoraFinal(e.target.value)} style={{ padding: "5px 8px", border: "1px solid #cbd5e1", borderRadius: 5, fontFamily: "inherit", fontSize: ".9rem", fontWeight: 700, width: 90 }} />
             </div>
-          </div>
-          <div style={s.assinatura}>
-            <div style={s.assBox} onClick={() => alert("Assinatura digital via canvas — chega em versão futura")}>
-              <Pen size={18} style={{ marginRight: 6 }} />Toque para assinar
-            </div>
-            <label style={s.assLbl}>Assinatura do Motorista</label>
           </div>
         </div>
       </div>

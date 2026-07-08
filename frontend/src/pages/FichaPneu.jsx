@@ -3,14 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { collection, getDocs, doc, getDoc, query, where } from "firebase/firestore";
 import { db } from "../firebase/config";
 import LogoPontual from "../components/LogoPontual";
-import { ArrowLeft, Package, MapPin, RefreshCw, ClipboardCheck, Plus, Calendar, DollarSign, Route } from "lucide-react";
+import { ArrowLeft, Package, MapPin, RefreshCw, ClipboardCheck, Plus, Calendar } from "lucide-react";
 import { VIDAS, STATUS_PNEU } from "../pneus/esquemas";
 
 const fmtBRL = (v) => (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const fmtDate = (iso) => {
-  if (!iso) return "—";
-  try { return new Date(iso).toLocaleDateString("pt-BR"); } catch { return iso; }
-};
 const fmtDateTime = (iso) => {
   if (!iso) return "—";
   try { return new Date(iso).toLocaleString("pt-BR"); } catch { return iso; }
