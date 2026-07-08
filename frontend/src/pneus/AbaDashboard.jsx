@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../firebase/config";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LineChart, Line,
@@ -40,19 +38,9 @@ const s = {
 };
 
 export default function AbaDashboard({ pneus }) {
-  const [recapagens, setRecapagens] = useState([]);
-  const [inspecoes, setInspecoes]   = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      getDocs(collection(db, "pneu_recapagens")).catch(() => null),
-      getDocs(collection(db, "pneu_inspecoes")).catch(() => null),
-    ]).then(([r, i]) => {
-      if (r) setRecapagens(r.docs.map(d => ({ id: d.id, ...d.data() })));
-      if (i) setInspecoes(i.docs.map(d => ({ id: d.id, ...d.data() })));
-    }).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { setLoading(false); }, []);
 
   const analytics = useMemo(() => {
     // ── KPIs base ──
@@ -94,7 +82,7 @@ export default function AbaDashboard({ pneus }) {
 
     // ── Status frota (pizza) ──
     const dadosPizzaStatus = Object.entries(porStatus)
-      .filter(([_, v]) => v > 0)
+      .filter(([, v]) => v > 0)
       .map(([k, v]) => ({
         name: STATUS_PNEU.find(s => s.id === k)?.label || k,
         value: v,
@@ -173,7 +161,7 @@ export default function AbaDashboard({ pneus }) {
       criticos, marcasRanking, dadosPizzaVida, dadosPizzaStatus,
       fornRanking, dadosLinhaMensal, top10Pneus, alertasCriticos,
     };
-  }, [pneus, recapagens, inspecoes]);
+  }, [pneus]);
 
   if (loading) return <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Carregando…</div>;
   if (pneus.length === 0) return (
@@ -324,7 +312,7 @@ export default function AbaDashboard({ pneus }) {
                 </tr>
               </thead>
               <tbody>
-                {analytics.top10Pneus.map((p, i) => (
+                {analytics.top10Pneus.map((p) => (
                   <tr key={p.id}>
                     <td style={{ ...s.td, fontWeight: 800, color: "#1a3a5c" }}>{p.fogo}</td>
                     <td style={s.td}>{p.marca}</td>

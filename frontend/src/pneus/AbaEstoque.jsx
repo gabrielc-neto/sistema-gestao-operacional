@@ -3,7 +3,7 @@ import { addDoc, updateDoc, deleteDoc, doc, collection } from "firebase/firestor
 import { db } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
 import { Plus, Search, Package, Edit3, Trash2, X, ExternalLink } from "lucide-react";
-import { VIDAS, STATUS_PNEU } from "./esquemas";
+import { VIDAS } from "./esquemas";
 
 // Estilos compartilhados na aba
 const st = {

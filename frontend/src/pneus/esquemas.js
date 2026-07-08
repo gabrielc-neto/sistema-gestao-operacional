@@ -103,8 +103,11 @@ export const ESQUEMAS = {
 
 // Heurística pra sugerir esquema a partir do cadastro atual do veículo.
 // Regra Pontual: TODAS as carretas são 3 eixos por padrão.
-// Só cai em carreta_simples (2 eixos) quando o cadastro indicar explicitamente
-// (bitrem, "2 eixos" no tipo_conjunto, ou total_eixos = 2).
+// O dropdown do /frota alimenta "tipo_conjunto" com: LS, Bitrem, Rodotrem, 4° Eixo.
+//   LS       → 3 eixos (padrão)
+//   Bitrem   → 2 eixos por carreta
+//   Rodotrem → 3 eixos por carreta (dolly conta como veículo separado)
+//   4° Eixo  → 4 eixos
 export function sugerirEsquema(veiculo) {
   if (!veiculo) return null;
   const tipo = String(veiculo.tipo || "").toLowerCase();
@@ -113,11 +116,11 @@ export function sugerirEsquema(veiculo) {
   if (tipo === "carreta") {
     if (conj.includes("dolly") && eixos === 2) return "dolly_2eixos";
     if (conj.includes("dolly"))                return "dolly";
-    // Carreta 4 eixos (raras — Pontual tem algumas)
-    if (eixos === 4 || conj.includes("4 eixos") || conj.includes("quatro eixos")) return "carreta_4eixos";
-    // Bitrem OU 2 eixos explicitos = carreta_simples
+    // 4° eixo (label do dropdown = "4° Eixo") ou eixos=4
+    if (eixos === 4 || conj.includes("4°") || conj.includes("4 eixos") || conj.includes("quatro eixos")) return "carreta_4eixos";
+    // Bitrem = carreta curta 2 eixos
     if (eixos === 2 || conj.includes("bitrem") || conj.includes("2 eixos")) return "carreta_simples";
-    // Default Pontual: sempre 3 eixos
+    // LS, Rodotrem e default Pontual = 3 eixos
     return "carreta_3eixos";
   }
   if (conj.includes("duplo dir") || conj.includes("8x2") || conj.includes("8x4") || eixos === 4) return "cavalo_duplodir";

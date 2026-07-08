@@ -44,6 +44,11 @@ const EXTRAS = [
   { nome: "manutencao.os_lancamento", descricao: "Ver aba Lançamento de OS (+ PDF/Ver)",   modulo: "manutencao", acao: "aba_os_lancamento" },
   { nome: "manutencao.nf",            descricao: "Ver aba Lançamento de NF",               modulo: "manutencao", acao: "aba_nf" },
   { nome: "manutencao.cadastros",     descricao: "Ver aba Cadastros",                      modulo: "manutencao", acao: "aba_cadastros" },
+
+  // Pneus — ações específicas de movimentação (instalação/remoção/rodízio)
+  { nome: "pneus.instalar", descricao: "Instalar pneu em posição do veículo", modulo: "pneus", acao: "instalar" },
+  { nome: "pneus.remover",  descricao: "Remover pneu de posição do veículo",  modulo: "pneus", acao: "remover"  },
+  { nome: "pneus.rodizio",  descricao: "Rodízio (trocar posição) de pneu",    modulo: "pneus", acao: "rodizio"  },
 ];
 
 function rotulo(modulo, acao) {
