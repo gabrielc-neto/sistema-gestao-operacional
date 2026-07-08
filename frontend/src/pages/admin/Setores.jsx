@@ -10,6 +10,7 @@ import {
 import { db } from "../../firebase/config";
 import ProtegerPor from "../../rbac/ProtegerPor";
 import ModuleHeader from "../../components/ModuleHeader";
+import ExportBar from "../../components/ExportBar";
 
 const VAZIO = { nome: "", descricao: "", status: "ativo" };
 
@@ -115,6 +116,20 @@ export default function Setores() {
             value={busca} onChange={e => setBusca(e.target.value)} />
           <span style={s.total}>{lista.length} setor{lista.length !== 1 ? "es" : ""}</span>
         </div>
+
+        <ExportBar
+          titulo="Setores"
+          arquivo="setores"
+          subtitulo={() => `${lista.length} setor(es)`}
+          dados={() => ({
+            colunas: ["Nome", "Descrição", "Status"],
+            linhas: lista.map((setor) => [
+              setor.nome || "",
+              setor.descricao || "",
+              setor.status === "inativo" ? "Inativo" : "Ativo",
+            ]),
+          })}
+        />
 
         {loading ? (
           <p style={s.info}>Carregando...</p>

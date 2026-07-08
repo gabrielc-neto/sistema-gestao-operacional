@@ -13,6 +13,8 @@ const Motoristas  = lazy(() => import("./pages/Motoristas"));
 const Atrelamento = lazy(() => import("./pages/Atrelamento"));
 const OC          = lazy(() => import("./pages/OC"));
 const Manutencao  = lazy(() => import("./pages/Manutencao"));
+const Compras     = lazy(() => import("./pages/Compras"));
+const PropostaConvite = lazy(() => import("./pages/PropostaConvite"));
 const Historico   = lazy(() => import("./pages/Historico"));
 const Permissoes  = lazy(() => import("./pages/Permissoes"));
 const Ferias      = lazy(() => import("./pages/Ferias"));
@@ -68,6 +70,9 @@ export default function App() {
                 <Routes>
                   <Route path="/"            element={<PublicRoute><Login /></PublicRoute>} />
 
+                  {/* Convite público a UMA proposta (sem login, via token no link) */}
+                  <Route path="/proposta-convite/:id" element={<PropostaConvite />} />
+
                   {/* Dashboard sempre acessível para usuário logado */}
                   <Route path="/dashboard"   element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 
@@ -77,6 +82,7 @@ export default function App() {
                   <Route path="/atrelamento" element={<Privada permissao="atrelamento.ver"><Atrelamento /></Privada>} />
                   <Route path="/oc"          element={<Privada permissao="oc.ver"><OC /></Privada>} />
                   <Route path="/manutencao"  element={<Privada permissao="manutencao.ver"><Manutencao /></Privada>} />
+                  <Route path="/compras"     element={<Privada permissao="compras.ver"><Compras /></Privada>} />
                   <Route path="/historico"   element={<Privada permissao="historico.ver"><Historico /></Privada>} />
                   <Route path="/ferias"      element={<Privada permissao="ferias.ver"><Ferias /></Privada>} />
                   <Route path="/rastreamento" element={<PrivateRoute><Rastreamento /></PrivateRoute>} />

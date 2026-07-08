@@ -7,6 +7,7 @@ import {
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 const toId = (nome) =>
@@ -248,6 +249,27 @@ export default function Motoristas() {
 
       {/* CONTEÚDO */}
       <main style={s.main} className="pg-body">
+        <ExportBar
+          titulo="Motoristas"
+          arquivo="motoristas"
+          subtitulo={() => `${lista.length} motorista(s)${filtroStatus !== "todos" ? ` · filtro: ${filtroStatus}` : ""}${busca ? ` · busca: "${busca}"` : ""}`}
+          dados={() => ({
+            colunas: ["Nome", "Contrato", "CNH", "Categoria", "Telefone", "Status", "CNH venc.", "MOPP venc.", "NR-20 venc.", "NR-35 venc.", "Observações"],
+            linhas: lista.map((m) => [
+              m.nome || "",
+              m.tipoContrato === "px" ? "PX (agregado/PJ)" : "Interno (CLT)",
+              m.cnh || "",
+              m.cat || "",
+              m.tel || "",
+              STATUS_COLORS[m.status]?.label || m.status || "",
+              fmtDate(m.cnh_venc),
+              fmtDate(m.mopp_venc),
+              fmtDate(m.nr20_venc),
+              fmtDate(m.nr35_venc),
+              m.obs || "",
+            ]),
+          })}
+        />
         {loading ? (
           <p style={s.info}>Carregando...</p>
         ) : lista.length === 0 ? (

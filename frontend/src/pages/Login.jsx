@@ -1,7 +1,75 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
+
+const ic = { width: 26, height: 26, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
+
+// Catálogo de sistemas da tela de seleção.
+//   interno: true  → segue para o portão "Entrar no sistema" (este próprio app)
+//   url: "..."     → abre o sistema externo em nova aba
+//   url: ""        → ainda sem endereço (mostra "em breve" até informarem a URL)
+const SISTEMAS = [
+  {
+    id: "integridade",
+    nome: "Canal de Integridade e Relacionamento",
+    cor: "#15803d", bg: "#f0fdf4", url: "https://web-homol.pontualpetroleo.com.br/integridade/",
+    icon: (<svg {...ic} aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>),
+  },
+  {
+    id: "sgo",
+    nome: "Sistema de Gestão Operacional",
+    cor: "#18216e", bg: "#eef1fb", interno: true,
+    icon: (<svg {...ic} aria-hidden="true"><path d="M10 17h4V5H2v12h3" /><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1" /><circle cx="7.5" cy="17.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" /></svg>),
+  },
+  {
+    id: "servicedesk",
+    nome: "Service Desk",
+    cor: "#0c7f98", bg: "#ecfbff", url: "https://web-homol.pontualpetroleo.com.br/servicedesk",
+    icon: (<svg {...ic} aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 4.24 4.24" /><path d="m14.83 9.17 4.24-4.24" /><path d="m14.83 14.83 4.24 4.24" /><path d="m9.17 14.83-4.24 4.24" /><circle cx="12" cy="12" r="4" /></svg>),
+  },
+  {
+    id: "pops",
+    nome: "Procedimentos (POPs)",
+    cor: "#7c3aed", bg: "#f5f3ff", url: "",
+    icon: (<svg {...ic} aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><rect x="8" y="2" width="8" height="4" rx="1" /><path d="m9 14 2 2 4-4" /></svg>),
+  },
+  {
+    id: "projetos",
+    nome: "Sistema de Gerenciamento de Projetos",
+    cor: "#be123c", bg: "#fff1f2", url: "",
+    icon: (<svg {...ic} aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="M9 9h6" /><path d="M9 15h6" /></svg>),
+  },
+  {
+    id: "espaco",
+    nome: "Sistema de Gestão de Espaço",
+    cor: "#0d9488", bg: "#f0fdfa", url: "https://web-homol.pontualpetroleo.com.br/gestao-espaco/",
+    icon: (<svg {...ic} aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>),
+  },
+  {
+    id: "compras",
+    nome: "Sistema de Gestão de Compras",
+    cor: "#ea580c", bg: "#fff7ed", url: "https://web-homol.pontualpetroleo.com.br/gestao-compras/",
+    icon: (<svg {...ic} aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>),
+  },
+  {
+    id: "externos",
+    nome: "Sistemas Externos",
+    cor: "#0369a1", bg: "#f0f9ff", url: "https://web-homol.pontualpetroleo.com.br/sistemas-externos/",
+    icon: (<svg {...ic} aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>),
+  },
+  {
+    id: "instrucoes",
+    nome: "Instruções de Acesso",
+    cor: "#4d7c0f", bg: "#f7fee7", instrucoes: true,
+    icon: (<svg {...ic} aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>),
+  },
+  {
+    id: "site",
+    nome: "Site Institucional",
+    cor: "#b45309", bg: "#fffbeb", url: "https://www.pontualpetroleo.com.br",
+    icon: (<svg {...ic} aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>),
+  },
+];
 
 export default function Login() {
   const [email, setEmail]       = useState("");
@@ -11,9 +79,37 @@ export default function Login() {
   const [verSenha, setVerSenha] = useState(false);
   const [manterConectado, setManterConectado] = useState(true);
   const [tentativas, setTentativas]           = useState(0);
-  const [aberto, setAberto]                   = useState(false);
+  const [tela, setTela]                       = useState("splash"); // "splash" | "intro" | "selecao" | "portao" | "login" | "instrucoes"
+  const [busca, setBusca]                     = useState("");
+  const [ringSpeed, setRingSpeed]             = useState("normal"); // "normal" | "fast" | "loading"
+  const [sisAtivo, setSisAtivo]               = useState(null);     // sistema selecionado (tela de entrada)
   const { login } = useAuth();
-  const navigate  = useNavigate();
+
+  // Abertura: logomarca grande → esmaece → mostra a intro (ícones + botão)
+  useEffect(() => {
+    const t = setTimeout(() => setTela(prev => (prev === "splash" ? "intro" : prev)), 2300);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Clique no botão da intro: acelera o giro (carregando) e então abre a seleção.
+  function entrarIntranet() {
+    setRingSpeed("loading");
+    setTimeout(() => setTela("selecao"), 750);
+  }
+
+  // Ao clicar num card: mostra a tela de entrada (portão) daquele sistema.
+  function abrirSistema(sis) {
+    setSisAtivo(sis);
+    setTela("portao");
+  }
+
+  // "Entrar no sistema" no portão: executa a ação do sistema selecionado.
+  function entrarNoSistema(sis) {
+    if (!sis) return;
+    if (sis.interno) { setTela("login"); return; }
+    if (sis.instrucoes) { window.open("/instrucoes-acesso.pdf", "_blank", "noopener,noreferrer"); return; }
+    if (sis.url) { window.open(sis.url, "_blank", "noopener,noreferrer"); return; }
+  }
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -25,7 +121,10 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, senha);
-      navigate("/dashboard");
+      // Não navegamos aqui: ao autenticar, o AuthContext atualiza o usuário e a
+      // PublicRoute ("/") redireciona sozinha para /dashboard. Isso evita a
+      // corrida com o guard da rota, que antes jogava de volta para a principal.
+      // Mantém "Entrando…" até o redirecionamento acontecer.
     } catch (err) {
       const novas = tentativas + 1;
       setTentativas(novas);
@@ -38,10 +137,14 @@ export default function Login() {
       } else {
         setErro(`E-mail ou senha incorretos. (${novas}/5 tentativas)`);
       }
-    } finally {
       setLoading(false);
     }
   }
+
+  const sistemasFiltrados = SISTEMAS.filter(
+    (sis) => sis.nome.toLowerCase().includes(busca.trim().toLowerCase())
+  );
+  const destinoAtivo = !!(sisAtivo && (sisAtivo.interno || sisAtivo.instrucoes || sisAtivo.url));
 
   return (
     <div className="login-shell">
@@ -49,55 +152,140 @@ export default function Login() {
       <div className="login-bg" aria-hidden="true" />
       <div className="login-overlay" aria-hidden="true" />
 
-      {/* Portão: só o botão central sobre a foto, antes de abrir o login */}
-      {!aberto && (
-        <div className="login-gate fade-in">
-          <div className="login-gate-logo">
-            <LogoPontual height={54} variant="white" />
-          </div>
-          <p className="login-gate-tag">Sistema de Gestão Operacional</p>
-          <button
-            type="button"
-            className="login-gate-btn"
-            onClick={() => setAberto(true)}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-              <polyline points="10 17 15 12 10 7"/>
-              <line x1="15" y1="12" x2="3" y2="12"/>
-            </svg>
-            Entrar no sistema
-          </button>
+      {/* Splash de abertura: logomarca bem grande que esmaece */}
+      {tela === "splash" && (
+        <div className="login-splash">
+          <div className="splash-logo"><LogoPontual height={112} variant="white" /></div>
         </div>
       )}
 
-      {/* Card liquid glass luminoso */}
-      {aberto && (
+      {/* Intro: ícones orbitando em círculo + botão central para entrar na intranet */}
+      {tela === "intro" && (
+        <div className="login-intro fade-in">
+          <div className={"login-ring " + ringSpeed}>
+            <div className="orbit-spin">
+              {SISTEMAS.map((sis, i) => {
+                const a = i * 360 / SISTEMAS.length;
+                return (
+                  <div
+                    key={sis.id}
+                    className="orbit-slot"
+                    style={{ transform: `rotate(${a}deg) translateX(150px) rotate(${-a}deg)` }}
+                  >
+                    <span className="orbit-badge">{sis.icon}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              className="login-intro-center"
+              onMouseEnter={() => setRingSpeed(s => (s === "loading" ? s : "fast"))}
+              onMouseLeave={() => setRingSpeed(s => (s === "loading" ? s : "normal"))}
+              onClick={entrarIntranet}
+            >
+              {ringSpeed === "loading" ? "Carregando…" : "Clique aqui para acessar a Intranet"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Seleção de sistema: cards com ícone + nome, antes do login */}
+      {tela === "selecao" && (
+        <div className="login-select fade-in">
+          <div className="login-select-logo">
+            <LogoPontual height={38} variant="white" />
+          </div>
+          <h1 className="login-select-title">Intranet Pontual Petróleo</h1>
+          <p className="login-select-sub">Selecione o sistema que deseja acessar.</p>
+          <div className="login-search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" value={busca} onChange={e => setBusca(e.target.value)} placeholder="Pesquisar sistema…" aria-label="Pesquisar sistema" autoFocus />
+          </div>
+          <div className="login-select-grid">
+            {sistemasFiltrados.map(sis => (
+              <button
+                key={sis.id}
+                type="button"
+                className="login-select-card"
+                onClick={() => abrirSistema(sis)}
+              >
+                <span className="login-select-ico" style={{ color: "#fff" }}>
+                  {sis.icon}
+                </span>
+                <span className="login-select-nome">{sis.nome}</span>
+                <span className="login-select-arrow" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
+              </button>
+            ))}
+          </div>
+          {sistemasFiltrados.length === 0 && (
+            <p className="login-noresult">Nenhum sistema encontrado.</p>
+          )}
+        </div>
+      )}
+
+      {/* Portão: tela de entrada de cada sistema (Trocar sistema + logo + nome + Entrar) */}
+      {tela === "portao" && sisAtivo && (
+        <>
+          {/* Fora do container animado: aparece na hora, sem o delay do fade-in */}
+          <button type="button" className="login-back" onClick={() => { setTela("selecao"); setSisAtivo(null); }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Trocar sistema
+          </button>
+          <div className="login-gate fade-in">
+          <div className="login-gate-logo">
+            <LogoPontual height={54} variant="white" />
+          </div>
+          <p className="login-gate-tag">{sisAtivo.nome}</p>
+          <button
+            type="button"
+            className="login-gate-btn"
+            onClick={() => entrarNoSistema(sisAtivo)}
+            disabled={!destinoAtivo}
+          >
+            {sisAtivo.instrucoes ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            )}
+            {sisAtivo.instrucoes ? "Abrir instruções (PDF)" : destinoAtivo ? "Entrar no sistema" : "Em breve"}
+          </button>
+          </div>
+        </>
+      )}
+
+      {/* Card de login */}
+      {tela === "login" && (
       <div className="login-card fade-in">
+        <button type="button" className="login-back login-back-dark" onClick={() => setTela("selecao")}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Trocar sistema
+        </button>
         <div className="login-logo-top">
           <LogoPontual height={40} />
         </div>
 
-        <h1 className="login-title">Bem-vindo de volta</h1>
-        <p className="login-sub">Acesse o Sistema de Gestão Operacional.</p>
+        <h1 className="login-title">Sistema de Gestão Operacional</h1>
+        <p className="login-sub">Página de acesso — entre com seu e-mail e senha.</p>
 
         <form onSubmit={handleLogin}>
           <div className="login-fg">
-            <label className="login-label" htmlFor="login-email">E-mail</label>
             <input
               id="login-email"
               className="login-input login-input-fill"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="logistica01@pontualpetroleo.com.br"
+              placeholder="Digite seu e-mail"
+              aria-label="E-mail"
               required
               autoFocus
             />
           </div>
 
           <div className="login-fg">
-            <label className="login-label" htmlFor="login-senha">Senha</label>
             <div className="login-senha-wrap">
               <input
                 id="login-senha"
@@ -106,6 +294,7 @@ export default function Login() {
                 value={senha}
                 onChange={e => setSenha(e.target.value)}
                 placeholder="Digite sua senha"
+                aria-label="Senha"
                 required
               />
               <button
@@ -193,13 +382,14 @@ export default function Login() {
           position: absolute; inset: 0;
           background: #2a3450 url("/melhor-foto-pontual.jpg") center center / cover no-repeat;
           transform: scale(1.05);
-          filter: brightness(1.05) saturate(1.05);
+          filter: brightness(0.95) saturate(1.05);
           will-change: transform;
         }
-        /* Overlay leve — mantém a foto visível e clara */
+        /* Overlay — escurece um pouco a foto p/ contraste dos cards de vidro */
+        /* Fundo escuro com tom preto — igual nas três telas (intranet, entrar no sistema e login) */
         .login-overlay {
           position: absolute; inset: 0;
-          background: linear-gradient(125deg, rgba(28,38,64,.28) 0%, rgba(15,21,38,.40) 55%, rgba(22,28,46,.48) 100%);
+          background: rgba(0,0,0,.5);
         }
 
         /* ---- Portão: botão central sobre a foto ---- */
@@ -213,77 +403,156 @@ export default function Login() {
           margin: -4px 0 4px; color: rgba(255,255,255,.92);
           font-size: 1.02rem; font-weight: 600; letter-spacing: .01em;
           text-shadow: 0 2px 14px rgba(8,12,24,.55);
+          text-align: center; max-width: 440px;
         }
-        /* Botão do portão = mesmo liquid glass do box de login */
+        /* Botão do portão — mesmo estilo do "Trocar sistema" (pill de vidro translúcido) */
         .login-gate-btn {
-          display: inline-flex; align-items: center; gap: 11px;
-          padding: 16px 34px; border-radius: 16px; cursor: pointer;
-          font-size: 1.02rem; font-weight: 700; letter-spacing: .01em; color: #18216e;
-          background:
-            linear-gradient(125deg, rgba(255,255,255,.6) 0%, rgba(255,255,255,0) 42%),
-            radial-gradient(140% 120% at 100% 0%, rgba(127,196,214,.2) 0%, rgba(127,196,214,0) 55%),
-            linear-gradient(155deg, rgba(247,251,255,.72) 0%, rgba(233,241,249,.52) 100%);
-          -webkit-backdrop-filter: blur(30px) saturate(190%);
-          backdrop-filter: blur(30px) saturate(190%);
-          border: 1px solid rgba(255,255,255,.78);
-          box-shadow:
-            0 20px 48px -16px rgba(10,14,40,.55),
-            inset 0 1.5px 1px rgba(255,255,255,1),
-            inset 0 0 0 1px rgba(255,255,255,.3),
-            inset 0 -14px 30px rgba(143,166,207,.16);
-          transition: transform .12s var(--ease), box-shadow .2s var(--ease), background .2s var(--ease);
+          display: inline-flex; align-items: center; gap: 10px;
+          padding: 14px 30px; border-radius: 999px; cursor: pointer;
+          font-size: 1rem; font-weight: 700; letter-spacing: .01em; color: #fff;
+          background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.28);
+          -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+          transition: background .15s var(--ease), transform .12s var(--ease);
         }
-        .login-gate-btn:hover {
-          transform: translateY(-2px);
-          background:
-            linear-gradient(125deg, rgba(255,255,255,.7) 0%, rgba(255,255,255,0) 42%),
-            radial-gradient(140% 120% at 100% 0%, rgba(127,196,214,.3) 0%, rgba(127,196,214,0) 55%),
-            linear-gradient(155deg, rgba(249,252,255,.82) 0%, rgba(236,243,250,.64) 100%);
-          box-shadow:
-            0 26px 56px -16px rgba(10,14,40,.62),
-            0 0 0 3px rgba(14,165,196,.32),
-            inset 0 1.5px 1px rgba(255,255,255,1),
-            inset 0 0 0 1px rgba(255,255,255,.4),
-            inset 0 -14px 30px rgba(143,166,207,.2);
-        }
+        .login-gate-btn:hover { background: rgba(255,255,255,.24); transform: translateY(-2px); }
         .login-gate-btn:active { transform: translateY(0); }
+        .login-gate-btn:disabled { opacity: .55; cursor: not-allowed; }
+        .login-gate-btn:disabled:hover { background: rgba(255,255,255,.14); transform: none; }
 
-        /* ---- Card liquid glass (mais opaco / especular) ---- */
+        /* ---- Tela de seleção de sistema ---- */
+        .login-select {
+          position: relative; z-index: 2; width: 100%; max-width: 720px;
+          padding: 24px; text-align: center;
+        }
+        .login-select-logo { display: flex; justify-content: center; margin-bottom: 22px; filter: drop-shadow(0 6px 20px rgba(0,0,0,.4)); }
+        .login-select-title { color: #fff; font-size: 1.5rem; font-weight: 700; margin: 0 0 6px; letter-spacing: -.01em; text-shadow: 0 2px 16px rgba(8,12,24,.55); }
+        .login-select-sub { color: rgba(255,255,255,.9); font-size: .95rem; margin: 0 0 24px; text-shadow: 0 2px 14px rgba(8,12,24,.5); }
+        .login-select-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .login-select-card {
+          display: flex; align-items: center; gap: 14px; text-align: left; width: 100%;
+          padding: 18px; border-radius: 16px; cursor: pointer;
+          background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.28);
+          -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+          transition: background .15s var(--ease), transform .14s var(--ease);
+        }
+        .login-select-card:hover { background: rgba(255,255,255,.24); transform: translateY(-3px); }
+        .login-select-card:active { transform: translateY(-1px); }
+        .login-select-ico { width: 48px; height: 48px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .login-select-nome { flex: 1; font-size: .98rem; font-weight: 700; color: #fff; line-height: 1.25; }
+        .login-select-arrow { color: rgba(255,255,255,.7); display: inline-flex; flex-shrink: 0; transition: transform .15s var(--ease), color .15s var(--ease); }
+        .login-select-card:hover .login-select-arrow { color: #fff; transform: translateX(3px); }
+
+        /* ---- Intro: ícones orbitando em círculo + botão central ---- */
+        .login-intro { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
+        .login-intro-logo { margin-bottom: 6px; filter: drop-shadow(0 6px 20px rgba(0,0,0,.4)); }
+
+        /* ---- Splash de abertura: logomarca grande que esmaece ---- */
+        .login-splash { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; }
+        .splash-logo { filter: drop-shadow(0 10px 34px rgba(0,0,0,.5)); animation: splash-seq 2.3s var(--ease) forwards; }
+        @keyframes splash-seq {
+          0%   { opacity: 0; transform: scale(.84); }
+          20%  { opacity: 1; transform: scale(1); }
+          68%  { opacity: 1; transform: scale(1.03); }
+          100% { opacity: 0; transform: scale(1.14); }
+        }
+        @media (max-width: 520px) { .splash-logo img { height: auto !important; max-width: 80vw; } }
+        @media (prefers-reduced-motion: reduce) { .splash-logo { animation: none; } }
+        .login-ring { position: relative; width: 360px; height: 360px; }
+        .orbit-spin { position: absolute; inset: 0; animation: orbit-spin 26s linear infinite; }
+        .orbit-slot { position: absolute; top: 50%; left: 50%; width: 0; height: 0; }
+        .orbit-badge {
+          position: absolute; transform: translate(-50%, -50%);
+          animation: orbit-badge 26s linear infinite;
+          width: 52px; height: 52px; border-radius: 14px;
+          display: inline-flex; align-items: center; justify-content: center; color: #fff;
+          background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.30);
+          -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+          box-shadow: 0 8px 22px -10px rgba(0,0,0,.5);
+        }
+        @keyframes orbit-spin { to { transform: rotate(360deg); } }
+        @keyframes orbit-badge {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to   { transform: translate(-50%, -50%) rotate(-360deg); }
+        }
+        /* Mouse sobre o botão → gira mais rápido; ao clicar (loading) → mais rápido ainda */
+        .login-ring.fast .orbit-spin,    .login-ring.fast .orbit-badge    { animation-duration: 8s; }
+        .login-ring.loading .orbit-spin, .login-ring.loading .orbit-badge { animation-duration: 2.2s; }
+        .login-intro-center {
+          position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+          width: 176px; height: 176px; border-radius: 50%; cursor: pointer; padding: 22px;
+          display: inline-flex; align-items: center; justify-content: center; text-align: center;
+          background: rgba(255,255,255,.14); color: #fff; font-weight: 700; font-size: .92rem; line-height: 1.35;
+          border: 1px solid rgba(255,255,255,.28); font-family: var(--font);
+          -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+          box-shadow: 0 0 0 0 rgba(255,255,255,.30), 0 18px 50px -12px rgba(0,0,0,.6);
+          transition: transform .18s var(--ease), background .18s var(--ease);
+          animation: intro-pulse 2.1s ease-out infinite;
+        }
+        @keyframes intro-pulse {
+          0%   { box-shadow: 0 0 0 0 rgba(255,255,255,.30), 0 18px 50px -12px rgba(0,0,0,.6); }
+          70%  { box-shadow: 0 0 0 26px rgba(255,255,255,0),  0 18px 50px -12px rgba(0,0,0,.6); }
+          100% { box-shadow: 0 0 0 0 rgba(255,255,255,0),     0 18px 50px -12px rgba(0,0,0,.6); }
+        }
+        .login-intro-center:hover { transform: translate(-50%, -50%) scale(1.05); background: rgba(255,255,255,.24); }
+        @media (prefers-reduced-motion: reduce) { .orbit-spin, .orbit-badge, .login-intro-center { animation: none; } }
+        @media (max-width: 480px) { .login-ring { transform: scale(.78); } }
+
+        /* ---- Busca de sistema (na seleção) ---- */
+        .login-search { position: relative; max-width: 420px; margin: 0 auto 20px; }
+        .login-search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,.7); }
+        .login-search input {
+          width: 100%; height: 46px; padding: 0 14px 0 42px; border-radius: 12px;
+          border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.14);
+          -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+          color: #fff; font-size: .95rem; outline: none; font-family: var(--font);
+        }
+        .login-search input::placeholder { color: rgba(255,255,255,.65); }
+        .login-search input:focus { border-color: rgba(255,255,255,.6); background: rgba(255,255,255,.2); box-shadow: 0 0 0 3px rgba(255,255,255,.14); }
+        .login-noresult { color: rgba(255,255,255,.85); font-size: .9rem; margin-top: 8px; }
+
+        /* Botão "trocar sistema" */
+        .login-back {
+          position: fixed; top: 18px; left: 18px; z-index: 3;
+          display: inline-flex; align-items: center; gap: 6px;
+          background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.28);
+          border-radius: 999px; padding: 7px 14px; font-size: .82rem; font-weight: 600; cursor: pointer;
+          -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+          transition: background .15s var(--ease);
+        }
+        .login-back:hover { background: rgba(255,255,255,.24); }
+        .login-back-dark {
+          position: static; margin: 0 0 10px; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.28);
+        }
+        .login-back-dark:hover { background: rgba(255,255,255,.24); }
+
+        /* ---- Card de login — mesmo vidro translúcido dos botões ---- */
         .login-card {
           position: relative; z-index: 2;
-          width: 100%; max-width: 420px;
-          padding: 42px 38px;
-          border-radius: 24px;
-          background:
-            linear-gradient(125deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 34%),          /* streak especular */
-            radial-gradient(130% 110% at 100% 6%, rgba(127,196,214,.16) 0%, rgba(127,196,214,0) 44%),  /* refração ciano */
-            radial-gradient(120% 120% at 0% 100%, rgba(143,166,207,.16) 0%, rgba(143,166,207,0) 46%),  /* refração azul-lunar */
-            linear-gradient(160deg, rgba(249,252,255,.90) 0%, rgba(237,244,251,.82) 100%);         /* base leitosa fria */
-          -webkit-backdrop-filter: blur(46px) saturate(210%);
-          backdrop-filter: blur(46px) saturate(210%);
-          border: 1px solid rgba(255,255,255,.9);
-          box-shadow:
-            0 28px 64px -16px rgba(15,23,42,.5),
-            0 2px 10px -4px rgba(15,23,42,.22),
-            inset 0 1.5px 1px rgba(255,255,255,1),
-            inset 0 0 0 1px rgba(255,255,255,.35),
-            inset 0 -22px 44px rgba(143,166,207,.14);
-          color: #0f172a;
+          width: 100%; max-width: 460px;
+          padding: 34px 38px;
+          border-radius: 20px;
+          background: rgba(255,255,255,.14);
+          border: 1px solid rgba(255,255,255,.28);
+          -webkit-backdrop-filter: blur(16px) saturate(140%);
+          backdrop-filter: blur(16px) saturate(140%);
+          box-shadow: 0 24px 60px -20px rgba(10,14,40,.55);
+          color: #fff;
         }
 
-        .login-logo-top { margin-bottom: 26px; display: flex; justify-content: center; }
+        .login-logo-top { margin-bottom: 12px; display: flex; justify-content: center; }
 
         .login-title {
           font-family: var(--font);
-          font-size: 1.6rem; font-weight: 700; color: #0f172a;
-          margin: 0 0 6px; letter-spacing: -0.02em; text-align: center;
+          font-size: 1.32rem; font-weight: 700; color: #fff;
+          margin: 0 0 5px; letter-spacing: -0.02em; text-align: center;
+          text-shadow: 0 1px 12px rgba(8,12,24,.4);
         }
         .login-sub {
-          font-size: .9rem; color: #475569;
-          margin: 0 0 28px; line-height: 1.5; text-align: center;
+          font-size: .84rem; color: rgba(255,255,255,.85);
+          margin: 0 0 24px; line-height: 1.45; text-align: center;
         }
 
-        .login-fg { margin-bottom: 16px; }
+        .login-fg { margin-bottom: 17px; }
         .login-label {
           display: block; font-size: .74rem; font-weight: 700;
           letter-spacing: .04em; text-transform: uppercase;
@@ -291,19 +560,28 @@ export default function Login() {
         }
 
         .login-input {
-          width: 100%; height: 46px; padding: 0 15px; border-radius: 12px;
-          border: 1px solid rgba(255,255,255,.85);
-          background: rgba(255,255,255,.55);
-          -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-          font-size: .95rem; color: #0f172a; outline: none;
+          width: 100%; height: 44px; padding: 0 14px; border-radius: 10px;
+          border: 1px solid rgba(255,255,255,.3);
+          background: rgba(255,255,255,.12);
+          -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+          font-size: .95rem; color: #fff; outline: none;
           transition: border-color .18s var(--ease), box-shadow .18s var(--ease), background .18s var(--ease);
         }
-        .login-input::placeholder { color: #7c879b; }
-        .login-input:hover { background: rgba(255,255,255,.72); }
+        .login-input::placeholder { color: rgba(255,255,255,.6); }
+        .login-input:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.45); }
         .login-input:focus {
-          background: rgba(255,255,255,.9);
-          border-color: #5f72d6;
-          box-shadow: 0 0 0 3px rgba(24,33,110,.18);
+          background: rgba(255,255,255,.22);
+          border-color: rgba(255,255,255,.7);
+          box-shadow: 0 0 0 3px rgba(255,255,255,.15);
+        }
+        /* Autofill do navegador — mantém texto branco e fundo coerente com o vidro */
+        .login-input:-webkit-autofill,
+        .login-input:-webkit-autofill:hover,
+        .login-input:-webkit-autofill:focus {
+          -webkit-text-fill-color: #fff;
+          caret-color: #fff;
+          -webkit-box-shadow: 0 0 0 1000px rgba(60,74,110,.55) inset;
+          transition: background-color 9999s ease-in-out 0s;
         }
 
         .login-senha-wrap { position: relative; }
@@ -311,35 +589,35 @@ export default function Login() {
         .login-eye {
           position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
           background: none; border: none; cursor: pointer; padding: 4px;
-          color: #64748b; line-height: 0; display: inline-flex;
+          color: rgba(255,255,255,.7); line-height: 0; display: inline-flex;
         }
-        .login-eye:hover { color: #18216e; }
+        .login-eye:hover { color: #fff; }
 
         .login-row {
           display: flex; align-items: center; justify-content: space-between;
-          margin: 6px 0 22px; flex-wrap: wrap; gap: 12px;
+          margin: 8px 0 22px; flex-wrap: wrap; gap: 12px;
         }
         .login-check {
           display: inline-flex; align-items: center; gap: 9px;
-          font-size: .85rem; color: #334155;
+          font-size: .85rem; color: rgba(255,255,255,.9);
           cursor: pointer; user-select: none; position: relative;
         }
         .login-check input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
         .login-check-box {
           width: 19px; height: 19px; border-radius: 6px;
-          background: #18216e; color: #fff;
+          background: #fff; color: #18216e;
           display: inline-flex; align-items: center; justify-content: center;
           flex-shrink: 0; transition: background .15s, border-color .15s, box-shadow .15s;
         }
         .login-check input:not(:checked) ~ .login-check-box {
-          background: rgba(255,255,255,.55);
-          border: 1.5px solid #b3bccd;
+          background: rgba(255,255,255,.14);
+          border: 1.5px solid rgba(255,255,255,.5);
           color: transparent;
         }
-        .login-check input:focus-visible ~ .login-check-box { box-shadow: 0 0 0 3px rgba(24,33,110,.28); }
+        .login-check input:focus-visible ~ .login-check-box { box-shadow: 0 0 0 3px rgba(255,255,255,.3); }
 
-        .login-link { font-size: .85rem; font-weight: 600; color: #18216e; text-decoration: none; }
-        .login-link:hover { color: #2a37a0; text-decoration: underline; }
+        .login-link { font-size: .85rem; font-weight: 600; color: #fff; text-decoration: none; }
+        .login-link:hover { color: rgba(255,255,255,.8); text-decoration: underline; }
 
         .login-erro {
           color: #b91c1c; background: rgba(254,226,226,.82);
@@ -347,28 +625,33 @@ export default function Login() {
           padding: 10px 13px; font-size: .85rem; margin: 0 0 16px;
         }
 
+        /* Botão "Entrar" — minimalista sólido navy */
         .login-btn {
-          width: 100%; height: 50px; margin-top: 4px;
-          background: linear-gradient(135deg, #2a37a0 0%, #18216e 100%);
-          color: #fff; border: none; border-radius: 12px;
+          width: 100%; height: 46px; margin-top: 10px;
+          color: #fff; border: none; border-radius: 10px;
           font-size: 1rem; font-weight: 700; letter-spacing: .01em; cursor: pointer;
-          box-shadow: 0 14px 30px -12px rgba(24,33,110,.6), inset 0 1px 0 rgba(255,255,255,.18);
-          transition: filter .18s var(--ease), transform .06s, box-shadow .18s var(--ease);
+          background: #18216e;
+          box-shadow: 0 10px 24px -12px rgba(24,33,110,.6);
+          transition: background .18s var(--ease), transform .06s, box-shadow .18s var(--ease);
         }
-        .login-btn:hover { filter: brightness(1.1); box-shadow: 0 18px 38px -12px rgba(24,33,110,.72), inset 0 1px 0 rgba(255,255,255,.24); }
+        .login-btn:hover { background: #141b57; box-shadow: 0 14px 30px -12px rgba(24,33,110,.7); }
         .login-btn:active { transform: translateY(1px); }
-        .login-btn:disabled { cursor: not-allowed; filter: saturate(.7); }
+        .login-btn:disabled { cursor: not-allowed; opacity: .65; }
 
-        .login-footer { margin-top: 28px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .login-foot-link { color: #475569; font-size: .8rem; font-weight: 500; text-decoration: none; }
-        .login-foot-link:hover { color: #18216e; text-decoration: underline; }
-        .login-copy { margin-top: 10px; font-size: .76rem; color: #64748b; text-align: center; }
-        .login-copy strong { color: #0f172a; font-weight: 700; }
+        .login-footer { margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .login-foot-link { color: rgba(255,255,255,.7); font-size: .8rem; font-weight: 500; text-decoration: none; }
+        .login-foot-link:hover { color: #fff; text-decoration: underline; }
+        .login-copy { margin-top: 10px; font-size: .76rem; color: rgba(255,255,255,.7); text-align: center; }
+        .login-copy strong { color: #fff; font-weight: 700; }
 
+        @media (max-width: 640px) {
+          .login-select-grid { grid-template-columns: 1fr; }
+          .login-select-title { font-size: 1.25rem; }
+        }
         @media (max-width: 480px) {
           .login-shell { padding: 16px; }
-          .login-card { padding: 32px 24px; border-radius: 20px; }
-          .login-title { font-size: 1.4rem; }
+          .login-card { padding: 22px 22px; border-radius: 20px; }
+          .login-title { font-size: 1.18rem; }
         }
       `}</style>
     </div>

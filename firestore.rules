@@ -248,5 +248,36 @@ service cloud.firestore {
       allow update: if temPermissao('manutencao.editar') || isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
+
+    // ============================================================
+    // COMPRAS — Propostas de gastos (fluxo de validação)
+    // ============================================================
+    // Gestor cria/edita propostas do PRÓPRIO setor; Diretoria e
+    // Superintendência validam; quem tem ver_todos enxerga todos os setores.
+    // O acesso por LINK de convidado (não logado) passa pelas Cloud Functions
+    // (admin SDK), portanto não precisa de regra pública aqui.
+    match /propostas_compra/{id} {
+      allow read:   if temPermissao('compras.ver_todos')
+                    || (temPermissao('compras.ver') && resource.data.setor_id == userDoc().setor_id);
+      allow create: if temPermissao('compras.criar')
+                    && (isSuperAdmin() || request.resource.data.setor_id == userDoc().setor_id);
+      allow update: if temPermissao('compras.aprovar_diretoria')
+                    || temPermissao('compras.aprovar_super')
+                    || temPermissao('compras.convidar')
+                    || (temPermissao('compras.editar')
+                        && (isSuperAdmin() || resource.data.setor_id == userDoc().setor_id));
+      allow delete: if temPermissao('compras.excluir')
+                    && (isSuperAdmin() || resource.data.setor_id == userDoc().setor_id);
+    }
+
+    // Valores comprados lançados pelo setor de Compras (soltos por setor)
+    match /compras_setor/{id} {
+      allow read:   if temPermissao('compras.ver')
+                    || temPermissao('compras.dashboard')
+                    || temPermissao('compras.registrar');
+      allow create: if temPermissao('compras.registrar');
+      allow update: if temPermissao('compras.registrar');
+      allow delete: if temPermissao('compras.registrar');
+    }
   }
 }

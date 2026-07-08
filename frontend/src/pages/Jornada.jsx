@@ -1,12 +1,11 @@
 import { Fragment, useMemo, useState } from "react";
-import { Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, FileSpreadsheet, FileText, TrendingUp, UserX, Copy, UserMinus, MapPin, ArrowLeftRight, Check, Map as MapIcon } from "lucide-react";
+import { Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, TrendingUp, UserX, Copy, UserMinus, MapPin, ArrowLeftRight, Check, Map as MapIcon } from "lucide-react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useJornada } from "../hooks/useJornada";
-import { exportarJornadaCsv } from "../utils/exportJornadaCsv";
-import { exportarJornadaPdf } from "../utils/exportJornadaPdf";
 import { capitalizarNome } from "../utils/format";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 
 function hojeISO() {
   const d = new Date();
@@ -280,34 +279,20 @@ export default function Jornada() {
     }
   }
 
-  const handleExportExcel = () => {
-    exportarJornadaCsv({ linhas: filtradas, dataInicio, dataFim, ehPeriodo });
-  };
-  const handleExportPdf = () => {
-    exportarJornadaPdf({ linhas: filtradas, dataInicio, dataFim, ehPeriodo, totais });
-  };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)" }}>
-      <div style={{ maxWidth: 1480, margin: "0 auto", padding: "16px 14px 40px" }}>
+      {/* HEADER — full width, sticky (igual dashboard) */}
+      <ModuleHeader
+        title="Jornada & Extras"
+        actions={
+          <button onClick={refetch} className="mod-hbtn-alt" title="Atualizar">
+            <RefreshCw size={16} className={loading ? "rotating" : ""} /> Atualizar
+          </button>
+        }
+      />
 
-        {/* HEADER */}
-        <ModuleHeader
-          title="Jornada & Extras"
-          actions={
-            <>
-              <button onClick={handleExportExcel} disabled={linhas.length === 0} className="mod-hbtn-alt" title="Exportar Excel">
-                <FileSpreadsheet size={14} color="var(--success)" /> Excel
-              </button>
-              <button onClick={handleExportPdf} disabled={linhas.length === 0} className="mod-hbtn-alt" title="Exportar PDF">
-                <FileText size={14} color="var(--danger)" /> PDF
-              </button>
-              <button onClick={refetch} className="mod-hbtn-alt" title="Atualizar">
-                <RefreshCw size={16} className={loading ? "rotating" : ""} /> Atualizar
-              </button>
-            </>
-          }
-        />
+      <div style={{ maxWidth: 1480, margin: "0 auto", padding: "16px 14px 40px" }}>
 
         {/* SELETOR DE PERÍODO */}
         <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", marginBottom: 14, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
@@ -320,7 +305,7 @@ export default function Jornada() {
               onClick={() => aplicarPreset(p.id)}
               style={{
                 ...btnPreset,
-                background: preset === p.id ? "var(--accent)" : "#fff",
+                background: preset === p.id ? "var(--accent)" : "var(--surface-2)",
                 color: preset === p.id ? "#fff" : "var(--text)",
                 borderColor: preset === p.id ? "var(--accent)" : "var(--border-strong)",
               }}
@@ -332,7 +317,7 @@ export default function Jornada() {
             onClick={() => setPreset("custom")}
             style={{
               ...btnPreset,
-              background: preset === "custom" ? "var(--accent)" : "#fff",
+              background: preset === "custom" ? "var(--accent)" : "var(--surface-2)",
               color: preset === "custom" ? "#fff" : "var(--text)",
               borderColor: preset === "custom" ? "var(--accent)" : "var(--border-strong)",
             }}
@@ -363,6 +348,36 @@ export default function Jornada() {
             </span>
           )}
         </div>
+
+        {/* Exportar */}
+        <ExportBar
+          titulo="Jornada & Extras"
+          arquivo="jornada"
+          subtitulo={() => {
+            const per = dataInicio === dataFim ? formatDataBR(dataInicio) : `${formatDataBR(dataInicio)} a ${formatDataBR(dataFim)}`;
+            return `Período: ${per} · ${filtradas.length} motorista(s)`;
+          }}
+          dados={() => {
+            const infrTxt = (j) => j.temInfracao ? `${j.infracoes.length} infração(ões)` : "OK";
+            if (ehPeriodo) {
+              return {
+                colunas: ["Motorista", "ID", "Placas", "Dias", "Total", "Dirigindo", "Refeição", "Pausa", "Extra 50%", "Extra 100%", "Status"],
+                linhas: filtradas.map((j) => [
+                  capitalizarNome(j.nomeMotorista), j.idMotorista, j.placas.join(", "),
+                  j.dias, j.totalAtivo, j.dirigindo, j.refeicao, j.pausa, j.extra50, j.extra100, infrTxt(j),
+                ]),
+              };
+            }
+            return {
+              colunas: ["Motorista", "ID", "Placas", "Início", "Fim", "Total", "Dirigindo", "Refeição", "Pausa", "Extra 50%", "Extra 100%", "Dir. contínua", "Status"],
+              linhas: filtradas.map((j) => [
+                capitalizarNome(j.nomeMotorista), j.idMotorista, j.placas.join(", "),
+                formatBR(j.inicio), j.encerrouJornada ? formatBR(j.fim) : "em andamento",
+                j.totalAtivo, j.dirigindo, j.refeicao, j.pausa, j.extra50, j.extra100, j.direcaoContinuaMaxima, infrTxt(j),
+              ]),
+            };
+          }}
+        />
 
         {/* KPIs */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 14 }}>
@@ -575,7 +590,7 @@ export default function Jornada() {
                 )}
                 {filtradas.map((j) => (
                   <Fragment key={j.idMotorista}>
-                  <tr style={{ borderBottom: "1px solid #f1f5f9", background: j.temInfracao ? "var(--danger-bg)" : "transparent" }}>
+                  <tr style={{ borderBottom: "1px solid var(--border)", background: j.temInfracao ? "var(--danger-bg)" : "transparent" }}>
                     <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--text)" }}>
                       {capitalizarNome(j.nomeMotorista)}
                       <div style={{ fontSize: ".7rem", color: "var(--text-muted)", fontWeight: 400, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
@@ -618,7 +633,7 @@ export default function Jornada() {
                     </td>
                     <td style={{ padding: "10px 8px", fontFamily: "monospace", fontWeight: 600, color: "var(--text-muted)" }}>
                       {j.placas.map(p => (
-                        <span key={p} style={{ display: "inline-block", background: "#e0f2fe", color: "#075985", padding: "2px 6px", borderRadius: 4, marginRight: 4, marginBottom: 2, fontSize: ".72rem" }}>
+                        <span key={p} style={{ display: "inline-block", background: "var(--accent-soft)", color: "var(--accent)", padding: "2px 6px", borderRadius: 4, marginRight: 4, marginBottom: 2, fontSize: ".72rem" }}>
                           {p}
                         </span>
                       ))}
@@ -689,14 +704,14 @@ export default function Jornada() {
                   </tr>
                   {!ehPeriodo && ciclosExpandidos[j.idMotorista] && j.ciclos && j.ciclos.length > 1 && (
                     <tr key={j.idMotorista + "-ciclos"}>
-                      <td colSpan={13} style={{ padding: "6px 12px 12px", background: "var(--warning-bg)", borderBottom: "1px solid #fed7aa" }}>
+                      <td colSpan={13} style={{ padding: "6px 12px 12px", background: "var(--warning-bg)", borderBottom: "1px solid var(--warning-border)" }}>
                         <div style={{ fontSize: ".75rem", fontWeight: 700, color: "var(--warning)", marginBottom: 6 }}>
                           Ciclos de jornada do motorista hoje ({j.ciclos.length})
                         </div>
                         <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                         <table style={{ width: "100%", fontSize: ".78rem", borderCollapse: "collapse", minWidth: 560 }}>
                           <thead>
-                            <tr style={{ background: "var(--warning-bg)", color: "#78350f" }}>
+                            <tr style={{ background: "var(--warning-bg)", color: "var(--warning)" }}>
                               <th style={{ padding: "4px 8px", textAlign: "left" }}>Ciclo</th>
                               <th style={{ padding: "4px 8px", textAlign: "left" }}>Início</th>
                               <th style={{ padding: "4px 8px", textAlign: "left" }}>Fim</th>
@@ -710,7 +725,7 @@ export default function Jornada() {
                           </thead>
                           <tbody>
                             {j.ciclos.map(c => (
-                              <tr key={c.numero} style={{ borderBottom: "1px solid #fed7aa" }}>
+                              <tr key={c.numero} style={{ borderBottom: "1px solid var(--warning-border)" }}>
                                 <td style={{ padding: "4px 8px", fontWeight: 700, color: "var(--warning)" }}>#{c.numero}</td>
                                 <td style={{ padding: "4px 8px", fontFamily: "monospace" }}>{formatBR(c.inicio)}</td>
                                 <td style={{ padding: "4px 8px", fontFamily: "monospace" }}>{formatBR(c.fim)}</td>
@@ -734,14 +749,14 @@ export default function Jornada() {
                   )}
                   {!ehPeriodo && trajetoExpandido[j.idMotorista] && j.timeline && j.timeline.length > 0 && (
                     <tr key={j.idMotorista + "-trajeto"}>
-                      <td colSpan={13} style={{ padding: "6px 12px 12px", background: "var(--success-bg)", borderBottom: "1px solid #a7f3d0" }}>
+                      <td colSpan={13} style={{ padding: "6px 12px 12px", background: "var(--success-bg)", borderBottom: "1px solid var(--success-border)" }}>
                         <div style={{ fontSize: ".75rem", fontWeight: 700, color: "var(--success)", marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>
                           <MapPin size={13} /> Trajeto da jornada — onde cada evento aconteceu ({j.timeline.length})
                         </div>
                         <div style={{ overflowX: "auto" }}>
                           <table style={{ width: "100%", fontSize: ".78rem", borderCollapse: "collapse" }}>
                             <thead>
-                              <tr style={{ background: "var(--success-bg)", color: "#065f46" }}>
+                              <tr style={{ background: "var(--success-bg)", color: "var(--success)" }}>
                                 <th style={thTraj}>Hora</th>
                                 <th style={thTraj}>Evento</th>
                                 <th style={{ ...thTraj, textAlign: "center" }}>Duração</th>
@@ -753,7 +768,7 @@ export default function Jornada() {
                               {j.timeline.map((ev, idx) => {
                                 const c = corEvento(ev.tipo);
                                 return (
-                                  <tr key={idx} style={{ borderBottom: "1px solid #d1fae5" }}>
+                                  <tr key={idx} style={{ borderBottom: "1px solid var(--success-border)" }}>
                                     <td style={{ padding: "4px 8px", fontFamily: "monospace", whiteSpace: "nowrap" }}>{formatBR(ev.hora)}</td>
                                     <td style={{ padding: "4px 8px" }}>
                                       <span style={{ background: c.bg, color: c.color, padding: "1px 7px", borderRadius: 4, fontSize: ".7rem", fontWeight: 700, whiteSpace: "nowrap" }}>{ev.tipo}</span>
@@ -836,7 +851,7 @@ export default function Jornada() {
               </button>
             </div>
 
-            <div style={{ padding: "10px 18px", borderBottom: "1px solid #f1f5f9", fontSize: ".78rem", color: "var(--text-muted)", background: "#faf5ff" }}>
+            <div style={{ padding: "10px 18px", borderBottom: "1px solid var(--border)", fontSize: ".78rem", color: "var(--text-muted)", background: "var(--surface-2)" }}>
               Não bateram <b>"Jornada"</b> no tablet hoje. Confira quem está de folga e <b>lance a folga na SASCAR</b> manualmente.
             </div>
 
@@ -847,7 +862,7 @@ export default function Jornada() {
                 </div>
               ) : (
                 naoIniciaram.map((m, i) => (
-                  <div key={m.idMotorista} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 18px", borderBottom: "1px solid #f8fafc" }}>
+                  <div key={m.idMotorista} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 18px", borderBottom: "1px solid var(--border)" }}>
                     <span style={{ width: 22, textAlign: "right", color: "var(--text-subtle)", fontSize: ".75rem", fontFamily: "monospace" }}>{i + 1}</span>
                     <span style={{ flex: 1, fontWeight: 600, color: "var(--text)", fontSize: ".9rem" }}>{capitalizarNome(m.nome)}</span>
                     <span style={{ fontSize: ".68rem", color: "var(--text-muted)", fontFamily: "monospace" }}>ID {m.idMotorista}</span>
@@ -856,7 +871,7 @@ export default function Jornada() {
                       disabled={marcandoDesligado === m.idMotorista}
                       title="Marcar como desligado — some da lista"
                       style={{
-                        display: "inline-flex", alignItems: "center", gap: 4, border: "1px solid #fecaca",
+                        display: "inline-flex", alignItems: "center", gap: 4, border: "1px solid var(--danger-border)",
                         background: "var(--danger-bg)", color: "var(--danger)", borderRadius: 6, padding: "3px 8px",
                         fontSize: ".7rem", fontWeight: 700, cursor: "pointer",
                         opacity: marcandoDesligado === m.idMotorista ? 0.5 : 1, whiteSpace: "nowrap",
@@ -877,7 +892,7 @@ export default function Jornada() {
                       if (ok) { setCopiado(true); setTimeout(() => setCopiado(false), 2000); }
                     });
                   }}
-                  style={{ ...btnGhost, background: copiado ? "var(--success-bg)" : "#fff", color: copiado ? "var(--success)" : "var(--text)", borderColor: copiado ? "var(--success-border)" : "var(--border-strong)" }}
+                  style={{ ...btnGhost, background: copiado ? "var(--success-bg)" : "var(--card-bg)", color: copiado ? "var(--success)" : "var(--text)", borderColor: copiado ? "var(--success-border)" : "var(--border-strong)" }}
                 >
                   {copiado ? <CheckCircle2 size={14} /> : <Copy size={14} />} {copiado ? "Copiado!" : "Copiar lista"}
                 </button>
@@ -911,13 +926,13 @@ export default function Jornada() {
               </button>
             </div>
 
-            <div style={{ padding: "10px 18px", borderBottom: "1px solid #f1f5f9", fontSize: ".78rem", color: "var(--text-muted)", background: "var(--warning-bg)" }}>
+            <div style={{ padding: "10px 18px", borderBottom: "1px solid var(--border)", fontSize: ".78rem", color: "var(--text-muted)", background: "var(--warning-bg)" }}>
               Não bateram <b>"Encerrar"</b> no tablet. Cobre o motorista pra fechar — sem isso a HE do dia fica em aberto.
             </div>
 
             <div style={{ overflowY: "auto", flex: 1 }}>
               {naoEncerrados.map((j, i) => (
-                <div key={j.idMotorista} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 18px", borderBottom: "1px solid #f8fafc" }}>
+                <div key={j.idMotorista} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 18px", borderBottom: "1px solid var(--border)" }}>
                   <span style={{ width: 22, textAlign: "right", color: "var(--text-subtle)", fontSize: ".75rem", fontFamily: "monospace" }}>{i + 1}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, color: "var(--text)", fontSize: ".9rem" }}>{capitalizarNome(j.nomeMotorista)}</div>
@@ -944,7 +959,7 @@ export default function Jornada() {
                       if (ok) { setCopiado(true); setTimeout(() => setCopiado(false), 2000); }
                     });
                   }}
-                  style={{ ...btnGhost, background: copiado ? "var(--success-bg)" : "#fff", color: copiado ? "var(--success)" : "var(--text)", borderColor: copiado ? "var(--success-border)" : "var(--border-strong)" }}
+                  style={{ ...btnGhost, background: copiado ? "var(--success-bg)" : "var(--card-bg)", color: copiado ? "var(--success)" : "var(--text)", borderColor: copiado ? "var(--success-border)" : "var(--border-strong)" }}
                 >
                   {copiado ? <CheckCircle2 size={14} /> : <Copy size={14} />} {copiado ? "Copiado!" : "Copiar lista"}
                 </button>
@@ -977,7 +992,7 @@ function Kpi({ label, value, color, icon, sub, onClick, active }) {
     <div
       onClick={onClick}
       style={{
-        background: active ? "var(--warning-bg)" : "#fff",
+        background: active ? "var(--warning-bg)" : "var(--card-bg)",
         border: `1px solid ${active ? color : "var(--border)"}`,
         borderRadius: 10,
         padding: "12px 14px",
@@ -1023,6 +1038,7 @@ const inputDate = {
   padding: "5px 8px",
   fontSize: ".82rem",
   outline: "none",
+  background: "var(--card-bg)",
   color: "var(--text)",
 };
 

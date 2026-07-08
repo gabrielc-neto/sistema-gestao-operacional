@@ -7,7 +7,9 @@ import {
 import { Lock, X, CheckCircle2, Download } from "lucide-react";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
+import { useRBAC } from "../rbac/RBACContext";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 
 // ── Catálogo de tipos de manutenção ───────────────────────────────────────
 const TIPOS = [
@@ -167,9 +169,11 @@ function osCriadoEm(os) {
   return os?.criadoEm || os?.dataHora || null;
 }
 
-// OS só é editável enquanto aberta E dentro das 24h da abertura
-function osEditavel(os) {
+// Regra de edição: Super Admin edita sempre; demais usuários só dentro das 24h
+// da criação. OS finalizada nunca é editável (regra de ciclo de vida do veículo).
+function osEditavel(os, isSuperAdmin = false) {
   if (osStatus(os) === "finalizada") return false;
+  if (isSuperAdmin) return true;
   const base = osCriadoEm(os);
   if (!base) return false;
   const t = new Date(base).getTime();
@@ -180,6 +184,24 @@ function osEditavel(os) {
 // limite de edição em ISO (pra exibir "edição até ...")
 function osLimiteEdicao(os) {
   const base = osCriadoEm(os);
+  if (!base) return null;
+  const t = new Date(base).getTime();
+  if (!Number.isFinite(t)) return null;
+  return new Date(t + OS_EDIT_WINDOW_MS).toISOString();
+}
+
+// Mesma regra para lançamentos de NF: Super Admin sempre; demais só nas 24h da criação.
+function lancCriadoEm(l) { return l?.criadoEm || l?.dataHora || null; }
+function lancEditavel(l, isSuperAdmin = false) {
+  if (isSuperAdmin) return true;
+  const base = lancCriadoEm(l);
+  if (!base) return false;
+  const t = new Date(base).getTime();
+  if (!Number.isFinite(t)) return false;
+  return (Date.now() - t) <= OS_EDIT_WINDOW_MS;
+}
+function lancLimiteEdicao(l) {
+  const base = lancCriadoEm(l);
   if (!base) return null;
   const t = new Date(base).getTime();
   if (!Number.isFinite(t)) return null;
@@ -198,7 +220,9 @@ const PERIODOS_LANC = [
 
 // Paleta cíclica para colorir categorias do ranking
 // Paleta "asteroide ao luar" — tons frios/lunares, cíclica
-const PALETA_CAT = ["var(--chart-1)","var(--chart-2)","var(--chart-3)","var(--chart-4)","var(--chart-5)","var(--chart-6)","var(--chart-7)","var(--chart-8)","var(--chart-1)","var(--chart-2)","var(--chart-3)","var(--chart-4)"];
+// Paleta categórica alinhada à identidade Pontual: família azul/ciano/teal da marca
+// + âmbar (energia/petróleo) + ardósia neutra. Sem índigo/violeta (off-brand).
+const PALETA_CAT = ["var(--accent)","var(--chart-2)","var(--chart-3)","var(--chart-5)","var(--chart-1)","var(--chart-7)","var(--accent-500)","var(--chart-8)"];
 
 function inicioPeriodo(key, agora, customIni) {
   const y = agora.getFullYear();
@@ -240,7 +264,7 @@ const ALERTA_MENSAL = 8000; // R$ por mês → veículo "em alerta"
 
 // ── Gráfico de LINHA marcada (evolução mensal) ──────────────────────────
 function LinhaCustos({ meses, fmt }) {
-  const W = 720, H = 230, padL = 52, padR = 16, padT = 14, padB = 30;
+  const W = 740, H = 320, padL = 52, padR = 16, padT = 16, padB = 34;
   const iw = W - padL - padR, ih = H - padT - padB;
   const max = Math.max(1, ...meses.map(m => m.valor));
   const x = i => padL + (meses.length > 1 ? (i / (meses.length - 1)) * iw : iw / 2);
@@ -259,11 +283,11 @@ function LinhaCustos({ meses, fmt }) {
           </g>
         );
       })}
-      <path d={dArea} fill="var(--chart-2)" opacity=".12" />
-      <path d={dLine} fill="none" stroke="var(--chart-2)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={dArea} fill="var(--accent)" opacity=".10" />
+      <path d={dLine} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
       {pts.map((p, i) => (
         <g key={i}>
-          <circle cx={p[0]} cy={p[1]} r="3.6" fill="var(--card-bg)" stroke="var(--chart-2)" strokeWidth="2" />
+          <circle cx={p[0]} cy={p[1]} r="3.6" fill="var(--card-bg)" stroke="var(--accent)" strokeWidth="2" />
           <text x={p[0]} y={H - 10} textAnchor="middle" fontSize="9" fill="var(--text-muted)">{nomeMes(meses[i].mes)}</text>
           <title>{`${nomeMes(meses[i].mes)}: ${fmt(meses[i].valor)}`}</title>
         </g>
@@ -332,9 +356,9 @@ function BarrasH({ items, fmt }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
       {items.map((it, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ width: 78, fontSize: ".74rem", fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-display)", flexShrink: 0 }}>{it.placa}</span>
+          <span title={it.placa} style={{ width: 96, fontSize: ".74rem", fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-display)", flexShrink: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.placa}</span>
           <div style={{ flex: 1, height: 16, background: "var(--surface-3)", borderRadius: 6, overflow: "hidden" }}>
-            <div style={{ width: `${(it.valor / max) * 100}%`, height: "100%", borderRadius: 6, background: `linear-gradient(90deg, var(--chart-4), var(--chart-2))` }} />
+            <div style={{ width: `${(it.valor / max) * 100}%`, height: "100%", borderRadius: 6, background: "var(--accent)" }} />
           </div>
           <span style={{ width: 82, textAlign: "right", fontSize: ".76rem", fontWeight: 700, color: "var(--text)" }}>{fmt(it.valor)}</span>
         </div>
@@ -374,7 +398,7 @@ function KpiCard({ label, valor, sub, pct, invert = true, alerta = false }) {
   const corPct = !temPct ? "var(--text-subtle)" : bom ? "var(--success)" : "var(--danger)";
   return (
     <div style={{ background: "var(--card-bg)", border: `1px solid ${alerta ? "var(--danger-border)" : "var(--border)"}`, borderRadius: "var(--r-lg)", padding: "16px 18px", boxShadow: "var(--sh-sm)", position: "relative", overflow: "hidden" }}>
-      <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: alerta ? "var(--danger)" : "linear-gradient(180deg, var(--chart-2), var(--chart-4))" }} />
+      <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: alerta ? "var(--danger)" : "var(--accent)" }} />
       <div style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-muted)" }}>{label}</div>
       <div style={{ fontSize: "1.55rem", fontWeight: 800, color: alerta ? "var(--danger)" : "var(--text)", marginTop: 6, lineHeight: 1.1, letterSpacing: "-.02em", fontFamily: "var(--font-display)" }}>{valor}</div>
       <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6, fontSize: ".74rem" }}>
@@ -417,7 +441,11 @@ function DashboardManutencao({ lancamentos, veiculos }) {
 
     const catMap = {};
     atuais.forEach(l => { const c = (l.tipoLancamento || "Sem categoria").trim() || "Sem categoria"; catMap[c] = (catMap[c] || 0) + l._v; });
-    const porCategoria = Object.entries(catMap).map(([nome, valor], i) => ({ label: nome, valor, cor: PALETA_CAT[i % PALETA_CAT.length] })).sort((a, b) => b.valor - a.valor);
+    // Cor atribuída DEPOIS de ordenar por valor → maior categoria fica com o azul da marca (PALETA_CAT[0])
+    const porCategoria = Object.entries(catMap)
+      .map(([nome, valor]) => ({ label: nome, valor }))
+      .sort((a, b) => b.valor - a.valor)
+      .map((c, i) => ({ ...c, cor: PALETA_CAT[i % PALETA_CAT.length] }));
 
     const veicMap = {};
     atuais.forEach(l => {
@@ -433,9 +461,9 @@ function DashboardManutencao({ lancamentos, veiculos }) {
     const top10 = porVeiculo.slice(0, 10).map(v => ({ placa: v.placa, valor: v.total }));
 
     const faixas = [
-      { label: "Até R$2k/mês", min: 0, max: 2000, cor: "var(--chart-3)", valor: 0 },
-      { label: "R$2k–5k/mês", min: 2000, max: 5000, cor: "var(--chart-2)", valor: 0 },
-      { label: "R$5k–8k/mês", min: 5000, max: 8000, cor: "var(--chart-5)", valor: 0 },
+      { label: "Até R$2k/mês", min: 0, max: 2000, cor: "var(--success)", valor: 0 },
+      { label: "R$2k–5k/mês", min: 2000, max: 5000, cor: "var(--accent)", valor: 0 },
+      { label: "R$5k–8k/mês", min: 5000, max: 8000, cor: "var(--warning)", valor: 0 },
       { label: "Acima de R$8k/mês", min: 8000, max: Infinity, cor: "var(--danger)", valor: 0 },
     ];
     porVeiculo.forEach(v => { (faixas.find(f => v.media >= f.min && v.media < f.max) || faixas[3]).valor++; });
@@ -574,7 +602,7 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
   const [customIni, setCustomIni] = useState("");
   const [customFim, setCustomFim] = useState("");
 
-  const { filtrados, totalGeral, ranking, mediaMes, seriesPorCategoria } = useMemo(() => {
+  const { filtrados, totalGeral, ranking, mediaMes, seriesPorCategoria, porMesTotal, pecaServico, topFornecedores, topVeiculos, categoriaSegments } = useMemo(() => {
     const agora = new Date();
     const ini = inicioPeriodo(periodo, agora, customIni);
     const fim = fimPeriodo(periodo, agora, customFim);
@@ -653,8 +681,61 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
       return { ...r, cor, mesesSerie, maxMes, qtdLanc };
     });
 
-    return { filtrados, totalGeral, ranking, mediaMes, seriesPorCategoria };
+    // Total por mês (linha de evolução do custo)
+    const porMesTotal = monthsTemplate.map(m => ({ mes: m.mesIdx, ano: m.ano, valor: 0 }));
+    for (const l of filtrados) {
+      const t = new Date(l.criadoEm || l.dataHora);
+      if (!Number.isFinite(t.getTime())) continue;
+      const slot = porMesTotal.find(x => x.mes === t.getMonth() && x.ano === t.getFullYear());
+      if (slot) slot.valor += (Number(l.valorTotal) || 0);
+    }
+
+    // Peças × Serviços (a partir dos itens de cada lançamento)
+    let vPeca = 0, vServico = 0, vSemDet = 0;
+    for (const l of filtrados) {
+      if (Array.isArray(l.itens) && l.itens.length) {
+        for (const it of l.itens) {
+          const v = (Number(it.valorUnitario) || 0) * (Number(it.quantidade) || 0);
+          if (it.tipoItem === "peca") vPeca += v; else vServico += v;
+        }
+      } else {
+        vSemDet += (Number(l.valorTotal) || 0);
+      }
+    }
+    const pecaServico = [
+      { label: "Serviços", valor: vServico, cor: "var(--accent)" },
+      { label: "Peças", valor: vPeca, cor: "var(--chart-5)" },
+    ];
+    if (vSemDet > 0) pecaServico.push({ label: "Sem detalhamento", valor: vSemDet, cor: "var(--chart-8)" });
+
+    // Top fornecedores por custo
+    const fornMap = {};
+    for (const l of filtrados) {
+      const f = (l.fornecedor || "—").trim() || "—";
+      fornMap[f] = (fornMap[f] || 0) + (Number(l.valorTotal) || 0);
+    }
+    const topFornecedores = Object.entries(fornMap)
+      .map(([placa, valor]) => ({ placa, valor })).sort((a, b) => b.valor - a.valor).slice(0, 8);
+
+    // Top veículos por custo
+    const veicCustoMap = {};
+    for (const l of filtrados) {
+      const p = (l.placa || "—").toUpperCase();
+      veicCustoMap[p] = (veicCustoMap[p] || 0) + (Number(l.valorTotal) || 0);
+    }
+    const topVeiculos = Object.entries(veicCustoMap)
+      .map(([placa, valor]) => ({ placa, valor })).sort((a, b) => b.valor - a.valor).slice(0, 8);
+
+    // Segmentos para o donut de categorias
+    const categoriaSegments = ranking.map((r, i) => ({ label: r.nome, valor: r.valor, cor: PALETA_CAT[i % PALETA_CAT.length] }));
+
+    return { filtrados, totalGeral, ranking, mediaMes, seriesPorCategoria, porMesTotal, pecaServico, topFornecedores, topVeiculos, categoriaSegments };
   }, [lancamentos, periodo, customIni, customFim]);
+
+  const pnl = { background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", boxShadow: "0 1px 3px rgba(15,23,42,.05)", display: "flex", flexDirection: "column", minWidth: 0 };
+  const pnlTit = { margin: "0 0 12px 0", fontSize: ".8rem", fontWeight: 700, color: "var(--text)", textTransform: "uppercase", letterSpacing: ".04em" };
+  const centro = { display: "flex", alignItems: "center", justifyContent: "center", gap: 16, flexWrap: "wrap", flex: 1 };
+  const vazio = <p style={{ fontSize: ".82rem", color: "var(--text-subtle)", padding: "1.5rem", textAlign: "center", margin: "auto" }}>Nenhum lançamento no período.</p>;
 
   return (
     <div style={{ background: "var(--card-bg)", borderRadius: 14, padding: "1rem 1.25rem", marginBottom: "1rem", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" }}>
@@ -703,48 +784,56 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
         </div>
       </div>
 
-      {/* KPIs principais */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 16 }}>
-        <div style={{ padding: "14px 16px", borderRadius: 12, background: "linear-gradient(135deg, #18216E, #234775)", color: "#fff" }}>
-          <div style={{ fontSize: ".7rem", fontWeight: 700, opacity: .75, textTransform: "uppercase", letterSpacing: ".04em" }}>Total gasto</div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 800, marginTop: 4, lineHeight: 1 }} className="manut-display">{fmtBRLfn(totalGeral)}</div>
+      {/* KPIs — mesmos cards do Dashboard de Manutenção */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 16 }}>
+        <KpiCard label="Total gasto"  valor={fmtBRLfn(totalGeral)}       sub="no período" />
+        <KpiCard label="Categorias"   valor={String(ranking.length)}     sub="com lançamento" />
+        <KpiCard label="Média / mês"  valor={fmtBRLcurto(mediaMes)}      sub="no período" />
+        <KpiCard label="Lançamentos"  valor={String(filtrados.length)}   sub="no período" />
+      </div>
+
+      {/* Linha 1 — donuts lado a lado */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, marginBottom: 12, alignItems: "stretch" }}>
+        <div style={pnl}>
+          <h3 style={pnlTit}>Distribuição por categoria</h3>
+          {ranking.length === 0 ? vazio : (
+            <div style={centro}>
+              <DonutPie segments={categoriaSegments} fmt={fmtBRLcurto} tipo="donut" size={168} />
+              <LegendaSeg segments={categoriaSegments} fmt={fmtBRLcurto} />
+            </div>
+          )}
         </div>
-        <div style={{ padding: "14px 16px", borderRadius: 12, background: "var(--accent-soft)", border: "1px solid #bae6fd" }}>
-          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: ".04em" }}>Categorias</div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0c4a6e", marginTop: 4, lineHeight: 1 }} className="manut-display">{ranking.length}</div>
-        </div>
-        <div style={{ padding: "14px 16px", borderRadius: 12, background: "var(--success-bg)", border: "1px solid #86efac" }}>
-          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "var(--success)", textTransform: "uppercase", letterSpacing: ".04em" }}>Média / mês</div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#14532d", marginTop: 4, lineHeight: 1 }} className="manut-display">{fmtBRLcurto(mediaMes)}</div>
-        </div>
-        <div style={{ padding: "14px 16px", borderRadius: 12, background: "var(--warning-bg)", border: "1px solid #fcd34d" }}>
-          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "var(--warning)", textTransform: "uppercase", letterSpacing: ".04em" }}>Lançamentos</div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#78350f", marginTop: 4, lineHeight: 1 }} className="manut-display">{filtrados.length}</div>
+        <div style={pnl}>
+          <h3 style={pnlTit}>Peças × Serviços</h3>
+          {(pecaServico.reduce((s, x) => s + x.valor, 0) <= 0) ? vazio : (
+            <div style={centro}>
+              <DonutPie segments={pecaServico} fmt={fmtBRLcurto} tipo="donut" size={168} />
+              <LegendaSeg segments={pecaServico} fmt={fmtBRLcurto} />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Ranking por categoria — barras horizontais */}
-      <div style={{ marginBottom: 18 }}>
-        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "var(--text)", textTransform: "uppercase", letterSpacing: ".04em" }}>Gastos por categoria</h3>
-        {ranking.length === 0 ? (
-          <p style={{ fontSize: ".82rem", color: "var(--text-subtle)", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
-        ) : (
+      {/* Linha 2 — gastos por categoria (largura total) */}
+      <div style={{ ...pnl, marginBottom: 12 }}>
+        <h3 style={pnlTit}>Gastos por categoria</h3>
+        {ranking.length === 0 ? vazio : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {ranking.map((r, i) => {
               const cor = PALETA_CAT[i % PALETA_CAT.length];
               return (
-                <div key={r.nome} style={{ padding: "6px 8px", borderRadius: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, fontSize: ".82rem" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "var(--text)" }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 3, background: cor }} />
-                      {r.nome}
+                <div key={r.nome}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, fontSize: ".82rem", gap: 8 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "var(--text)", minWidth: 0 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 3, background: cor, flexShrink: 0 }} />
+                      <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.nome}</span>
                     </span>
-                    <span style={{ fontWeight: 700, color: cor }} className="manut-display">
+                    <span style={{ fontWeight: 700, color: cor, whiteSpace: "nowrap" }} className="manut-display">
                       {fmtBRLfn(r.valor)} <span style={{ color: "var(--text-subtle)", fontWeight: 600, fontSize: ".72rem" }}>· {r.pct.toFixed(1)}%</span>
                     </span>
                   </div>
-                  <div style={{ height: 8, background: "var(--surface-3)", borderRadius: 6, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${Math.max(2, r.pct)}%`, background: cor, transition: "width .3s ease" }} />
+                  <div style={{ height: 13, background: "var(--surface-3)", borderRadius: 7, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${Math.max(2, r.pct)}%`, background: cor, borderRadius: 7, transition: "width .3s ease" }} />
                   </div>
                 </div>
               );
@@ -753,16 +842,30 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
         )}
       </div>
 
-      {/* Gráfico agrupado: meses no eixo X, categorias lado a lado dentro de cada mês */}
-      <div style={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}>
-        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "var(--text)", textTransform: "uppercase", letterSpacing: ".04em" }}>
-          Evolução mês a mês — categorias lado a lado
-        </h3>
-        {seriesPorCategoria.length === 0 ? (
-          <p style={{ fontSize: ".82rem", color: "var(--text-subtle)", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
-        ) : (
-          <GraficoAgrupado series={seriesPorCategoria} fmtBRLfn={fmtBRLfn} />
-        )}
+      {/* Linha 3 — top fornecedores + top veículos lado a lado */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, marginBottom: 12, alignItems: "stretch" }}>
+        <div style={pnl}>
+          <h3 style={pnlTit}>Top fornecedores por custo</h3>
+          {topFornecedores.length === 0 ? vazio : <BarrasH items={topFornecedores} fmt={fmtBRLcurto} />}
+        </div>
+        <div style={pnl}>
+          <h3 style={pnlTit}>Top veículos por custo</h3>
+          {topVeiculos.length === 0 ? vazio : <BarrasH items={topVeiculos} fmt={fmtBRLcurto} />}
+        </div>
+      </div>
+
+      {/* Linha 4 — evolução mensal + evolução mês a mês por categoria lado a lado */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, alignItems: "stretch" }}>
+        <div style={pnl}>
+          <h3 style={pnlTit}>Evolução do custo mensal</h3>
+          {porMesTotal.length === 0 ? vazio : <LinhaCustos meses={porMesTotal} fmt={fmtBRLfn} />}
+        </div>
+        <div style={pnl}>
+          <h3 style={pnlTit}>Evolução mês a mês — por categoria</h3>
+          {seriesPorCategoria.length === 0 ? vazio : (
+            <GraficoAgrupado series={seriesPorCategoria} fmtBRLfn={fmtBRLfn} />
+          )}
+        </div>
       </div>
     </div>
   );
@@ -784,11 +887,10 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
     }
   }
 
-  // Largura do gráfico escala com o número de meses (1 mês = compacto, 12 = mais largo)
-  // Card pai também usa cardMaxWidth pra acompanhar
-  const cardMaxWidth = Math.min(620, 220 + nMeses * 34);
-  const W = Math.min(560, 140 + nMeses * 36);
-  const H = 360, padL = 44, padR = 8, padT = 12, padB = 40;
+  // Mesma proporção (740×320) da "Evolução do custo mensal" ao lado, pra os dois
+  // gráficos renderizarem na mesma altura. O SVG usa width:100% (responsivo).
+  const W = 740;
+  const H = 320, padL = 48, padR = 10, padT = 16, padB = 42;
   const innerW = W - padL - padR;
   const innerH = H - padT - padB;
   const groupW = innerW / nMeses;            // largura disponível para cada mês
@@ -797,7 +899,7 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
   const barW = Math.max(4, groupInner / nCats);
 
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px", background: "var(--card-bg)", boxShadow: "0 1px 3px rgba(15,23,42,.05)", width: "100%", maxWidth: cardMaxWidth, boxSizing: "border-box" }}>
+    <div style={{ width: "100%", boxSizing: "border-box" }}>
       {/* Legenda — uma chip por categoria */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
         {series.map(cat => (
@@ -810,14 +912,14 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
       </div>
 
       <div>
-        <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="auto" preserveAspectRatio="xMidYMid meet" style={{ display: "block" }}>
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="auto" preserveAspectRatio="xMidYMid meet" style={{ display: "block", fontFamily: "var(--font)" }}>
           {/* Grade horizontal + rótulos do eixo Y */}
           {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
             const y = padT + innerH * (1 - p);
             return (
               <g key={i}>
                 <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="var(--border)" strokeWidth="1" />
-                <text x={padL - 6} y={y + 4} fontSize="12" fill="var(--text-subtle)" textAnchor="end" fontFamily="Manrope, sans-serif">
+                <text x={padL - 6} y={y + 4} fontSize="11" fill="var(--text-subtle)" textAnchor="end">
                   {fmtBRLcurto(maxVal * p).replace("R$ ", "")}
                 </text>
               </g>
@@ -847,11 +949,11 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
                   );
                 })}
                 {/* Rótulo do mês embaixo do grupo */}
-                <text x={groupX + (groupInner) / 2} y={padT + innerH + 16} fontSize="12" fill="var(--text-muted)" textAnchor="middle" fontWeight="600" fontFamily="Manrope, sans-serif">
+                <text x={groupX + (groupInner) / 2} y={padT + innerH + 16} fontSize="11" fill="var(--text-muted)" textAnchor="middle" fontWeight="600">
                   {m.label.slice(0, 3)}
                 </text>
                 {(m.mesIdx === 0 || mi === 0) && (
-                  <text x={groupX + (groupInner) / 2} y={padT + innerH + 32} fontSize="11" fill="var(--text-subtle)" textAnchor="middle" fontFamily="Manrope, sans-serif">
+                  <text x={groupX + (groupInner) / 2} y={padT + innerH + 32} fontSize="10" fill="var(--text-subtle)" textAnchor="middle">
                     {m.ano}
                   </text>
                 )}
@@ -936,7 +1038,7 @@ function SearchSelect({ value, onChange, options, onAdd, placeholder }) {
               onMouseDown={e => { e.preventDefault(); onChange(o); setOpen(false); }}
               style={{ padding:"8px 12px", cursor:"pointer", fontSize:".88rem", color:"var(--text)" }}
               onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-3)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "#fff")}
+              onMouseLeave={e => (e.currentTarget.style.background = "var(--card-bg)")}
             >
               {o}
             </div>
@@ -950,6 +1052,7 @@ function SearchSelect({ value, onChange, options, onAdd, placeholder }) {
 // ── Componente ─────────────────────────────────────────────────────────────
 export default function Manutencao() {
   const { profile } = useAuth();
+  const { isSuperAdmin } = useRBAC();
   const navigate    = useNavigate();
   const canDelete   = ["master","admin"].includes(profile?.role);
 
@@ -1307,7 +1410,7 @@ export default function Manutencao() {
         hodometro:     numOS(formOS.hodometro),
         obs:           (formOS.obs || "").trim(),
         status:        "aberta",
-        criadoPor:     profile?.email || profile?.nome || "—",
+        criadoPor:     quemSou(),
         criadoEm:      agora.toISOString(),
       };
       const ref = await addDoc(collection(db, "ordens_servico"), payload);
@@ -1426,7 +1529,7 @@ export default function Manutencao() {
   }
 
   function abrirEditOS(os) {
-    if (!osEditavel(os)) return;
+    if (!osEditavel(os, isSuperAdmin)) return;
     setEditOS(os);
     setFormEditOS({
       tipoServico: os.tipoServico || "",
@@ -1443,8 +1546,8 @@ export default function Manutencao() {
   async function salvarEditOS(e) {
     e.preventDefault();
     if (!editOS) return;
-    // trava de segurança — passou das 24h ou já finalizada
-    if (!osEditavel(editOS)) { setErroEdit("Esta OS não pode mais ser editada (passou de 24h ou já finalizada)."); return; }
+    // trava de segurança — passou das 24h (e não é super admin) ou já finalizada
+    if (!osEditavel(editOS, isSuperAdmin)) { setErroEdit("Esta OS não pode mais ser editada (passou de 24h ou já finalizada). Só o Super Admin edita após esse prazo."); return; }
     setErroEdit("");
     const placa = (formEditOS.placa || "").trim().toUpperCase();
     if (!formEditOS.tipoServico) { setErroEdit("Selecione o tipo de serviço."); return; }
@@ -1629,7 +1732,7 @@ export default function Manutencao() {
         itens,
         valorTotal,
         servicoFeito:   (formLanc.servicoFeito || "").trim(),
-        criadoPor:      profile?.email || profile?.nome || "—",
+        criadoPor:      quemSou(),
         criadoEm:       agora.toISOString(),
       };
       const ref = await addDoc(collection(db, "lancamentos_os"), payload);
@@ -1645,6 +1748,7 @@ export default function Manutencao() {
   }
 
   function abrirEditLanc(l) {
+    if (!lancEditavel(l, isSuperAdmin)) return;
     setEditLanc(l);
     setFormEditLanc({
       tipoLancamento: l.tipoLancamento || "",
@@ -1681,6 +1785,8 @@ export default function Manutencao() {
   async function salvarEditLanc(e) {
     e.preventDefault();
     if (!editLanc) return;
+    // trava de segurança — passou das 24h e não é super admin
+    if (!lancEditavel(editLanc, isSuperAdmin)) { setErroEditLanc("Este lançamento não pode mais ser editado (passou de 24h). Só o Super Admin edita após esse prazo."); return; }
     setErroEditLanc("");
     const placa = (formEditLanc.placa || "").trim().toUpperCase();
     const tipoLancamento = (formEditLanc.tipoLancamento || "").trim();
@@ -1734,8 +1840,8 @@ export default function Manutencao() {
     <div style={s.wrap} className="manut-page-root">
 
       <style>{`
-        .manut-page-root { font-family: "Manrope", system-ui, -apple-system, sans-serif; }
-        .manut-page-root .manut-display { font-family: "Space Grotesk", "Manrope", system-ui, sans-serif; letter-spacing: -.01em; }
+        .manut-page-root { font-family: var(--font); }
+        .manut-page-root .manut-display { font-family: var(--font-display); letter-spacing: -.01em; }
         .manut-header-btn { transition: transform .15s, background .15s; display:inline-flex; align-items:center; gap:8px; }
         .manut-header-btn:hover { transform: translateY(-1px); }
 
@@ -1756,7 +1862,7 @@ export default function Manutencao() {
       `}</style>
       {/* HEADER */}
       <ModuleHeader
-        title="MANUTENÇÃO"
+        title="Manutenção"
         actions={alertaCount > 0 && (
           <span style={s.alertaBadge}>
             <Ico.Alert size={11} /> {alertaCount} pendente{alertaCount>1?"s":""}
@@ -1795,6 +1901,53 @@ export default function Manutencao() {
           {itensCatalogo.length > 0 && <span style={{ ...s.tabBadge, background:"var(--text-muted)" }}>{itensCatalogo.length}</span>}
         </button>
       </div>
+
+      {/* Exportar — adapta ao dataset da aba ativa */}
+      {["os", "os_lanc", "lancamento", "alertas", "cadastros"].includes(aba) && (
+        <div style={{ maxWidth: 1300, margin: "0 auto", padding: "20px 24px 0" }}>
+          <ExportBar
+            titulo={({ os: "Ordens de Serviço", os_lanc: "OSs Abertas", lancamento: "Lançamentos de Manutenção", alertas: "Alertas de Manutenção", cadastros: "Cadastros de Itens" })[aba]}
+            arquivo={({ os: "ordens_servico", os_lanc: "os_abertas", lancamento: "lancamentos_manutencao", alertas: "alertas_manutencao", cadastros: "cadastros_manutencao" })[aba]}
+            dados={() => {
+              if (aba === "os") return {
+                colunas: ["OS", "Data/hora", "Tipo", "Placa", "Motorista", "Status", "Observações"],
+                linhas: ordensServico.map((os) => [
+                  os.numero, fmtDateTimeBR(os.dataHora), os.tipoServico, os.placa,
+                  os.motoristaNome, osStatus(os) === "finalizada" ? "Finalizada" : "Aberta", os.obs || "",
+                ]),
+              };
+              if (aba === "os_lanc") return {
+                colunas: ["OS", "Abertura", "Placa", "Tipo", "Motorista", "KM entrada"],
+                linhas: ordensServico.filter((o) => osStatus(o) !== "finalizada").map((os) => [
+                  os.numero, fmtDateTimeBR(os.dataHora), os.placa, os.tipoServico, os.motoristaNome, os.hodometro ?? "",
+                ]),
+              };
+              if (aba === "lancamento") return {
+                colunas: ["Nº", "Data/hora", "Lançamento", "Item", "Placa", "Fornecedor", "Custo"],
+                linhas: lancamentos.map((l) => [
+                  l.numero, fmtDateTimeBR(l.dataHora), l.tipoLancamento || "",
+                  Array.isArray(l.itens) && l.itens.length
+                    ? l.itens.map((it) => `${it.item} (${it.quantidade}x)`).join("; ")
+                    : (l.item || ""),
+                  l.placa, l.fornecedor || "", fmtBRL(l.valorTotal != null ? l.valorTotal : somaItens(l)),
+                ]),
+              };
+              if (aba === "alertas") return {
+                colunas: ["Placa", "Tipo", "Realização", "Validade", "Local", "Responsável", "Status"],
+                linhas: listaAlertas.map((r) => [
+                  r.placa, r._label, fmtDate(r.data_realiz || r.ult), fmtDate(r.venc),
+                  r.local || "", r.resp || "", (STATUS_META[r._status] || STATUS_META.ok).label,
+                ]),
+              };
+              if (aba === "cadastros") return {
+                colunas: ["Nome", "Tipo"],
+                linhas: itensCatalogo.map((i) => [i.nome, i.tipo]),
+              };
+              return { colunas: [], linhas: [] };
+            }}
+          />
+        </div>
+      )}
 
       {/* ── ABA: DASHBOARD ────────────────────────────────────────────── */}
       {aba === "dashboard" && (
@@ -2211,14 +2364,15 @@ export default function Manutencao() {
                   ) : ordensServico.map(os => {
                     const st        = osStatus(os);
                     const finalizada = st === "finalizada";
-                    const editavel  = osEditavel(os);
+                    const editavel  = osEditavel(os, isSuperAdmin);
                     const limite    = osLimiteEdicao(os);
                     return (
-                    <tr key={os.id} style={{ borderBottom: "1px solid #f1f5f9", background: finalizada ? "var(--surface-2)" : "#fff" }}>
+                    <tr key={os.id} style={{ borderBottom: "1px solid var(--border)", background: finalizada ? "var(--surface-2)" : "var(--card-bg)" }}>
                       <td style={tdOS}><strong style={{ color: "var(--accent)" }}>{os.numero}</strong></td>
                       <td style={tdOS}>
                         {fmtDateTimeBR(os.dataHora)}
-                        {os.criadoPor && <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:3 }}>por {os.criadoPor}</div>}
+                        {os.criadoPor && <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:3 }}>lançado por {os.criadoPor}</div>}
+                        {os.editadoPor && <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:2 }}>editado por {os.editadoPor}{os.editadoEm ? ` · ${fmtDateTimeBR(os.editadoEm)}` : ""}</div>}
                       </td>
                       <td style={tdOS}>{os.tipoServico}</td>
                       <td style={tdOS}><strong>{os.placa}</strong></td>
@@ -2234,7 +2388,7 @@ export default function Manutencao() {
                         )}
                         {!finalizada && limite && (
                           <div style={{ fontSize:".68rem", color: editavel ? "var(--text-muted)" : "var(--danger)", marginTop:3 }}>
-                            {editavel ? `edição até ${fmtDateTimeBR(limite)}` : "edição encerrada (24h)"}
+                            {isSuperAdmin ? "edição liberada (Super Admin)" : editavel ? `edição até ${fmtDateTimeBR(limite)}` : "edição encerrada (24h)"}
                           </div>
                         )}
                       </td>
@@ -2519,7 +2673,8 @@ export default function Manutencao() {
                       <td style={tdOS}><strong style={{ color: "var(--accent)" }}>{l.numero}</strong></td>
                       <td style={tdOS}>
                         {fmtDateTimeBR(l.dataHora)}
-                        {l.criadoPor && <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:3 }}>por {l.criadoPor}</div>}
+                        {l.criadoPor && <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:3 }}>lançado por {l.criadoPor}</div>}
+                        {l.editadoPor && <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:2 }}>editado por {l.editadoPor}{l.editadoEm ? ` · ${fmtDateTimeBR(l.editadoEm)}` : ""}</div>}
                       </td>
                       <td style={tdOS}>
                         {l.tipoLancamento && <span style={{ ...s.osBadge, background:"var(--accent-soft)", color:"var(--accent)" }}>{l.tipoLancamento}</span>}
@@ -2551,12 +2706,16 @@ export default function Manutencao() {
                       </td>
                       <td style={tdOS}>
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                          <button
-                            onClick={() => abrirEditLanc(l)}
-                            style={{ background:"var(--accent-soft)", border:"none", color:"var(--accent)", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}
-                          >
-                            Editar
-                          </button>
+                          {lancEditavel(l, isSuperAdmin) ? (
+                            <button
+                              onClick={() => abrirEditLanc(l)}
+                              style={{ background:"var(--accent-soft)", border:"none", color:"var(--accent)", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}
+                            >
+                              Editar
+                            </button>
+                          ) : (
+                            <span style={{ fontSize:".68rem", color:"var(--danger)", alignSelf:"center" }}>edição encerrada (24h)</span>
+                          )}
                           {canDelete && (
                             <button
                               onClick={() => excluirLanc(l)}
@@ -2787,7 +2946,7 @@ export default function Manutencao() {
             <div style={s.modalHeader}>
               <div>
                 <div style={s.modalTitulo}>Editar {editOS.numero}</div>
-                <div style={s.modalSubtitulo}>Edição permitida até {fmtDateTimeBR(osLimiteEdicao(editOS))} (24h após a abertura)</div>
+                <div style={s.modalSubtitulo}>{isSuperAdmin ? "Edição liberada — Super Admin (sem limite de tempo)" : `Edição permitida até ${fmtDateTimeBR(osLimiteEdicao(editOS))} (24h após a abertura)`}</div>
               </div>
               <button style={s.closeBtn} onClick={fecharEditOS}><X size={18} /></button>
             </div>
@@ -2897,7 +3056,7 @@ export default function Manutencao() {
             <div style={s.modalHeader}>
               <div>
                 <div style={s.modalTitulo}>Editar {editLanc.numero}</div>
-                <div style={s.modalSubtitulo}>Lançamento de serviço/custo</div>
+                <div style={s.modalSubtitulo}>{isSuperAdmin ? "Edição liberada — Super Admin (sem limite de tempo)" : `Edição permitida até ${fmtDateTimeBR(lancLimiteEdicao(editLanc))} (24h após o lançamento)`}</div>
               </div>
               <button style={s.closeBtn} onClick={fecharEditLanc}><X size={18} /></button>
             </div>
@@ -3051,7 +3210,7 @@ export default function Manutencao() {
 
 // ── Estilos ────────────────────────────────────────────────────────────────
 const s = {
-  wrap:        { minHeight:"100vh", background:"#f5f7fb" },
+  wrap:        { minHeight:"100vh", background:"var(--bg)" },
 
   // header
   header:      { background:"var(--header-bg)", color:"#fff", borderBottom: "1px solid var(--accent-800)", padding:"14px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 4px 14px rgba(15,23,42,.18)" },

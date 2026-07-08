@@ -8,6 +8,7 @@ import { db } from "../firebase/config";
 import { useCercas } from "../hooks/useCercas";
 import { useAuth } from "../contexts/AuthContext";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 
 const CORES = [
   { v: "#2563eb", n: "Azul" },
@@ -510,6 +511,27 @@ export default function Cercas() {
                 </button>
               )}
             </div>
+            {!loading && cercasFiltradas.length > 0 && (
+              <ExportBar
+                compacto
+                align="left"
+                titulo="Cercas Eletrônicas"
+                arquivo="cercas"
+                subtitulo={() => `${cercasFiltradas.length} cerca(s)`}
+                dados={() => ({
+                  colunas: ["Nome", "Tipo", "Formato", "Detalhe", "Área"],
+                  linhas: cercasFiltradas.map((c) => [
+                    c.nome || "",
+                    c.tipo || "",
+                    c.formato === "circulo" ? "Círculo" : "Polígono",
+                    c.formato === "circulo"
+                      ? `raio ${(c.raio || 0).toLocaleString("pt-BR")} m`
+                      : `${c.pontos?.length || 0} pontos`,
+                    formatarArea(areaCerca(c)),
+                  ]),
+                })}
+              />
+            )}
             {loading && <div style={{ color: "var(--text-subtle)" }}>Carregando...</div>}
             {!loading && cercas.length === 0 && (
               <div style={{ color: "var(--text-subtle)", fontSize: ".82rem", padding: "0.75rem", background: "var(--surface-2)", borderRadius: 6 }}>

@@ -14,6 +14,7 @@ export const MODULOS = [
   { id: "atrelamento", label: "Atrelamento" },
   { id: "oc",          label: "Ordens de Carregamento" },
   { id: "manutencao",  label: "Manutenção" },
+  { id: "compras",     label: "Compras" },
   { id: "ferias",      label: "Férias" },
   { id: "historico",   label: "Histórico" },
   { id: "relatorios",  label: "Relatórios" },
@@ -33,6 +34,13 @@ const EXTRAS = [
   { nome: "financeiro.aprovar",  descricao: "Aprovar lançamentos financeiros", modulo: "financeiro", acao: "aprovar"  },
   { nome: "oc.aprovar",          descricao: "Aprovar ordens de carregamento",  modulo: "oc",         acao: "aprovar"  },
   { nome: "historico.exportar",  descricao: "Exportar histórico de auditoria", modulo: "historico",  acao: "exportar" },
+  // Compras — fluxo de propostas de gastos
+  { nome: "compras.ver_todos",        descricao: "Ver propostas de todos os setores",         modulo: "compras", acao: "ver_todos"        },
+  { nome: "compras.aprovar_diretoria",descricao: "Validar propostas (Diretoria Executiva)",   modulo: "compras", acao: "aprovar_diretoria"},
+  { nome: "compras.aprovar_super",    descricao: "Validar propostas (Superintendência)",      modulo: "compras", acao: "aprovar_super"    },
+  { nome: "compras.convidar",         descricao: "Adicionar aprovadores externos por link",   modulo: "compras", acao: "convidar"         },
+  { nome: "compras.registrar",        descricao: "Registrar valores comprados por setor",     modulo: "compras", acao: "registrar"        },
+  { nome: "compras.dashboard",        descricao: "Ver dashboard de excedentes",               modulo: "compras", acao: "dashboard"        },
 ];
 
 function rotulo(modulo, acao) {

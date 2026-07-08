@@ -25,6 +25,7 @@ export default function ModuleHeader({ title, subtitle, actions, onBack }) {
           border-bottom: 1px solid var(--header-border);
           padding: 14px 24px; display: flex; align-items: center; gap: 14px;
           box-shadow: 0 4px 14px rgba(15,23,42,.18);
+          position: sticky; top: 0; z-index: 100;
         }
         .mod-header .mod-title {
           font-family: var(--font-display); color: #fff; font-weight: 700;
@@ -32,7 +33,11 @@ export default function ModuleHeader({ title, subtitle, actions, onBack }) {
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .mod-header .mod-sub { color: rgba(255,255,255,.62); font-size: .72rem; margin-top: 2px; }
-        .mod-header-btns { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .mod-header-btns { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        @media (max-width: 640px) {
+          .mod-header { padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
+          .mod-header-btns { width: 100%; margin-left: 0; }
+        }
         .mod-hbtn, .mod-hbtn-alt {
           display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
           border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer;

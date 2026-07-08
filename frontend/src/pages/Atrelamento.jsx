@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { collection, getDocs, addDoc, updateDoc, query, where, orderBy, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 
 const normPlaca = (p) => (p || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 
@@ -40,16 +41,6 @@ const hoje = () => new Date().toISOString().split("T")[0];
 const agora = () => new Date().toTimeString().slice(0, 5);
 
 const padNum = (n) => `ATR-${String(n).padStart(4, "0")}`;
-
-const toCSV = (rows) => {
-  const headers = ["Nº","Data","Hora","Operação","Cavalo","KM","Carreta1","TipoC1","Carreta2","TipoC2","Motorista","Local","Status","Obs"];
-  const lines = rows.map(r =>
-    [r.num, r.data, r.hora, r.op, r.cavalo, r.km, r.c1, r.t1, r.c2, r.t2, r.motorista, r.local, r.status, r.obs]
-      .map(v => `"${String(v ?? "").replace(/"/g, '""')}"`)
-      .join(",")
-  );
-  return [headers.join(","), ...lines].join("\n");
-};
 
 function calcStatusPlaca(manutencoes, placa) {
   const norm = normPlaca(placa);
@@ -254,16 +245,6 @@ export default function Atrelamento() {
     return matchBusca && matchOp && matchStatus;
   });
 
-  const exportarCSV = () => {
-    const csv = toCSV(filtrados);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `atrelamentos_${hoje()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   const inputStyle = {
     width: "100%", padding: "7px 10px", border: "1px solid var(--border-strong)",
@@ -274,19 +255,14 @@ export default function Atrelamento() {
   const fieldGroup = { display: "flex", flexDirection: "column", marginBottom: 10 };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "Inter, sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)" }}>
       {/* Header */}
       <ModuleHeader
         title="Atrelamento"
         actions={
-          <>
-            <button className="mod-hbtn-alt" onClick={exportarCSV}>
-              Exportar CSV
-            </button>
-            <button className="mod-hbtn-alt" onClick={abrirModal}>
-              + Novo Registro
-            </button>
-          </>
+          <button className="mod-hbtn-alt" onClick={abrirModal}>
+            + Novo Registro
+          </button>
         }
       />
 
@@ -312,6 +288,20 @@ export default function Atrelamento() {
             {STATUS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
+
+        <ExportBar
+          titulo="Atrelamentos"
+          arquivo="atrelamentos"
+          subtitulo={() => `${filtrados.length} registro(s)${filtroOp !== "todos" ? ` · operação: ${filtroOp}` : ""}${filtroStatus !== "todos" ? ` · status: ${filtroStatus}` : ""}`}
+          dados={() => ({
+            colunas: ["Nº", "Data/Hora", "Operação", "Cavalo", "KM", "Carreta 1", "Tipo", "Carreta 2", "Tipo", "Motorista", "Local", "Status"],
+            linhas: filtrados.map((r) => [
+              r.num || "", `${r.data || ""} ${r.hora || ""}`.trim(), r.op || "", r.cavalo || "",
+              r.km ?? "", r.c1 || "", r.t1 || "", r.c2 || "", r.t2 || "",
+              r.motorista || "", r.local || "", r.status || "",
+            ]),
+          })}
+        />
 
         {/* Tabela */}
         <div style={{

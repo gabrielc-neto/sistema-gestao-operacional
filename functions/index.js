@@ -386,3 +386,112 @@ function statusFromPacote(p) {
   if (ign) return 'PARADO_LIGADO';
   return 'ESTACIONADO';
 }
+
+// ============================================================
+// COMPRAS — Acesso de convidado por link (SEM login)
+// ============================================================
+// A Diretoria/Superintendência adiciona uma pessoa a UMA proposta e gera um
+// token. O convidado abre /proposta-convite/<id>?token=<token>, que chama
+// estas functions. Elas rodam com admin SDK (ignoram as regras do Firestore)
+// e só liberam a proposta cujo token bate com um convidado cadastrado nela.
+// Não requerem auth de propósito — o token é o segredo de acesso.
+const COL_PROPOSTAS = 'propostas_compra';
+
+function acharConvidado(data, token) {
+  const lista = Array.isArray(data?.convidados) ? data.convidados : [];
+  return lista.find((c) => c && c.token && token && c.token === token) || null;
+}
+
+function isoData(v) {
+  if (!v) return null;
+  if (typeof v?.toDate === 'function') return v.toDate().toISOString();
+  return v;
+}
+
+function sanitizarProposta(data, convidado) {
+  return {
+    numero: data.numero ?? null,
+    titulo: data.titulo || '',
+    descricao: data.descricao || '',
+    justificativa: data.justificativa || '',
+    setor_nome: data.setor_nome || '',
+    categoria: data.categoria || '',
+    itens: Array.isArray(data.itens) ? data.itens : [],
+    valorSolicitado: data.valorSolicitado || 0,
+    valorAprovado: data.valorAprovado ?? null,
+    status: data.status || 'pendente',
+    criadoPor: data.criadoPor || '',
+    criadoEm: isoData(data.criadoEm),
+    anexos: (Array.isArray(data.anexos) ? data.anexos : []).map((a) => ({
+      nome: a.nome || 'anexo',
+      url: a.url || '',
+      tipo: a.tipo || '',
+      tamanho: a.tamanho || 0,
+    })),
+    aprovacao: {
+      diretoria: { status: data.aprovacao?.diretoria?.status || 'pendente' },
+      superintendencia: { status: data.aprovacao?.superintendencia?.status || 'pendente' },
+    },
+    convite: {
+      nome: convidado.nome || '',
+      papel: convidado.papel || '',
+      status: convidado.status || 'pendente',
+      parecer: convidado.parecer || '',
+    },
+  };
+}
+
+// getPropostaConvite: retorna a proposta (sanitizada) se o token for válido.
+export const getPropostaConvite = onCall(async (request) => {
+  const { propostaId, token } = request.data || {};
+  if (!propostaId || !token) throw new HttpsError('invalid-argument', 'Link inválido.');
+
+  const snap = await db.collection(COL_PROPOSTAS).doc(String(propostaId)).get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Proposta não encontrada.');
+
+  const data = snap.data();
+  const convidado = acharConvidado(data, token);
+  if (!convidado) throw new HttpsError('permission-denied', 'Link inválido ou expirado.');
+
+  return { proposta: sanitizarProposta(data, convidado) };
+});
+
+// responderConvite: grava a decisão (aprovado/reprovado/parecer) do convidado.
+export const responderConvite = onCall(async (request) => {
+  const { propostaId, token, decisao, parecer } = request.data || {};
+  if (!propostaId || !token) throw new HttpsError('invalid-argument', 'Link inválido.');
+  if (!['aprovado', 'reprovado', 'parecer'].includes(decisao)) {
+    throw new HttpsError('invalid-argument', 'Decisão inválida.');
+  }
+
+  const ref = db.collection(COL_PROPOSTAS).doc(String(propostaId));
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new HttpsError('not-found', 'Proposta não encontrada.');
+
+    const data = snap.data();
+    const lista = Array.isArray(data.convidados) ? [...data.convidados] : [];
+    const idx = lista.findIndex((c) => c && c.token === token);
+    if (idx < 0) throw new HttpsError('permission-denied', 'Link inválido ou expirado.');
+
+    const agora = new Date().toISOString();
+    lista[idx] = {
+      ...lista[idx],
+      status: decisao,
+      parecer: String(parecer || '').slice(0, 2000),
+      respondidoEm: agora,
+    };
+
+    const hist = Array.isArray(data.historico) ? [...data.historico] : [];
+    hist.push({
+      acao: 'convite_' + decisao,
+      por: lista[idx].nome || 'Convidado',
+      em: agora,
+      detalhe: String(parecer || '').slice(0, 200),
+    });
+
+    tx.update(ref, { convidados: lista, historico: hist });
+  });
+
+  return { ok: true };
+});

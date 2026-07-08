@@ -6,6 +6,7 @@ import { useOcsAtivas } from "../hooks/useOcsAtivas";
 import { useEventosCerca } from "../hooks/useEventosCerca";
 import MapaFrota from "../components/MapaFrota";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 import { capitalizarNome, tempoDecorrido } from "../utils/format";
 
 const STATUS_STYLE = {
@@ -80,34 +81,36 @@ export default function Rastreamento() {
   );
 
   return (
-    <div className="r-page" style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)" }}>
+      {/* Header — full width, sticky (igual dashboard) */}
+      <ModuleHeader
+        title="Rastreamento"
+        actions={
+          <>
+            <button onClick={() => navigate("/cercas")} className="mod-hbtn-alt" title="Gerenciar cercas eletrônicas">
+              Cercas
+            </button>
+            <div style={{ display: "inline-flex", border: "1px solid var(--border-strong)", borderRadius: 8, overflow: "hidden" }}>
+              <button onClick={() => setView("mapa")} style={view === "mapa" ? btnToggleOn : btnToggleOff}>
+                <MapIcon size={14} /> Mapa
+              </button>
+              <button onClick={() => setView("tabela")} style={view === "tabela" ? btnToggleOn : btnToggleOff}>
+                <Table size={14} /> Tabela
+              </button>
+            </div>
+            <span className="r-update-text">
+              {lastFetch ? `Atualizado ${lastFetch.toLocaleTimeString("pt-BR")}` : "Carregando..."}
+              {data?.cache?.fresh === false && <span style={{ marginLeft: 6, color: "var(--text-subtle)" }}>(cache)</span>}
+            </span>
+            <button onClick={refetch} disabled={loading} className="mod-hbtn-alt">
+              <RefreshCw size={16} className={loading ? "spin" : ""} /> <span className="hide-mobile">Atualizar</span>
+            </button>
+          </>
+        }
+      />
+
+      <div className="r-page">
       <div className="r-container" style={{ maxWidth: 1280, margin: "0 auto" }}>
-        {/* Header */}
-        <ModuleHeader
-          title="Rastreamento"
-          actions={
-            <>
-              <button onClick={() => navigate("/cercas")} className="mod-hbtn-alt" title="Gerenciar cercas eletrônicas">
-                Cercas
-              </button>
-              <div style={{ display: "inline-flex", border: "1px solid var(--border-strong)", borderRadius: 8, overflow: "hidden" }}>
-                <button onClick={() => setView("mapa")} style={view === "mapa" ? btnToggleOn : btnToggleOff}>
-                  <MapIcon size={14} /> Mapa
-                </button>
-                <button onClick={() => setView("tabela")} style={view === "tabela" ? btnToggleOn : btnToggleOff}>
-                  <Table size={14} /> Tabela
-                </button>
-              </div>
-              <span className="r-update-text">
-                {lastFetch ? `Atualizado ${lastFetch.toLocaleTimeString("pt-BR")}` : "Carregando..."}
-                {data?.cache?.fresh === false && <span style={{ marginLeft: 6, color: "var(--text-subtle)" }}>(cache)</span>}
-              </span>
-              <button onClick={refetch} disabled={loading} className="mod-hbtn-alt">
-                <RefreshCw size={16} className={loading ? "spin" : ""} /> <span className="hide-mobile">Atualizar</span>
-              </button>
-            </>
-          }
-        />
 
         {error && (
           <div style={{ background: "var(--danger-bg)", color: "var(--danger)", padding: "0.75rem 1rem", borderRadius: 8, marginBottom: "1rem", display: "flex", alignItems: "center", gap: 8 }}>
@@ -142,6 +145,24 @@ export default function Rastreamento() {
             {filtradas.length} / {posicoes.length}
           </span>
         </div>
+
+        <ExportBar
+          titulo="Rastreamento da Frota"
+          arquivo="rastreamento"
+          subtitulo={() => `${ordenadas.length} veículo(s)${filtroStatus ? ` · filtro: ${STATUS_STYLE[filtroStatus]?.label || filtroStatus}` : ""}${busca ? ` · busca: "${busca}"` : ""}`}
+          dados={() => ({
+            colunas: ["Placa", "Motorista", "Status", "Velocidade (km/h)", "Cidade/UF", "Endereço", "Última posição"],
+            linhas: ordenadas.map((p) => [
+              p.placa || `id ${p.idVeiculo}`,
+              p.motoristaLogado ? capitalizarNome(p.motoristaLogado) : "",
+              STATUS_STYLE[p.statusTexto]?.label || p.statusTexto || "",
+              p.velocidade ?? 0,
+              `${p.cidade || ""}${p.uf ? "/" + p.uf : ""}`,
+              p.rua || "",
+              tempoDecorrido(p.dataPosicao),
+            ]),
+          })}
+        />
 
         {/* Eventos de cerca (colapsável) */}
         <EventosCercaPanel
@@ -200,6 +221,7 @@ export default function Rastreamento() {
         <p style={{ marginTop: "1rem", color: "var(--text-subtle)", fontSize: ".78rem", textAlign: "center" }}>
           Dados via SASCAR SasIntegra · atualização automática a cada 30s · cache servidor 30s
         </p>
+      </div>
       </div>
 
       <style>{`

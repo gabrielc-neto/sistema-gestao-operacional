@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePermissions, MODULES, ROLES } from "../contexts/PermissionsContext";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 import { Save, CheckCircle2 } from "lucide-react";
+
+const NIVEL_LABEL = { none: "Sem acesso", view: "Ver", edit: "Editar" };
 
 const LEVELS = [
   { value: "none", label: "Sem acesso", color: "var(--danger-bg)", text: "var(--danger)" },
@@ -94,6 +97,19 @@ export default function Permissoes() {
         <p style={s.info}>
           Clique na célula para alternar: <strong style={{ color: "var(--danger)" }}>Sem acesso</strong> → <strong style={{ color: "var(--accent)" }}>Ver</strong> → <strong style={{ color: "var(--success)" }}>Editar</strong>
         </p>
+
+        <ExportBar
+          titulo="Permissões por Cargo"
+          arquivo="permissoes"
+          subtitulo={`${ROLES.length} cargos · ${MODULES.length} módulos`}
+          dados={() => ({
+            colunas: ["Cargo", ...MODULES.map((m) => m.label)],
+            linhas: ROLES.map((r) => [
+              r.label,
+              ...MODULES.map((m) => NIVEL_LABEL[local[r.id]?.[m.id] || "none"]),
+            ]),
+          })}
+        />
 
         <div style={s.tableWrap}>
           <table style={s.table}>

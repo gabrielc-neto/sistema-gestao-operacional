@@ -7,6 +7,7 @@ import {
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 
 const HOJE = () => new Date();
 
@@ -174,6 +175,23 @@ export default function Ferias() {
             </button>
           ))}
         </div>
+
+        <ExportBar
+          titulo="Férias — Motoristas"
+          arquivo="ferias"
+          subtitulo={() => `${lista.length} registro(s)${filtro !== "todos" ? ` · filtro: ${STATUS_STYLE[filtro]?.label || filtro}` : ""}`}
+          dados={() => ({
+            colunas: ["Motorista", "Início", "Retorno", "Status", "eSocial", "Observações"],
+            linhas: lista.map((f) => [
+              f.motorista || "",
+              fmtData(f.inicio),
+              fmtData(f.fim),
+              STATUS_STYLE[statusCalc(f.inicio, f.fim)]?.label || "",
+              f.esocial ? "Enviado" : "Pendente",
+              f.obs || "",
+            ]),
+          })}
+        />
 
         {/* LISTA */}
         {loading ? (

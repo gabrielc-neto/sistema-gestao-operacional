@@ -37,11 +37,11 @@ function LinhaCustos({ meses, fmt }) {
           </g>
         );
       })}
-      <path d={dArea} fill="var(--chart-2)" opacity=".12" />
-      <path d={dLine} fill="none" stroke="var(--chart-2)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={dArea} fill="var(--accent)" opacity=".10" />
+      <path d={dLine} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
       {pts.map((p, i) => (
         <g key={i}>
-          <circle cx={p[0]} cy={p[1]} r="3.6" fill="var(--card-bg)" stroke="var(--chart-2)" strokeWidth="2" />
+          <circle cx={p[0]} cy={p[1]} r="3.6" fill="var(--card-bg)" stroke="var(--accent)" strokeWidth="2" />
           <text x={p[0]} y={H - 9} textAnchor="middle" fontSize="9" fill="var(--text-muted)">{MESES[meses[i].mes]}</text>
           <title>{`${MESES[meses[i].mes]}: ${fmt(meses[i].valor)}`}</title>
         </g>

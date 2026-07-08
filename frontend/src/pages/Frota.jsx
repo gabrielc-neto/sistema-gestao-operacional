@@ -4,6 +4,7 @@ import { db } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 import { AlertTriangle, Trash2, Save } from "lucide-react";
 
 const MOTIVOS_BLOQUEIO = ["CIV", "CIPP", "Manutenção", "Documentos vencidos", "Revisão", "Outro"];
@@ -90,14 +91,14 @@ function MotoristaSearch({ value, lista, feriasAtivas, onChange }) {
                   style={{
                     padding: "8px 12px", fontSize: ".85rem",
                     cursor: ef ? "not-allowed" : "pointer",
-                    background: nome === value ? "var(--accent-soft)" : ef ? "var(--danger-bg)" : "#fff",
+                    background: nome === value ? "var(--accent-soft)" : ef ? "var(--danger-bg)" : "var(--card-bg)",
                     color: ef ? "#f87171" : nome === value ? "var(--accent)" : "var(--text)",
                     fontWeight: nome === value ? 700 : 400,
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                     opacity: ef ? 0.7 : 1,
                   }}
                   onMouseEnter={e => { if (!ef) e.currentTarget.style.background = nome === value ? "var(--accent-soft)" : "var(--surface-2)"; }}
-                  onMouseLeave={e => { if (!ef) e.currentTarget.style.background = nome === value ? "var(--accent-soft)" : "#fff"; }}
+                  onMouseLeave={e => { if (!ef) e.currentTarget.style.background = nome === value ? "var(--accent-soft)" : "var(--card-bg)"; }}
                   onClick={() => selecionar(nome)}
                 >
                   <span>{nome}</span>
@@ -436,7 +437,7 @@ export default function Frota() {
         .frota-header-btn:hover { transform: translateY(-1px); }
       `}</style>
       <ModuleHeader
-        title="FROTA"
+        title="Frota"
         subtitle={`${lista.length} veículos cadastrados`}
         actions={isAdmin && (
           <button className="mod-hbtn-alt" onClick={abrirNovo}>
@@ -476,6 +477,28 @@ export default function Frota() {
             </div>
           );
         })}
+      </div>
+
+      <div style={{ padding: "14px 24px 0" }}>
+        <ExportBar
+          titulo="Frota"
+          arquivo="frota"
+          subtitulo={() => `${lista.length} veículo(s)${statFiltro !== "todos" ? ` · filtro: ${statFiltro}` : ""}${filtro ? ` · busca: "${filtro}"` : ""}`}
+          dados={() => ({
+            colunas: ["Placa", "Tipo", "Modelo", "Fabricante", "Ano", "Status", "Motorista", "Carretas", "Bloqueio"],
+            linhas: lista.map((v) => [
+              v.placa || "",
+              v.tipo || "",
+              v.modelo || "",
+              v.fabricante || "",
+              v.ano || "",
+              v.status || "",
+              v.motorista || "",
+              [v.c1, v.c2, v.c3].filter(Boolean).join(", "),
+              v.bloqueio?.ativo ? (v.bloqueio.motivo || "Bloqueado") : "",
+            ]),
+          })}
+        />
       </div>
 
       <div style={s.toolbar} className="pg-toolbar">
@@ -525,7 +548,7 @@ export default function Frota() {
                 <div className="frota-flip-inner">
                   {/* ─────────── FRENTE: resumo essencial ─────────── */}
                   <div className="frota-face frota-front" style={{ ...s.card, border: faceBorder }}>
-                    {!bloqueado && <span style={{ ...s.cardStripe, background: "linear-gradient(90deg, var(--accent) 0%, var(--tech) 100%)" }} aria-hidden />}
+                    {!bloqueado && <span style={{ ...s.cardStripe, background: "var(--accent)" }} aria-hidden />}
                     {bloqueado && (
                       <div style={s.lockBanner}><Ico.Lock size={12} /> {v.bloqueio.motivo}</div>
                     )}
@@ -568,7 +591,7 @@ export default function Frota() {
 
                   {/* ─────────── VERSO: detalhes ─────────── */}
                   <div className="frota-face frota-back" style={{ ...s.card, border: faceBorder }}>
-                    {!bloqueado && <span style={{ ...s.cardStripe, background: "linear-gradient(90deg, var(--accent) 0%, var(--tech) 100%)" }} aria-hidden />}
+                    {!bloqueado && <span style={{ ...s.cardStripe, background: "var(--accent)" }} aria-hidden />}
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:2 }}>
                       <div style={{ ...s.placa, marginTop:0, fontSize:"1.2rem" }} className="frota-display">{v.placa}</div>
                       <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:".68rem", fontWeight:700, color:"var(--tech-text)" }}>
@@ -870,7 +893,7 @@ export default function Frota() {
 }
 
 const s = {
-  wrap:        { minHeight:"100vh", background:"#f5f7fb" },
+  wrap:        { minHeight:"100vh", background:"var(--bg)" },
   header:      { background:"var(--header-bg)", color:"#fff", borderBottom: "1px solid var(--accent-800)", padding:"14px 24px", display:"flex", alignItems:"center", gap:14, boxShadow:"0 4px 14px rgba(15,23,42,.18)" },
   titulo:      { color:"#fff", fontWeight:700, fontSize:"1.15rem", lineHeight:1.1 },
   sub:         { color:"rgba(255,255,255,.62)", fontSize:".72rem", marginTop:2 },

@@ -8,7 +8,7 @@ import GraficoEvolucaoCustos from "../components/GraficoEvolucaoCustos";
 import { useSascarPosicoes } from "../hooks/useSascarPosicoes";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { ClipboardList, Wrench, MapPin, Navigation, AlertTriangle, Activity } from "lucide-react";
+import { ClipboardList, Wrench, MapPin, Navigation, AlertTriangle, Activity, Truck, CheckCircle2, Lock, WifiOff } from "lucide-react";
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 function fmtData(iso) {
@@ -44,6 +44,23 @@ function Donut({ segments, size = 148, stroke = 20 }) {
         })}
       </g>
     </svg>
+  );
+}
+
+/* ─── KPI de topo (mesma linguagem visual dos cards do sistema) ───────────── */
+function KpiTile({ Icon, label, value, cor, bg, sub, alerta }) {
+  return (
+    <div style={{ background:"var(--card-bg)", border:`1px solid ${alerta ? "var(--warning-border)" : "var(--border)"}`, borderRadius:"var(--r-lg)", boxShadow:"var(--sh-sm)", padding:"14px 16px", display:"flex", alignItems:"center", gap:12, minWidth:0 }}>
+      <div style={{ width:40, height:40, borderRadius:10, background:bg, color:cor, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <Icon size={20} />
+      </div>
+      <div style={{ minWidth:0 }}>
+        <div style={{ fontSize:"1.5rem", fontWeight:800, color: alerta ? "var(--warning)" : "var(--text)", lineHeight:1, fontFamily:"var(--font-display)" }}>{value}</div>
+        <div style={{ fontSize:".72rem", color:"var(--text-muted)", fontWeight:600, marginTop:3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+          {label}{sub ? <span style={{ color:"var(--text-subtle)", fontWeight:500 }}> · {sub}</span> : null}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -115,10 +132,17 @@ export default function Dashboard() {
   const bloq   = frota.bloqueados ?? 0;
   const outros = Math.max(0, (frota.totalFrota ?? 0) - ativos - bloq);
   const frotaSeg = [
-    { label: "Ativos / Disponíveis", value: ativos, color: "var(--chart-2)" },
-    { label: "Bloqueados",           value: bloq,   color: "var(--chart-5)" },
+    { label: "Ativos / Disponíveis", value: ativos, color: "var(--accent)" },
+    { label: "Bloqueados",           value: bloq,   color: "var(--danger)" },
     { label: "Outros",               value: outros, color: "var(--chart-8)" },
   ];
+
+  // ── Status da frota em tempo real (SASCAR) para os KPIs de topo ──
+  const statusFrota = useMemo(() => {
+    const c = { EM_MOVIMENTO: 0, PARADO_LIGADO: 0, ESTACIONADO: 0, SEM_DADOS: 0 };
+    for (const p of posicoes) c[p.statusTexto] = (c[p.statusTexto] || 0) + 1;
+    return c;
+  }, [posicoes]);
 
   return (
     <div style={{ minHeight:"100vh", background:"var(--bg)", fontFamily:"var(--font)" }}>
@@ -160,6 +184,15 @@ export default function Dashboard() {
           <p style={{ fontSize:".85rem", color:"var(--text-muted)", marginTop:4 }}>
             Olá, {profile?.nome?.split(" ")[0] || "usuário"} — rastreamento e histórico operacional em tempo real.
           </p>
+        </div>
+
+        {/* KPIs de topo — resumo da frota + rastreamento em tempo real */}
+        <div className="dash-kpi" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(170px, 1fr))", gap:14, marginBottom:20 }}>
+          <KpiTile Icon={Truck}        label="Frota total"       value={frota.totalFrota ?? "…"} cor="var(--accent)"  bg="var(--accent-soft)" />
+          <KpiTile Icon={CheckCircle2} label="Disponíveis"       value={ativos}                  cor="var(--success)" bg="var(--success-bg)" />
+          <KpiTile Icon={Navigation}   label="Em movimento"      value={statusFrota.EM_MOVIMENTO} cor="var(--tech-text)" bg="var(--tech-soft)" sub="tempo real" />
+          <KpiTile Icon={Lock}         label="Bloqueados"        value={bloq}                    cor="var(--danger)"  bg="var(--danger-bg)" />
+          <KpiTile Icon={WifiOff}      label="Sem comunicação"   value={statusFrota.SEM_DADOS}   cor="var(--warning)" bg="var(--warning-bg)" alerta={statusFrota.SEM_DADOS > 0} />
         </div>
 
         {/* Topo: Evolução de custos (esq) + Controle de Frota (dir) */}

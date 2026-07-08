@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase/config";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 
 const PAGE_SIZE = 50;
 
@@ -145,7 +146,7 @@ export default function Historico() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "Inter, sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)" }}>
       {/* Header */}
       <ModuleHeader title="Histórico" />
 
@@ -158,16 +159,17 @@ export default function Historico() {
             {[
               { label: "Total", valor: todos.length, cor: "var(--accent)" },
               { label: "Atrelamentos", valor: todos.filter(i => i._tipo === "ATRELAMENTO").length, cor: "var(--accent)" },
-              { label: "Ordens", valor: todos.filter(i => i._tipo === "OC").length, cor: "#0f766e" },
-              { label: "Manutenções", valor: todos.filter(i => i._tipo === "MANUTENÇÃO").length, cor: "var(--warning)" },
+              { label: "Ordens", valor: todos.filter(i => i._tipo === "OC").length, cor: "var(--accent)" },
+              { label: "Manutenções", valor: todos.filter(i => i._tipo === "MANUTENÇÃO").length, cor: "var(--accent)" },
             ].map(s => (
               <div key={s.label} style={{
-                background: "var(--card-bg)", borderRadius: 10, padding: "14px 18px",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
-                borderLeft: `4px solid ${s.cor}`,
+                background: "var(--card-bg)", border: "1px solid var(--border)",
+                borderRadius: "var(--r-lg)", padding: "16px 18px",
+                boxShadow: "var(--sh-sm)", position: "relative", overflow: "hidden",
               }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: s.cor }}>{s.valor}</div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{s.label}</div>
+                <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: s.cor }} />
+                <div style={{ fontSize: ".72rem", fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--text-muted)" }}>{s.label}</div>
+                <div style={{ fontSize: "1.55rem", fontWeight: 800, color: "var(--text)", marginTop: 6, lineHeight: 1.1, letterSpacing: "-.02em", fontFamily: "var(--font-display)" }}>{s.valor}</div>
               </div>
             ))}
           </div>
@@ -213,6 +215,26 @@ export default function Historico() {
             Atualizar
           </button>
         </div>
+
+        <ExportBar
+          titulo="Histórico Operacional"
+          arquivo="historico"
+          subtitulo={() => {
+            const tipoTxt = filtroTipo !== "todos" ? ` · tipo: ${filtroTipo}` : "";
+            const perTxt = filtroPeriodo !== "todos" ? ` · período: ${filtroPeriodo}` : "";
+            return `${filtrados.length} registro(s)${tipoTxt}${perTxt}`;
+          }}
+          dados={() => ({
+            colunas: ["Data", "Hora", "Tipo", "Descrição", "Usuário/Mot."],
+            linhas: filtrados.map((i) => [
+              i._data ? new Date(i._data + "T00:00:00").toLocaleDateString("pt-BR") : "",
+              i._hora || "",
+              i._tipo || "",
+              i._descricao || "",
+              i._usuario || "",
+            ]),
+          })}
+        />
 
         {/* Lista */}
         <div style={{

@@ -24,6 +24,7 @@ import app from "../firebase/config";
 import { useRBAC } from "../rbac/RBACContext";
 import ProtegerPor from "../rbac/ProtegerPor";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 
 const VAZIO = {
   nome: "",
@@ -205,6 +206,23 @@ export default function Usuarios() {
             value={busca} onChange={e => setBusca(e.target.value)} />
           <span style={s.total}>{lista.length} usuário{lista.length !== 1 ? "s" : ""}</span>
         </div>
+
+        <ExportBar
+          titulo="Usuários"
+          arquivo="usuarios"
+          subtitulo={() => `${lista.length} usuário(s)${busca ? ` · busca: "${busca}"` : ""}`}
+          dados={() => ({
+            colunas: ["Nome", "E-mail", "Setor", "Cargo", "Super Admin", "Status"],
+            linhas: lista.map((u) => [
+              u.nome || "",
+              u.email || "",
+              u.is_super_admin ? "—" : rotuloSetor(u.setor_id),
+              u.is_super_admin ? "—" : rotuloCargo(u.cargo_id),
+              u.is_super_admin ? "Sim" : "Não",
+              u.ativo === false ? "Inativo" : "Ativo",
+            ]),
+          })}
+        />
 
         {loading ? (
           <p style={s.info}>Carregando...</p>

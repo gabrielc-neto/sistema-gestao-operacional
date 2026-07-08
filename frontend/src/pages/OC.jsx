@@ -5,9 +5,10 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
-import { Lock } from "lucide-react";
+import { Lock, Calendar, Clock } from "lucide-react";
 import LogoPontual from "../components/LogoPontual";
 import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 
 /* ─── constantes ────────────────────────────────────────────────────────── */
 const BASES    = ["PONTUAL", "REPLAN", "OUTROS"];
@@ -265,6 +266,25 @@ export default function OC() {
             </div>
           </div>
 
+          <div style={{ padding: "0 12px" }}>
+            <ExportBar
+              titulo="Ordens de Carregamento"
+              arquivo="ordens_carregamento"
+              subtitulo={() => `${listaFiltrada.length} OC(s)${filtroTempo !== "todas" ? ` · ${filtroTempo}` : ""}${busca ? ` · busca: "${busca}"` : ""}`}
+              dados={() => ({
+                colunas: ["Nº", "Data", "Base", "Cavalo", "Motorista", "Entregas"],
+                linhas: listaFiltrada.map((o) => [
+                  o.num || "",
+                  o.data ? String(o.data).slice(0, 10).split("-").reverse().join("/") : "",
+                  o.base || "",
+                  o.cavaloPlaca || "",
+                  o.motoristaNome || "",
+                  o.entregas?.length || 0,
+                ]),
+              })}
+            />
+          </div>
+
           {/* cards */}
           <div style={s.listaScroll}>
             {loadingDados && <p style={s.hint}>Carregando...</p>}
@@ -292,19 +312,25 @@ export default function OC() {
 
           <form style={s.form} onSubmit={e => e.preventDefault()}>
 
-            {/* linha 1: num / data / hora */}
-            <div style={s.row3} className="grid-form-3">
-              <div style={s.grupo}>
-                <label style={s.label}>N° OC</label>
-                <input style={{ ...s.input, background:"var(--surface-3)", color:"var(--text-muted)" }} value={num} readOnly />
-              </div>
+            {/* linha 1: N° OC (largura total) + Data/Hora (par de 2 colunas) */}
+            <div style={s.grupo}>
+              <label style={s.label}>N° OC</label>
+              <input style={{ ...s.input, background:"var(--surface-3)", color:"var(--text-muted)" }} value={num} readOnly />
+            </div>
+            <div style={s.row2}>
               <div style={s.grupo}>
                 <label style={s.label}>Data</label>
-                <input style={s.input} type="date" value={data} onChange={e => setData(e.target.value)} />
+                <div style={s.inputIconWrap}>
+                  <Calendar size={15} style={s.inputIcon} />
+                  <input style={{ ...s.input, paddingLeft:32 }} type="date" value={data} onChange={e => setData(e.target.value)} />
+                </div>
               </div>
               <div style={s.grupo}>
                 <label style={s.label}>Hora</label>
-                <input style={s.input} type="time" value={hora} onChange={e => setHora(e.target.value)} />
+                <div style={s.inputIconWrap}>
+                  <Clock size={15} style={s.inputIcon} />
+                  <input style={{ ...s.input, paddingLeft:32 }} type="time" value={hora} onChange={e => setHora(e.target.value)} />
+                </div>
               </div>
             </div>
 
@@ -814,6 +840,8 @@ const s = {
     fontSize:".85rem", outline:"none", background:"var(--card-bg)",
     width:"100%", boxSizing:"border-box",
   },
+  inputIconWrap: { position:"relative", display:"flex", alignItems:"center", width:"100%" },
+  inputIcon: { position:"absolute", left:10, color:"var(--text-muted)", pointerEvents:"none" },
 
   /* entregas */
   secaoEntregas: {

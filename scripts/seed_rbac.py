@@ -24,6 +24,7 @@ MODULOS = [
     ("atrelamento", "Atrelamento"),
     ("oc",          "Ordens de Carregamento"),
     ("manutencao",  "Manutencao"),
+    ("compras",     "Compras"),
     ("ferias",      "Ferias"),
     ("historico",   "Historico"),
     ("relatorios",  "Relatorios"),
@@ -40,6 +41,12 @@ EXTRAS = [
     ("financeiro.aprovar",  "Aprovar lancamentos financeiros",  "financeiro", "aprovar"),
     ("oc.aprovar",          "Aprovar ordens de carregamento",   "oc",         "aprovar"),
     ("historico.exportar",  "Exportar historico de auditoria",  "historico",  "exportar"),
+    ("compras.ver_todos",         "Ver propostas de todos os setores",       "compras", "ver_todos"),
+    ("compras.aprovar_diretoria", "Validar propostas (Diretoria Executiva)", "compras", "aprovar_diretoria"),
+    ("compras.aprovar_super",     "Validar propostas (Superintendencia)",    "compras", "aprovar_super"),
+    ("compras.convidar",          "Adicionar aprovadores externos por link", "compras", "convidar"),
+    ("compras.registrar",         "Registrar valores comprados por setor",   "compras", "registrar"),
+    ("compras.dashboard",         "Ver dashboard de excedentes",             "compras", "dashboard"),
 ]
 
 def build_permissoes():
@@ -66,6 +73,9 @@ SETORES = [
     {"nome": "Financeiro",  "descricao": "Financeiro e cobranca"},
     {"nome": "Comercial",   "descricao": "Vendas e relacionamento com cliente"},
     {"nome": "Faturamento", "descricao": "Emissao de notas e conciliacao"},
+    {"nome": "Diretoria",        "descricao": "Diretoria Executiva"},
+    {"nome": "Superintendencia", "descricao": "Superintendencia"},
+    {"nome": "Compras",          "descricao": "Setor de compras e suprimentos"},
 ]
 
 # Templates de permissoes por tipo de cargo
@@ -74,6 +84,25 @@ PERM_GESTOR = [
     *[f"{m}.{a}" for m, _ in MODULOS for a in ACOES
       if m in ("dashboard","frota","motoristas","atrelamento","oc","manutencao","ferias","historico","relatorios")],
     "relatorios.exportar", "oc.aprovar",
+    # Compras: gestor cria/edita/ve propostas do PROPRIO setor (sem ver_todos)
+    "compras.ver", "compras.criar", "compras.editar",
+]
+
+# ---- Cargos do fluxo de Compras ----
+PERM_DIRETORIA = [
+    "dashboard.ver", "historico.ver",
+    "compras.ver", "compras.ver_todos",
+    "compras.aprovar_diretoria", "compras.convidar", "compras.dashboard",
+]
+PERM_SUPERINTENDENCIA = [
+    "dashboard.ver", "historico.ver",
+    "compras.ver", "compras.ver_todos",
+    "compras.aprovar_super", "compras.convidar", "compras.dashboard",
+]
+PERM_COMPRAS = [
+    "dashboard.ver", "relatorios.ver",
+    "compras.ver", "compras.ver_todos",
+    "compras.registrar", "compras.dashboard",
 ]
 PERM_SUPERVISOR = [
     *[f"{m}.{a}" for m, _ in MODULOS for a in ("ver","criar","editar")
@@ -131,6 +160,13 @@ CARGOS = [
     {"setor": "Comercial", "nome": "Vendedor",     "nivel": 3, "permissoes": PERM_COMERCIAL},
     # Faturamento
     {"setor": "Faturamento","nome": "Analista",    "nivel": 3, "permissoes": PERM_FATURAMENTO},
+    # Diretoria Executiva — valida propostas (instancia 1)
+    {"setor": "Diretoria",        "nome": "Diretor Executivo", "nivel": 6, "permissoes": PERM_DIRETORIA},
+    # Superintendencia — valida propostas (instancia 2)
+    {"setor": "Superintendencia", "nome": "Superintendente",   "nivel": 6, "permissoes": PERM_SUPERINTENDENCIA},
+    # Compras — registra valores comprados
+    {"setor": "Compras",          "nome": "Gestor de Compras", "nivel": 5, "permissoes": PERM_COMPRAS},
+    {"setor": "Compras",          "nome": "Analista de Compras","nivel": 3, "permissoes": PERM_COMPRAS},
 ]
 
 # ---------------------------------------------------------------

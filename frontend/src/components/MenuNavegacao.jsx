@@ -7,7 +7,7 @@ import { useRBAC } from "../rbac/RBACContext";
 import {
   Menu, X, LayoutDashboard, Truck, Link2, ClipboardList, Users, Wrench,
   History, Palmtree, MapPin, UserCog, ShieldCheck, Building2, Briefcase,
-  Clock, LogOut, Sun, Moon, ChevronRight,
+  Clock, LogOut, Sun, Moon, ChevronRight, ShoppingCart,
 } from "lucide-react";
 
 /* ─── Catálogo de módulos, agrupado (mesma lógica de permissão do Dashboard) ── */
@@ -26,6 +26,7 @@ const GRUPOS = [
       { Icon: ClipboardList, label: "Ordens de Carregamento", link: "/oc",           module: "oc" },
       { Icon: Users,         label: "Motoristas",             link: "/motoristas",   module: "motoristas" },
       { Icon: Wrench,        label: "Manutenção",             link: "/manutencao",   module: "manutencao" },
+      { Icon: ShoppingCart,  label: "Compras",                link: "/compras",      perm: "compras.ver" },
       { Icon: History,       label: "Histórico",              link: "/historico",    module: "historico" },
       { Icon: Palmtree,      label: "Férias",                 link: "/ferias",       module: "ferias" },
     ],
@@ -198,7 +199,7 @@ export default function MenuNavegacao({ variante = "escuro" }) {
 
         /* ── Overlay ───────────────────────────────────────────── */
         .nav-overlay {
-          position: fixed; inset: 0; z-index: 1000;
+          position: fixed; inset: 0; z-index: 3000;
           background: rgba(15,23,42,0);
           backdrop-filter: blur(0px);
           visibility: hidden; opacity: 0;

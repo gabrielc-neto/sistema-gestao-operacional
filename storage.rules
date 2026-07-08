@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// Regras do Firebase Storage.
+// Nota: regras de Storage NÃO têm acesso ao Firestore, então o controle
+// fino por setor/permissão é feito na aplicação. Aqui garantimos:
+//   - só usuário autenticado envia/lê anexos de propostas
+//   - limite de tamanho e tipos (PDF/imagem)
+//   - convidados externos (não logados) recebem URLs assinadas geradas
+//     pelas Cloud Functions (admin SDK), sem depender destas regras.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Anexos das propostas de compra
+    match /propostas_compra/{propostaId}/{fileName=**} {
+      allow read:   if request.auth != null;
+      allow write:  if request.auth != null
+                    && request.resource.size < 15 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*|application/pdf');
+      allow delete: if request.auth != null;
+    }
+
+    // Tudo o mais é negado por padrão
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

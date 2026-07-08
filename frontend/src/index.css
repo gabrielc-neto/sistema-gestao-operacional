@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap");
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -76,8 +76,8 @@
   --input-border:  var(--n-300);
 
   /* ── Tipografia ───────────────────────────────────────────── */
-  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-display: 'Inter', system-ui, sans-serif;
+  --font: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-display: 'Montserrat', system-ui, sans-serif;
 
   /* ── Raios ────────────────────────────────────────────────── */
   --r-xs:6px; --r-sm:8px; --r-md:10px; --r-lg:14px; --r-xl:18px; --r-2xl:24px; --r-full:9999px;
@@ -121,13 +121,13 @@
   --input-bg:      #0f172a;
   --input-border:  #334155;
 
-  /* Acento clareado no dark: legível como ícone/texto/ativo sobre superfícies escuras,
-     mantendo contraste com texto branco nos botões primários. */
-  --accent:        #5f72d6;
-  --accent-hover:  #7385e0;
-  --accent-active: #4a5cc0;
-  --accent-soft:   rgba(95,114,214,.15);
-  --accent-200:    rgba(95,114,214,.35);
+  /* Acento clareado no dark: azul (não índigo/roxo), legível como ícone/texto/ativo
+     sobre superfícies escuras, mantendo contraste com texto branco nos botões primários. */
+  --accent:        #4d8bf0;
+  --accent-hover:  #6b9ff3;
+  --accent-active: #3b78dd;
+  --accent-soft:   rgba(77,139,240,.15);
+  --accent-200:    rgba(77,139,240,.35);
   --accent-contrast:#ffffff;
   /* Acento tech (ciano) clareado p/ superfícies escuras */
   --tech:        #22c9e6;
@@ -144,7 +144,7 @@
   --success-bg:rgba(21,128,61,.18);  --success-border:rgba(74,222,128,.3);
   --danger-bg:rgba(220,38,38,.16);   --danger-border:rgba(248,113,113,.32);
   --warning-bg:rgba(180,83,9,.18);   --warning-border:rgba(251,191,36,.3);
-  --info-bg:rgba(95,114,214,.16);    --info-border:rgba(95,114,214,.4);
+  --info-bg:rgba(77,139,240,.16);    --info-border:rgba(77,139,240,.4);
   --sh-xs: 0 1px 2px rgba(0,0,0,.4);
   --sh-sm: 0 1px 3px rgba(0,0,0,.45);
   --sh-md: 0 4px 14px -3px rgba(0,0,0,.55);
