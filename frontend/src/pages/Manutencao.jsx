@@ -12,9 +12,10 @@ import { useOdometrosSascar } from "../hooks/useOdometrosSascar";
 import LogoPontual from "../components/LogoPontual";
 import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
+import AbaLavagemCalibragem from "../manutencao/AbaLavagemCalibragem";
 import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
-  FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers,
+  FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -979,8 +980,8 @@ export default function Manutencao() {
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
-  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","os","os_lanc","lancamento","cadastros"];
-  const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavcal","os","os_lanc","lancamento","cadastros"];
+  const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavcal:"lavcal", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
     (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
     podeVerAba("por_veiculo")    ? "veiculo" :
@@ -988,6 +989,7 @@ export default function Manutencao() {
     podeVerAba("por_tipo")       ? "tipo" :
     podeVerAba("alertas")        ? "alertas" :
     podeVerAba("conjunto")       ? "conjunto" :
+    podeVerAba("lavcal")         ? "lavcal" :
     podeVerAba("os_abertura")    ? "os" :
     podeVerAba("os_lancamento")  ? "os_lanc" :
     podeVerAba("nf")             ? "lancamento" :
@@ -2448,7 +2450,7 @@ export default function Manutencao() {
           </div>
         )}
 
-        {(podeVerAba("por_veiculo") || podeVerAba("por_tipo") || podeVerAba("alertas") || podeVerAba("conjunto")) && (
+        {(podeVerAba("por_veiculo") || podeVerAba("por_tipo") || podeVerAba("alertas") || podeVerAba("conjunto") || podeVerAba("lavcal")) && (
           <div style={s.navGroup}>
             <span style={s.navGroupLabel}>Manutenção</span>
             {podeVerAba("por_veiculo") && (
@@ -2463,6 +2465,9 @@ export default function Manutencao() {
             )}
             {podeVerAba("conjunto") && (
               <NavTab icon={Layers} label="Conjunto" active={aba==="conjunto"} onClick={() => setAba("conjunto")} accent="#7c3aed" />
+            )}
+            {podeVerAba("lavcal") && (
+              <NavTab icon={Droplet} label="Lavagem/Calibragem" active={aba==="lavcal"} onClick={() => setAba("lavcal")} accent="#0891b2" />
             )}
           </div>
         )}
@@ -2789,6 +2794,19 @@ export default function Manutencao() {
             TIPOS={TIPOS}
             calcStatus={calcStatus}
             motoristas={motoristas}
+            onEditar={(placa, tipo) => abrirModal(placa, tipo)}
+          />
+        </main>
+      )}
+
+      {/* ── ABA: LAVAGEM E CALIBRAGEM (dashboard dedicado) ──────────── */}
+      {aba === "lavcal" && podeVerAba("lavcal") && (
+        <main style={s.main} className="pg-body">
+          <AbaLavagemCalibragem
+            veiculos={veiculos}
+            registros={registros}
+            TIPOS={TIPOS}
+            calcStatus={calcStatus}
             onEditar={(placa, tipo) => abrirModal(placa, tipo)}
           />
         </main>
