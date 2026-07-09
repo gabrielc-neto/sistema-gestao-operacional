@@ -233,9 +233,26 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
       {conjunto && (
         <div id="conjunto-relatorio-print" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {/* Cabeçalho de impressão (só aparece no print) */}
-          <div style={{ display: "none", padding: "0 0 12px", borderBottom: "2px solid #1a3a5c", marginBottom: 10 }} className="print-only-header">
-            <h2 style={{ margin: 0, color: "#1a3a5c" }}>Relatório de Vencimentos — Conjunto {conjunto.cavalo.placa}</h2>
-            <p style={{ margin: "4px 0 0", fontSize: ".8rem", color: "#64748b" }}>Emitido em {new Date().toLocaleString("pt-BR")}</p>
+          <div style={{ display: "none", padding: "0 0 10px", borderBottom: "2.5px solid #1a3a5c", marginBottom: 14 }} className="print-only-header">
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <img src="/pontual-logo.png" alt="Pontual" style={{ height: 50, display: "block" }} />
+              <div style={{ borderLeft: "3px solid #1a3a5c", paddingLeft: 12, flex: 1 }}>
+                <div style={{ fontSize: "1.05rem", fontWeight: 900, color: "#1a3a5c", textTransform: "uppercase", letterSpacing: ".02em" }}>
+                  Pontual Brasil Petróleo LTDA
+                </div>
+                <div style={{ fontSize: ".72rem", color: "#475569", marginTop: 2 }}>
+                  Rua Luiz Franceschi, 666 — Thomaz Coelho, Araucária/PR · Tel: (41) 9 8818-8088
+                </div>
+                <div style={{ fontSize: ".9rem", fontWeight: 700, color: "#1a3a5c", marginTop: 6 }}>
+                  Relatório de Vencimentos — Conjunto {conjunto.cavalo.placa}
+                  {conjunto.motorista && <span style={{ fontWeight: 500, color: "#475569" }}> · Motorista: {conjunto.motorista.nome || conjunto.motorista.nome_completo || "—"}</span>}
+                </div>
+              </div>
+              <div style={{ textAlign: "right", fontSize: ".7rem", color: "#64748b", minWidth: 130 }}>
+                <div>Emitido em</div>
+                <div style={{ fontWeight: 700, color: "#1a3a5c", fontSize: ".82rem" }}>{new Date().toLocaleString("pt-BR")}</div>
+              </div>
+            </div>
           </div>
           <style>{`@media print { .print-only-header { display: block !important; } }`}</style>
 
