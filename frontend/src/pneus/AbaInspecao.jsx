@@ -20,7 +20,7 @@ const normPlaca = (p) => String(p || "").trim().toUpperCase().replace(/[-\s]\d+$
 const s = {
   info: { background: "#dbeafe", border: "1px solid #93c5fd", color: "#1e40af", padding: "10px 14px", borderRadius: 8, fontSize: ".82rem", fontWeight: 600, marginBottom: 14 },
 
-  ficha: { background: "#fff", border: "2px solid #1a3a5c", borderRadius: 10, overflow: "hidden", boxShadow: "0 10px 40px rgba(15,23,42,.10)" },
+  ficha: { background: "#fff", border: "2px solid #1a3a5c", borderRadius: 10, boxShadow: "0 10px 40px rgba(15,23,42,.10)" },
 
   fichaHeader: { display: "grid", gridTemplateColumns: "1fr 180px", gap: 0, borderBottom: "2px solid #1a3a5c", background: "linear-gradient(180deg, #f8fafc, #fff)" },
   hData: { padding: "14px 20px", display: "flex", flexDirection: "column", gap: 8 },
@@ -696,7 +696,7 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
 
       <LegendaCores />
 
-      <div style={s.ficha}>
+      <div style={s.ficha} className="pneus-ficha">
         {/* HEADER */}
         <div style={s.fichaHeader}>
           <div style={s.hData}>
@@ -734,7 +734,7 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
         </div>
 
         {/* CHECKLIST + OBSERVACOES */}
-        <div style={s.rowMid}>
+        <div style={s.rowMid} className="pneus-rowmid">
           <div style={s.checklist}>
             <h4 style={s.h4}>Itens a verificar</h4>
             <table style={s.tbl}>
@@ -770,7 +770,7 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
         </div>
 
         {/* QUADROS */}
-        <div style={s.gridVeic}>
+        <div style={s.gridVeic} className="pneus-gridveic">
           <QuadroVeiculo ordem={1} titulo="Cavalo Mecânico" veiculo={cavalo} esquemaId={sugerirEsquema(cavalo)} dados={dadosVeic.cavalo}   onChange={d => setDadosVeic(prev => ({ ...prev, cavalo: d }))} />
           <QuadroVeiculo ordem={2} titulo="1ª Carreta"      veiculo={carretas.c1} esquemaId={sugerirEsquema(carretas.c1)} dados={dadosVeic.carreta1} onChange={d => setDadosVeic(prev => ({ ...prev, carreta1: d }))} />
           <QuadroVeiculo ordem={3} titulo="2ª Carreta"      veiculo={carretas.c2} esquemaId={sugerirEsquema(carretas.c2)} dados={dadosVeic.carreta2} onChange={d => setDadosVeic(prev => ({ ...prev, carreta2: d }))} />
@@ -778,7 +778,7 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
         </div>
 
         {/* RODAPÉ */}
-        <div style={s.footer}>
+        <div style={s.footer} className="pneus-footer">
           <div style={s.assinatura}>
             <div style={s.assBox} onClick={() => alert("Assinatura digital via canvas — chega em versão futura")}>
               <Pen size={18} style={{ marginRight: 6 }} />Toque para assinar

@@ -377,9 +377,46 @@ input, select, textarea, button { font-family: inherit; }
   .conjunto-wrap > div > div:has(table) { overflow-x: auto; }
 }
 
-/* ── Pneus: grid de inspeção (4 veículos) vira 1 col em mobile ─ */
+/* ── Pneus: aba Inspeção — grids fixos viram 1 col em mobile ── */
+/* Ficha ganha scroll horizontal se algo internamente ainda for grande */
+@media (max-width: 1024px) {
+  .pneus-ficha { overflow-x: auto; }
+}
 @media (max-width: 900px) {
+  /* Header: label + input viram coluna */
+  .pneus-ficha [style*="grid-template-columns"][style*="180px 1fr"],
+  .pneus-ficha [style*="gridTemplateColumns"][style*="180px 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+  }
+  /* Header 4-col vira 2-col */
+  .pneus-ficha [style*="180px 1fr 110px 130px"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  /* Checklist + Observações lado a lado vira empilhado */
+  .pneus-rowmid { grid-template-columns: 1fr !important; }
+  /* 2 quadros lado a lado viram 1 embaixo do outro */
+  .pneus-gridveic { grid-template-columns: 1fr !important; }
+  /* Footer: assinatura no meio, empilha */
+  .pneus-footer {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  /* Grid de inspeção fallback (se className usado em outro lugar) */
   .pneus-inspecao-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 640px) {
+  .pneus-ficha [style*="180px 1fr 110px 130px"] {
+    grid-template-columns: 1fr !important;
+  }
+  /* Cabeçalho da ficha: layout de header 1fr 180px vira 1 col */
+  .pneus-ficha [style*="1fr 180px"] {
+    grid-template-columns: 1fr !important;
+  }
+  /* Tabelas do checklist ganham scroll horizontal */
+  .pneus-ficha table { min-width: 480px; }
+  .pneus-ficha [style*="checklist"], .pneus-ficha > div > div { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 @media (max-width: 640px) {
   /* KPIs do módulo Pneus: 2 cols em vez de auto-fit no mobile */
