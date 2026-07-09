@@ -346,3 +346,61 @@ input, select, textarea, button { font-family: inherit; }
   .leaflet-popup-content > div { min-width: 0 !important; max-width: 78vw; }
   .leaflet-popup-content-wrapper { max-width: 80vw; }
 }
+
+/* ── Pneus: navbar de abas com scroll horizontal em mobile ─── */
+.pneus-nav { min-width: 0; }
+@media (max-width: 900px) {
+  .pneus-nav {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding: 8px 12px !important;
+  }
+  .pneus-nav > button { flex-shrink: 0; }
+}
+
+/* ── Aba Conjunto (Manutenção): toolbar vira coluna em mobile ─ */
+@media (max-width: 768px) {
+  .conjunto-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .conjunto-toolbar select { min-width: 0 !important; width: 100% !important; }
+  .conjunto-toolbar > div { flex-wrap: wrap !important; }
+  .conjunto-toolbar button { margin-left: 0 !important; }
+}
+
+/* ── Manutenção: tabelas grandes com scroll horizontal ──────── */
+@media (max-width: 900px) {
+  .conjunto-wrap table { min-width: 480px; }
+  .conjunto-wrap > div > div:has(table) { overflow-x: auto; }
+}
+
+/* ── Pneus: grid de inspeção (4 veículos) vira 1 col em mobile ─ */
+@media (max-width: 900px) {
+  .pneus-inspecao-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 640px) {
+  /* KPIs do módulo Pneus: 2 cols em vez de auto-fit no mobile */
+  .pg-body > .pg-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+}
+
+/* ── Modal genérico do módulo Pneus (instalar/remover/rodízio) ─
+     vira bottom-sheet no mobile */
+@media (max-width: 640px) {
+  .pneus-modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin-top: auto !important;
+  }
+  .pneus-modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+}
