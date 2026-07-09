@@ -585,7 +585,7 @@ function ModalImpressao({ oc, onFechar }) {
         <div id="print-area" style={ms.printArea}>
           <div style={ms.printHeader}>
             <LogoPontual height={44} />
-            <div style={ms.printEmpresa}>PONTUAL LOGÍSTICA</div>
+            <div style={ms.printEmpresa}>PONTUAL</div>
           </div>
 
           <h2 style={ms.printTitulo}>ORDEM DE CARREGAMENTO</h2>
