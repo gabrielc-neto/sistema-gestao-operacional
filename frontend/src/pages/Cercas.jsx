@@ -416,7 +416,7 @@ export default function Cercas() {
   return (
     <div style={{ minHeight: "100vh", background: "#f0f4f8", fontFamily: "system-ui" }}>
       {/* Header */}
-      <div style={{ padding: "0.6rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", borderBottom: "1px solid #e2e8f0", flexWrap: "wrap", gap: 8 }}>
+      <div className="pg-header" style={{ padding: "0.6rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", borderBottom: "1px solid #e2e8f0", flexWrap: "wrap", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button onClick={() => navigate("/rastreamento")} style={btnGhost}>
             <ArrowLeft size={16} /> Rastreamento
