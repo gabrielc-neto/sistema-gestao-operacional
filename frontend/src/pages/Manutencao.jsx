@@ -36,6 +36,7 @@ const TIPOS = [
   { id:"licenca_parana",   label:"Licença Paraná",        grupo:"Documentação", desc:"Licença especial de trânsito no estado do Paraná (bitrem)",                 campos:["data_realiz","venc","numero_doc","resp","obs"] },
   { id:"licenca_federal",  label:"Licença Federal-DNIT",  grupo:"Documentação", desc:"Licença Federal DNIT para bitrens em rodovias federais",                   campos:["data_realiz","venc","numero_doc","resp","obs"] },
   { id:"aet",              label:"AET",                   grupo:"Documentação", desc:"Autorização Especial de Trânsito — cargas especiais/indivisíveis (DER/DNIT)", campos:["data_realiz","venc","numero_doc","local","resp","obs"] },
+  { id:"ipem",             label:"IPEM",                  grupo:"Documentação", desc:"Aferição do tanque pelo Instituto de Pesos e Medidas — após vencer, informe a data agendada da nova inspeção", campos:["data_realiz","venc","agendamento","local","numero_doc","resp","obs"] },
   { id:"cnh_venc",         label:"Validade CNH",          grupo:"Motorista",    desc:"Vencimento da CNH do motorista",                                           campos:["data_realiz","venc","numero_doc","resp","obs"] },
   { id:"aso",              label:"ASO",                   grupo:"Motorista",    desc:"Atestado de Saúde Ocupacional — exame médico periódico obrigatório",       campos:["data_realiz","venc","local","resp","obs"] },
   { id:"toxicologico",     label:"Exame Toxicológico",    grupo:"Motorista",    desc:"Exame toxicológico obrigatório para motoristas profissionais (Lei 13.103/2015) — validade 2,5 anos", campos:["data_realiz","venc","local","numero_doc","resp","obs"] },
@@ -62,6 +63,7 @@ const TIPOS = [
 const CAMPO_LABEL = {
   data_realiz: "Data da Realização / Inspeção",
   venc:        "Validade / Próximo Vencimento",
+  agendamento: "Agendamento da Nova Inspeção",
   local:       "Local / Oficina",
   numero_doc:  "Número do Documento",
   km_atual:    "KM na Realização",
@@ -69,7 +71,7 @@ const CAMPO_LABEL = {
   obs:         "Observações",
 };
 
-const EMPTY_FORM = { data_realiz:"", venc:"", local:"", numero_doc:"", km_atual:"", resp:"", obs:"" };
+const EMPTY_FORM = { data_realiz:"", venc:"", agendamento:"", local:"", numero_doc:"", km_atual:"", resp:"", obs:"" };
 
 // Abertura de OS — form vazio (bloqueia o veículo, NÃO tem custo)
 const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "", fornecedor: "", fornecedorCnpj: "" };
@@ -146,21 +148,34 @@ const GRUPO_COLOR = {
 };
 
 // ── Status ────────────────────────────────────────────────────────────────
-function calcStatus(vencStr) {
+// Assinatura tolerante: aceita string (venc só) ou registro inteiro (para checar agendamento)
+function calcStatus(vencStrOuRec) {
+  const isObj = vencStrOuRec && typeof vencStrOuRec === "object";
+  const vencStr = isObj ? vencStrOuRec.venc : vencStrOuRec;
+  const agendamento = isObj ? vencStrOuRec.agendamento : null;
   if (!vencStr) return "sem_data";
   const hoje = new Date(); hoje.setHours(0,0,0,0);
   const venc = new Date(vencStr + "T00:00:00");
   const diff = Math.ceil((venc - hoje) / 86400000);
-  if (diff < 0)   return "vencido";
+  if (diff < 0) {
+    // Vencido, mas se tem agendamento FUTURO da nova inspeção, mostra como "agendado"
+    if (agendamento) {
+      const dag = new Date(agendamento + "T00:00:00");
+      const diffAg = Math.ceil((dag - hoje) / 86400000);
+      if (diffAg >= 0) return "agendado";
+    }
+    return "vencido";
+  }
   if (diff <= 30) return "alerta";
   return "ok";
 }
 
-const STATUS_ORDER = { vencido: 0, alerta: 1, ok: 2, sem_data: 3 };
+const STATUS_ORDER = { vencido: 0, alerta: 1, agendado: 2, ok: 3, sem_data: 4 };
 
 const STATUS_META = {
   vencido:  { label:"Vencido",      bg:"#fee2e2", color:"#dc2626", rowBg:"#fef2f2" },
   alerta:   { label:"Alerta",       bg:"#fef9c3", color:"#a16207", rowBg:"#fffbeb" },
+  agendado: { label:"Agendado",     bg:"#dbeafe", color:"#1d4ed8", rowBg:"#eff6ff" },
   ok:       { label:"OK",           bg:"#dcfce7", color:"#15803d", rowBg:"#f0fdf4" },
   sem_data: { label:"Sem registro", bg:"#f1f5f9", color:"#94a3b8", rowBg:"#f8fafc" },
 };
@@ -1337,8 +1352,8 @@ export default function Manutencao() {
   }, []);
 
   const alertaCount = useMemo(() => {
-    const novosPend  = Object.values(registros).filter(r => ["vencido","alerta"].includes(calcStatus(r.venc))).length;
-    const legadoPend = legacy.filter(r => ["vencido","alerta"].includes(calcStatus(r.venc))).length;
+    const novosPend  = Object.values(registros).filter(r => ["vencido","alerta"].includes(calcStatus(r))).length;
+    const legadoPend = legacy.filter(r => ["vencido","alerta"].includes(calcStatus(r))).length;
     return novosPend + legadoPend;
   }, [registros, legacy]);
 
@@ -1397,7 +1412,7 @@ export default function Manutencao() {
     const p = normP(placa);
     const tiposStatus = tiposVeiculo.map(t => {
       const rec = registros[`${p}__${t.id}`] || null;
-      return { ...t, record: rec, status: calcStatus(rec?.venc) };
+      return { ...t, record: rec, status: calcStatus(rec) };
     });
     const grps = {};
     tiposStatus.forEach(t => {
@@ -1422,7 +1437,7 @@ export default function Manutencao() {
   const listaPorTipo = useMemo(() => {
     return todosRegistros
       .filter(r => r.tipo === filtroTipo)
-      .map(r => ({ ...r, _status: calcStatus(r.venc) }))
+      .map(r => ({ ...r, _status: calcStatus(r) }))
       .filter(r => filtroStTipo === "todos" || r._status === filtroStTipo)
       .sort((a,b) => (STATUS_ORDER[a._status]||3) - (STATUS_ORDER[b._status]||3) || (a.venc||"").localeCompare(b.venc||""));
   }, [todosRegistros, filtroTipo, filtroStTipo]);
@@ -1445,7 +1460,7 @@ export default function Manutencao() {
       ...legacy.map(r => ({ ...r, _label: r.item || "—" })),
     ];
     return tudo
-      .map(r => ({ ...r, _status: calcStatus(r.venc) }))
+      .map(r => ({ ...r, _status: calcStatus(r) }))
       .filter(r => {
         // Oculta alerta de tipo que a placa removeu da lista aplicável
         if (r.tipo) {
@@ -2660,6 +2675,7 @@ export default function Manutencao() {
                 { val:"todos",    label:"Todos" },
                 { val:"vencido",  label:"Vencido" },
                 { val:"alerta",   label:"Alerta" },
+                { val:"agendado", label:"Agendado" },
                 { val:"ok",       label:"OK" },
                 { val:"sem_data", label:"Sem registro" },
               ].map(({ val, label }) => {
@@ -2745,7 +2761,7 @@ export default function Manutencao() {
               />
             </div>
             <div style={s.filtros}>
-              {["todos","vencido","alerta","ok"].map(f => (
+              {["todos","vencido","alerta","agendado","ok"].map(f => (
                 <button key={f}
                   style={{ ...s.filtroBtn, ...(filtroSt===f ? s.filtroBtnAtivo : {}) }}
                   onClick={() => setFiltroSt(f)}
