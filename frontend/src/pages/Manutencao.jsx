@@ -31,7 +31,6 @@ const TIPOS = [
   { id:"tacografo",        label:"Tacógrafo",             grupo:"Documentação", desc:"Calibração, certificação e próximo vencimento do tacógrafo (INMETRO)",      campos:["data_realiz","venc","local","numero_doc","resp","obs"] },
   { id:"extintor",         label:"Extintor",              grupo:"Documentação", desc:"Validade e recarga do extintor de incêndio (cabine e carreta)",            campos:["data_realiz","venc","local","resp","obs"] },
   { id:"rntrc",            label:"RNTRC",                 grupo:"Documentação", desc:"Registro Nacional de Transportadores Rodoviários de Cargas (ANTT)",          campos:["data_realiz","venc","numero_doc","resp","obs"] },
-  { id:"seguro",           label:"Seguro",                grupo:"Documentação", desc:"Seguro do veículo (apólice vigente)",                                        campos:["data_realiz","venc","numero_doc","local","resp","obs"] },
   { id:"licenca_parana",   label:"Licença Paraná",        grupo:"Documentação", desc:"Licença especial de trânsito no estado do Paraná (bitrem)",                 campos:["data_realiz","venc","numero_doc","resp","obs"] },
   { id:"licenca_federal",  label:"Licença Federal-DNIT",  grupo:"Documentação", desc:"Licença Federal DNIT para bitrens em rodovias federais",                   campos:["data_realiz","venc","numero_doc","resp","obs"] },
   { id:"aet",              label:"AET",                   grupo:"Documentação", desc:"Autorização Especial de Trânsito — cargas especiais/indivisíveis (DER/DNIT)", campos:["data_realiz","venc","numero_doc","local","resp","obs"] },
@@ -1286,7 +1285,7 @@ export default function Manutencao() {
       let padrao;
       if (isCarreta) {
         if (t.grupo !== "Documentação") padrao = false;
-        else if (["calibragem","tacografo","rntrc","seguro"].includes(t.id)) padrao = false;
+        else if (["calibragem","tacografo","rntrc"].includes(t.id)) padrao = false;
         else if (t.id === "licenca_parana" || t.id === "licenca_federal") padrao = is9eixos;
         else padrao = true;
       } else {
