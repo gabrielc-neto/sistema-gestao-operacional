@@ -12,10 +12,10 @@ import { useOdometrosSascar } from "../hooks/useOdometrosSascar";
 import LogoPontual from "../components/LogoPontual";
 import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
-import AbaLavagemCalibragem from "../manutencao/AbaLavagemCalibragem";
+import AbaControleRotina from "../manutencao/AbaControleRotina";
 import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
-  FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet,
+  FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet, Gauge, SprayCan,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -53,8 +53,9 @@ const TIPOS = [
   { id:"embreagem",        label:"Embreagem",             grupo:"Mecânica",     desc:"Troca ou ajuste da embreagem",                                              campos:["data_realiz","venc","km_atual","local","resp","obs"] },
   { id:"diferencial",      label:"Diferencial / Câmbio",  grupo:"Mecânica",     desc:"Revisão e troca de óleo do diferencial e caixa de câmbio",                 campos:["data_realiz","venc","km_atual","local","resp","obs"] },
   { id:"preventiva",       label:"Preventiva",            grupo:"Mecânica",     desc:"Manutenção preventiva geral programada por KM ou período",                  campos:["data_realiz","venc","km_atual","local","resp","obs"] },
-  { id:"lavagem",          label:"Lavagem e Lubrificação",grupo:"Mecânica",     desc:"Lavagem completa + lubrificação — intervalo padrão 35 dias, alerta 5 dias antes", campos:["data_realiz","venc","local","resp","obs"] },
-  { id:"calibragem",       label:"Calibragem de Pneus",   grupo:"Mecânica",     desc:"Calibragem de pneus — intervalo padrão 10 dias, alerta 2 dias antes",       campos:["data_realiz","venc","local","resp","obs"] },
+  { id:"lavagem",          label:"Lavagem",               grupo:"Mecânica",     desc:"Lavagem do veículo — intervalo padrão 35 dias, alerta 5 dias antes",         campos:["data_realiz","venc","local","resp","obs"] },
+  { id:"lubrificacao",     label:"Lubrificação",          grupo:"Mecânica",     desc:"Lubrificação/engraxamento — intervalo padrão 35 dias, alerta 5 dias antes",  campos:["data_realiz","venc","local","resp","obs"] },
+  { id:"calibragem",       label:"Calibragem de Pneus",   grupo:"Mecânica",     desc:"Calibragem de pneus — intervalo padrão 10 dias, alerta 2 dias antes",        campos:["data_realiz","venc","local","resp","obs"] },
 ];
 
 const CAMPO_LABEL = {
@@ -980,8 +981,8 @@ export default function Manutencao() {
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
-  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavcal","os","os_lanc","lancamento","cadastros"];
-  const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavcal:"lavcal", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","os","os_lanc","lancamento","cadastros"];
+  const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavagem:"lavagem", lubrificacao:"lubrificacao", calibragem:"calibragem", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
     (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
     podeVerAba("por_veiculo")    ? "veiculo" :
@@ -989,7 +990,9 @@ export default function Manutencao() {
     podeVerAba("por_tipo")       ? "tipo" :
     podeVerAba("alertas")        ? "alertas" :
     podeVerAba("conjunto")       ? "conjunto" :
-    podeVerAba("lavcal")         ? "lavcal" :
+    podeVerAba("lavagem")        ? "lavagem" :
+    podeVerAba("lubrificacao")   ? "lubrificacao" :
+    podeVerAba("calibragem")     ? "calibragem" :
     podeVerAba("os_abertura")    ? "os" :
     podeVerAba("os_lancamento")  ? "os_lanc" :
     podeVerAba("nf")             ? "lancamento" :
@@ -2450,7 +2453,7 @@ export default function Manutencao() {
           </div>
         )}
 
-        {(podeVerAba("por_veiculo") || podeVerAba("por_tipo") || podeVerAba("alertas") || podeVerAba("conjunto") || podeVerAba("lavcal")) && (
+        {(podeVerAba("por_veiculo") || podeVerAba("por_tipo") || podeVerAba("alertas") || podeVerAba("conjunto") || podeVerAba("lavagem") || podeVerAba("lubrificacao") || podeVerAba("calibragem")) && (
           <div style={s.navGroup}>
             <span style={s.navGroupLabel}>Manutenção</span>
             {podeVerAba("por_veiculo") && (
@@ -2466,8 +2469,14 @@ export default function Manutencao() {
             {podeVerAba("conjunto") && (
               <NavTab icon={Layers} label="Conjunto" active={aba==="conjunto"} onClick={() => setAba("conjunto")} accent="#7c3aed" />
             )}
-            {podeVerAba("lavcal") && (
-              <NavTab icon={Droplet} label="Lavagem/Calibragem" active={aba==="lavcal"} onClick={() => setAba("lavcal")} accent="#0891b2" />
+            {podeVerAba("lavagem") && (
+              <NavTab icon={Droplet} label="Lavagem" active={aba==="lavagem"} onClick={() => setAba("lavagem")} accent="#0891b2" />
+            )}
+            {podeVerAba("lubrificacao") && (
+              <NavTab icon={SprayCan} label="Lubrificação" active={aba==="lubrificacao"} onClick={() => setAba("lubrificacao")} accent="#059669" />
+            )}
+            {podeVerAba("calibragem") && (
+              <NavTab icon={Gauge} label="Calibragem" active={aba==="calibragem"} onClick={() => setAba("calibragem")} accent="#dc2626" />
             )}
           </div>
         )}
@@ -2799,10 +2808,51 @@ export default function Manutencao() {
         </main>
       )}
 
-      {/* ── ABA: LAVAGEM E CALIBRAGEM (dashboard dedicado) ──────────── */}
-      {aba === "lavcal" && podeVerAba("lavcal") && (
+      {/* ── ABA: LAVAGEM (só) ──────────────────────────────────────── */}
+      {aba === "lavagem" && podeVerAba("lavagem") && (
         <main style={s.main} className="pg-body">
-          <AbaLavagemCalibragem
+          <AbaControleRotina
+            tipoId="lavagem"
+            titulo="Lavagem"
+            subtitulo="Controle de lavagem dos veículos — intervalo padrão 35 dias, alerta 5 dias antes"
+            cor="#0891b2"
+            Icone={Droplet}
+            veiculos={veiculos}
+            registros={registros}
+            TIPOS={TIPOS}
+            calcStatus={calcStatus}
+            onEditar={(placa, tipo) => abrirModal(placa, tipo)}
+          />
+        </main>
+      )}
+
+      {/* ── ABA: LUBRIFICAÇÃO (só) ─────────────────────────────────── */}
+      {aba === "lubrificacao" && podeVerAba("lubrificacao") && (
+        <main style={s.main} className="pg-body">
+          <AbaControleRotina
+            tipoId="lubrificacao"
+            titulo="Lubrificação"
+            subtitulo="Controle de lubrificação/engraxamento — intervalo padrão 35 dias, alerta 5 dias antes"
+            cor="#059669"
+            Icone={SprayCan}
+            veiculos={veiculos}
+            registros={registros}
+            TIPOS={TIPOS}
+            calcStatus={calcStatus}
+            onEditar={(placa, tipo) => abrirModal(placa, tipo)}
+          />
+        </main>
+      )}
+
+      {/* ── ABA: CALIBRAGEM (só) ───────────────────────────────────── */}
+      {aba === "calibragem" && podeVerAba("calibragem") && (
+        <main style={s.main} className="pg-body">
+          <AbaControleRotina
+            tipoId="calibragem"
+            titulo="Calibragem de Pneus"
+            subtitulo="Controle de calibragem — intervalo padrão 10 dias, alerta 2 dias antes"
+            cor="#dc2626"
+            Icone={Gauge}
             veiculos={veiculos}
             registros={registros}
             TIPOS={TIPOS}
