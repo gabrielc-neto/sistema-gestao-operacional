@@ -355,10 +355,25 @@ function ModalSaida({ itens, veiculos, onSalvar, onFechar }) {
           <label style={s.fLbl}>Item *</label>
           <select style={s.fInp} value={itemId} onChange={e => setItemId(e.target.value)} autoFocus>
             <option value="">— Selecione —</option>
-            {itens.filter(i => (i.saldoAtual || 0) > 0).map(i => (
-              <option key={i.id} value={i.id}>{i.nome} · disp: {fmtQ(i.saldoAtual || 0, i.unidade)}</option>
-            ))}
+            {itens.map(i => {
+              const saldo = Number(i.saldoAtual || 0);
+              return (
+                <option key={i.id} value={i.id} disabled={saldo <= 0}>
+                  {i.nome} · {saldo > 0 ? `disp: ${fmtQ(saldo, i.unidade)}` : "sem saldo"}
+                </option>
+              );
+            })}
           </select>
+          {itens.length === 0 && (
+            <div style={{ fontSize: ".76rem", color: "#dc2626", marginTop: 4, fontWeight: 600 }}>
+              Nenhum item cadastrado. Cadastre no Catálogo primeiro.
+            </div>
+          )}
+          {itens.length > 0 && itens.every(i => Number(i.saldoAtual || 0) <= 0) && (
+            <div style={{ fontSize: ".76rem", color: "#d97706", marginTop: 4, fontWeight: 600 }}>
+              Nenhum item tem saldo. Registre uma entrada primeiro.
+            </div>
+          )}
         </div>
 
         <div style={s.fRowGrid}>
@@ -447,26 +462,41 @@ export default function AbaEstoque({ veiculos, quemSou }) {
     await runTransaction(db, async (tx) => {
       const itemRef = doc(db, "estoque_itens", payload.itemId);
       const snap = await tx.get(itemRef);
-      if (!snap.exists()) throw new Error("Item não existe mais");
+      if (!snap.exists()) throw new Error("Item não existe mais no catálogo");
       const item = snap.data();
-      const saldoAntes = Number(item.saldoAtual || 0);
+
+      // Sanitização robusta contra dados legados/inconsistentes
+      const rawSaldo = Number(item.saldoAtual);
+      const saldoAntes = Number.isFinite(rawSaldo) ? rawSaldo : 0;
       const q = Number(payload.quantidade);
+      if (!Number.isFinite(q) || q <= 0) throw new Error("Quantidade inválida");
+
       const saldoNovo = payload.tipo === "entrada" ? saldoAntes + q : saldoAntes - q;
-      if (saldoNovo < 0) throw new Error("Saldo insuficiente");
+      if (saldoNovo < 0) throw new Error(`Saldo insuficiente. Disponível: ${saldoAntes} ${item.unidade || ""}`);
 
       // Custo médio ponderado (só entrada)
-      let custoMedioNovo = Number(item.custoMedio || 0);
-      if (payload.tipo === "entrada" && payload.custoUnitario > 0) {
+      const rawCusto = Number(item.custoMedio);
+      let custoMedioNovo = Number.isFinite(rawCusto) ? rawCusto : 0;
+      const custoUn = Number(payload.custoUnitario);
+      if (payload.tipo === "entrada" && Number.isFinite(custoUn) && custoUn > 0) {
         const valorAntes = saldoAntes * custoMedioNovo;
-        const valorEntrada = q * payload.custoUnitario;
-        custoMedioNovo = saldoNovo > 0 ? (valorAntes + valorEntrada) / saldoNovo : payload.custoUnitario;
+        const valorEntrada = q * custoUn;
+        custoMedioNovo = saldoNovo > 0 ? (valorAntes + valorEntrada) / saldoNovo : custoUn;
       }
 
-      tx.update(itemRef, { saldoAtual: saldoNovo, custoMedio: custoMedioNovo, atualizadoEm: new Date().toISOString() });
+      tx.update(itemRef, {
+        saldoAtual: saldoNovo,
+        custoMedio: custoMedioNovo,
+        atualizadoEm: new Date().toISOString(),
+      });
 
       const movRef = doc(collection(db, "estoque_movimentacoes"));
+      // Remove valores null/undefined do payload pra não sujar o doc
+      const clean = Object.fromEntries(
+        Object.entries(payload).filter(([, v]) => v !== undefined && v !== null && v !== "")
+      );
       tx.set(movRef, {
-        ...payload,
+        ...clean,
         saldoAntes,
         saldoDepois: saldoNovo,
         responsavel: quemSou?.() || "—",
