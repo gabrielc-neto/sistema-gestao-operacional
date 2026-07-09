@@ -264,5 +264,13 @@ service cloud.firestore {
       allow update: if isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
+
+    // Compras de pneus — NF de compra com itens em lote
+    match /pneu_compras/{id} {
+      allow read:   if isAtivo();
+      allow create: if isAtivo();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
   }
 }
