@@ -52,6 +52,8 @@ const TIPOS = [
   { id:"embreagem",        label:"Embreagem",             grupo:"Mecânica",     desc:"Troca ou ajuste da embreagem",                                              campos:["data_realiz","venc","km_atual","local","resp","obs"] },
   { id:"diferencial",      label:"Diferencial / Câmbio",  grupo:"Mecânica",     desc:"Revisão e troca de óleo do diferencial e caixa de câmbio",                 campos:["data_realiz","venc","km_atual","local","resp","obs"] },
   { id:"preventiva",       label:"Preventiva",            grupo:"Mecânica",     desc:"Manutenção preventiva geral programada por KM ou período",                  campos:["data_realiz","venc","km_atual","local","resp","obs"] },
+  { id:"lavagem",          label:"Lavagem e Lubrificação",grupo:"Mecânica",     desc:"Lavagem completa + lubrificação — intervalo padrão 35 dias, alerta 5 dias antes", campos:["data_realiz","venc","local","resp","obs"] },
+  { id:"calibragem",       label:"Calibragem de Pneus",   grupo:"Mecânica",     desc:"Calibragem de pneus — intervalo padrão 10 dias, alerta 2 dias antes",       campos:["data_realiz","venc","local","resp","obs"] },
 ];
 
 const CAMPO_LABEL = {

@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
 import { VEICULOS_IMPORT, MOTORISTAS_IMPORT, MANUTENCOES_IMPORT } from "../data/dadosFrota";
 import { MANUTENCOES_EXTRA } from "../data/dadosFrotaExtra";
+import { LAVAGEM_CALIBRAGEM_IMPORT } from "../data/dadosLavagemCalibragem";
 
 // Normaliza nome para uso como ID de documento
 const toId = (s) => s.toLowerCase().trim().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
@@ -204,6 +205,30 @@ export default function ImportAdmin() {
     addLog(`Manutenções: ${salvos} registros importados.`, "ok");
   }
 
+  // ── Importar Lavagem + Calibragem (planilha "Controle Frota Lavagem Calibragem.xlsx") ─
+  async function importarLavagemCalibragem() {
+    addLog(`Importando Lavagem + Calibragem (${LAVAGEM_CALIBRAGEM_IMPORT.length} registros)...`, "info");
+    let salvos = 0;
+    for (const m of LAVAGEM_CALIBRAGEM_IMPORT) {
+      const placa = (m.placa || "").trim();
+      if (!placa || !m.tipo) continue;
+      const placaId = placa.toLowerCase().replace(/[^a-z0-9]/g, "_");
+      const docId = `${placaId}__${m.tipo}`;
+      const payload = {
+        tipo:        m.tipo,
+        label:       m.label || m.tipo,
+        grupo:       "Mecânica",
+        placa,
+        data_realiz: m.data_realiz || null,
+        venc:        m.venc || null,
+        updatedAt:   new Date().toISOString(),
+      };
+      await setDoc(doc(db, "manutencoes", docId), payload, { merge: true });
+      salvos++;
+    }
+    addLog(`Lavagem + Calibragem: ${salvos} registros importados.`, "ok");
+  }
+
   // ── Importar Manutenções Extra (abas restantes da planilha) ────────────────
   async function importarManutencoesExtra() {
     addLog(`Importando ${MANUTENCOES_EXTRA.length} registros extras (extintores, NR-20/35, licenças, engraxe, calibragem, bateria)...`, "info");
@@ -264,6 +289,7 @@ export default function ImportAdmin() {
       await importarMotoristas();
       await importarManutencoes();
       await importarManutencoesExtra();
+      await importarLavagemCalibragem();
       addLog("=== IMPORTAÇÃO CONCLUÍDA COM SUCESSO ===", "ok");
       setConcluido(true);
     } catch (e) {
@@ -318,6 +344,13 @@ export default function ImportAdmin() {
                 <div style={s.previewDesc}>Extintor cabine/carreta, NR-20, NR-35, Licença PR/Federal, Engraxe, Calibragem, Bateria</div>
               </div>
             </div>
+            <div style={s.previewItem}>
+              <span style={s.badge}>🚿 {LAVAGEM_CALIBRAGEM_IMPORT.length}</span>
+              <div>
+                <strong>Lavagem + Calibragem</strong>
+                <div style={s.previewDesc}>Última lavagem/lubrificação (35d) e calibragem de pneus (10d) — planilha "Controle Frota Lavagem Calibragem"</div>
+              </div>
+            </div>
           </div>
 
           <div style={s.aviso}>
@@ -339,6 +372,20 @@ export default function ImportAdmin() {
             disabled={rodando}
           >
             {rodando ? "⏳ Importando..." : concluido ? "🔄 Reimportar (merge)" : "🚀 Executar Importação"}
+          </button>
+
+          <button
+            style={{ ...s.btn, marginTop: 8, background: "#0891b2", opacity: rodando ? 0.6 : 1 }}
+            onClick={async () => {
+              setRodando(true);
+              try { await importarLavagemCalibragem(); }
+              catch (e) { addLog(`ERRO: ${e.message}`, "erro"); }
+              finally { setRodando(false); }
+            }}
+            disabled={rodando}
+            title="Roda só o import de Lavagem + Calibragem (sem tocar em veículos/motoristas/outras manutenções)"
+          >
+            🚿 Importar só Lavagem + Calibragem
           </button>
         </div>
 
