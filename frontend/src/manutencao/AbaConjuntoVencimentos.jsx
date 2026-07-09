@@ -12,8 +12,8 @@ const GRUPOS_ORDEM = ["Motorista", "Mecânica"];
 // Documentos que NÃO se aplicam por padrão a cada tipo de veículo.
 // (User ainda pode ligar/desligar individualmente via documentosAplicaveis no cadastro.)
 const EXCLUIR_POR_TIPO_VEIC = {
-  cavalo:  ["cipp", "rntrc"],           // CIPP é da carreta; RNTRC é da empresa
-  carreta: ["tacografo", "aet"],        // carreta não tem tacógrafo; AET geralmente é do conjunto
+  cavalo:  ["cipp", "rntrc"],                                                   // CIPP é da carreta; RNTRC é da empresa
+  carreta: ["tacografo", "aet", "oleo", "arrefecimento", "embreagem", "diferencial"], // sem tacógrafo/AET e sem itens de motor (carreta não tem motor)
 };
 const STATUS_ORDER = { vencido: 0, alerta: 1, sem_data: 2, ok: 3 };
 const STATUS_COR = {
