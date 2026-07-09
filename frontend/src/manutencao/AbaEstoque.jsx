@@ -21,6 +21,7 @@ const CATEGORIAS = [
   { id: "pecas_mec",   label: "Peças Mecânicas",       unidade: "UN", cor: "#dc2626", exemplos: "Freio, embreagem, correia" },
   { id: "pecas_ele",   label: "Peças Elétricas",       unidade: "UN", cor: "#f59e0b", exemplos: "Bateria, lâmpada, sensor" },
   { id: "pneus",       label: "Pneus",                 unidade: "UN", cor: "#0f172a", exemplos: "Pneus novos ou recapados" },
+  { id: "mangotes",    label: "Mangotes e Mangueiras", unidade: "M",  cor: "#ea580c", exemplos: "Mangote de descarga, mangueiras hidráulicas" },
   { id: "epi",         label: "EPI",                   unidade: "UN", cor: "#059669", exemplos: "Luva, óculos, botina" },
   { id: "ferramentas", label: "Ferramentas",           unidade: "UN", cor: "#475569", exemplos: "Chave, alicate, macaco" },
   { id: "outros",      label: "Outros",                unidade: "UN", cor: "#64748b", exemplos: "Qualquer outro item" },
@@ -33,7 +34,10 @@ const UNIDADES = [
 ];
 const catMap = Object.fromEntries(CATEGORIAS.map(c => [c.id, c]));
 
-const fmtQ = (q, u) => `${Number(q).toLocaleString("pt-BR", { minimumFractionDigits: u === "L" || u === "KG" ? 2 : 0, maximumFractionDigits: 2 })} ${u}`;
+const fmtQ = (q, u) => {
+  const fracionavel = u === "L" || u === "KG" || u === "M"; // metros também têm fração (12,50 m)
+  return `${Number(q).toLocaleString("pt-BR", { minimumFractionDigits: fracionavel ? 2 : 0, maximumFractionDigits: 2 })} ${u}`;
+};
 const fmtBRL = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("pt-BR") : "—";
 
