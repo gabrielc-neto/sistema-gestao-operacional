@@ -7,6 +7,12 @@ import { Truck, Printer, AlertTriangle, CheckCircle2, Clock, HelpCircle, Pen } f
 
 const CAMPOS_CARRETA = ["c1", "c2", "c3", "carreta1", "carreta2", "carreta3", "carreta"];
 const GRUPOS_ORDEM = ["Documentação", "Motorista", "Mecânica"];
+// Documentos que NÃO se aplicam por padrão a cada tipo de veículo.
+// (User ainda pode ligar/desligar individualmente via documentosAplicaveis no cadastro.)
+const EXCLUIR_POR_TIPO_VEIC = {
+  cavalo:  ["cipp", "rntrc"],           // CIPP é da carreta; RNTRC é da empresa
+  carreta: ["tacografo", "aet"],        // carreta não tem tacógrafo; AET geralmente é do conjunto
+};
 const STATUS_ORDER = { vencido: 0, alerta: 1, sem_data: 2, ok: 3 };
 const STATUS_COR = {
   vencido:  { bg: "#fef2f2", cor: "#991b1b", pt: "#dc2626" },
@@ -30,8 +36,9 @@ const s = {
   cardHeadTit: { display: "inline-flex", alignItems: "center", gap: 10, fontSize: ".95rem", fontWeight: 800 },
   grupoTit: { padding: "8px 16px", background: "#f8fafc", color: "#1a3a5c", fontSize: ".78rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em", borderBottom: "1px solid #e2e8f0", borderTop: "1px solid #e2e8f0" },
   tabela: { width: "100%", borderCollapse: "collapse" },
-  th: { padding: "8px 14px", textAlign: "left", fontSize: ".72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em", background: "#f1f5f9", borderBottom: "1px solid #e2e8f0" },
-  td: { padding: "10px 14px", fontSize: ".85rem", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" },
+  th: { padding: "5px 10px", textAlign: "left", fontSize: ".68rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em", background: "#f1f5f9", borderBottom: "1px solid #e2e8f0" },
+  td: { padding: "5px 10px", fontSize: ".8rem", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle", lineHeight: 1.2 },
+  dateInput: { padding: "7px 9px", borderRadius: 6, border: "1px solid #cbd5e1", fontFamily: "inherit", fontSize: ".82rem", background: "#fff", color: "#1a3a5c", fontWeight: 600 },
   vazio: { padding: "40px 20px", textAlign: "center", color: "#94a3b8", fontSize: ".9rem" },
   bola: (st) => ({ width: 10, height: 10, borderRadius: "50%", background: STATUS_COR[st].pt, flexShrink: 0, display: "inline-block" }),
   linkEditar: { background: "transparent", border: "1px solid #cbd5e1", cursor: "pointer", padding: "4px 8px", borderRadius: 6, fontSize: ".75rem", color: "#475569", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 },
@@ -60,6 +67,9 @@ function motoristaDoVeiculo(placaVeic, motoristas) {
 
 export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TIPOS, calcStatus, motoristas, onEditar }) {
   const [placaCavalo, setPlacaCavalo] = useState("");
+  const [filtroDe, setFiltroDe]   = useState("");
+  const [filtroAte, setFiltroAte] = useState("");
+  const [ocultarOk, setOcultarOk] = useState(false);
 
   // Lista de cavalos (tudo que não é carreta), ordenada por placa
   const cavalos = useMemo(() => {
@@ -94,20 +104,37 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
     const gerarLinhas = (veic, incluirGruposMotorista) => {
       const pN = normP(veic.placa);
       const aplicaveis = Array.isArray(veic.documentosAplicaveis) ? new Set(veic.documentosAplicaveis) : null;
+      const tipoVeic = veic.tipo === "carreta" ? "carreta" : "cavalo";
+      const excluidos = new Set(EXCLUIR_POR_TIPO_VEIC[tipoVeic] || []);
       const linhas = [];
       TIPOS.forEach(tipo => {
         if (tipo.grupo === "Motorista" && !incluirGruposMotorista) return;
-        if (aplicaveis && !aplicaveis.has(tipo.id)) return;
+        // Se veículo tem documentosAplicaveis customizado, respeita ele (ignora blacklist).
+        // Senão aplica blacklist padrão por tipo de veículo.
+        if (aplicaveis) {
+          if (!aplicaveis.has(tipo.id)) return;
+        } else {
+          if (excluidos.has(tipo.id)) return;
+        }
         const rec = registros[`${pN}__${tipo.id}`] || null;
         const status = calcStatus(rec?.venc);
         const dias = rec?.venc ? diasAteVenc(rec.venc) : null;
+        // Filtro por range de datas (aplica só se filtro preenchido; sem_data cai fora do range)
+        if (filtroDe && (!rec?.venc || rec.venc < filtroDe)) return;
+        if (filtroAte && (!rec?.venc || rec.venc > filtroAte)) return;
+        // Filtro "ocultar OK"
+        if (ocultarOk && status === "ok") return;
         linhas.push({ tipo, rec, status, dias });
       });
-      // Ordena: vencido → alerta → sem_data → ok, depois por venc mais próximo
+      // Ordena pelo mais próximo do vencimento:
+      // vencidos primeiro (dias mais negativos = venceu há mais tempo, mais crítico)
+      // depois alertas / OK futuros em ordem crescente de data
+      // sem_data vai pro final
       linhas.sort((a, b) => {
-        const sa = STATUS_ORDER[a.status] ?? 4;
-        const sb = STATUS_ORDER[b.status] ?? 4;
-        if (sa !== sb) return sa - sb;
+        const aSem = a.status === "sem_data";
+        const bSem = b.status === "sem_data";
+        if (aSem !== bSem) return aSem ? 1 : -1;
+        if (aSem && bSem) return (a.tipo.label || "").localeCompare(b.tipo.label || "");
         return (a.rec?.venc || "").localeCompare(b.rec?.venc || "");
       });
       // Agrupa por grupo mantendo ordem interna
@@ -126,7 +153,7 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
     ];
 
     return veiculosRelatorio;
-  }, [conjunto, registros, TIPOS, calcStatus]);
+  }, [conjunto, registros, TIPOS, calcStatus, filtroDe, filtroAte, ocultarOk]);
 
   // Contagem por status pro card resumo
   const resumoStatus = useMemo(() => {
@@ -165,15 +192,31 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
         <Truck size={18} color="#2563eb" />
         <label style={{ fontSize: ".82rem", fontWeight: 700, color: "#475569" }}>Cavalo:</label>
         <select style={s.select} value={placaCavalo} onChange={e => setPlacaCavalo(e.target.value)}>
-          <option value="">— selecione o cavalo do conjunto —</option>
+          <option value="">— selecione —</option>
           {cavalos.map(c => (
             <option key={c.id || c.placa} value={c.placa}>
               {c.placa} {c.modelo ? `· ${c.modelo}` : ""}
             </option>
           ))}
         </select>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, borderLeft: "1px solid #e2e8f0", paddingLeft: 12, marginLeft: 4 }}>
+          <label style={{ fontSize: ".78rem", fontWeight: 700, color: "#475569" }}>Vencimento de</label>
+          <input type="date" style={s.dateInput} value={filtroDe} onChange={e => setFiltroDe(e.target.value)} />
+          <label style={{ fontSize: ".78rem", fontWeight: 700, color: "#475569" }}>até</label>
+          <input type="date" style={s.dateInput} value={filtroAte} onChange={e => setFiltroAte(e.target.value)} />
+          {(filtroDe || filtroAte) && (
+            <button onClick={() => { setFiltroDe(""); setFiltroAte(""); }} title="Limpar filtro"
+              style={{ background: "transparent", border: "1px solid #cbd5e1", padding: "6px 10px", borderRadius: 6, cursor: "pointer", fontSize: ".78rem", color: "#475569", fontWeight: 600 }}>
+              limpar
+            </button>
+          )}
+        </div>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: ".8rem", fontWeight: 600, color: "#475569", cursor: "pointer" }}>
+          <input type="checkbox" checked={ocultarOk} onChange={e => setOcultarOk(e.target.checked)} />
+          Ocultar OK
+        </label>
         {conjunto && (
-          <button style={s.btn("#1a3a5c")} onClick={imprimir} title="Imprimir relatório do conjunto">
+          <button style={{ ...s.btn("#1a3a5c"), marginLeft: "auto" }} onClick={imprimir} title="Imprimir relatório do conjunto">
             <Printer size={16} /> Imprimir
           </button>
         )}
@@ -250,30 +293,27 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
                     <table style={s.tabela}>
                       <thead>
                         <tr>
-                          <th style={{ ...s.th, width: 34 }}></th>
+                          <th style={{ ...s.th, width: 22 }}></th>
                           <th style={s.th}>Documento</th>
-                          <th style={{ ...s.th, width: 130 }}>Vencimento</th>
-                          <th style={{ ...s.th, width: 150 }}>Situação</th>
-                          <th style={{ ...s.th, width: 100 }} className="no-print"></th>
+                          <th style={{ ...s.th, width: 110 }}>Vencimento</th>
+                          <th style={s.th}>Situação</th>
+                          <th style={{ ...s.th, width: 82 }} className="no-print"></th>
                         </tr>
                       </thead>
                       <tbody>
                         {veic.linhas[grupo].map(l => (
                           <tr key={l.tipo.id}>
                             <td style={s.td}><span style={s.bola(l.status)} /></td>
-                            <td style={s.td}>
-                              <div style={{ fontWeight: 700, color: "#0f172a" }}>{l.tipo.label}</div>
-                              <div style={{ fontSize: ".72rem", color: "#94a3b8", marginTop: 2 }}>{l.tipo.desc}</div>
-                            </td>
+                            <td style={{ ...s.td, fontWeight: 700, color: "#0f172a" }}>{l.tipo.label}</td>
                             <td style={{ ...s.td, fontWeight: 700, color: "#0f172a" }}>
                               {l.rec?.venc ? fmtDate(l.rec.venc) : "—"}
                             </td>
                             <td style={s.td}>
                               <span style={s.chip(l.status)}>{STATUS_LBL[l.status]}</span>
                               {l.dias !== null && l.status !== "sem_data" && (
-                                <div style={{ fontSize: ".7rem", color: STATUS_COR[l.status].cor, marginTop: 3 }}>
-                                  {l.dias < 0 ? `vencido há ${Math.abs(l.dias)} dia${Math.abs(l.dias) > 1 ? "s" : ""}` : `vence em ${l.dias} dia${l.dias === 1 ? "" : "s"}`}
-                                </div>
+                                <span style={{ fontSize: ".72rem", color: STATUS_COR[l.status].cor, marginLeft: 8, fontWeight: 600 }}>
+                                  {l.dias < 0 ? `venceu há ${Math.abs(l.dias)}d` : `em ${l.dias}d`}
+                                </span>
                               )}
                             </td>
                             <td style={s.td} className="no-print">
@@ -282,7 +322,7 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
                                 onClick={() => onEditar && onEditar(veic.placa, l.tipo)}
                                 title="Abrir para editar / lançar"
                               >
-                                <Pen size={12} /> {l.rec ? "Editar" : "Lançar"}
+                                <Pen size={11} /> {l.rec ? "Editar" : "Lançar"}
                               </button>
                             </td>
                           </tr>
