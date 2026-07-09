@@ -306,7 +306,7 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
           if (est.psi)   parts.push(`PSI: ${est.psi}`);
           const tip = `Estepe${parts.length ? " — " + parts.join(" | ") : " (vazio)"}`;
           return (
-            <div style={{
+            <div className="estepe-box" style={{
               position: "absolute",
               top: esquemaId?.startsWith("cavalo") ? 38 : 8,
               right: 8,
@@ -315,8 +315,9 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
               display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
               zIndex: 5,
             }}>
-              <div style={{ fontSize: ".55rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Estepe</div>
+              <div className="estepe-lbl" style={{ fontSize: ".55rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Estepe</div>
               <div
+                className="estepe-card"
                 onClick={() => setEditando({ posicao: "EST", dados: est, isEstepe: true })}
                 title={tip}
                 style={{
