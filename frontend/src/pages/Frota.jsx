@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy, setDoc, deleteDoc, doc, updateDoc, where } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, setDoc, deleteDoc, doc, updateDoc, where, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -194,9 +194,13 @@ export default function Frota() {
   const [bmVigencia, setBmVigencia] = useState("");
   const [bmSalvando, setBmSalvando] = useState(false);
 
-  function carregar() {
-    getDocs(query(collection(db, "veiculos"), orderBy("placa")))
-      .then(snap => {
+  // no-op — mantida por compat com chamadas espalhadas. onSnapshot já atualiza.
+  function carregar() { return Promise.resolve(); }
+
+  useEffect(() => {
+    const unsubVeic = onSnapshot(
+      query(collection(db, "veiculos"), orderBy("placa")),
+      snap => {
         const seen = new Set();
         setVeiculos(snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
@@ -209,16 +213,17 @@ export default function Frota() {
           })
         );
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }
-
-  useEffect(() => {
-    carregar();
-    getDocs(query(collection(db, "motoristas"), orderBy("nome")))
-      .then(snap => setListaMotoristas(snap.docs.map(d => d.data().nome).filter(Boolean)));
-    const hoje = new Date();
-    getDocs(collection(db, "ferias")).then(snap => {
+      },
+      err => { console.warn("veiculos onSnapshot:", err); setLoading(false); }
+    );
+    const unsubMot = onSnapshot(
+      query(collection(db, "motoristas"), orderBy("nome")),
+      snap => setListaMotoristas(snap.docs.map(d => d.data().nome).filter(Boolean)),
+      err => console.warn("motoristas onSnapshot:", err)
+    );
+    // Férias em tempo real também
+    const unsubFerias = onSnapshot(collection(db, "ferias"), snap => {
+      const hoje = new Date();
       const ativos = new Set();
       snap.docs.forEach(d => {
         const { motorista, inicio, fim } = d.data();
@@ -228,7 +233,12 @@ export default function Frota() {
         if (hoje >= ini && hoje <= end) ativos.add(motorista);
       });
       setFeriasAtivas(ativos);
-    });
+    }, err => console.warn("ferias onSnapshot:", err));
+    return () => {
+      try { unsubVeic(); }   catch {}
+      try { unsubMot(); }    catch {}
+      try { unsubFerias(); } catch {}
+    };
   }, []);
 
   function abrirNovo() { setForm(VAZIO); setEditId(null); setModal(true); }
