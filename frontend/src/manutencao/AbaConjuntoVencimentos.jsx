@@ -19,10 +19,11 @@ const STATUS_ORDER = { vencido: 0, alerta: 1, sem_data: 2, ok: 3 };
 const STATUS_COR = {
   vencido:  { bg: "#fef2f2", cor: "#991b1b", pt: "#dc2626" },
   alerta:   { bg: "#fef3c7", cor: "#78350f", pt: "#d97706" },
+  agendado: { bg: "#dbeafe", cor: "#1e40af", pt: "#2563eb" },
   ok:       { bg: "#dcfce7", cor: "#166534", pt: "#16a34a" },
   sem_data: { bg: "#f1f5f9", cor: "#475569", pt: "#94a3b8" },
 };
-const STATUS_LBL = { vencido: "Vencido", alerta: "Alerta", ok: "OK", sem_data: "Sem registro" };
+const STATUS_LBL = { vencido: "Vencido", alerta: "Alerta", agendado: "Agendado", ok: "OK", sem_data: "Sem registro" };
 
 const s = {
   wrap: { display: "flex", flexDirection: "column", gap: 14 },
