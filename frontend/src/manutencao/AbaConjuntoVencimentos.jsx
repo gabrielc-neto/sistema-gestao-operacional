@@ -6,7 +6,9 @@ import { useState, useMemo } from "react";
 import { Truck, Printer, AlertTriangle, CheckCircle2, Clock, HelpCircle, Pen } from "lucide-react";
 
 const CAMPOS_CARRETA = ["c1", "c2", "c3", "carreta1", "carreta2", "carreta3", "carreta"];
-const GRUPOS_ORDEM = ["Documentação", "Motorista", "Mecânica"];
+// Grupos que aparecem nessa aba. "Documentação" foi removido a pedido — quem quer
+// documentação usa a aba Alertas / Por Veículo (que continuam com o grupo).
+const GRUPOS_ORDEM = ["Motorista", "Mecânica"];
 // Documentos que NÃO se aplicam por padrão a cada tipo de veículo.
 // (User ainda pode ligar/desligar individualmente via documentosAplicaveis no cadastro.)
 const EXCLUIR_POR_TIPO_VEIC = {
@@ -108,6 +110,8 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
       const excluidos = new Set(EXCLUIR_POR_TIPO_VEIC[tipoVeic] || []);
       const linhas = [];
       TIPOS.forEach(tipo => {
+        // Documentação NÃO entra na aba Conjunto (usa Alertas/Por Veículo)
+        if (tipo.grupo === "Documentação") return;
         if (tipo.grupo === "Motorista" && !incluirGruposMotorista) return;
         // Se veículo tem documentosAplicaveis customizado, respeita ele (ignora blacklist).
         // Senão aplica blacklist padrão por tipo de veículo.
