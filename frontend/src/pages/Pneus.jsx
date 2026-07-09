@@ -4,13 +4,14 @@ import { collection, getDocs, query, orderBy, addDoc, updateDoc, doc, onSnapshot
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
-import { Package, MapPin, ClipboardCheck, RefreshCw, LayoutDashboard } from "lucide-react";
+import { Package, MapPin, ClipboardCheck, RefreshCw, LayoutDashboard, ShoppingCart } from "lucide-react";
 import { STATUS_PNEU } from "../pneus/esquemas";
 import AbaEstoque from "../pneus/AbaEstoque";
 import AbaFrota from "../pneus/AbaFrota";
 import AbaInspecao from "../pneus/AbaInspecao";
 import AbaRecapagem from "../pneus/AbaRecapagem";
 import AbaDashboard from "../pneus/AbaDashboard";
+import AbaCompras from "../pneus/AbaCompras";
 
 // Normaliza nome pra comparação (case + espaço)
 const normNome = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -41,6 +42,7 @@ const s = {
 
 const ABAS = [
   { id: "estoque",    label: "Estoque",     icon: Package,        accent: "#059669" },
+  { id: "compras",    label: "Compras",     icon: ShoppingCart,   accent: "#16a34a" },
   { id: "frota",      label: "Frota",       icon: MapPin,         accent: "#2563eb" },
   { id: "inspecao",   label: "Inspeção",    icon: ClipboardCheck, accent: "#7c3aed" },
   { id: "recapagem",  label: "Recapagem",   icon: RefreshCw,      accent: "#b45309" },
@@ -184,6 +186,7 @@ export default function Pneus() {
 
         {/* Conteúdo por aba — placeholders serão substituídos nas próximas fases */}
         {aba === "estoque"   && <AbaEstoque pneus={pneus} setPneus={setPneus} fornecedores={fornecedores} garantirFornecedor={garantirFornecedor} quemSou={quemSou} />}
+        {aba === "compras"   && <AbaCompras pneus={pneus} setPneus={setPneus} fornecedores={fornecedores} garantirFornecedor={garantirFornecedor} quemSou={quemSou} />}
         {aba === "frota"     && <AbaFrota pneus={pneus} setPneus={setPneus} profile={profile} />}
         {aba === "inspecao"  && <AbaInspecao pneus={pneus} setPneus={setPneus} profile={profile} />}
         {aba === "recapagem" && <AbaRecapagem pneus={pneus} setPneus={setPneus} fornecedores={fornecedores} garantirFornecedor={garantirFornecedor} quemSou={quemSou} />}
