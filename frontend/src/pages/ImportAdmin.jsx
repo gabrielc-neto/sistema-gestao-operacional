@@ -276,15 +276,17 @@ export default function ImportAdmin() {
 
   return (
     <div style={s.wrap}>
-      <header style={s.header}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+      <header style={s.header} className="pg-header">
+        <div className="pg-header-center" style={{ display:"flex", alignItems:"center", gap:12 }}>
           <LogoPontual height={36} variant="white" />
           <h1 style={s.title}>Importação de Dados — Planilha Frota</h1>
         </div>
-        <button style={s.backBtn} onClick={() => navigate("/dashboard")}>← Dashboard</button>
+        <div className="pg-header-actions">
+          <button style={s.backBtn} onClick={() => navigate("/dashboard")}>← Dashboard</button>
+        </div>
       </header>
 
-      <main style={s.main}>
+      <main style={s.main} className="pg-body">
         <div style={s.card}>
           <h2 style={s.cardTitle}>O que será importado</h2>
           <div style={s.preview}>

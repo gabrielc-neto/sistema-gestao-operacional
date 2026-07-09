@@ -441,3 +441,87 @@ input, select, textarea, button { font-family: inherit; }
     padding: 0 !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   REGRAS GERAIS DE SEGURANÇA — atacam padrões inline problemáticos
+   nas páginas antigas sem precisar tocar cada arquivo JSX.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Colapsar grids inline com colunas "600px 1fr", "1fr 320px", etc. em mobile */
+@media (max-width: 900px) {
+  /* Grids com 2 cols onde uma tem largura px fixa acima de 500 */
+  [style*="gridTemplateColumns"][style*="620px"],
+  [style*="gridTemplateColumns"][style*="600px"],
+  [style*="gridTemplateColumns"][style*="580px"],
+  [style*="gridTemplateColumns"][style*="1fr 320px 1fr"],
+  [style*="gridTemplateColumns"][style*="1fr 300px 1fr"],
+  [style*="gridTemplateColumns"][style*="180px 1fr 110px 130px"] {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  /* 2 colunas do tipo "1fr 1fr" viram 1 col em telas realmente pequenas */
+  [style*="gridTemplateColumns: \"1fr 1fr\""] {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media (max-width: 640px) {
+  /* Header padrão: label + input fixo vira coluna */
+  [style*="gridTemplateColumns"][style*="180px 1fr"],
+  [style*="gridTemplateColumns"][style*="160px 1fr"],
+  [style*="gridTemplateColumns"][style*="140px 1fr"],
+  [style*="gridTemplateColumns"][style*="120px 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+  }
+  /* Grid de KPIs — repeat com auto-fit e minmax > 200px vira 2 colunas fixas */
+  [style*="gridTemplateColumns"][style*="minmax(240px"],
+  [style*="gridTemplateColumns"][style*="minmax(260px"],
+  [style*="gridTemplateColumns"][style*="minmax(280px"],
+  [style*="gridTemplateColumns"][style*="minmax(300px"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  /* Estepe e ícones fixos com 80px 1fr colapsam */
+  [style*="gridTemplateColumns"][style*="80px 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  /* Header sticky que empilha ícones — permite flex-wrap */
+  header[style*="display: flex"], header[style*="display:flex"],
+  div[style*="justifyContent: space-between"][style*="alignItems: center"] {
+    flex-wrap: wrap;
+  }
+  /* Modais grandes viram bottom-sheet quando têm maxWidth px */
+  [style*="maxWidth"][style*="500px"][style*="borderRadius"],
+  [style*="maxWidth"][style*="520px"][style*="borderRadius"],
+  [style*="maxWidth"][style*="560px"][style*="borderRadius"],
+  [style*="maxWidth"][style*="600px"][style*="borderRadius"] {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin-top: auto !important;
+  }
+}
+
+/* Tabelas grandes ganham scroll horizontal em qualquer tela pequena */
+@media (max-width: 900px) {
+  main table, .pg-body table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  /* mas só se a tabela não estiver dentro de um checklist que precisa colapsar */
+  main table.no-wrap-collapse { white-space: normal; }
+}
+
+/* Padding lateral de containers com padding fixo alto */
+@media (max-width: 640px) {
+  [style*="padding: 20px"], [style*="padding: 24px"], [style*="padding: 32px"] {
+    padding: 12px !important;
+  }
+  [style*="padding: \"20px\""], [style*="padding: \"24px\""] {
+    padding: 12px !important;
+  }
+}

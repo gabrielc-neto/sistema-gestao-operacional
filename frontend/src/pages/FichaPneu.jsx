@@ -201,18 +201,20 @@ export default function FichaPneu() {
 
   return (
     <div style={s.root}>
-      <header style={s.header}>
-        <div style={s.headerLeft}>
+      <header style={s.header} className="pg-header">
+        <div style={s.headerLeft} className="pg-header-center">
           <LogoPontual height={30} />
           <div>
             <h1 style={{ margin: 0, color: "#1a3a5c", fontSize: "1.05rem", fontWeight: 800 }}>Ficha do Pneu</h1>
             <p style={{ margin: 0, fontSize: ".72rem", color: "#64748b" }}>Histórico completo</p>
           </div>
         </div>
-        <button style={s.backBtn} onClick={() => navigate("/pneus")}><ArrowLeft size={14} /> Voltar</button>
+        <div className="pg-header-actions">
+          <button style={s.backBtn} onClick={() => navigate("/pneus")}><ArrowLeft size={14} /> Voltar</button>
+        </div>
       </header>
 
-      <main style={s.main}>
+      <main style={s.main} className="pg-body">
         {/* HEADER DO PNEU */}
         <div style={s.headerCard}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: 10, flexWrap: "wrap" }}>
