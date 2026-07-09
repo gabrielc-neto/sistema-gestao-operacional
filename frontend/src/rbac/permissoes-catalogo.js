@@ -44,6 +44,7 @@ const EXTRAS = [
   { nome: "manutencao.lavagem",       descricao: "Ver aba Lavagem",           modulo: "manutencao", acao: "aba_lavagem" },
   { nome: "manutencao.lubrificacao",  descricao: "Ver aba Lubrificação",      modulo: "manutencao", acao: "aba_lubrificacao" },
   { nome: "manutencao.calibragem",    descricao: "Ver aba Calibragem",        modulo: "manutencao", acao: "aba_calibragem" },
+  { nome: "manutencao.estoque",       descricao: "Ver aba Estoque (catálogo + entrada/saída de insumos)", modulo: "manutencao", acao: "aba_estoque" },
   { nome: "manutencao.os_abertura",   descricao: "Ver aba Abertura de OS",                 modulo: "manutencao", acao: "aba_os_abertura" },
   { nome: "manutencao.os_lancamento", descricao: "Ver aba Lançamento de OS (+ PDF/Ver)",   modulo: "manutencao", acao: "aba_os_lancamento" },
   { nome: "manutencao.nf",            descricao: "Ver aba Lançamento de NF",               modulo: "manutencao", acao: "aba_nf" },

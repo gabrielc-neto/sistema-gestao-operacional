@@ -248,5 +248,21 @@ service cloud.firestore {
       allow update: if temPermissao('manutencao.editar') || isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
+
+    // Estoque — catálogo de insumos (óleo, filtros, peças, etc)
+    match /estoque_itens/{id} {
+      allow read:   if isAtivo();
+      allow create: if temPermissao('manutencao.criar') || isAtivo();
+      allow update: if temPermissao('manutencao.editar') || isAtivo();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Estoque — movimentações (entrada/saída, log)
+    match /estoque_movimentacoes/{id} {
+      allow read:   if isAtivo();
+      allow create: if temPermissao('manutencao.criar') || isAtivo();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
   }
 }

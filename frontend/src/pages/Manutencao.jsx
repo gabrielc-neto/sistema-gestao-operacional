@@ -13,9 +13,10 @@ import LogoPontual from "../components/LogoPontual";
 import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
 import AbaControleRotina from "../manutencao/AbaControleRotina";
+import AbaEstoque from "../manutencao/AbaEstoque";
 import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
-  FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet, Gauge, SprayCan,
+  FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet, Gauge, SprayCan, Package,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -981,8 +982,8 @@ export default function Manutencao() {
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
-  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","os","os_lanc","lancamento","cadastros"];
-  const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavagem:"lavagem", lubrificacao:"lubrificacao", calibragem:"calibragem", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","os","os_lanc","lancamento","cadastros"];
+  const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavagem:"lavagem", lubrificacao:"lubrificacao", calibragem:"calibragem", estoque:"estoque", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
     (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
     podeVerAba("por_veiculo")    ? "veiculo" :
@@ -993,6 +994,7 @@ export default function Manutencao() {
     podeVerAba("lavagem")        ? "lavagem" :
     podeVerAba("lubrificacao")   ? "lubrificacao" :
     podeVerAba("calibragem")     ? "calibragem" :
+    podeVerAba("estoque")        ? "estoque" :
     podeVerAba("os_abertura")    ? "os" :
     podeVerAba("os_lancamento")  ? "os_lanc" :
     podeVerAba("nf")             ? "lancamento" :
@@ -2481,6 +2483,13 @@ export default function Manutencao() {
           </div>
         )}
 
+        {podeVerAba("estoque") && (
+          <div style={s.navGroup}>
+            <span style={s.navGroupLabel}>Insumos</span>
+            <NavTab icon={Package} label="Estoque" active={aba==="estoque"} onClick={() => setAba("estoque")} accent="#0f172a" />
+          </div>
+        )}
+
         {(podeVerAba("os_abertura") || podeVerAba("os_lancamento")) && (
           <div style={s.navGroup}>
             <span style={s.navGroupLabel}>Ordens de Serviço</span>
@@ -2858,6 +2867,16 @@ export default function Manutencao() {
             TIPOS={TIPOS}
             calcStatus={calcStatus}
             onEditar={(placa, tipo) => abrirModal(placa, tipo)}
+          />
+        </main>
+      )}
+
+      {/* ── ABA: ESTOQUE (entrada/saída de itens) ──────────────────── */}
+      {aba === "estoque" && podeVerAba("estoque") && (
+        <main style={s.main} className="pg-body">
+          <AbaEstoque
+            veiculos={veiculos}
+            quemSou={() => profile?.email || profile?.nome || "—"}
           />
         </main>
       )}
