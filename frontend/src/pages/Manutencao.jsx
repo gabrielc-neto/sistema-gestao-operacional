@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   collection, getDocs, setDoc, deleteDoc, addDoc, updateDoc,
-  doc, query, orderBy,
+  doc, query, orderBy, onSnapshot,
 } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "../firebase/config";
@@ -1236,9 +1236,96 @@ export default function Manutencao() {
     }
   }
 
-  // carga inicial no mount
+  // Carga em tempo real (onSnapshot) — qualquer alteração em outra tela ou máquina
+  // aparece aqui automaticamente. Cleanup no unmount desconecta todos os listeners.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { carregarTudo(); }, []);
+  useEffect(() => {
+    setLoading(true);
+    const normPloc = (p) => (p || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const carregados = { m: false, v: false, mot: false, os: false, lanc: false, cat: false, tc: false };
+    const marcaCarregado = (k) => {
+      carregados[k] = true;
+      if (Object.values(carregados).every(Boolean)) setLoading(false);
+    };
+
+    const unsubs = [
+      // manutencoes → registros + legacy + todosRegistros
+      onSnapshot(collection(db, "manutencoes"), snap => {
+        const map = {}, leg = [], todos = [];
+        snap.docs.forEach(d => {
+          const data = { id: d.id, ...d.data() };
+          if (data.tipo) {
+            map[`${normPloc(data.placa)}__${data.tipo}`] = data;
+            todos.push(data);
+          } else {
+            leg.push(data);
+          }
+        });
+        setRegistros(map);
+        setTodosRegistros(todos);
+        setLegacy(leg);
+        marcaCarregado("m");
+      }, e => { console.warn("manutencoes onSnapshot:", e); marcaCarregado("m"); }),
+
+      // veículos → veiculos (só ativos, ordenado por placa)
+      onSnapshot(query(collection(db, "veiculos"), orderBy("placa")), snap => {
+        const vs = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(v => v.status !== "inativo")
+          .sort((a, b) => (a.placa || "").localeCompare(b.placa || ""));
+        setVeiculos(vs);
+        // fixa primeira placa se ainda não estava selecionada
+        setPlaca(prev => (vs.length > 0 && (!prev || !vs.find(v => v.placa === prev))) ? vs[0].placa : prev);
+        marcaCarregado("v");
+      }, e => { console.warn("veiculos onSnapshot:", e); marcaCarregado("v"); }),
+
+      // motoristas → só ativos
+      onSnapshot(collection(db, "motoristas"), snap => {
+        const mots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const motsAtivos = mots
+          .filter(m => {
+            const st = (m.status || "").toString().toLowerCase().trim();
+            return st === "ativo" || st === "" || st === "ativa";
+          })
+          .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+        setMotoristas(motsAtivos);
+        marcaCarregado("mot");
+      }, e => { console.warn("motoristas onSnapshot:", e); marcaCarregado("mot"); }),
+
+      // ordens_servico
+      onSnapshot(collection(db, "ordens_servico"), snap => {
+        const oss = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        oss.sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""));
+        setOrdensServico(oss);
+        marcaCarregado("os");
+      }, e => { console.warn("ordens_servico onSnapshot:", e); marcaCarregado("os"); }),
+
+      // lancamentos_os
+      onSnapshot(collection(db, "lancamentos_os"), snap => {
+        const lancs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        lancs.sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""));
+        setLancamentos(lancs);
+        marcaCarregado("lanc");
+      }, e => { console.warn("lancamentos_os onSnapshot:", e); marcaCarregado("lanc"); }),
+
+      // itens_manutencao (catálogo)
+      onSnapshot(collection(db, "itens_manutencao"), snap => {
+        const cat = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        cat.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+        setItensCatalogo(cat);
+        marcaCarregado("cat");
+      }, e => { console.warn("itens_manutencao onSnapshot:", e); marcaCarregado("cat"); }),
+
+      // tipos_manutencao_custom
+      onSnapshot(collection(db, "tipos_manutencao_custom"), snap => {
+        const tcs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        tcs.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
+        setTiposCustom(tcs);
+        marcaCarregado("tc");
+      }, e => { console.warn("tipos_manutencao_custom onSnapshot:", e); marcaCarregado("tc"); }),
+    ];
+    return () => unsubs.forEach(u => { try { u(); } catch {} });
+  }, []);
 
   const alertaCount = useMemo(() => {
     const novosPend  = Object.values(registros).filter(r => ["vencido","alerta"].includes(calcStatus(r.venc))).length;
