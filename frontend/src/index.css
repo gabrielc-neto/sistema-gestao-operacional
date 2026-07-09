@@ -377,6 +377,40 @@ input, select, textarea, button { font-family: inherit; }
   .conjunto-wrap > div > div:has(table) { overflow-x: auto; }
 }
 
+/* ── Pneus: estepe vira barra no topo em mobile (não sobrepõe o eixo) ── */
+@media (max-width: 900px) {
+  .estepe-box {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin: 0 0 8px !important;
+    padding: 6px 12px !important;
+    align-self: flex-end !important;
+    max-width: 180px !important;
+  }
+  .estepe-box .estepe-lbl { font-size: .72rem !important; }
+  .estepe-box .estepe-card {
+    width: 40px !important;
+    height: 62px !important;
+    font-size: .62rem !important;
+  }
+}
+@media (max-width: 640px) {
+  .estepe-box {
+    align-self: stretch !important;
+    max-width: 100% !important;
+    justify-content: space-between !important;
+  }
+  .estepe-box .estepe-card {
+    width: 46px !important;
+    height: 70px !important;
+    font-size: .68rem !important;
+  }
+}
+
 /* ── Pneus: aba Inspeção — grids fixos viram 1 col em mobile ── */
 /* Ficha ganha scroll horizontal se algo internamente ainda for grande */
 @media (max-width: 1024px) {
