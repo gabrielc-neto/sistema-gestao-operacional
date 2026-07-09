@@ -126,8 +126,8 @@ export default function Pneus() {
 
   return (
     <div style={s.root}>
-      <header style={s.header}>
-        <div style={s.headerLeft}>
+      <header style={s.header} className="pg-header">
+        <div style={s.headerLeft} className="pg-header-center">
           <LogoPontual height={34} />
           <div>
             <h1 style={{ margin: 0, color: "#1a3a5c", fontSize: "1.15rem", fontWeight: 800 }}>Gestão de Pneus</h1>
@@ -136,13 +136,13 @@ export default function Pneus() {
             </p>
           </div>
         </div>
-        <div style={s.headerRight}>
+        <div style={s.headerRight} className="pg-header-actions">
           <button style={s.backBtn} onClick={() => navigate("/dashboard")}>← Dashboard</button>
         </div>
       </header>
 
       {/* Navbar de abas */}
-      <div style={s.navGroups} className="pneus-nav">
+      <div style={s.navGroups} className="pneus-nav tabs-scroll">
         {ABAS.map(a => {
           const Icon = a.icon;
           const active = aba === a.id;
@@ -161,9 +161,9 @@ export default function Pneus() {
         })}
       </div>
 
-      <main style={s.main}>
+      <main style={s.main} className="pg-body">
         {/* KPIs sempre visíveis no topo */}
-        <div style={s.kpiGrid}>
+        <div style={s.kpiGrid} className="pg-stats">
           <div style={s.kpiCard("linear-gradient(135deg, #1a3a5c, #234775)", "#fff")}>
             <div style={s.kpiLabel}>Total de pneus</div>
             <div style={s.kpiValor}>{contadores.total}</div>

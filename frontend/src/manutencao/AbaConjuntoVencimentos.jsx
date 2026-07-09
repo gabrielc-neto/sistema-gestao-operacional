@@ -191,8 +191,8 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
   };
 
   return (
-    <div style={s.wrap}>
-      <div style={s.toolbar} className="no-print">
+    <div style={s.wrap} className="conjunto-wrap">
+      <div style={s.toolbar} className="no-print conjunto-toolbar">
         <Truck size={18} color="#2563eb" />
         <label style={{ fontSize: ".82rem", fontWeight: 700, color: "#475569" }}>Cavalo:</label>
         <select style={s.select} value={placaCavalo} onChange={e => setPlacaCavalo(e.target.value)}>
