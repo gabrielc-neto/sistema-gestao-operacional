@@ -1,0 +1,717 @@
+// Aba Estoque — controle de entrada/saída de itens (óleo, filtros, peças, etc).
+// Diferencia unidade automaticamente por categoria.
+// Coleções: estoque_itens (catálogo) + estoque_movimentacoes (log).
+
+import { useState, useEffect, useMemo } from "react";
+import {
+  collection, onSnapshot, addDoc, updateDoc, doc, runTransaction, query, orderBy
+} from "firebase/firestore";
+import { db } from "../firebase/config";
+import {
+  Package, Plus, ArrowDownToLine, ArrowUpFromLine, History,
+  Search, Edit3, Trash2, X, AlertTriangle, TrendingUp, TrendingDown, Droplets
+} from "lucide-react";
+
+// ═══ CATÁLOGO DE CATEGORIAS + UNIDADE PADRÃO ═══
+const CATEGORIAS = [
+  { id: "oleos",       label: "Óleos e Lubrificantes", unidade: "L",  cor: "#0891b2", exemplos: "Óleo motor, caixa, diferencial" },
+  { id: "fluidos",     label: "Fluidos",               unidade: "L",  cor: "#0284c7", exemplos: "Fluido freio, arrefecimento" },
+  { id: "arla",        label: "ARLA 32",               unidade: "L",  cor: "#06b6d4", exemplos: "ARLA em bombonas" },
+  { id: "filtros",     label: "Filtros",               unidade: "UN", cor: "#7c3aed", exemplos: "Óleo, ar, combustível, cabine" },
+  { id: "pecas_mec",   label: "Peças Mecânicas",       unidade: "UN", cor: "#dc2626", exemplos: "Freio, embreagem, correia" },
+  { id: "pecas_ele",   label: "Peças Elétricas",       unidade: "UN", cor: "#f59e0b", exemplos: "Bateria, lâmpada, sensor" },
+  { id: "pneus",       label: "Pneus",                 unidade: "UN", cor: "#0f172a", exemplos: "Pneus novos ou recapados" },
+  { id: "epi",         label: "EPI",                   unidade: "UN", cor: "#059669", exemplos: "Luva, óculos, botina" },
+  { id: "ferramentas", label: "Ferramentas",           unidade: "UN", cor: "#475569", exemplos: "Chave, alicate, macaco" },
+  { id: "outros",      label: "Outros",                unidade: "UN", cor: "#64748b", exemplos: "Qualquer outro item" },
+];
+const UNIDADES = [
+  { id: "L",  label: "Litros"   },
+  { id: "UN", label: "Unidade"  },
+  { id: "KG", label: "Quilos"   },
+  { id: "M",  label: "Metros"   },
+];
+const catMap = Object.fromEntries(CATEGORIAS.map(c => [c.id, c]));
+
+const fmtQ = (q, u) => `${Number(q).toLocaleString("pt-BR", { minimumFractionDigits: u === "L" || u === "KG" ? 2 : 0, maximumFractionDigits: 2 })} ${u}`;
+const fmtBRL = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("pt-BR") : "—";
+
+const s = {
+  wrap: { display: "flex", flexDirection: "column", gap: 14 },
+  head: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, flexWrap: "wrap" },
+  h1: { margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#0f172a" },
+  h2: { margin: "3px 0 0", fontSize: ".8rem", color: "#64748b", fontWeight: 500 },
+
+  subnav: { display: "flex", gap: 4, background: "#f1f5f9", padding: 4, borderRadius: 10, alignSelf: "flex-start" },
+  subtab: (active, cor) => ({
+    padding: "8px 14px", borderRadius: 8, border: "none",
+    background: active ? "#fff" : "transparent",
+    color: active ? cor : "#475569",
+    boxShadow: active ? "0 1px 3px rgba(15,23,42,.1)" : "none",
+    fontWeight: 700, fontSize: ".84rem", cursor: "pointer",
+    display: "inline-flex", alignItems: "center", gap: 6,
+    fontFamily: "inherit",
+  }),
+
+  kpiRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 },
+  kpiCard: (cor, bg) => ({ background: bg, borderRadius: 10, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4, border: "1px solid " + cor + "22" }),
+  kpiN: (cor) => ({ fontSize: "1.5rem", fontWeight: 800, color: cor, lineHeight: 1, fontVariantNumeric: "tabular-nums" }),
+  kpiL: (cor) => ({ fontSize: ".72rem", fontWeight: 700, color: cor, textTransform: "uppercase", letterSpacing: ".05em" }),
+
+  toolbar: { display: "flex", alignItems: "center", gap: 10, background: "#fff", padding: "10px 12px", borderRadius: 10, border: "1px solid #e2e8f0", flexWrap: "wrap" },
+  searchWrap: { position: "relative", flex: "1 1 220px", minWidth: 180 },
+  searchIcon: { position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" },
+  input: { width: "100%", padding: "8px 10px 8px 32px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: ".88rem", outline: "none", fontFamily: "inherit" },
+  select: { padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: ".85rem", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
+  btn: (bg) => ({ padding: "8px 14px", borderRadius: 8, background: bg, color: "#fff", border: "none", cursor: "pointer", fontSize: ".85rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "inherit" }),
+
+  tableWrap: { background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" },
+  tableScroll: { overflowX: "auto" },
+  table: { width: "100%", borderCollapse: "collapse", fontVariantNumeric: "tabular-nums" },
+  th: { padding: "9px 14px", fontSize: ".7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: ".05em", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", textAlign: "left", whiteSpace: "nowrap" },
+  td: { padding: "10px 14px", fontSize: ".85rem", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle", color: "#0f172a" },
+  zebra: { background: "#fafcff" },
+
+  catChip: (cor) => ({ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 6, background: cor + "12", color: cor, fontSize: ".72rem", fontWeight: 700 }),
+  tipoChip: (tipo) => ({
+    display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 6,
+    background: tipo === "entrada" ? "#dcfce7" : "#fee2e2",
+    color: tipo === "entrada" ? "#166534" : "#991b1b",
+    fontSize: ".72rem", fontWeight: 700,
+  }),
+  saldoBaixo: { color: "#dc2626", fontWeight: 800 },
+  saldoOk: { color: "#0f172a", fontWeight: 700 },
+
+  modal: { position: "fixed", inset: 0, background: "rgba(15,23,42,.55)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 },
+  modalBox: { background: "#fff", borderRadius: 12, padding: 20, width: 480, maxWidth: "100%", maxHeight: "92vh", overflowY: "auto", boxShadow: "0 24px 60px rgba(0,0,0,.35)" },
+  modalHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  modalTit: { margin: 0, fontSize: "1rem", fontWeight: 800, color: "#0f172a" },
+  modalClose: { background: "transparent", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4 },
+
+  fRow: { display: "flex", flexDirection: "column", gap: 5, marginBottom: 12 },
+  fLbl: { fontSize: ".72rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: ".04em" },
+  fInp: { padding: "8px 10px", borderRadius: 6, border: "1px solid #cbd5e1", fontFamily: "inherit", fontSize: ".9rem", outline: "none" },
+  fRowGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 },
+  fMsg: { padding: "8px 12px", borderRadius: 6, fontSize: ".82rem", marginBottom: 12 },
+  fMsgErr: { background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca" },
+  fMsgOk:  { background: "#dcfce7", color: "#166534", border: "1px solid #86efac" },
+  fBtns: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 },
+
+  vazio: { padding: "60px 20px", textAlign: "center", color: "#94a3b8", fontSize: ".9rem" },
+  emptyIcon: { color: "#cbd5e1", margin: "0 auto 12px", display: "block" },
+};
+
+// ═══ MODAL: NOVO/EDITAR ITEM ═══
+function ModalItem({ item, onSalvar, onFechar }) {
+  const isEdit = !!item;
+  const [nome, setNome] = useState(item?.nome || "");
+  const [categoria, setCategoria] = useState(item?.categoria || "oleos");
+  const [unidade, setUnidade] = useState(item?.unidade || catMap.oleos.unidade);
+  const [estMin, setEstMin] = useState(item?.estoqueMinimo ?? "");
+  const [erro, setErro] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  // Se muda categoria, sugere unidade
+  useEffect(() => {
+    if (!isEdit) setUnidade(catMap[categoria]?.unidade || "UN");
+  }, [categoria, isEdit]);
+
+  const catAtual = catMap[categoria];
+
+  async function submeter(e) {
+    e.preventDefault();
+    setErro("");
+    if (!nome.trim()) return setErro("Nome é obrigatório");
+    if (nome.trim().length < 3) return setErro("Nome muito curto");
+    setSalvando(true);
+    try {
+      await onSalvar({
+        nome: nome.trim(),
+        categoria,
+        unidade,
+        estoqueMinimo: Number(estMin) || 0,
+        ...(isEdit ? {} : { saldoAtual: 0, custoMedio: 0, ativo: true, criadoEm: new Date().toISOString() }),
+      });
+      onFechar();
+    } catch (err) {
+      setErro("Erro ao salvar: " + err.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div style={s.modal} onClick={onFechar}>
+      <form style={s.modalBox} onClick={e => e.stopPropagation()} onSubmit={submeter}>
+        <div style={s.modalHead}>
+          <h3 style={s.modalTit}>{isEdit ? "Editar item" : "Novo item no catálogo"}</h3>
+          <button type="button" style={s.modalClose} onClick={onFechar}><X size={20} /></button>
+        </div>
+
+        {erro && <div style={{ ...s.fMsg, ...s.fMsgErr }}>{erro}</div>}
+
+        <div style={s.fRow}>
+          <label style={s.fLbl}>Nome do item *</label>
+          <input style={s.fInp} value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Óleo motor 15W40 Ipiranga" autoFocus />
+        </div>
+
+        <div style={s.fRow}>
+          <label style={s.fLbl}>Categoria</label>
+          <select style={s.fInp} value={categoria} onChange={e => setCategoria(e.target.value)}>
+            {CATEGORIAS.map(c => (
+              <option key={c.id} value={c.id}>{c.label}</option>
+            ))}
+          </select>
+          {catAtual && <div style={{ fontSize: ".72rem", color: "#64748b", marginTop: 2 }}>Ex: {catAtual.exemplos}</div>}
+        </div>
+
+        <div style={s.fRowGrid}>
+          <div style={s.fRow}>
+            <label style={s.fLbl}>Unidade</label>
+            <select style={s.fInp} value={unidade} onChange={e => setUnidade(e.target.value)}>
+              {UNIDADES.map(u => (
+                <option key={u.id} value={u.id}>{u.label} ({u.id})</option>
+              ))}
+            </select>
+          </div>
+          <div style={s.fRow}>
+            <label style={s.fLbl}>Estoque mínimo</label>
+            <input style={s.fInp} type="number" step="0.01" min="0" value={estMin} onChange={e => setEstMin(e.target.value)} placeholder="0" />
+          </div>
+        </div>
+
+        <div style={s.fBtns}>
+          <button type="button" style={{ ...s.btn("#f1f5f9"), color: "#475569" }} onClick={onFechar}>Cancelar</button>
+          <button type="submit" style={s.btn("#0f172a")} disabled={salvando}>{salvando ? "Salvando..." : "Salvar"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ═══ MODAL: ENTRADA ═══
+function ModalEntrada({ itens, onSalvar, onFechar }) {
+  const [itemId, setItemId] = useState("");
+  const [qtd, setQtd] = useState("");
+  const [custoUn, setCustoUn] = useState("");
+  const [fornecedor, setFornecedor] = useState("");
+  const [nf, setNf] = useState("");
+  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
+  const [obs, setObs] = useState("");
+  const [erro, setErro] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  const item = itens.find(i => i.id === itemId);
+
+  async function submeter(e) {
+    e.preventDefault();
+    setErro("");
+    if (!item) return setErro("Selecione o item");
+    const q = Number(qtd);
+    if (!q || q <= 0) return setErro("Quantidade deve ser maior que zero");
+    setSalvando(true);
+    try {
+      await onSalvar({
+        tipo: "entrada",
+        itemId: item.id,
+        itemNome: item.nome,
+        itemUnidade: item.unidade,
+        quantidade: q,
+        custoUnitario: Number(custoUn) || 0,
+        custoTotal: (Number(custoUn) || 0) * q,
+        fornecedor: fornecedor.trim() || null,
+        notaFiscal: nf.trim() || null,
+        data,
+        observacao: obs.trim() || null,
+      });
+      onFechar();
+    } catch (err) {
+      setErro("Erro: " + err.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div style={s.modal} onClick={onFechar}>
+      <form style={s.modalBox} onClick={e => e.stopPropagation()} onSubmit={submeter}>
+        <div style={s.modalHead}>
+          <h3 style={s.modalTit}><ArrowDownToLine size={18} color="#059669" /> Registrar entrada</h3>
+          <button type="button" style={s.modalClose} onClick={onFechar}><X size={20} /></button>
+        </div>
+
+        {erro && <div style={{ ...s.fMsg, ...s.fMsgErr }}>{erro}</div>}
+
+        <div style={s.fRow}>
+          <label style={s.fLbl}>Item *</label>
+          <select style={s.fInp} value={itemId} onChange={e => setItemId(e.target.value)} autoFocus>
+            <option value="">— Selecione —</option>
+            {itens.map(i => (
+              <option key={i.id} value={i.id}>{i.nome} · saldo: {fmtQ(i.saldoAtual || 0, i.unidade)}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={s.fRowGrid}>
+          <div style={s.fRow}>
+            <label style={s.fLbl}>Quantidade * {item ? `(${item.unidade})` : ""}</label>
+            <input style={s.fInp} type="number" step="0.01" min="0.01" value={qtd} onChange={e => setQtd(e.target.value)} placeholder="0" />
+          </div>
+          <div style={s.fRow}>
+            <label style={s.fLbl}>Custo unitário (R$)</label>
+            <input style={s.fInp} type="number" step="0.01" min="0" value={custoUn} onChange={e => setCustoUn(e.target.value)} placeholder="0,00" />
+          </div>
+        </div>
+
+        <div style={s.fRowGrid}>
+          <div style={s.fRow}>
+            <label style={s.fLbl}>Data</label>
+            <input style={s.fInp} type="date" value={data} onChange={e => setData(e.target.value)} />
+          </div>
+          <div style={s.fRow}>
+            <label style={s.fLbl}>Nota fiscal</label>
+            <input style={s.fInp} value={nf} onChange={e => setNf(e.target.value)} placeholder="Ex: 12345" />
+          </div>
+        </div>
+
+        <div style={s.fRow}>
+          <label style={s.fLbl}>Fornecedor</label>
+          <input style={s.fInp} value={fornecedor} onChange={e => setFornecedor(e.target.value)} placeholder="Ex: Ipiranga" />
+        </div>
+
+        <div style={s.fRow}>
+          <label style={s.fLbl}>Observação</label>
+          <input style={s.fInp} value={obs} onChange={e => setObs(e.target.value)} placeholder="Opcional" />
+        </div>
+
+        {item && qtd && (
+          <div style={{ ...s.fMsg, ...s.fMsgOk }}>
+            Saldo passará de <strong>{fmtQ(item.saldoAtual || 0, item.unidade)}</strong> para <strong>{fmtQ((item.saldoAtual || 0) + Number(qtd), item.unidade)}</strong>
+          </div>
+        )}
+
+        <div style={s.fBtns}>
+          <button type="button" style={{ ...s.btn("#f1f5f9"), color: "#475569" }} onClick={onFechar}>Cancelar</button>
+          <button type="submit" style={s.btn("#059669")} disabled={salvando}>{salvando ? "Salvando..." : "Registrar entrada"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ═══ MODAL: SAÍDA ═══
+function ModalSaida({ itens, veiculos, onSalvar, onFechar }) {
+  const [itemId, setItemId] = useState("");
+  const [qtd, setQtd] = useState("");
+  const [placa, setPlaca] = useState("");
+  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
+  const [obs, setObs] = useState("");
+  const [erro, setErro] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  const item = itens.find(i => i.id === itemId);
+  const saldo = item?.saldoAtual || 0;
+  const qNum = Number(qtd) || 0;
+  const insuficiente = item && qNum > saldo;
+
+  async function submeter(e) {
+    e.preventDefault();
+    setErro("");
+    if (!item) return setErro("Selecione o item");
+    if (!qNum || qNum <= 0) return setErro("Quantidade deve ser maior que zero");
+    if (insuficiente) return setErro(`Saldo insuficiente. Disponível: ${fmtQ(saldo, item.unidade)}`);
+    setSalvando(true);
+    try {
+      await onSalvar({
+        tipo: "saida",
+        itemId: item.id,
+        itemNome: item.nome,
+        itemUnidade: item.unidade,
+        quantidade: qNum,
+        veiculoPlaca: placa || null,
+        data,
+        observacao: obs.trim() || null,
+      });
+      onFechar();
+    } catch (err) {
+      setErro("Erro: " + err.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div style={s.modal} onClick={onFechar}>
+      <form style={s.modalBox} onClick={e => e.stopPropagation()} onSubmit={submeter}>
+        <div style={s.modalHead}>
+          <h3 style={s.modalTit}><ArrowUpFromLine size={18} color="#dc2626" /> Registrar saída</h3>
+          <button type="button" style={s.modalClose} onClick={onFechar}><X size={20} /></button>
+        </div>
+
+        {erro && <div style={{ ...s.fMsg, ...s.fMsgErr }}>{erro}</div>}
+
+        <div style={s.fRow}>
+          <label style={s.fLbl}>Item *</label>
+          <select style={s.fInp} value={itemId} onChange={e => setItemId(e.target.value)} autoFocus>
+            <option value="">— Selecione —</option>
+            {itens.filter(i => (i.saldoAtual || 0) > 0).map(i => (
+              <option key={i.id} value={i.id}>{i.nome} · disp: {fmtQ(i.saldoAtual || 0, i.unidade)}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={s.fRowGrid}>
+          <div style={s.fRow}>
+            <label style={s.fLbl}>Quantidade * {item ? `(${item.unidade})` : ""}</label>
+            <input style={s.fInp} type="number" step="0.01" min="0.01" value={qtd} onChange={e => setQtd(e.target.value)} placeholder="0" />
+            {item && <div style={{ fontSize: ".72rem", color: insuficiente ? "#dc2626" : "#64748b", marginTop: 2, fontWeight: insuficiente ? 700 : 500 }}>
+              Disponível: {fmtQ(saldo, item.unidade)}
+            </div>}
+          </div>
+          <div style={s.fRow}>
+            <label style={s.fLbl}>Veículo (opcional)</label>
+            <select style={s.fInp} value={placa} onChange={e => setPlaca(e.target.value)}>
+              <option value="">— Nenhum —</option>
+              {veiculos.map(v => (
+                <option key={v.id || v.placa} value={v.placa}>{v.placa}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div style={s.fRow}>
+          <label style={s.fLbl}>Data</label>
+          <input style={s.fInp} type="date" value={data} onChange={e => setData(e.target.value)} />
+        </div>
+
+        <div style={s.fRow}>
+          <label style={s.fLbl}>Observação</label>
+          <input style={s.fInp} value={obs} onChange={e => setObs(e.target.value)} placeholder="Ex: Troca de óleo do SEF-1H24" />
+        </div>
+
+        {item && qNum > 0 && !insuficiente && (
+          <div style={{ ...s.fMsg, ...s.fMsgOk }}>
+            Saldo passará de <strong>{fmtQ(saldo, item.unidade)}</strong> para <strong>{fmtQ(saldo - qNum, item.unidade)}</strong>
+          </div>
+        )}
+
+        <div style={s.fBtns}>
+          <button type="button" style={{ ...s.btn("#f1f5f9"), color: "#475569" }} onClick={onFechar}>Cancelar</button>
+          <button type="submit" style={s.btn("#dc2626")} disabled={salvando || insuficiente}>{salvando ? "Salvando..." : "Registrar saída"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ═══ COMPONENTE PRINCIPAL ═══
+export default function AbaEstoque({ veiculos, quemSou }) {
+  const [subaba, setSubaba] = useState("catalogo");
+  const [itens, setItens] = useState([]);
+  const [movs, setMovs] = useState([]);
+  const [busca, setBusca] = useState("");
+  const [filtroCat, setFiltroCat] = useState("todos");
+  const [filtroTipo, setFiltroTipo] = useState("todos");
+  const [modalItem, setModalItem] = useState(null); // null = fechado, "novo" = novo, obj = editar
+  const [modalEnt, setModalEnt] = useState(false);
+  const [modalSai, setModalSai] = useState(false);
+
+  // Load em tempo real
+  useEffect(() => {
+    const un1 = onSnapshot(query(collection(db, "estoque_itens"), orderBy("nome")), snap => {
+      setItens(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => console.warn("estoque_itens onSnapshot:", err));
+    const un2 = onSnapshot(query(collection(db, "estoque_movimentacoes"), orderBy("criadoEm", "desc")), snap => {
+      setMovs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => console.warn("estoque_movimentacoes onSnapshot:", err));
+    return () => { un1(); un2(); };
+  }, []);
+
+  // Salvar item (catálogo)
+  async function salvarItem(payload) {
+    const dados = {
+      ...payload,
+      atualizadoEm: new Date().toISOString(),
+      atualizadoPor: quemSou?.() || "—",
+    };
+    if (modalItem === "novo") {
+      await addDoc(collection(db, "estoque_itens"), dados);
+    } else {
+      await updateDoc(doc(db, "estoque_itens", modalItem.id), dados);
+    }
+  }
+
+  // Salvar movimentação (transação: atualiza saldo do item)
+  async function salvarMov(payload) {
+    await runTransaction(db, async (tx) => {
+      const itemRef = doc(db, "estoque_itens", payload.itemId);
+      const snap = await tx.get(itemRef);
+      if (!snap.exists()) throw new Error("Item não existe mais");
+      const item = snap.data();
+      const saldoAntes = Number(item.saldoAtual || 0);
+      const q = Number(payload.quantidade);
+      const saldoNovo = payload.tipo === "entrada" ? saldoAntes + q : saldoAntes - q;
+      if (saldoNovo < 0) throw new Error("Saldo insuficiente");
+
+      // Custo médio ponderado (só entrada)
+      let custoMedioNovo = Number(item.custoMedio || 0);
+      if (payload.tipo === "entrada" && payload.custoUnitario > 0) {
+        const valorAntes = saldoAntes * custoMedioNovo;
+        const valorEntrada = q * payload.custoUnitario;
+        custoMedioNovo = saldoNovo > 0 ? (valorAntes + valorEntrada) / saldoNovo : payload.custoUnitario;
+      }
+
+      tx.update(itemRef, { saldoAtual: saldoNovo, custoMedio: custoMedioNovo, atualizadoEm: new Date().toISOString() });
+
+      const movRef = doc(collection(db, "estoque_movimentacoes"));
+      tx.set(movRef, {
+        ...payload,
+        saldoAntes,
+        saldoDepois: saldoNovo,
+        responsavel: quemSou?.() || "—",
+        criadoEm: new Date().toISOString(),
+      });
+    });
+  }
+
+  // KPIs
+  const kpi = useMemo(() => {
+    const totalItens = itens.length;
+    const abaixoMin = itens.filter(i => Number(i.saldoAtual || 0) < Number(i.estoqueMinimo || 0)).length;
+    const valorEstoque = itens.reduce((acc, i) => acc + Number(i.saldoAtual || 0) * Number(i.custoMedio || 0), 0);
+    const hoje = new Date().toISOString().slice(0, 10);
+    const movsHoje = movs.filter(m => m.data === hoje);
+    return {
+      totalItens, abaixoMin, valorEstoque,
+      entradaHoje: movsHoje.filter(m => m.tipo === "entrada").length,
+      saidaHoje: movsHoje.filter(m => m.tipo === "saida").length,
+    };
+  }, [itens, movs]);
+
+  // Lista filtrada — CATÁLOGO
+  const itensFiltrados = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return itens.filter(i => {
+      if (q && !i.nome.toLowerCase().includes(q)) return false;
+      if (filtroCat !== "todos" && i.categoria !== filtroCat) return false;
+      return true;
+    });
+  }, [itens, busca, filtroCat]);
+
+  // Lista filtrada — MOVIMENTAÇÕES
+  const movsFiltradas = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return movs.filter(m => {
+      if (q && !m.itemNome.toLowerCase().includes(q) && !(m.veiculoPlaca || "").toLowerCase().includes(q)) return false;
+      if (filtroTipo !== "todos" && m.tipo !== filtroTipo) return false;
+      return true;
+    });
+  }, [movs, busca, filtroTipo]);
+
+  return (
+    <div style={s.wrap}>
+      <div style={s.head}>
+        <div>
+          <h1 style={s.h1}>Estoque</h1>
+          <p style={s.h2}>Controle de entrada e saída de óleos, filtros, peças e insumos</p>
+        </div>
+      </div>
+
+      {/* KPIs */}
+      <div style={s.kpiRow}>
+        <div style={s.kpiCard("#0f172a", "#f8fafc")}><div style={s.kpiN("#0f172a")}>{kpi.totalItens}</div><div style={s.kpiL("#0f172a")}>Itens cadastrados</div></div>
+        <div style={s.kpiCard("#dc2626", "#fef2f2")}><div style={s.kpiN("#dc2626")}>{kpi.abaixoMin}</div><div style={s.kpiL("#dc2626")}>Abaixo do mínimo</div></div>
+        <div style={s.kpiCard("#059669", "#f0fdf4")}><div style={s.kpiN("#059669")}>{fmtBRL(kpi.valorEstoque)}</div><div style={s.kpiL("#059669")}>Valor em estoque</div></div>
+        <div style={s.kpiCard("#0891b2", "#f0f9ff")}><div style={s.kpiN("#0891b2")}>{kpi.entradaHoje} / {kpi.saidaHoje}</div><div style={s.kpiL("#0891b2")}>Entradas/Saídas hoje</div></div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div style={s.subnav}>
+        <button style={s.subtab(subaba === "catalogo", "#0f172a")} onClick={() => setSubaba("catalogo")}>
+          <Package size={15} /> Catálogo
+        </button>
+        <button style={s.subtab(subaba === "movimentar", "#0f172a")} onClick={() => setSubaba("movimentar")}>
+          <History size={15} /> Movimentações
+        </button>
+      </div>
+
+      {/* CATÁLOGO */}
+      {subaba === "catalogo" && (
+        <>
+          <div style={s.toolbar}>
+            <div style={s.searchWrap}>
+              <Search size={14} style={s.searchIcon} />
+              <input style={s.input} placeholder="Buscar item..." value={busca} onChange={e => setBusca(e.target.value)} />
+            </div>
+            <select style={s.select} value={filtroCat} onChange={e => setFiltroCat(e.target.value)}>
+              <option value="todos">Todas categorias</option>
+              {CATEGORIAS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+            <span style={{ fontSize: ".78rem", color: "#64748b", fontWeight: 600 }}>{itensFiltrados.length} de {itens.length}</span>
+            <button style={{ ...s.btn("#059669"), marginLeft: "auto" }} onClick={() => setModalEnt(true)} disabled={itens.length === 0}>
+              <ArrowDownToLine size={14} /> Entrada
+            </button>
+            <button style={s.btn("#dc2626")} onClick={() => setModalSai(true)} disabled={itens.length === 0}>
+              <ArrowUpFromLine size={14} /> Saída
+            </button>
+            <button style={s.btn("#0f172a")} onClick={() => setModalItem("novo")}>
+              <Plus size={14} /> Novo item
+            </button>
+          </div>
+
+          <div style={s.tableWrap}>
+            {itensFiltrados.length === 0 ? (
+              <div style={s.vazio}>
+                <Droplets size={40} style={s.emptyIcon} />
+                <div>Nenhum item cadastrado ainda.</div>
+                <div style={{ fontSize: ".8rem", marginTop: 4 }}>Clique em "Novo item" pra começar.</div>
+              </div>
+            ) : (
+              <div style={s.tableScroll}>
+                <table style={s.table}>
+                  <thead>
+                    <tr>
+                      <th style={s.th}>Item</th>
+                      <th style={s.th}>Categoria</th>
+                      <th style={s.th}>Saldo</th>
+                      <th style={s.th}>Estoque mínimo</th>
+                      <th style={s.th}>Custo médio</th>
+                      <th style={s.th}>Valor</th>
+                      <th style={s.th}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itensFiltrados.map((it, idx) => {
+                      const cat = catMap[it.categoria];
+                      const abaixoMin = Number(it.saldoAtual || 0) < Number(it.estoqueMinimo || 0);
+                      return (
+                        <tr key={it.id} style={idx % 2 === 1 ? s.zebra : {}}>
+                          <td style={{ ...s.td, fontWeight: 700 }}>{it.nome}</td>
+                          <td style={s.td}>
+                            {cat && <span style={s.catChip(cat.cor)}>{cat.label}</span>}
+                          </td>
+                          <td style={{ ...s.td, ...(abaixoMin ? s.saldoBaixo : s.saldoOk) }}>
+                            {abaixoMin && <AlertTriangle size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />}
+                            {fmtQ(it.saldoAtual || 0, it.unidade)}
+                          </td>
+                          <td style={{ ...s.td, color: "#64748b" }}>{fmtQ(it.estoqueMinimo || 0, it.unidade)}</td>
+                          <td style={{ ...s.td, color: "#475569" }}>{fmtBRL(it.custoMedio || 0)}</td>
+                          <td style={{ ...s.td, fontWeight: 700 }}>{fmtBRL((it.saldoAtual || 0) * (it.custoMedio || 0))}</td>
+                          <td style={{ ...s.td, textAlign: "right" }}>
+                            <button style={{ ...s.btn("#f8fafc"), color: "#475569", border: "1px solid #e2e8f0", padding: "4px 8px", fontSize: ".76rem" }} onClick={() => setModalItem(it)}>
+                              <Edit3 size={11} /> Editar
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* MOVIMENTAÇÕES */}
+      {subaba === "movimentar" && (
+        <>
+          <div style={s.toolbar}>
+            <div style={s.searchWrap}>
+              <Search size={14} style={s.searchIcon} />
+              <input style={s.input} placeholder="Buscar item ou placa..." value={busca} onChange={e => setBusca(e.target.value)} />
+            </div>
+            <select style={s.select} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+              <option value="todos">Todos os tipos</option>
+              <option value="entrada">Só entradas</option>
+              <option value="saida">Só saídas</option>
+            </select>
+            <span style={{ fontSize: ".78rem", color: "#64748b", fontWeight: 600 }}>{movsFiltradas.length} de {movs.length}</span>
+            <button style={{ ...s.btn("#059669"), marginLeft: "auto" }} onClick={() => setModalEnt(true)} disabled={itens.length === 0}>
+              <ArrowDownToLine size={14} /> Entrada
+            </button>
+            <button style={s.btn("#dc2626")} onClick={() => setModalSai(true)} disabled={itens.length === 0}>
+              <ArrowUpFromLine size={14} /> Saída
+            </button>
+          </div>
+
+          <div style={s.tableWrap}>
+            {movsFiltradas.length === 0 ? (
+              <div style={s.vazio}>
+                <History size={40} style={s.emptyIcon} />
+                <div>Nenhuma movimentação ainda.</div>
+              </div>
+            ) : (
+              <div style={s.tableScroll}>
+                <table style={s.table}>
+                  <thead>
+                    <tr>
+                      <th style={s.th}>Data</th>
+                      <th style={s.th}>Tipo</th>
+                      <th style={s.th}>Item</th>
+                      <th style={s.th}>Qtd</th>
+                      <th style={s.th}>Custo</th>
+                      <th style={s.th}>Origem / Destino</th>
+                      <th style={s.th}>Responsável</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {movsFiltradas.map((m, idx) => (
+                      <tr key={m.id} style={idx % 2 === 1 ? s.zebra : {}}>
+                        <td style={s.td}>{fmtDate(m.data)}</td>
+                        <td style={s.td}>
+                          <span style={s.tipoChip(m.tipo)}>
+                            {m.tipo === "entrada" ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                            {m.tipo === "entrada" ? "Entrada" : "Saída"}
+                          </span>
+                        </td>
+                        <td style={{ ...s.td, fontWeight: 600 }}>{m.itemNome}</td>
+                        <td style={{ ...s.td, fontWeight: 700, color: m.tipo === "entrada" ? "#166534" : "#991b1b" }}>
+                          {m.tipo === "entrada" ? "+" : "−"}{fmtQ(m.quantidade, m.itemUnidade)}
+                        </td>
+                        <td style={{ ...s.td, color: "#475569" }}>
+                          {m.tipo === "entrada" && m.custoTotal ? fmtBRL(m.custoTotal) : "—"}
+                        </td>
+                        <td style={{ ...s.td, color: "#475569", fontSize: ".78rem" }}>
+                          {m.tipo === "entrada"
+                            ? (m.fornecedor ? `Fornec: ${m.fornecedor}${m.notaFiscal ? " · NF " + m.notaFiscal : ""}` : m.notaFiscal ? `NF ${m.notaFiscal}` : "—")
+                            : (m.veiculoPlaca ? `Placa: ${m.veiculoPlaca}` : "—")}
+                        </td>
+                        <td style={{ ...s.td, color: "#64748b", fontSize: ".78rem" }}>{m.responsavel || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Modais */}
+      {modalItem && (
+        <ModalItem
+          item={modalItem === "novo" ? null : modalItem}
+          onSalvar={salvarItem}
+          onFechar={() => setModalItem(null)}
+        />
+      )}
+      {modalEnt && (
+        <ModalEntrada
+          itens={itens}
+          onSalvar={salvarMov}
+          onFechar={() => setModalEnt(false)}
+        />
+      )}
+      {modalSai && (
+        <ModalSaida
+          itens={itens}
+          veiculos={veiculos || []}
+          onSalvar={salvarMov}
+          onFechar={() => setModalSai(false)}
+        />
+      )}
+    </div>
+  );
+}
