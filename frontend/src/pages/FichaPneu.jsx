@@ -61,10 +61,10 @@ function vidaCor(vida) {
 function sulcoStatus(sulco) {
   const v = Number(sulco);
   if (!Number.isFinite(v) || v <= 0) return { bg: "#f1f5f9", cor: "#64748b", label: "Sem medida" };
-  if (v < 3)  return { bg: "#fee2e2", cor: "#7f1d1d", label: "Crítico" };
-  if (v < 4)  return { bg: "#ffedd5", cor: "#7c2d12", label: "Atenção" };
-  if (v < 6)  return { bg: "#fef3c7", cor: "#78350f", label: "OK — trocar em breve" };
-  return { bg: "#dcfce7", cor: "#14532d", label: "OK" };
+  if (v <= 4)  return { bg: "#fee2e2", cor: "#7f1d1d", label: "Trocar" };       // ≤ 4 mm
+  if (v <= 6)  return { bg: "#ffedd5", cor: "#7c2d12", label: "Atenção" };      // 5-6 mm
+  if (v <  15) return { bg: "#fef3c7", cor: "#78350f", label: "Bom" };          // 7-14 mm
+  return { bg: "#dcfce7", cor: "#14532d", label: "Novo" };                       // ≥ 15 mm
 }
 
 export default function FichaPneu() {

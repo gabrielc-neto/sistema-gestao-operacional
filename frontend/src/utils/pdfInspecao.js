@@ -21,11 +21,10 @@ function esc(v) {
 function corSulco(mm) {
   const v = Number(mm);
   if (!Number.isFinite(v) || v <= 0) return { bg: "repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 3px, #f1f5f9 3px, #f1f5f9 6px)", cor: "#64748b", border: "#cbd5e1" };
-  if (v < 3)  return { bg: "linear-gradient(180deg, #dc2626, #7f1d1d)",  cor: "#fff",    border: "#7f1d1d" };
-  if (v < 4)  return { bg: "linear-gradient(180deg, #f97316, #c2410c)",  cor: "#fff",    border: "#9a3412" };
-  if (v < 6)  return { bg: "linear-gradient(180deg, #fbbf24, #d97706)",  cor: "#7c2d12", border: "#b45309" };
-  if (v < 15) return { bg: "linear-gradient(180deg, #a3e635, #65a30d)",  cor: "#365314", border: "#4d7c0f" };
-  return         { bg: "linear-gradient(180deg, #22c55e, #15803d)",  cor: "#fff",    border: "#166534" };
+  if (v <= 4)  return { bg: "linear-gradient(180deg, #dc2626, #7f1d1d)",  cor: "#fff",    border: "#7f1d1d" };  // ≤ 4 mm = trocar
+  if (v <= 6)  return { bg: "linear-gradient(180deg, #f97316, #c2410c)",  cor: "#fff",    border: "#9a3412" };  // 5-6 mm = atenção
+  if (v <  15) return { bg: "linear-gradient(180deg, #a3e635, #65a30d)",  cor: "#365314", border: "#4d7c0f" };  // 7-14 mm = bom
+  return         { bg: "linear-gradient(180deg, #22c55e, #15803d)",  cor: "#fff",    border: "#166534" };       // ≥ 15 mm = novo
 }
 
 // Renderiza 1 pneu (card) com fogo, PSI, sulco em mini
@@ -165,10 +164,9 @@ function buildHtml(inspecao, esquemasMap) {
     <div style="display:flex; gap:8px; margin:6px 0 0; font-size:7px; align-items:center; flex-wrap:wrap;">
       <span style="font-weight:700; color:#64748b;">SULCOS:</span>
       <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; background:linear-gradient(180deg, #22c55e, #15803d); border-radius:2px;"></span>Novo (≥15mm)</span>
-      <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; background:linear-gradient(180deg, #a3e635, #65a30d); border-radius:2px;"></span>Bom (6-14)</span>
-      <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; background:linear-gradient(180deg, #fbbf24, #d97706); border-radius:2px;"></span>Alerta (4-5)</span>
-      <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; background:linear-gradient(180deg, #f97316, #c2410c); border-radius:2px;"></span>Crítico (3)</span>
-      <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; background:linear-gradient(180deg, #dc2626, #7f1d1d); border-radius:2px;"></span>Trocar (&lt;3)</span>
+      <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; background:linear-gradient(180deg, #a3e635, #65a30d); border-radius:2px;"></span>Bom (7-14mm)</span>
+      <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; background:linear-gradient(180deg, #f97316, #c2410c); border-radius:2px;"></span>Atenção (5-6mm)</span>
+      <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; background:linear-gradient(180deg, #dc2626, #7f1d1d); border-radius:2px;"></span>Trocar (≤4mm)</span>
     </div>
   `;
 

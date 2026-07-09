@@ -88,9 +88,9 @@ function CardPneu({ posicao, dados, onClick }) {
   // Thresholds da legenda do preview
   const status = !Number.isFinite(sulcoNum) || sulcoNum <= 0
     ? "vazio"
-    : sulcoNum < 4  ? "critico"
-    : sulcoNum < 6  ? "entre4"
-    : sulcoNum < 15 ? "entre6"
+    : sulcoNum <= 4  ? "critico"   // ≤ 4 mm = trocar (regra Pontual)
+    : sulcoNum <= 6  ? "entre4"    // 5-6 mm = atenção
+    : sulcoNum <  15 ? "entre6"    // 7-14 mm = bom
     : "novo";
 
   const bg = {
@@ -181,10 +181,9 @@ function ModalEditPneu({ posicao, dados, onSave, onClose }) {
 function LegendaCores() {
   const items = [
     { bg: "linear-gradient(180deg, #22c55e, #15803d)", label: "≥ 15 mm (novo)" },
-    { bg: "linear-gradient(180deg, #eab308, #a16207)", label: "6 – 15 mm" },
-    { bg: "linear-gradient(180deg, #f59e0b, #b45309)", label: "4 – 6 mm (atenção)" },
-    { bg: "linear-gradient(180deg, #f97316, #c2410c)", label: "3 – 4 mm (crítico atenção)" },
-    { bg: "linear-gradient(180deg, #dc2626, #7f1d1d)", label: "< 3 mm (crítico troca)" },
+    { bg: "linear-gradient(180deg, #eab308, #a16207)", label: "7 – 14 mm (bom)" },
+    { bg: "linear-gradient(180deg, #f97316, #c2410c)", label: "5 – 6 mm (atenção)" },
+    { bg: "linear-gradient(180deg, #dc2626, #7f1d1d)", label: "≤ 4 mm (trocar)" },
     { bg: "repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #f1f5f9 4px, #f1f5f9 8px)", label: "Vazio (não medido)" },
   ];
   return (
@@ -290,9 +289,9 @@ function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
           const est = dados?.estepe || {};
           const sN = Number(est.sulco);
           const st = !Number.isFinite(sN) || sN <= 0 ? "vazio"
-                    : sN < 4  ? "critico"
-                    : sN < 6  ? "entre4"
-                    : sN < 15 ? "entre6"
+                    : sN <= 4  ? "critico"
+                    : sN <= 6  ? "entre4"
+                    : sN <  15 ? "entre6"
                     : "novo";
           const bg = {
             vazio:   "repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #f1f5f9 4px, #f1f5f9 8px)",

@@ -56,7 +56,7 @@ export default function AbaDashboard({ pneus }) {
       for (const r of (p.historicoRecapagens || [])) {
         custoRecapTotal += Number(r.custoReal) || 0;
       }
-      if (Number(p.sulcoAtual) > 0 && Number(p.sulcoAtual) < 3) criticos++;
+      if (Number(p.sulcoAtual) > 0 && Number(p.sulcoAtual) <= 4) criticos++;   // regra Pontual: ≤ 4 mm = trocar
     }
     const custoGrandTotal = custoTotal + custoRecapTotal;
 
@@ -198,7 +198,7 @@ export default function AbaDashboard({ pneus }) {
         <div style={s.kpiCard(analytics.criticos > 0 ? "#fee2e2" : "#dcfce7")}>
           <div style={{ ...s.kpiLbl, color: analytics.criticos > 0 ? "#b91c1c" : "#166534" }}><AlertTriangle size={12} /> Sulco crítico</div>
           <div style={{ ...s.kpiVal, color: analytics.criticos > 0 ? "#7f1d1d" : "#14532d" }}>{analytics.criticos}</div>
-          <div style={{ ...s.kpiSub, color: analytics.criticos > 0 ? "#b91c1c" : "#166534" }}>pneus com &lt; 3 mm</div>
+          <div style={{ ...s.kpiSub, color: analytics.criticos > 0 ? "#b91c1c" : "#166534" }}>pneus com ≤ 4 mm (trocar)</div>
         </div>
       </div>
 
