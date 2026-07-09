@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { collection, getDocs, query, orderBy, addDoc, updateDoc, doc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, addDoc, updateDoc, doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
@@ -59,19 +59,34 @@ export default function Pneus() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      getDocs(query(collection(db, "pneus"), orderBy("criadoEm", "desc"))).catch(() => null),
-      getDocs(collection(db, "itens_manutencao")).catch(() => null),
-    ]).then(([pSnap, iSnap]) => {
-      if (pSnap) setPneus(pSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      if (iSnap) {
-        const forn = iSnap.docs
+    // Tempo real (onSnapshot) — instalação/remoção/rodízio em outra máquina
+    // atualiza automaticamente essa tela.
+    let carregouPneus = false, carregouForn = false;
+    const marcaOk = () => { if (carregouPneus && carregouForn) setLoading(false); };
+    const unsubPneus = onSnapshot(
+      query(collection(db, "pneus"), orderBy("criadoEm", "desc")),
+      snap => {
+        setPneus(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        carregouPneus = true; marcaOk();
+      },
+      err => { console.warn("pneus onSnapshot:", err); carregouPneus = true; marcaOk(); }
+    );
+    const unsubItens = onSnapshot(
+      collection(db, "itens_manutencao"),
+      snap => {
+        const forn = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(i => i.tipo === "fornecedor")
           .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
         setFornecedores(forn);
-      }
-    }).finally(() => setLoading(false));
+        carregouForn = true; marcaOk();
+      },
+      err => { console.warn("itens_manutencao onSnapshot:", err); carregouForn = true; marcaOk(); }
+    );
+    return () => {
+      try { unsubPneus(); } catch {}
+      try { unsubItens(); } catch {}
+    };
   }, []);
 
   // Helper: garante fornecedor no catálogo (cria se novo; atualiza CNPJ se antes vazio)
