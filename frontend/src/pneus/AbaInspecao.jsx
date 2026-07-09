@@ -807,17 +807,17 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
       {erro    && <div style={s.err}>{erro}</div>}
       {sucesso && <div style={s.ok}>{sucesso}</div>}
 
-      <div style={s.actions}>
-        <button type="button" style={s.btnCancel} onClick={() => { setPlacaCavalo(""); setMotoristaId(""); setChecklist({}); setObservacoes(""); setDadosVeic({}); setOrdemOK(null); }}>
+      <div style={s.actions} className="pneus-inspecao-actions">
+        <button type="button" style={s.btnCancel} className="pneus-btn" onClick={() => { setPlacaCavalo(""); setMotoristaId(""); setChecklist({}); setObservacoes(""); setDadosVeic({}); setOrdemOK(null); }}>
           Limpar
         </button>
-        <button type="button" style={s.btnPdf} onClick={() => gerarPdfAgora("baixar")}>
+        <button type="button" style={s.btnPdf} className="pneus-btn" onClick={() => gerarPdfAgora("baixar")}>
           <FileDown size={16} /> Baixar PDF
         </button>
-        <button type="button" style={{ ...s.btnPdf, background: "#0f172a" }} onClick={() => gerarPdfAgora("ver")}>
+        <button type="button" style={{ ...s.btnPdf, background: "#0f172a" }} className="pneus-btn" onClick={() => gerarPdfAgora("ver")}>
           <Eye size={16} /> Visualizar PDF
         </button>
-        <button type="button" style={{ ...s.btnSalvar, opacity: salvando ? 0.6 : 1 }} onClick={salvar} disabled={salvando}>
+        <button type="button" style={{ ...s.btnSalvar, opacity: salvando ? 0.6 : 1 }} className="pneus-btn pneus-btn-primary" onClick={salvar} disabled={salvando}>
           <Save size={16} /> {salvando ? "Salvando…" : "Salvar Inspeção"}
         </button>
       </div>
