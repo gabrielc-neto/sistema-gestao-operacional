@@ -11,9 +11,10 @@ import { useRBAC } from "../rbac/RBACContext";
 import { useOdometrosSascar } from "../hooks/useOdometrosSascar";
 import LogoPontual from "../components/LogoPontual";
 import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
+import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
 import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
-  FileText, Receipt, Settings, TrendingUp, FileDown, Eye,
+  FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -977,14 +978,15 @@ export default function Manutencao() {
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
-  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","os","os_lanc","lancamento","cadastros"];
-  const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","os","os_lanc","lancamento","cadastros"];
+  const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
     (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
     podeVerAba("por_veiculo")    ? "veiculo" :
     podeVerAba("dashboard")      ? "dashboard" :
     podeVerAba("por_tipo")       ? "tipo" :
     podeVerAba("alertas")        ? "alertas" :
+    podeVerAba("conjunto")       ? "conjunto" :
     podeVerAba("os_abertura")    ? "os" :
     podeVerAba("os_lancamento")  ? "os_lanc" :
     podeVerAba("nf")             ? "lancamento" :
@@ -2358,7 +2360,7 @@ export default function Manutencao() {
           </div>
         )}
 
-        {(podeVerAba("por_veiculo") || podeVerAba("por_tipo") || podeVerAba("alertas")) && (
+        {(podeVerAba("por_veiculo") || podeVerAba("por_tipo") || podeVerAba("alertas") || podeVerAba("conjunto")) && (
           <div style={s.navGroup}>
             <span style={s.navGroupLabel}>Manutenção</span>
             {podeVerAba("por_veiculo") && (
@@ -2370,6 +2372,9 @@ export default function Manutencao() {
             {podeVerAba("alertas") && (
               <NavTab icon={AlertTriangle} label="Alertas" active={aba==="alertas"} onClick={() => setAba("alertas")} accent="#dc2626"
                 badge={alertaCount > 0 ? { text: alertaCount, color: "#dc2626" } : null} />
+            )}
+            {podeVerAba("conjunto") && (
+              <NavTab icon={Layers} label="Conjunto" active={aba==="conjunto"} onClick={() => setAba("conjunto")} accent="#7c3aed" />
             )}
           </div>
         )}
@@ -2684,6 +2689,21 @@ export default function Manutencao() {
             )}
           </main>
         </>
+      )}
+
+      {/* ── ABA: CONJUNTO (cavalo + carretas atreladas) ──────────────── */}
+      {aba === "conjunto" && podeVerAba("conjunto") && (
+        <main style={s.main} className="pg-body">
+          <AbaConjuntoVencimentos
+            veiculos={veiculos}
+            registros={registros}
+            legacy={legacy}
+            TIPOS={TIPOS}
+            calcStatus={calcStatus}
+            motoristas={motoristas}
+            onEditar={(placa, tipo) => abrirModal(placa, tipo)}
+          />
+        </main>
       )}
 
       {/* ── ABA: ORDENS DE SERVIÇO ────────────────────────────────────── */}

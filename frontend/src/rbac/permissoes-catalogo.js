@@ -40,6 +40,7 @@ const EXTRAS = [
   { nome: "manutencao.por_veiculo",   descricao: "Ver aba Por Veículo (dashboard placa)", modulo: "manutencao", acao: "aba_por_veiculo" },
   { nome: "manutencao.por_tipo",      descricao: "Ver aba Por Tipo",                       modulo: "manutencao", acao: "aba_por_tipo" },
   { nome: "manutencao.alertas",       descricao: "Ver aba Alertas",                        modulo: "manutencao", acao: "aba_alertas" },
+  { nome: "manutencao.conjunto",      descricao: "Ver aba Conjunto (vencimentos consolidados por cavalo+carretas)", modulo: "manutencao", acao: "aba_conjunto" },
   { nome: "manutencao.os_abertura",   descricao: "Ver aba Abertura de OS",                 modulo: "manutencao", acao: "aba_os_abertura" },
   { nome: "manutencao.os_lancamento", descricao: "Ver aba Lançamento de OS (+ PDF/Ver)",   modulo: "manutencao", acao: "aba_os_lancamento" },
   { nome: "manutencao.nf",            descricao: "Ver aba Lançamento de NF",               modulo: "manutencao", acao: "aba_nf" },
