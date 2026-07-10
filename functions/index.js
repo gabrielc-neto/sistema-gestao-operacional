@@ -8,6 +8,7 @@ import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import crypto from 'node:crypto';
 
 import {
   obterVeiculos,
@@ -493,5 +494,87 @@ export const responderConvite = onCall(async (request) => {
     tx.update(ref, { convidados: lista, historico: hist });
   });
 
+  return { ok: true };
+});
+
+// ============================================================
+// INTRANET — portão de acesso restrito (rede da base + palavra-chave)
+// ============================================================
+// Config em Firestore: intranet/config = { ips: string[], keywordHash: string }
+//   - ips: lista de IPs exatos ou faixas CIDR (ex: "200.1.2.3" ou "200.1.2.0/24").
+//          Vazio = restrição de rede desligada (só a palavra-chave protege).
+//   - keywordHash: sha256(INTRANET_SALT + palavra-chave), em hex.
+// A validação roda no servidor: o IP do cliente vem do request (não é confiável
+// no navegador) e a palavra-chave trafega por HTTPS e nunca é gravada em claro.
+const INTRANET_SALT = 'pontual-intranet-v1';
+
+function hashIntranetKeyword(k) {
+  return crypto.createHash('sha256').update(INTRANET_SALT + String(k)).digest('hex');
+}
+
+function ipDoCliente(request) {
+  const xff = request.rawRequest?.headers?.['x-forwarded-for'];
+  if (xff) return String(xff).split(',')[0].trim();
+  return request.rawRequest?.ip || '';
+}
+
+function ipParaLong(ip) {
+  const p = String(ip).split('.');
+  if (p.length !== 4) return null;
+  let n = 0;
+  for (const o of p) {
+    const x = Number(o);
+    if (!Number.isInteger(x) || x < 0 || x > 255) return null;
+    n = n * 256 + x;
+  }
+  return n >>> 0;
+}
+
+// Compara um IP com uma regra (IP exato ou faixa CIDR IPv4). IPv6 cai no exato.
+function ipCombina(ip, regra) {
+  if (!regra) return false;
+  regra = String(regra).trim();
+  if (regra.includes('/')) {
+    const [base, bitsStr] = regra.split('/');
+    const bits = Number(bitsStr);
+    const ipL = ipParaLong(ip);
+    const baseL = ipParaLong(base);
+    if (ipL == null || baseL == null || !Number.isInteger(bits) || bits < 0 || bits > 32) return false;
+    const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0;
+    return (ipL & mask) === (baseL & mask);
+  }
+  return String(ip) === regra;
+}
+
+// intranetGate: valida acesso ao portal Intranet.
+//   sem keyword → valida só a rede (retorna { ipOk: true })
+//   com keyword → valida rede + palavra-chave (retorna { ok: true })
+// Público (pré-login): o próprio portão é a proteção.
+export const intranetGate = onCall(async (request) => {
+  const { keyword } = request.data || {};
+
+  const snap = await db.collection('intranet').doc('config').get();
+  const cfg = snap.exists ? snap.data() : {};
+  const ips = Array.isArray(cfg.ips) ? cfg.ips.filter(Boolean) : [];
+  const ip = ipDoCliente(request);
+
+  // 1) Rede/localização — vazio = sem restrição de rede
+  const ipOk = ips.length === 0 || ips.some((r) => ipCombina(ip, r));
+  if (!ipOk) {
+    throw new HttpsError('permission-denied', 'Acesso à Intranet permitido apenas na rede da base.');
+  }
+
+  // 2) Só checagem de rede (1º passo do portão)
+  if (keyword == null || keyword === '') {
+    return { ipOk: true };
+  }
+
+  // 3) Palavra-chave
+  if (!cfg.keywordHash) {
+    throw new HttpsError('failed-precondition', 'Intranet ainda não configurada. Contate o administrador.');
+  }
+  if (hashIntranetKeyword(keyword) !== cfg.keywordHash) {
+    throw new HttpsError('permission-denied', 'Palavra-chave incorreta.');
+  }
   return { ok: true };
 });

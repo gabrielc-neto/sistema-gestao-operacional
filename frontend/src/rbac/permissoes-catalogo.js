@@ -23,6 +23,7 @@ export const MODULOS = [
   { id: "setores",     label: "Setores" },
   { id: "cargos",      label: "Cargos" },
   { id: "permissoes",  label: "Permissões" },
+  { id: "intranet",    label: "Intranet" },
 ];
 
 export const ACOES = ["ver", "criar", "editar", "excluir"];
@@ -41,6 +42,8 @@ const EXTRAS = [
   { nome: "compras.convidar",         descricao: "Adicionar aprovadores externos por link",   modulo: "compras", acao: "convidar"         },
   { nome: "compras.registrar",        descricao: "Registrar valores comprados por setor",     modulo: "compras", acao: "registrar"        },
   { nome: "compras.dashboard",        descricao: "Ver dashboard de excedentes",               modulo: "compras", acao: "dashboard"        },
+  // Intranet — módulo de configuração do portão de acesso
+  { nome: "intranet.configurar",      descricao: "Configurar rede autorizada e palavra-chave da Intranet", modulo: "intranet", acao: "configurar" },
 ];
 
 function rotulo(modulo, acao) {

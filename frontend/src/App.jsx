@@ -25,6 +25,8 @@ const Usuarios    = lazy(() => import("./pages/Usuarios"));
 const ImportAdmin = lazy(() => import("./pages/ImportAdmin"));
 const Setores     = lazy(() => import("./pages/admin/Setores"));
 const Cargos      = lazy(() => import("./pages/admin/Cargos"));
+const ConfiguracoesIntranet = lazy(() => import("./pages/admin/ConfiguracoesIntranet"));
+const IntranetArea= lazy(() => import("./pages/IntranetArea"));
 
 const Loading = () => (
   <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16, background:"var(--bg)" }}>
@@ -73,6 +75,10 @@ export default function App() {
                   {/* Convite público a UMA proposta (sem login, via token no link) */}
                   <Route path="/proposta-convite/:id" element={<PropostaConvite />} />
 
+                  {/* Área interna da Intranet — acesso liberado pelo portão (rede + palavra-chave),
+                      sem login Firebase. A própria página valida a flag de sessão do portão. */}
+                  <Route path="/intranet" element={<IntranetArea />} />
+
                   {/* Dashboard sempre acessível para usuário logado */}
                   <Route path="/dashboard"   element={<PrivateRoute><Dashboard /></PrivateRoute>} />
 
@@ -93,6 +99,7 @@ export default function App() {
                   <Route path="/usuarios"        element={<Privada permissao="usuarios.ver"><Usuarios /></Privada>} />
                   <Route path="/admin/setores"   element={<Privada permissao="setores.ver"><Setores /></Privada>} />
                   <Route path="/admin/cargos"    element={<Privada permissao="cargos.ver"><Cargos /></Privada>} />
+                  <Route path="/admin/intranet"  element={<Privada permissao="intranet.configurar"><ConfiguracoesIntranet /></Privada>} />
                   <Route path="/permissoes"      element={<Privada permissao="permissoes.ver"><Permissoes /></Privada>} />
                   <Route path="/import"          element={<PrivateRoute><ImportAdmin /></PrivateRoute>} />
                 </Routes>

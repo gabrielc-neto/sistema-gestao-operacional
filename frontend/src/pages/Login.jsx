@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { callFunction } from "../firebase/callFunction";
 import LogoPontual from "../components/LogoPontual";
 
 const ic = { width: 26, height: 26, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
@@ -10,6 +12,12 @@ const ic = { width: 26, height: 26, viewBox: "0 0 24 24", fill: "none", stroke: 
 //   url: ""        → ainda sem endereço (mostra "em breve" até informarem a URL)
 const SISTEMAS = [
   {
+    id: "intranet",
+    nome: "Intranet",
+    cor: "#334155", bg: "#f1f5f9", intranet: true,
+    icon: (<svg {...ic} aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>),
+  },
+  {
     id: "integridade",
     nome: "Canal de Integridade e Relacionamento",
     cor: "#15803d", bg: "#f0fdf4", url: "https://web-homol.pontualpetroleo.com.br/integridade/",
@@ -17,7 +25,7 @@ const SISTEMAS = [
   },
   {
     id: "sgo",
-    nome: "Sistema de Gestão Operacional",
+    nome: "Gestão Operacional",
     cor: "#18216e", bg: "#eef1fb", interno: true,
     icon: (<svg {...ic} aria-hidden="true"><path d="M10 17h4V5H2v12h3" /><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1" /><circle cx="7.5" cy="17.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" /></svg>),
   },
@@ -35,19 +43,19 @@ const SISTEMAS = [
   },
   {
     id: "projetos",
-    nome: "Sistema de Gerenciamento de Projetos",
+    nome: "Gerenciamento de Projetos",
     cor: "#be123c", bg: "#fff1f2", url: "",
     icon: (<svg {...ic} aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="M9 9h6" /><path d="M9 15h6" /></svg>),
   },
   {
     id: "espaco",
-    nome: "Sistema de Gestão de Espaço",
+    nome: "Gestão de Espaço",
     cor: "#0d9488", bg: "#f0fdfa", url: "https://web-homol.pontualpetroleo.com.br/gestao-espaco/",
     icon: (<svg {...ic} aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>),
   },
   {
     id: "compras",
-    nome: "Sistema de Gestão de Compras",
+    nome: "Gestão de Compras",
     cor: "#ea580c", bg: "#fff7ed", url: "https://web-homol.pontualpetroleo.com.br/gestao-compras/",
     icon: (<svg {...ic} aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>),
   },
@@ -79,14 +87,19 @@ export default function Login() {
   const [verSenha, setVerSenha] = useState(false);
   const [manterConectado, setManterConectado] = useState(true);
   const [tentativas, setTentativas]           = useState(0);
-  const [tela, setTela]                       = useState("splash"); // "splash" | "intro" | "selecao" | "portao" | "login" | "instrucoes"
+  const [tela, setTela]                       = useState("splash"); // "splash" | "intro" | "selecao" | "portao" | "login" | "intranet"
   const [busca, setBusca]                     = useState("");
   const [ringSpeed, setRingSpeed]             = useState("normal"); // "normal" | "fast" | "loading"
   const [sisAtivo, setSisAtivo]               = useState(null);     // sistema selecionado (tela de entrada)
+  const [intranetStep, setIntranetStep]       = useState("checando"); // "checando" | "negado" | "chave" | "validando"
+  const [intranetErro, setIntranetErro]       = useState("");
+  const [intranetChave, setIntranetChave]     = useState("");
+  const navigate = useNavigate();
   const { login } = useAuth();
 
   // Abertura: logomarca grande → esmaece → mostra a intro (ícones + botão)
   useEffect(() => {
+    document.title = "Intranet - Pontual Brasil Petróleo";
     const t = setTimeout(() => setTela(prev => (prev === "splash" ? "intro" : prev)), 2300);
     return () => clearTimeout(t);
   }, []);
@@ -107,8 +120,41 @@ export default function Login() {
   function entrarNoSistema(sis) {
     if (!sis) return;
     if (sis.interno) { setTela("login"); return; }
+    if (sis.intranet) { iniciarPortaoIntranet(); return; }
     if (sis.instrucoes) { window.open("/instrucoes-acesso.pdf", "_blank", "noopener,noreferrer"); return; }
     if (sis.url) { window.open(sis.url, "_blank", "noopener,noreferrer"); return; }
+  }
+
+  // Portão da Intranet — passo 1: valida se a conexão vem da rede da base.
+  // A validação roda no servidor (Cloud Function intranetGate).
+  async function iniciarPortaoIntranet() {
+    setTela("intranet");
+    setIntranetStep("checando");
+    setIntranetErro("");
+    setIntranetChave("");
+    try {
+      await callFunction("intranetGate", {}); // sem palavra-chave → só valida a rede
+      setIntranetStep("chave");
+    } catch (err) {
+      setIntranetStep("negado");
+      setIntranetErro(err?.message || "Não foi possível validar seu acesso.");
+    }
+  }
+
+  // Portão da Intranet — passo 2: valida a palavra-chave e libera a área interna.
+  async function validarChaveIntranet(e) {
+    e.preventDefault();
+    if (!intranetChave.trim()) return;
+    setIntranetStep("validando");
+    setIntranetErro("");
+    try {
+      await callFunction("intranetGate", { keyword: intranetChave });
+      sessionStorage.setItem("intranet_ok", "1");
+      navigate("/intranet");
+    } catch (err) {
+      setIntranetStep("chave");
+      setIntranetErro(err?.message || "Palavra-chave incorreta.");
+    }
   }
 
   async function handleLogin(e) {
@@ -144,7 +190,7 @@ export default function Login() {
   const sistemasFiltrados = SISTEMAS.filter(
     (sis) => sis.nome.toLowerCase().includes(busca.trim().toLowerCase())
   );
-  const destinoAtivo = !!(sisAtivo && (sisAtivo.interno || sisAtivo.instrucoes || sisAtivo.url));
+  const destinoAtivo = !!(sisAtivo && (sisAtivo.interno || sisAtivo.intranet || sisAtivo.instrucoes || sisAtivo.url));
 
   return (
     <div className="login-shell">
@@ -256,6 +302,56 @@ export default function Login() {
         </>
       )}
 
+      {/* Portão da Intranet: valida rede da base → pede palavra-chave → libera área interna */}
+      {tela === "intranet" && (
+        <>
+          <button type="button" className="login-back" onClick={() => { setTela("selecao"); setSisAtivo(null); }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Trocar sistema
+          </button>
+          <div className="login-gate fade-in">
+            <div className="login-gate-logo"><LogoPontual height={54} variant="white" /></div>
+            <p className="login-gate-tag">Intranet — acesso restrito</p>
+
+            {intranetStep === "checando" && (
+              <div className="intranet-status">
+                <span className="intranet-spin" aria-hidden="true" />
+                <span>Validando sua rede…</span>
+              </div>
+            )}
+
+            {intranetStep === "negado" && (
+              <div className="intranet-box">
+                <p className="login-erro" style={{ margin: 0 }}>{intranetErro}</p>
+                <button type="button" className="login-gate-btn" onClick={iniciarPortaoIntranet}>
+                  Tentar novamente
+                </button>
+              </div>
+            )}
+
+            {(intranetStep === "chave" || intranetStep === "validando") && (
+              <form className="intranet-box" onSubmit={validarChaveIntranet}>
+                <p className="intranet-hint">Rede validada. Informe a palavra-chave para entrar.</p>
+                <input
+                  className="login-input login-input-fill"
+                  type="password"
+                  value={intranetChave}
+                  onChange={e => setIntranetChave(e.target.value)}
+                  placeholder="Palavra-chave"
+                  aria-label="Palavra-chave"
+                  autoFocus
+                  disabled={intranetStep === "validando"}
+                />
+                {intranetErro && <p className="login-erro" style={{ margin: 0 }}>{intranetErro}</p>}
+                <button type="submit" className="login-gate-btn" disabled={intranetStep === "validando"}>
+                  {intranetStep === "validando" ? "Validando…" : "Acessar Intranet"}
+                </button>
+              </form>
+            )}
+          </div>
+        </>
+      )}
+
       {/* Card de login */}
       {tela === "login" && (
       <div className="login-card fade-in">
@@ -267,7 +363,7 @@ export default function Login() {
           <LogoPontual height={40} />
         </div>
 
-        <h1 className="login-title">Sistema de Gestão Operacional</h1>
+        <h1 className="login-title">Gestão Operacional</h1>
         <p className="login-sub">Página de acesso — entre com seu e-mail e senha.</p>
 
         <form onSubmit={handleLogin}>
@@ -418,6 +514,13 @@ export default function Login() {
         .login-gate-btn:active { transform: translateY(0); }
         .login-gate-btn:disabled { opacity: .55; cursor: not-allowed; }
         .login-gate-btn:disabled:hover { background: rgba(255,255,255,.14); transform: none; }
+
+        /* ---- Portão da Intranet ---- */
+        .intranet-box { display: flex; flex-direction: column; gap: 14px; align-items: stretch; width: 100%; max-width: 340px; }
+        .intranet-hint { color: rgba(255,255,255,.9); font-size: .9rem; text-align: center; margin: 0; text-shadow: 0 2px 14px rgba(8,12,24,.5); }
+        .intranet-status { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,.92); font-size: .95rem; font-weight: 600; text-shadow: 0 2px 14px rgba(8,12,24,.5); }
+        .intranet-spin { width: 22px; height: 22px; border-radius: 50%; border: 3px solid rgba(255,255,255,.3); border-top-color: #fff; animation: intranet-spin .7s linear infinite; }
+        @keyframes intranet-spin { to { transform: rotate(360deg); } }
 
         /* ---- Tela de seleção de sistema ---- */
         .login-select {
