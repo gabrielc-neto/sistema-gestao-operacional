@@ -142,7 +142,7 @@ export default function ConfiguracoesIntranet() {
 
   return (
     <div style={s.wrap}>
-      <ModuleHeader title="Configurações - Intranet" />
+      <ModuleHeader title="Configurações - Gerenciamento de Sistemas" />
 
       <div style={s.body}>
         {loading ? (
@@ -156,7 +156,7 @@ export default function ConfiguracoesIntranet() {
             <section style={s.card}>
               <h2 style={s.h2}>Rede autorizada</h2>
               <p style={s.desc}>
-                Apenas conexões vindas destes IPs (ou faixas) poderão acessar a Intranet.
+                Apenas conexões vindas destes IPs (ou faixas) poderão acessar o Gerenciamento de Sistemas.
                 Use o IP público da internet da base. <strong>Sem nenhum IP na lista, a
                 restrição de rede fica desligada</strong> (só a palavra-chave protege).
               </p>
@@ -191,7 +191,7 @@ export default function ConfiguracoesIntranet() {
               <div style={{ marginTop: 16 }}>
                 {ips.length === 0 ? (
                   <p style={s.vazio}>
-                    Nenhum IP cadastrado — a Intranet está aberta a qualquer rede (só a palavra-chave protege).
+                    Nenhum IP cadastrado — o Gerenciamento de Sistemas fica aberto a qualquer rede (só a palavra-chave protege).
                   </p>
                 ) : (
                   <ul style={s.lista}>

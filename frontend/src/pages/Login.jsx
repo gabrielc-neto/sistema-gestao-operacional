@@ -13,7 +13,7 @@ const ic = { width: 26, height: 26, viewBox: "0 0 24 24", fill: "none", stroke: 
 const SISTEMAS = [
   {
     id: "intranet",
-    nome: "Intranet",
+    nome: "Gerenciamento de Sistemas",
     cor: "#334155", bg: "#f1f5f9", intranet: true,
     icon: (<svg {...ic} aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>),
   },
@@ -311,7 +311,7 @@ export default function Login() {
           </button>
           <div className="login-gate fade-in">
             <div className="login-gate-logo"><LogoPontual height={54} variant="white" /></div>
-            <p className="login-gate-tag">Intranet — acesso restrito</p>
+            <p className="login-gate-tag">Gerenciamento de Sistemas — acesso restrito</p>
 
             {intranetStep === "checando" && (
               <div className="intranet-status">
@@ -344,7 +344,7 @@ export default function Login() {
                 />
                 {intranetErro && <p className="login-erro" style={{ margin: 0 }}>{intranetErro}</p>}
                 <button type="submit" className="login-gate-btn" disabled={intranetStep === "validando"}>
-                  {intranetStep === "validando" ? "Validando…" : "Acessar Intranet"}
+                  {intranetStep === "validando" ? "Validando…" : "Acessar"}
                 </button>
               </form>
             )}

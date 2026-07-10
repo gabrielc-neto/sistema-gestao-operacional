@@ -27,7 +27,7 @@ export default function IntranetArea() {
   useEffect(() => {
     if (sessionStorage.getItem("intranet_ok") === "1") {
       setOk(true);
-      document.title = "Intranet - Área interna";
+      document.title = "Gerenciamento de Sistemas - Área interna";
     } else {
       navigate("/", { replace: true });
     }
@@ -44,12 +44,12 @@ export default function IntranetArea() {
     <div style={s.wrap}>
       <header style={s.header}>
         <LogoPontual height={34} variant="white" />
-        <span style={s.htitle}>Intranet</span>
-        <button style={s.sair} onClick={sair}>Sair da Intranet</button>
+        <span style={s.htitle}>Gerenciamento de Sistemas</span>
+        <button style={s.sair} onClick={sair}>Sair</button>
       </header>
 
       <main style={s.body}>
-        <h1 style={s.h1}>Bem-vindo à Intranet Pontual</h1>
+        <h1 style={s.h1}>Bem-vindo ao Gerenciamento de Sistemas</h1>
         <p style={s.sub}>Acesso restrito — validado pela rede da base e pela palavra-chave.</p>
 
         <div style={s.grid}>

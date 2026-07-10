@@ -44,7 +44,7 @@ const GRUPOS = [
       { Icon: Building2,   label: "Setores",             link: "/admin/setores", perm: "setores.ver" },
       { Icon: Briefcase,   label: "Cargos & Permissões", link: "/admin/cargos",  perm: "cargos.ver" },
       { Icon: UserCog,     label: "Usuários",            link: "/usuarios",      perm: "usuarios.ver" },
-      { Icon: Network,     label: "Configurações - Intranet", link: "/admin/intranet", perm: "intranet.configurar" },
+      { Icon: Network,     label: "Configurações - Gerenciamento de Sistemas", link: "/admin/intranet", perm: "intranet.configurar" },
       { Icon: ShieldCheck, label: "Permissões (legado)", link: "/permissoes",    perm: "permissoes.ver" },
     ],
   },
