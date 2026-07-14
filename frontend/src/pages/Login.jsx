@@ -48,6 +48,12 @@ const SISTEMAS = [
     icon: (<svg {...ic} aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="M9 9h6" /><path d="M9 15h6" /></svg>),
   },
   {
+    id: "apresentacoes",
+    nome: "Apresentações Corporativas",
+    cor: "#4f46e5", bg: "#eef2ff", url: "",
+    icon: (<svg {...ic} aria-hidden="true"><path d="M2 3h20" /><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" /><path d="m7 21 5-5 5 5" /></svg>),
+  },
+  {
     id: "espaco",
     nome: "Gestão de Espaço",
     cor: "#0d9488", bg: "#f0fdfa", url: "https://web-homol.pontualpetroleo.com.br/gestao-espaco/",
