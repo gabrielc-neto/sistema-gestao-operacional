@@ -230,7 +230,7 @@ export default function Login() {
               onMouseLeave={() => setRingSpeed(s => (s === "loading" ? s : "normal"))}
               onClick={entrarIntranet}
             >
-              {ringSpeed === "loading" ? "Carregando…" : "Clique aqui para acessar a Intranet"}
+              {ringSpeed === "loading" ? "Carregando…" : "Acesso a intranet"}
             </button>
           </div>
         </div>
