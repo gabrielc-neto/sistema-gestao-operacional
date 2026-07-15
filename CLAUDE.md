@@ -1,5 +1,21 @@
 # Sistema Logística IA — Distribuidora de Petróleo
 
+## ⚡ ANTES DE QUALQUER COISA (regra permanente do user)
+
+Ao iniciar sessão nova, **CONSULTAR CONTEXTO** antes de perguntar qualquer coisa:
+
+1. **Última sessão** — `docs/sessoes/` (pegar a mais recente por data, ler a seção "Pendente / próximos passos" no fim)
+2. **Memórias** — `docs/memoria/MEMORY.md` (índice das 82+ decisões/feedbacks/projects)
+3. **Assunto específico** — se o user cita tema, `grep` em `docs/conversas-claude/`
+
+**Nunca perguntar:** "onde paramos?", "qual seu contexto?", "já fizemos X?" — essas respostas estão TODAS no vault.
+
+**Sempre começar com:** 1 frase resumindo pendências ("Vi que ontem paramos em [X], quer continuar?") ou 2-3 opções concretas baseadas no log.
+
+*Regra do user 2026-07-15 — evitar queimar tokens perguntando o que já está registrado.*
+
+---
+
 ## Contexto da Empresa
 
 - **Setor**: Distribuidora de combustíveis (petróleo)
