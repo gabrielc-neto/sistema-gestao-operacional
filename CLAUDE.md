@@ -1,18 +1,39 @@
 # Sistema Logística IA — Distribuidora de Petróleo
 
-## ⚡ ANTES DE QUALQUER COISA (regra permanente do user)
+## ⚡ REGRAS PERMANENTES — LER ANTES DE FAZER QUALQUER COISA
 
-Ao iniciar sessão nova, **CONSULTAR CONTEXTO** antes de perguntar qualquer coisa:
+### 1. ANTES: consultar contexto
 
-1. **Última sessão** — `docs/sessoes/` (pegar a mais recente por data, ler a seção "Pendente / próximos passos" no fim)
+Ao iniciar sessão nova, LER (sem perguntar ao user):
+
+1. **Última sessão** — `docs/sessoes/` (mais recente por data, foco na seção "Pendente / próximos passos")
 2. **Memórias** — `docs/memoria/MEMORY.md` (índice das 82+ decisões/feedbacks/projects)
-3. **Assunto específico** — se o user cita tema, `grep` em `docs/conversas-claude/`
+3. **Assunto específico** — se user cita tema, `grep` em `docs/conversas-claude/`
 
-**Nunca perguntar:** "onde paramos?", "qual seu contexto?", "já fizemos X?" — essas respostas estão TODAS no vault.
+**NÃO perguntar:** "onde paramos?", "qual contexto?", "já fizemos X?" — está tudo no vault.
 
-**Sempre começar com:** 1 frase resumindo pendências ("Vi que ontem paramos em [X], quer continuar?") ou 2-3 opções concretas baseadas no log.
+**Abrir com:** 1 frase resumindo pendências ("Vi que ontem paramos em [X], continuando...") ou 2-3 opções concretas.
 
-*Regra do user 2026-07-15 — evitar queimar tokens perguntando o que já está registrado.*
+### 2. DURANTE: registrar toda modificação no vault
+
+**Cada bloco de trabalho** (não cada arquivo, mas cada ação lógica) → append em `docs/sessoes/YYYY-MM-DD.md`:
+
+```markdown
+## HH:MM — Título curto
+Descrição 2-3 linhas.
+Arquivos: file1, file2
+Resultado: OK / erro X
+```
+
+**Fazer:**
+- Mesmo sem commit git (user às vezes pede "não commite" e ainda quer o registro)
+- Mesmo em correções pequenas (1 linha basta)
+- Antes de tentativas destrutivas (registro do "antes")
+- Ao fim de cada resposta complexa (sem esperar user pedir)
+
+**Motivo:** user às vezes fecha terminal sem querer — o log é a única forma de recuperar contexto pra próxima sessão.
+
+*Regras do user 2026-07-15 — economizar tokens + garantir continuidade.*
 
 ---
 
