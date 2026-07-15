@@ -4,6 +4,11 @@
 .env.*.local
 *.local
 
+# Projetos experimentais / arquivados (não versionados)
+experimentos/
+arquivo/
+.obsidian/
+
 # Logs
 *.log
 logs
