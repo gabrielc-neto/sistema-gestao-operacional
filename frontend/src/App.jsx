@@ -22,6 +22,9 @@ const Rastreamento= lazy(() => import("./pages/Rastreamento"));
 const Cercas      = lazy(() => import("./pages/Cercas"));
 const Jornada     = lazy(() => import("./pages/Jornada"));
 const Usuarios    = lazy(() => import("./pages/Usuarios"));
+const Abastecimento = lazy(() => import("./pages/Abastecimento"));
+const Rotas        = lazy(() => import("./pages/Rotas"));
+const Locais       = lazy(() => import("./pages/Locais"));
 const ImportAdmin = lazy(() => import("./pages/ImportAdmin"));
 const Setores     = lazy(() => import("./pages/admin/Setores"));
 const Cargos      = lazy(() => import("./pages/admin/Cargos"));
@@ -77,6 +80,9 @@ export default function App() {
                   <Route path="/atrelamento" element={<Privada permissao="atrelamento.ver"><Atrelamento /></Privada>} />
                   <Route path="/oc"          element={<Privada permissao="oc.ver"><OC /></Privada>} />
                   <Route path="/manutencao"  element={<Privada permissao="manutencao.ver"><Manutencao /></Privada>} />
+                  <Route path="/abastecimento" element={<PrivateRoute><Abastecimento /></PrivateRoute>} />
+                  <Route path="/rotas" element={<PrivateRoute><Rotas /></PrivateRoute>} />
+                  <Route path="/locais" element={<PrivateRoute><Locais /></PrivateRoute>} />
                   <Route path="/pneus"       element={<Privada permissao="pneus.ver"><Pneus /></Privada>} />
                   <Route path="/pneus/:id"   element={<Privada permissao="pneus.ver"><FichaPneu /></Privada>} />
                   <Route path="/historico"   element={<Privada permissao="historico.ver"><Historico /></Privada>} />

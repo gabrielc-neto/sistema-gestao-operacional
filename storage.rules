@@ -1,0 +1,33 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Fotos do Checklist Mensal — leitura e escrita pra qualquer logado
+    match /checklists_mensais/{fileName=**} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 15 * 1024 * 1024   // 15 MB máx
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Anexos de Lançamento de OS (já existente)
+    match /lancamentos_os/{fileName=**} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 15 * 1024 * 1024;
+    }
+
+    // Anexos de Ordem de Serviço (compat pra futuros)
+    match /ordens_servico/{fileName=**} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 15 * 1024 * 1024;
+    }
+
+    // Default: bloqueia
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -10,7 +10,7 @@ import {
   Truck, Link2, ClipboardList, Users, Wrench,
   History, Palmtree, MapPin, UserCog, ShieldCheck,
   Lock, AlertTriangle, ChevronRight, Building2, Briefcase, Clock,
-  CircleDot,
+  CircleDot, Fuel, Route, Star,
 } from "lucide-react";
 import { useRBAC } from "../rbac/RBACContext";
 
@@ -230,6 +230,9 @@ export default function Dashboard() {
     { Icon:Wrench,        color:"#dc2626", bg:"#fee2e2", label:"Manutenção",              desc:"Vencimentos e revisões",             module:"manutencao",  link:"/manutencao",
       stat: kpi.manuPend != null ? (kpi.manuVenc > 0 ? `${kpi.manuVenc} vencidos · ${kpi.manuPend} pendentes` : kpi.manuPend > 0 ? `${kpi.manuPend} em alerta` : "Tudo em dia") : null,
       statAlert: kpi.manuVenc > 0 },
+    { Icon:Fuel,          color:"#4338ca", bg:"#eef2ff", label:"Abastecimento",           desc:"CTA Smart · CPK real",               module:"manutencao",  link:"/abastecimento", stat: null },
+    { Icon:Route,         color:"#0f766e", bg:"#ecfdf5", label:"Rotas & Distâncias",      desc:"OSM + OSRM · custo estimado",        module:"manutencao",  link:"/rotas",         stat: null },
+    { Icon:Star,          color:"#0f766e", bg:"#ecfdf5", label:"Locais Favoritos",        desc:"Pátio, filiais, clientes, postos",   module:"manutencao",  link:"/locais",        stat: null },
     { Icon:History,       color:"#7c3aed", bg:"#f3e8ff", label:"Histórico",              desc:"Registro de todas as operações",     module:"historico",   link:"/historico", stat: null },
     { Icon:Palmtree,      color:"#0891b2", bg:"#cffafe", label:"Férias",                 desc:"Controle e alertas eSocial",         module:"ferias",      link:"/ferias",
       stat: kpi.emFerias > 0 ? `${kpi.emFerias} em férias hoje` : null },
