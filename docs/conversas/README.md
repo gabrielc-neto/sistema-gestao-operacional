@@ -14,3 +14,10 @@ C:\Users\Logistica01\.claude\projects\C--WINDOWS-system32\<session-id>.jsonl
 ```
 
 O ID da sessão dessa pasta é a parte antes de `.jsonl` no arquivo original.
+
+
+---
+
+## Navegação
+
+- [[INDICE|🏠 Dashboard]] · [[CLAUDE|📖 Contexto]] · [[MEMORY|🧠 Memórias]]
