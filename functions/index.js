@@ -102,7 +102,7 @@ export const sascarPosicoes = onCall(
   async (request) => {
     requireAuth(request);
     return await safeRun('sascarPosicoes', async () => {
-    const { data, age, fresh } = await cached('posicoes', 30_000, async () => {
+    const { data, age, fresh } = await cached('posicoes', 300_000, async () => {
       // 1) Em paralelo: chama SASCAR + lê estado anterior + cercas cadastradas
       const [pacotes, veiculos, snapshot, cercasSnap] = await Promise.all([
         obterPacotePosicoesMotorista({
@@ -405,3 +405,4 @@ function statusFromPacote(p) {
   if (ign) return 'PARADO_LIGADO';
   return 'ESTACIONADO';
 }
+
