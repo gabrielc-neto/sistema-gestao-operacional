@@ -14,9 +14,9 @@ const PROJECT_ID = "pontual-logistica";
  */
 export async function callFunction(name, params) {
   if (isDev) {
-    // Chama emulator direto em 127.0.0.1:5001 — bypassa proxy Vite (que dá 502 em requests > ~1s).
-    // 127.0.0.1 = loopback da máquina local; funciona quando browser e emulator estão na mesma máquina.
-    const url = `http://127.0.0.1:5001/${PROJECT_ID}/${REGION}/${name}`;
+    // Path relativo — o proxy do Vite (vite.config.js) reencaminha pra 127.0.0.1:5001.
+    // Funciona em localhost, LAN e via túnel público (Cloudflare/localtunnel) sem expor a 5001.
+    const url = `/${PROJECT_ID}/${REGION}/${name}`;
     const res = await fetch(url, {
       method: "POST",
       headers: {
