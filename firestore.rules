@@ -233,6 +233,14 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // Checklist mensal de manutenção preventiva (caminhão tanque)
+    match /checklists_mensais/{id} {
+      allow read:   if temPermissao('manutencao.ver');
+      allow create: if temPermissao('manutencao.criar') || isAtivo();
+      allow update: if temPermissao('manutencao.editar') || isAtivo();
+      allow delete: if temPermissao('manutencao.excluir') || isSuperAdmin();
+    }
+
     // Lançamento de NF (Nota Fiscal por categoria — visão financeira diretoria)
     match /lancamentos_nf/{id} {
       allow read:   if temPermissao('manutencao.ver');
@@ -272,5 +280,37 @@ service cloud.firestore {
       allow update: if isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
+
+    // Pneus — cadastro individual (com fogo, marca, medida, posicaoAtual, historicoPosicoes)
+    match /pneus/{id} {
+      allow read:   if temPermissao('pneus.ver') || isAtivo();
+      allow create: if temPermissao('pneus.criar') || isAtivo();
+      allow update: if temPermissao('pneus.editar') || isAtivo();
+      allow delete: if temPermissao('pneus.excluir') || isSuperAdmin();
+    }
+
+    // Movimentações de pneus (instalação, remoção, rodízio, recapagem) — log auditável
+    match /pneu_movimentacoes/{id} {
+      allow read:   if temPermissao('pneus.ver') || isAtivo();
+      allow create: if temPermissao('pneus.criar') || temPermissao('pneus.editar') || isAtivo();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Abastecimentos importados da API CTA Smart (bomba do pátio).
+    // Leitura livre pra logado; escrita só via script server-side (Admin SDK bypassa rules).
+    match /abastecimentos_cta/{id} {
+      allow read:   if isAtivo();
+      allow write:  if false;
+    }
+
+    // Locais favoritos (pátio, filiais, clientes, postos frequentes) — usado em /rotas
+    match /locais_favoritos/{id} {
+      allow read:   if isAtivo();
+      allow create: if isAtivo();
+      allow update: if isAtivo();
+      allow delete: if temPermissao('frota.excluir') || isSuperAdmin();
+    }
+
   }
 }
