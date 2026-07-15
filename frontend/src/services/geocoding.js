@@ -128,6 +128,18 @@ export function distanciaHaversine(lat1, lng1, lat2, lng2) {
 }
 
 /**
+ * Formata km humano: < 1 km → "XXX m", 1-10 km → "X,X km", > 10 km → "X km".
+ * Evita a leitura confusa de "0,12 km" (que parece metros).
+ * @param {number} km  distância em quilômetros (pode ser fracional)
+ */
+export function fmtKm(km) {
+  if (km == null || !Number.isFinite(km)) return "—";
+  if (km < 1)  return `${Math.round(km * 1000)} m`;
+  if (km < 10) return `${km.toFixed(1).replace(".", ",")} km`;
+  return `${Math.round(km).toLocaleString("pt-BR")} km`;
+}
+
+/**
  * Photon (Komoot) — geocoder alternativo baseado em OSM.
  * Mais tolerante que Nominatim pra busca fuzzy de nomes/POIs.
  * Sem cadastro, sem key, sem rate limit prático.
