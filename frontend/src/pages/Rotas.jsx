@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { calcularRota, distanciaHaversine } from "../services/geocoding";
+import { calcularRota, distanciaHaversine, fmtKm } from "../services/geocoding";
 import { pedagiosNaRota, PEDAGIOS_META } from "../services/pedagios";
 import { violacoesEmLote } from "../services/violacaoRota";
 import BuscaEndereco from "../components/BuscaEndereco";
@@ -126,7 +126,7 @@ export default function Rotas() {
         {rota && (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: SPACING.sm, marginBottom: SPACING.md }}>
-              <KpiCard label="Distância real" value={`${rota.distanciaKm.toFixed(1)} km`} icon={<Route size={16}/>} tone="primary" sub={`Linha reta: ${linhaReta.toFixed(1)} km · ${desvio > 0 ? "+" : ""}${desvio.toFixed(0)}% de desvio`} />
+              <KpiCard label="Distância real" value={fmtKm(rota.distanciaKm)} icon={<Route size={16}/>} tone="primary" sub={`Linha reta: ${fmtKm(linhaReta)} · ${desvio > 0 ? "+" : ""}${desvio.toFixed(0)}% de desvio`} />
               <KpiCard label="Tempo estimado" value={`${Math.floor(rota.duracaoMin / 60)}h ${Math.round(rota.duracaoMin % 60)}min`} icon={<Clock size={16}/>} />
               <KpiCard label="Diesel estimado" value={`${litrosEstimados.toFixed(1)} L`} icon={<Fuel size={16}/>} sub={`${KM_POR_L} km/L (frota média)`} />
               <KpiCard label="Custo estimado" value={`R$ ${custoEstimado.toFixed(2)}`} icon={<DollarSign size={16}/>} tone="primary" sub={`${CPK_PADRAO.toFixed(2)} R$/km (CPK padrão)`} />
@@ -163,7 +163,7 @@ export default function Rotas() {
                   { key: "status", label: "", render: v => v.violando ? <Tag tone="danger">FORA</Tag> : <Tag tone="success">OK</Tag> },
                   { key: "placa", label: "Placa", render: v => <strong>{v.placa}</strong> },
                   { key: "motorista", label: "Motorista", render: v => v.motorista || "—" },
-                  { key: "dist", label: "Dist. da rota", align: "right", render: v => <strong style={{ color: v.violando ? COLORS.danger : COLORS.success }}>{v.distanciaKm.toFixed(2)} km</strong> },
+                  { key: "dist", label: "Dist. da rota", align: "right", render: v => <strong style={{ color: v.violando ? COLORS.danger : COLORS.success }}>{fmtKm(v.distanciaKm)}</strong> },
                   { key: "progresso", label: "Progresso rota", align: "right", render: v => `${v.progressoPct}%` },
                   { key: "vel", label: "Velocidade", align: "right", render: v => v.velocidade != null ? `${v.velocidade} km/h` : "—" },
                   { key: "local", label: "Cidade", render: v => `${v.cidade || "—"}${v.uf ? "/"+v.uf : ""}` },
@@ -191,7 +191,7 @@ export default function Rotas() {
                           </div>
                           <div style={{ fontSize: TYPO.xxs, color: COLORS.textLight, marginTop: 2 }}>{p.concessionaria}</div>
                         </div>
-                        <Tag tone="warning" size="sm">{p.distanciaKm} km</Tag>
+                        <Tag tone="warning" size="sm">{fmtKm(p.distanciaKm)}</Tag>
                       </div>
                     </div>
                   ))}
@@ -219,7 +219,7 @@ export default function Rotas() {
                           <div style={{ fontSize: 11 }}>{v.motorista || "—"}</div>
                           <div style={{ fontSize: 11, color: "#666" }}>{v.cidade}/{v.uf} · {v.velocidade || 0} km/h</div>
                           <div style={{ fontSize: 11, color: v.violando ? "#b91c1c" : "#0f766e", marginTop: 4, fontWeight: 600 }}>
-                            {v.distanciaKm.toFixed(2)} km da rota planejada
+                            {fmtKm(v.distanciaKm)} da rota planejada
                           </div>
                         </div>
                       </Popup>
@@ -233,7 +233,7 @@ export default function Rotas() {
                           <div style={{ fontSize: 11 }}>{p.rodovia} · km {p.km}</div>
                           <div style={{ fontSize: 11, color: "#666" }}>{p.municipio}/{p.uf}</div>
                           <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>{p.concessionaria}</div>
-                          <div style={{ fontSize: 10, color: "#999", marginTop: 4 }}>Distância à rota: {p.distanciaKm} km</div>
+                          <div style={{ fontSize: 10, color: "#999", marginTop: 4 }}>Distância à rota: {fmtKm(p.distanciaKm)}</div>
                         </div>
                       </Popup>
                     </Marker>
