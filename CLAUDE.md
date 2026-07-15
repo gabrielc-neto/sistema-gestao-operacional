@@ -33,7 +33,13 @@ Resultado: OK / erro X
 
 **Motivo:** user às vezes fecha terminal sem querer — o log é a única forma de recuperar contexto pra próxima sessão.
 
-*Regras do user 2026-07-15 — economizar tokens + garantir continuidade.*
+### 3. TODA mensagem do user vai pro vault (automático)
+
+Hook `UserPromptSubmit` em `.claude/settings.json` chama `salvar-prompt-user.mjs` → grava cada prompt em `docs/prompts-user/YYYY-MM-DD.md` com timestamp.
+
+Se hook falhar, EU faço append manualmente. **Toda mensagem = potencialmente relevante** (regras futuras nascem de comentários casuais que o user faz).
+
+*Regras do user 2026-07-15 — economizar tokens + garantir continuidade + salvar tudo que é dito.*
 
 ---
 
