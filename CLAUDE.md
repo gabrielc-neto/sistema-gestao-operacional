@@ -215,3 +215,17 @@ Popula 6 setores, 12 cargos e ~60 permissões. Idempotente — pode rodar vária
 ### Super Admin
 
 Usuário com `is_super_admin = true` ignora qualquer validação. Durante migração, `role: master`/`admin` legado também conta como Super Admin.
+
+---
+
+## Documentação relacionada
+
+- [[INDICE|🏠 Dashboard do vault]]
+- [[docs/01-visao-geral|1. Visão geral]]
+- [[docs/02-arquitetura|2. Arquitetura]]
+- [[docs/03-modelo-dados|3. Modelo de dados]]
+- [[docs/05-seguranca-rbac|5. Segurança/RBAC]]
+- [[docs/10-sascar-integracao|10. SASCAR]]
+- [[docs/15-roteirizacao|15. Roteirização]]
+- [[docs/memoria/MEMORY|🧠 Índice de memórias]]
+- [[docs/sessoes/2026-07-15|📅 Sessão atual]]

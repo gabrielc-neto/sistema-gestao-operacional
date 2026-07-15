@@ -80,3 +80,10 @@ Ver [docs/01-visao-geral.md](docs/01-visao-geral.md) para o roadmap completo.
 ## Licença
 
 © 2026 Pontual Logística. Todos os direitos reservados. Sistema proprietário.
+
+
+<!-- wikilinks-navegacao -->
+## Navegação Obsidian
+
+- [[INDICE|🏠 Dashboard]] · [[CLAUDE|📖 Contexto]] · [[SECURITY|🔒 Segurança]] · [[TUNNEL-URL|🌐 Túnel]]
+- [[docs/memoria/MEMORY|🧠 Memórias]]
