@@ -112,3 +112,13 @@ create table ctes_recebidos (
 ---
 
 *Relacionados: `12-migracao-postgresql-tms.md`, `04-modulos.md`. Memória: `project_tms_mapa_completo`.*
+
+---
+
+## Relacionado
+
+- Anterior: [[12-migracao-postgresql-tms]]
+- Próximo: [[14-levantamento-logistica]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

@@ -135,3 +135,12 @@ atrelamentos/{id}.eixosTotais    // cavalo + carretas atreladas
 2. Começar pela **Fase 0+1** (rota+ETA grátis) agora, ou esperar o cadastro de clientes entrar primeiro? (são a mesma base — dá pra fazer junto)
 
 Relacionado: [[14-levantamento-logistica]], [[13-modulo-terceiros]], `project-pedagio-veloe`, [[09-rastreamento]]
+
+---
+
+## Relacionado
+
+- Anterior: [[14-levantamento-logistica]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

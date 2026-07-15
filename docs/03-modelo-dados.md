@@ -505,3 +505,13 @@ Para evitar typos, valores enumerados estão em constantes em cada página. Exem
 ## Índices Firestore
 
 Atualmente nenhum índice composto explicitamente declarado em `firestore.indexes.json` (Firestore cria índices simples automaticamente). Quando aparecer o erro "needs an index", criar via console.
+
+---
+
+## Relacionado
+
+- Anterior: [[02-arquitetura]]
+- Próximo: [[04-modulos]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

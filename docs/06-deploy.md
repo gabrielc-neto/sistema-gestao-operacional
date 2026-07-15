@@ -229,3 +229,13 @@ Confirmar que `firebase.json` tem o bloco `rewrites` apontando todas as rotas pa
 - Aba anônima (Ctrl + Shift + N)
 - DevTools → Network → marcar "Disable cache"
 - Aguardar 5-10 min — Firebase tem CDN global, propagação não é instantânea
+
+---
+
+## Relacionado
+
+- Anterior: [[05-seguranca-rbac]]
+- Próximo: [[07-scripts]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

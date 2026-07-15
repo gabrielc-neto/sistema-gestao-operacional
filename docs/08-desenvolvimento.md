@@ -292,3 +292,13 @@ Sem prazo definido — backlog conforme a operação cresce:
 | Logs estruturados de auditoria | Média | Médio |
 | Dark mode em todas as telas (algumas faltam) | Baixa | Baixo |
 | Limpar campos legados (`role` em usuários) após migração RBAC completa | Baixa | Baixo |
+
+---
+
+## Relacionado
+
+- Anterior: [[07-scripts]]
+- Próximo: [[09-rastreamento]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]
