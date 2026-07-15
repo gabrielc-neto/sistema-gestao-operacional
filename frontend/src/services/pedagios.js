@@ -9,74 +9,73 @@ import { distanciaHaversine } from "./geocoding";
 export const PEDAGIOS = base.pedagios;
 export const PEDAGIOS_META = { fonte: base.fonte, atualizado: base.atualizado, total: base.total };
 
-// Tarifa base (Categoria 1 — auto/2 eixos) média por concessionária federal — 2026.
+// Tarifa base (Categoria 1 — auto/2 eixos) média por concessionária — 2026.
 // Padrão ANTT: caminhão paga tarifaBase × nº de eixos. Ex: bitrem 7 eixos numa
-// praça de R$ 12,50 (auto) = R$ 87,50.
-// Dados aproximados baseados em CSV vigente da ANTT. Ajustar quando houver reajuste.
+// praça de R$ 3,00 (auto) = R$ 21,00.
+//
+// Foco Paraná (operação Pontual): as 6 concessionárias dos "Novos Caminhos do PR"
+// (leilão 2023-2024, modelo pela MENOR tarifa) têm valores muito abaixo do
+// padrão nacional — muitas iniciaram em R$ 2-4. Antes existiam Rodonorte/
+// Ecovia/Viapar (Anel de Integração), mas essas concessões venceram em 2021.
 export const TARIFAS_BASE = {
-  "AUTOPISTA FLUMINENSE":   11.90,
-  "AUTOPISTA LITORAL SUL":  13.20,
-  "AUTOPISTA PLANALTO SUL": 12.50,
-  "AUTOPISTA REGIS BITTENCOURT": 15.80,
-  "AUTOPISTA FERNAO DIAS":  9.70,
-  "ARTERIS FERNAO DIAS":    9.70,
-  "ARTERIS PLANALTO SUL":   12.50,
+  // === NOVOS CAMINHOS DO PARANÁ (federais ANTT, ativas desde 2024) ===
+  "EPR IGUAÇU":              2.30,   // Lote 2 — BR-277 oeste (Cascavel↔Foz)
+  "EPR PARANÁ":              3.20,   // Lote 3 — BR-277 centro
+  "LITORAL PIONEIRO":        3.50,   // Lote 1 — BR-277 leste + BR-116 sul
+  "EPR LITORAL PIONEIRO":    3.50,
+  "VIA ARAUCÁRIA":           2.90,   // Lote 6 — BR-476 + BR-373 (região Pontual)
+  "VIA CAMPO":               3.10,   // Lote 6 — parte oeste
+  "PRVIAS":                  3.00,   // BR-369 / BR-153 (norte/noroeste PR)
+  "NOVA 116 PARANÁ":         3.40,   // BR-116 sul
+
+  // === PASSAGEM POR PR (concessões antigas ainda ativas na divisa) ===
+  "AUTOPISTA LITORAL SUL":  13.20,   // BR-376 rumo SC (litoral)
+  "AUTOPISTA PLANALTO SUL": 12.50,   // BR-116 rumo SC (planalto)
+  "AUTOPISTA REGIS BITTENCOURT": 15.80, // BR-116 rumo SP
   "ARTERIS LITORAL SUL":    13.20,
+  "ARTERIS PLANALTO SUL":   12.50,
   "ARTERIS REGIS BITTENCOURT": 15.80,
-  "ARTERIS FLUMINENSE":     11.90,
-  "ARTERIS VIAS DO PARANÁ": 10.40,
-  "ECO101":                 14.60,
-  "ECO050":                 15.30,
-  "ECO135":                 11.20,
-  "ECO SUL":                8.90,
-  "ECOPISTAS":              12.40,
-  "ECOVIAS":                20.50,
-  "ECORODOVIAS":            15.00,
-  "CCR MSVIA":              7.30,
-  "CCR RODONORTE":          9.80,
-  "CCR RODOANEL":           18.50,
-  "CCR AUTOBAN":            22.10,
-  "CCR VIA LAGOS":          19.80,
-  "CCR NOVADUTRA":          14.90,
-  "CCR VIA OESTE":          21.30,
-  "CCR PONTE":              6.80,
-  "CONCEBRA":               10.10,
-  "CONCEPA":                8.20,
-  "CONCER":                 13.70,
-  "TRIUNFO CONCEPA":        8.20,
-  "TRIUNFO":                12.00,
-  "VIA 040":                14.30,
-  "VIA BRASIL":             8.60,
-  "VIABAHIA":               12.90,
-  "VIAPAULISTA":            13.50,
-  "ROTA DO OESTE":          10.90,
-  "ROTA DOS COQUEIROS":     9.50,
-  "MSVIA":                  7.30,
-  "RUMO":                   10.00,
-  "PAR-045":                8.00,
+
+  // === Outras (rota rara pra Pontual, mantidas se sair do PR) ===
+  "ECO050":                 15.30, "ECO101": 14.60, "ECO135": 11.20,
+  "ECO SUL":                8.90,  "ECOPISTAS": 12.40, "ECOVIAS": 20.50, "ECORODOVIAS": 15.00,
+  "CCR MSVIA":              7.30,  "CCR AUTOBAN": 22.10, "CCR NOVADUTRA": 14.90,
+  "CCR VIA OESTE":          21.30, "CCR RODOANEL": 18.50, "CCR PONTE": 6.80,
+  "CONCEBRA":               10.10, "CONCEPA": 8.20, "CONCER": 13.70,
+  "VIA 040":                14.30, "VIA BRASIL": 8.60,
+  "AUTOPISTA FLUMINENSE":   11.90, "AUTOPISTA FERNAO DIAS": 9.70,
+  "ROTA DO OESTE":          10.90, "MSVIA": 7.30,
 };
-export const TARIFA_PADRAO = 11.00; // fallback pra concessionária sem tabela
+// Fallback conservador (média Novos Caminhos PR ~R$ 3,00)
+export const TARIFA_PADRAO = 3.00;
 
 /**
- * Mapeia tipo de veículo Pontual → nº de eixos (padrão ANTT).
- * Ajustar se sua frota tiver configurações diferentes.
+ * Configurações reais da frota Pontual: TODOS os cavalos são 3 eixos
+ * (trucado/traçado). O total de eixos vem do cavalo + semirreboque atrelado.
+ *
+ *   carreta   = cavalo 3 + carreta 2 eixos          = 5 eixos
+ *   bitrem    = cavalo 3 + 2 semirreboques (2+2)    = 7 eixos
+ *   rodotrem  = cavalo 3 + combinação 6 eixos       = 9 eixos
+ *
+ * Cavalo desatrelado ("só cabeça") não roda cliente = 3 eixos apenas por
+ * completude (usado se sistema precisar computar cavalo em manobra).
  */
 export const EIXOS_POR_TIPO = {
-  simples:   2,   // truck rodagem simples
-  toco:      2,
-  truck:     3,
-  bitruck:   4,
-  carreta:   5,   // cavalo 3 eixos + carreta 2 eixos
-  bitrem:    7,   // cavalo 3 + 2 semirreboques 2 eixos = 7 (varia com engate)
-  rodotrem: 9,   // cavalo 3 + 3 semirreboques ou combinação de 9 eixos
-  vanderleia:6,
+  cavalo:    3,   // trucado/traçado desatrelado (referência)
+  trucado:   3,
+  tracado:   3,
+  carreta:   5,   // cavalo 3 + carreta 2
+  simples:   5,   // alias — "carreta simples"
+  bitrem:    7,   // cavalo 3 + 2+2
+  rodotrem:  9,   // cavalo 3 + 3+3
+  vanderleia:6,   // exceção rara
 };
 
 export function eixosDoVeiculo(veiculo) {
-  if (!veiculo) return 2;
+  if (!veiculo) return 5;   // default Pontual = carreta simples (5 eixos)
   if (Number.isFinite(veiculo.eixos)) return veiculo.eixos;
   const tipo = String(veiculo.tipo || "").toLowerCase();
-  return EIXOS_POR_TIPO[tipo] || 2;
+  return EIXOS_POR_TIPO[tipo] || 5;
 }
 
 /**
@@ -99,8 +98,17 @@ export function tarifaBaseDaPraca(praca) {
  * @param {number} eixos  ex: 7 pra bitrem
  * @returns {number} R$
  */
-export function custoPedagio(praca, eixos = 2) {
-  return tarifaBaseDaPraca(praca) * Math.max(2, Number(eixos) || 2);
+export function custoPedagio(praca, eixos = 5) {
+  return tarifaBaseDaPraca(praca) * Math.max(2, Number(eixos) || 5);
+}
+
+/**
+ * Filtra pedágios só do Paraná — atalho pra operação Pontual.
+ * Inclui praças na divisa (BR-376 Autopista Litoral Sul, BR-116 Planalto Sul)
+ * que ficam em SC mas afetam viagem que sai do PR.
+ */
+export function pedagiosPr() {
+  return PEDAGIOS.filter(p => p.uf === "PR");
 }
 
 /**
