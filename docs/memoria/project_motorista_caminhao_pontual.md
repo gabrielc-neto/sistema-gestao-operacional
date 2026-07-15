@@ -26,3 +26,11 @@ metadata:
 Ao fazer cadastro ou tela que vincule motorista a caminhão, manter regra acima. Conferir com Wesley se aparecer dúvida.
 
 Relacionado: [[project_jornada_motorista_plano]], [[project_logistica_ia]]
+
+---
+
+## Relacionado por tema
+
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

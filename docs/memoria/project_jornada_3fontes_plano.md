@@ -188,3 +188,12 @@ Tudo converge em `motoristas/{id}/jornadas/{data}` + `sascar_posicoes` + `ordens
 Wesley diz "vamos pra fase 2 da jornada" ou "VDO" → revisar respostas das 5 perguntas + iniciar `vdoIngest` + página `/vdo`.
 
 Relacionado: [[project_jornada_motorista_plano]], [[reference_sascar_api]], [[project_rastreamento_sascar_fase2]], [[project_sascar_ibutton_diagnostico]], [[project_logistica_rastreamento_levantamento]], [[feedback_solides_so_adm]]
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **firebase**: [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]] · [[feedback_colocar_no_ar_completo]]

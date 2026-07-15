@@ -18,3 +18,9 @@ Disco F: é intocável. Não apagar, não mover, não reorganizar, não listar c
 - Vale pra delete, move, copy, scan recursivo, qualquer operação que leia/escreva em F:\.
 
 Relacionado: [[project_estado_atual]]
+
+---
+
+## Relacionado por tema
+
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

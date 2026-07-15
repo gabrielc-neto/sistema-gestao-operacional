@@ -97,3 +97,12 @@ Levantamento aprovado pelo Wesley para guiar evolução do sistema.
 - Apólice RCTR-C + RCF-DC obrigatória (carga perigosa — Decreto 61.867)
 - ValePedágio obrigatório (Lei 10.209)
 - Tacógrafo digital obrigatório (CONTRAN 1.111/2024)
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **cta**: [[feedback-windows-file-watcher]] · [[project_estado_atual]] · [[project_levantamento_logistica]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **pneus**: [[reference_padrao_visual_pontual_xlsx]]

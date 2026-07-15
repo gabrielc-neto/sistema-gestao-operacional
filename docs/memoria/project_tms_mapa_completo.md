@@ -35,3 +35,12 @@ Doc do Desktop ampliado 2026-05-22 com 3 seções novas:
 **Regra pra decidir integração futura:** só integra se (1) lei obriga, (2) cliente paga mais, ou (3) economiza tempo/erro toda semana. Senão, backlog. O gargalo é executar o núcleo (custo/margem + MDF-e), não falta de ferramenta.
 
 Relacionado: [[project_migracao_postgresql_tms]] (plano técnico doc 12), [[project_valorizacao_monetizacao]] (one-page de valor), [[project_logistica_rastreamento_levantamento]], [[project_scraping_tms]].
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **cta**: [[feedback-windows-file-watcher]] · [[project_estado_atual]] · [[project_levantamento_logistica]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **firebase**: [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]] · [[feedback_colocar_no_ar_completo]]

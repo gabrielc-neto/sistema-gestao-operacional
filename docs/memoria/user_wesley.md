@@ -29,3 +29,14 @@ Wesley = quem opera esta máquina de desenvolvimento.
 **Why:** Saber que o Wesley é quem operacionaliza muda o tom — comunicar diretamente decisões executivas em vez de tratar como repasse pra outra pessoa.
 
 **How to apply:** Em decisões sobre orçamento/escopo/integrações/deploy, falar como quem está discutindo direto com ele. Para próximas sessões, lembrar que a máquina é dele apesar do email Google ser da Rosilda. **NUNCA referenciar Wesley em terceira pessoa quando ele é o usuário ativo** — escrever "você decide", "se quiser ativar Blaze", não "aguardando Wesley liberar" ou "Wesley precisa autorizar". Ele já é o autorizador no ato de pedir.
+
+---
+*Ver também: [[MEMORY|Índice de memórias]] · [[INDICE|Dashboard]] · [[CLAUDE|Contexto Pontual]]*
+
+---
+
+## Relacionado por tema
+
+- **rbac**: [[feedback_sem_permissao]] · [[project-logistica-ia-frontend]] · [[project_apresentacao_mensal]]
+- **firebase**: [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]] · [[feedback_colocar_no_ar_completo]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]
