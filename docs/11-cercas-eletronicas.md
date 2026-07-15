@@ -299,3 +299,13 @@ firebase deploy --only hosting,functions,firestore:rules
 - Helper `pontoEmCorredor` (distância perpendicular ao segmento mais próximo)
 - Coleção `grupos_veiculos/{id}` com array de `idVeiculo`
 - Campo `escopo` na cerca: `"frota"` | `"grupo"` | `"veiculos"` + array de IDs
+
+---
+
+## Relacionado
+
+- Anterior: [[10-sascar-integracao]]
+- Próximo: [[12-migracao-postgresql-tms]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

@@ -418,3 +418,13 @@ export default function MinhaPagina() {
 
 const s = { /* styles inline */ };
 ```
+
+---
+
+## Relacionado
+
+- Anterior: [[03-modelo-dados]]
+- Próximo: [[05-seguranca-rbac]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

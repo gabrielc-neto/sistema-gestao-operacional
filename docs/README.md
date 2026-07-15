@@ -50,3 +50,10 @@ Sistema de gestão operacional para distribuidora de combustíveis (Pontual Log�
 | 2026-05-14 | Docs 09 e 10 adicionados; modelo de dados e módulos atualizados |
 | 2026-05-15 | Cercas Fase 1: cerca circular, edição com drag handles, detecção entrada/saída em `sascarPosicoes`, coleção `cercas_eventos`, painel de eventos no rastreamento, busca de endereço via ViaCEP + Nominatim estruturado, filtro client-side de cercas |
 | 2026-05-15 | Doc 11 adicionado; `cercas_eletronicas` ganhou formato/centro/raio; nova coleção `cercas_eventos`; `sascar_posicoes.ultimaPosicao` ganhou `dentroDe` |
+
+
+---
+
+## Navegação
+
+- [[INDICE|🏠 Dashboard]] · [[CLAUDE|📖 Contexto]] · [[MEMORY|🧠 Memórias]]
