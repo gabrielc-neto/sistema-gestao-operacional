@@ -14,9 +14,11 @@ import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
 import AbaControleRotina from "../manutencao/AbaControleRotina";
 import AbaEstoque from "../manutencao/AbaEstoque";
+import ChecklistMensalPanel from "./ChecklistMensalPanel";
 import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
   FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet, Gauge, SprayCan, Package,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -85,6 +87,8 @@ const TIPO_LANCAMENTO_SUGEST = [
 ];
 // Cabeçalho do lançamento (os serviços/peças ficam na lista `itens`)
 const EMPTY_LANC = {
+  osId:           "",
+  osNumero:       "",
   tipoLancamento: "",
   placa:          "",
   fornecedor:     "",
@@ -1036,11 +1040,13 @@ export default function Manutencao() {
   const [ordensServico,  setOrdensServico]  = useState([]);
   const [formOS, setFormOS] = useState({ ...EMPTY_OS });
   const [salvandoOS,     setSalvandoOS]     = useState(false);
+  const salvandoOSRef                       = useRef(false);
   const [erroOS,         setErroOS]         = useState("");
   // edição / finalização de OS
   const [editOS,         setEditOS]         = useState(null); // { os } sendo editada
   const [formEditOS,     setFormEditOS]     = useState({ ...EMPTY_OS });
   const [salvandoEdit,   setSalvandoEdit]   = useState(false);
+  const salvandoEditRef                     = useRef(false);
   const [erroEdit,       setErroEdit]       = useState("");
   // eslint-disable-next-line no-unused-vars -- WIP: usado pelo fluxo finalizar OS, em standby
   const [acaoOS,         setAcaoOS]         = useState(null); // id da OS em ação (finalizar)
@@ -1049,6 +1055,7 @@ export default function Manutencao() {
   const [formConclusao,   setFormConclusao]   = useState({ ...EMPTY_CONCLUSAO });
   const [erroConclusao,   setErroConclusao]   = useState("");
   const [salvandoConclusao, setSalvandoConclusao] = useState(false);
+  const salvandoConclusaoRef                = useRef(false);
   const [conclusaoItens,  setConclusaoItens]  = useState([]);                    // itens (servico/peca) do serviço executado
   const [itemDraftConcl,  setItemDraftConcl]  = useState({ ...EMPTY_ITEM });     // item sendo digitado
   // Lançamento de NF (registro de nota fiscal/custo — NÃO bloqueia veículo)
@@ -1162,12 +1169,14 @@ export default function Manutencao() {
   const [lancItens,       setLancItens]       = useState([]);                 // itens do lançamento sendo criado
   const [itemDraft,       setItemDraft]       = useState({ ...EMPTY_ITEM });  // item em digitação
   const [salvandoLanc,    setSalvandoLanc]    = useState(false);
+  const salvandoLancRef                       = useRef(false);
   const [erroLanc,        setErroLanc]        = useState("");
   const [editLanc,        setEditLanc]        = useState(null);
   const [formEditLanc,    setFormEditLanc]    = useState({ ...EMPTY_LANC });
   const [lancItensEdit,   setLancItensEdit]   = useState([]);
   const [itemDraftEdit,   setItemDraftEdit]   = useState({ ...EMPTY_ITEM });
   const [salvandoEditLanc, setSalvandoEditLanc] = useState(false);
+  const salvandoEditLancRef                     = useRef(false);
   const [erroEditLanc,    setErroEditLanc]    = useState("");
   const [anexosLanc,      setAnexosLanc]      = useState([]);
   const [uploadandoLanc,  setUploadandoLanc]  = useState(false);
@@ -1895,11 +1904,14 @@ export default function Manutencao() {
 
   async function salvarOS(e) {
     e.preventDefault();
+    // Guard sincrono ANTES de qualquer coisa — atomic check-and-set.
+    if (salvandoOSRef.current) return;
+    salvandoOSRef.current = true;
     setErroOS("");
     const placa = (formOS.placa || "").trim().toUpperCase();
-    if (!formOS.tipoServico) { setErroOS("Selecione o tipo de serviço."); return; }
-    if (!placa)              { setErroOS("Informe a placa.");             return; }
-    if (!formOS.motoristaId) { setErroOS("Selecione o motorista.");       return; }
+    if (!formOS.tipoServico) { setErroOS("Selecione o tipo de serviço."); salvandoOSRef.current = false; return; }
+    if (!placa)              { setErroOS("Informe a placa.");             salvandoOSRef.current = false; return; }
+    if (!formOS.motoristaId) { setErroOS("Selecione o motorista.");       salvandoOSRef.current = false; return; }
 
     setSalvandoOS(true);
     try {
@@ -1930,7 +1942,8 @@ export default function Manutencao() {
       };
       const ref = await addDoc(collection(db, "ordens_servico"), payload);
       const osCriada = { id: ref.id, ...payload };
-      setOrdensServico(prev => [osCriada, ...prev]);
+      // Não fazer optimistic push: onSnapshot já traz a OS nova.
+      // Optimistic aqui duplicava porque o snapshot chegava antes do await resolver.
       setFormOS({ ...EMPTY_OS });
 
       // bloqueia o veículo automaticamente (não derruba a OS se falhar por permissão)
@@ -1948,6 +1961,7 @@ export default function Manutencao() {
       setErroOS("Erro ao salvar: " + e.message);
     } finally {
       setSalvandoOS(false);
+      salvandoOSRef.current = false;
     }
   }
 
@@ -2023,6 +2037,7 @@ export default function Manutencao() {
 
   async function salvarConclusaoOS(e) {
     e.preventDefault();
+    if (salvandoConclusaoRef.current) return;
     if (!concluindoOS) return;
     const os = concluindoOS;
     const kmSaidaStr = String(formConclusao.kmSaida || "").replace(/\D/g, "");
@@ -2035,6 +2050,7 @@ export default function Manutencao() {
       setErroConclusao("Descreva o serviço executado.");
       return;
     }
+    salvandoConclusaoRef.current = true;
     setSalvandoConclusao(true);
     try {
       const fornecedorNome = (formConclusao.fornecedor || "").trim();
@@ -2079,6 +2095,7 @@ export default function Manutencao() {
       setErroConclusao("Erro ao salvar: " + e.message);
     } finally {
       setSalvandoConclusao(false);
+      salvandoConclusaoRef.current = false;
     }
   }
 
@@ -2099,6 +2116,7 @@ export default function Manutencao() {
 
   async function salvarEditOS(e) {
     e.preventDefault();
+    if (salvandoEditRef.current) return;
     if (!editOS) return;
     // trava de segurança — passou das 24h ou já finalizada
     if (!osEditavel(editOS)) { setErroEdit("Esta OS não pode mais ser editada (passou de 24h ou já finalizada)."); return; }
@@ -2108,6 +2126,7 @@ export default function Manutencao() {
     if (!placa)                  { setErroEdit("Informe a placa.");             return; }
     if (!formEditOS.motoristaId) { setErroEdit("Selecione o motorista.");       return; }
 
+    salvandoEditRef.current = true;
     setSalvandoEdit(true);
     try {
       const mot = motoristas.find(m => m.id === formEditOS.motoristaId);
@@ -2147,6 +2166,7 @@ export default function Manutencao() {
       setErroEdit("Erro ao salvar: " + e.message);
     } finally {
       setSalvandoEdit(false);
+      salvandoEditRef.current = false;
     }
   }
 
@@ -2297,12 +2317,14 @@ export default function Manutencao() {
 
   async function salvarLanc(e) {
     e.preventDefault();
+    if (salvandoLancRef.current) return;
+    salvandoLancRef.current = true;
     setErroLanc("");
     const placa = (formLanc.placa || "").trim().toUpperCase();
     const tipoLancamento = (formLanc.tipoLancamento || "").trim();
-    if (!tipoLancamento)        { setErroLanc("Informe o tipo de lançamento (ex: Elétrico, Motor, Inspeção)."); return; }
-    if (!placa)                 { setErroLanc("Selecione a placa."); return; }
-    if (lancItens.length === 0) { setErroLanc("Adicione pelo menos um serviço/peça."); return; }
+    if (!tipoLancamento)        { setErroLanc("Informe o tipo de lançamento (ex: Elétrico, Motor, Inspeção)."); salvandoLancRef.current = false; return; }
+    if (!placa)                 { setErroLanc("Selecione a placa."); salvandoLancRef.current = false; return; }
+    if (lancItens.length === 0) { setErroLanc("Adicione pelo menos um serviço/peça."); salvandoLancRef.current = false; return; }
 
     setSalvandoLanc(true);
     try {
@@ -2314,6 +2336,8 @@ export default function Manutencao() {
       const payload = {
         numero:         proximoNumeroLanc(),
         dataHora:       agora.toISOString(),
+        osId:           formLanc.osId || "",
+        osNumero:       formLanc.osNumero || "",
         tipoLancamento,
         placa,
         fornecedor:     (formLanc.fornecedor || "").trim(),
@@ -2333,12 +2357,15 @@ export default function Manutencao() {
       setErroLanc("Erro ao salvar: " + e.message);
     } finally {
       setSalvandoLanc(false);
+      salvandoLancRef.current = false;
     }
   }
 
   function abrirEditLanc(l) {
     setEditLanc(l);
     setFormEditLanc({
+      osId:           l.osId || "",
+      osNumero:       l.osNumero || "",
       tipoLancamento: l.tipoLancamento || "",
       placa:          l.placa || "",
       fornecedor:     l.fornecedor || "",
@@ -2374,6 +2401,7 @@ export default function Manutencao() {
 
   async function salvarEditLanc(e) {
     e.preventDefault();
+    if (salvandoEditLancRef.current) return;
     if (!editLanc) return;
     setErroEditLanc("");
     const placa = (formEditLanc.placa || "").trim().toUpperCase();
@@ -2382,6 +2410,7 @@ export default function Manutencao() {
     if (!placa)                     { setErroEditLanc("Selecione a placa."); return; }
     if (lancItensEdit.length === 0) { setErroEditLanc("Adicione pelo menos um serviço/peça."); return; }
 
+    salvandoEditLancRef.current = true;
     setSalvandoEditLanc(true);
     try {
       await garantirItemCatalogo("tipo_lancamento", tipoLancamento);
@@ -2389,6 +2418,8 @@ export default function Manutencao() {
       const itens = lancItensEdit;
       const valorTotal = itens.reduce((sum, it) => sum + (Number(it.valorTotal) || 0), 0);
       const updates = {
+        osId:         formEditLanc.osId || "",
+        osNumero:     formEditLanc.osNumero || "",
         tipoLancamento,
         placa,
         fornecedor:   (formEditLanc.fornecedor || "").trim(),
@@ -2407,6 +2438,7 @@ export default function Manutencao() {
       setErroEditLanc("Erro ao salvar: " + e.message);
     } finally {
       setSalvandoEditLanc(false);
+      salvandoEditLancRef.current = false;
     }
   }
 
@@ -2517,6 +2549,11 @@ export default function Manutencao() {
             )}
           </div>
         )}
+
+        <div style={s.navGroup}>
+          <span style={s.navGroupLabel}>Preventiva</span>
+          <NavTab icon={ClipboardCheck} label="Checklist Mensal" active={aba==="checklist"} onClick={() => setAba("checklist")} accent="#0891b2" />
+        </div>
 
         {podeVerAba("nf") && (
           <div style={s.navGroup}>
@@ -3251,6 +3288,40 @@ export default function Manutencao() {
             <form onSubmit={salvarLanc}>
               {/* Cabeçalho */}
               <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+                <label style={{ ...s.fieldLabel, gridColumn: "1 / -1" }}>
+                  OS relacionada <span style={{ color: "#64748b", fontWeight: 400, fontSize: ".72rem" }}>(opcional — se selecionar, preenche placa/fornecedor/hodômetro)</span>
+                  <select
+                    style={s.fieldInput}
+                    value={formLanc.osId}
+                    onChange={e => {
+                      const osId = e.target.value;
+                      if (!osId) {
+                        setFormLanc({ ...formLanc, osId: "", osNumero: "" });
+                        return;
+                      }
+                      const os = ordensServico.find(o => o.id === osId);
+                      if (!os) return;
+                      setFormLanc({
+                        ...formLanc,
+                        osId:       os.id,
+                        osNumero:   os.numero || "",
+                        placa:      os.placa || formLanc.placa,
+                        fornecedor: os.fornecedor || formLanc.fornecedor,
+                        hodometro:  formLanc.hodometro || (os.hodometroSaida != null ? String(os.hodometroSaida) : (os.hodometro != null ? String(os.hodometro) : "")),
+                      });
+                    }}
+                  >
+                    <option value="">— Nenhuma OS vinculada —</option>
+                    {[...ordensServico]
+                      .sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""))
+                      .map(o => (
+                        <option key={o.id} value={o.id}>
+                          {o.numero || "S/Nº"} · {o.placa || "—"} · {osStatus(o) === "finalizada" ? "Finalizada" : "Aberta"}{o.fornecedor ? ` · ${o.fornecedor}` : ""}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+
                 <div style={s.fieldLabel}>
                   Tipo de lançamento
                   <SearchSelect
@@ -3440,6 +3511,7 @@ export default function Manutencao() {
                   <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
                     <th style={thOS}>Nº</th>
                     <th style={thOS}>Data / hora</th>
+                    <th style={thOS}>OS</th>
                     <th style={thOS}>Lançamento</th>
                     <th style={thOS}>Item</th>
                     <th style={thOS}>Placa</th>
@@ -3450,13 +3522,22 @@ export default function Manutencao() {
                 </thead>
                 <tbody>
                   {lancamentos.length === 0 ? (
-                    <tr><td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Nenhum lançamento ainda</td></tr>
+                    <tr><td colSpan={9} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Nenhum lançamento ainda</td></tr>
                   ) : lancamentos.map(l => (
                     <tr key={l.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                       <td style={tdOS}><strong style={{ color: "#1a3a5c" }}>{l.numero}</strong></td>
                       <td style={tdOS}>
                         {fmtDateTimeBR(l.dataHora)}
                         {l.criadoPor && <div style={{ fontSize:".68rem", color:"#94a3b8", marginTop:3 }}>por {l.criadoPor}</div>}
+                      </td>
+                      <td style={tdOS}>
+                        {l.osNumero || l.osId ? (
+                          <span style={{ ...s.osBadge, background:"#dcfce7", color:"#166534" }}>
+                            {l.osNumero || "OS vinculada"}
+                          </span>
+                        ) : (
+                          <span style={{ color:"#94a3b8", fontSize:".72rem" }}>—</span>
+                        )}
                       </td>
                       <td style={tdOS}>
                         {l.tipoLancamento && <span style={{ ...s.osBadge, background:"#e0e7ff", color:"#4338ca" }}>{l.tipoLancamento}</span>}
@@ -3516,6 +3597,11 @@ export default function Manutencao() {
             </div>
           </div>
         </main>
+      )}
+
+      {/* ── ABA: CHECKLIST MENSAL DE MANUTENÇÃO PREVENTIVA ───────────── */}
+      {aba === "checklist" && (
+        <ChecklistMensalPanel veiculos={veiculos} profile={profile} />
       )}
 
       {/* ── ABA: CADASTROS (catálogo de tipos / serviços / peças) ─────── */}
@@ -4255,6 +4341,39 @@ export default function Manutencao() {
             </div>
 
             <form onSubmit={salvarEditLanc} style={s.form}>
+              <label style={s.fieldLabel}>
+                OS relacionada
+                <select
+                  style={s.fieldInput}
+                  value={formEditLanc.osId}
+                  onChange={e => {
+                    const osId = e.target.value;
+                    if (!osId) {
+                      setFormEditLanc({ ...formEditLanc, osId: "", osNumero: "" });
+                      return;
+                    }
+                    const os = ordensServico.find(o => o.id === osId);
+                    if (!os) return;
+                    setFormEditLanc({
+                      ...formEditLanc,
+                      osId:       os.id,
+                      osNumero:   os.numero || "",
+                      placa:      os.placa || formEditLanc.placa,
+                      fornecedor: os.fornecedor || formEditLanc.fornecedor,
+                    });
+                  }}
+                >
+                  <option value="">— Nenhuma OS vinculada —</option>
+                  {[...ordensServico]
+                    .sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""))
+                    .map(o => (
+                      <option key={o.id} value={o.id}>
+                        {o.numero || "S/Nº"} · {o.placa || "—"} · {osStatus(o) === "finalizada" ? "Finalizada" : "Aberta"}{o.fornecedor ? ` · ${o.fornecedor}` : ""}
+                      </option>
+                    ))}
+                </select>
+              </label>
+
               <div style={s.fieldLabel}>
                 Tipo de lançamento
                 <SearchSelect

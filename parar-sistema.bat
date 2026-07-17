@@ -1,7 +1,7 @@
 @echo off
 REM ============================================================
 REM  Para o ambiente Pontual Logistica
-REM  Mata processos nas portas 5173, 5001, 8080, 9099, 4000
+REM  Mata processos nas portas + tunel cloudflared
 REM ============================================================
 
 echo Parando Pontual Logistica...
@@ -15,6 +15,13 @@ for %%P in (%PORTS%) do (
         echo Matando processo PID %%A na porta %%P
         taskkill /F /PID %%A >nul 2>&1
     )
+)
+
+REM Cloudflared não tem porta fixa listening — mata por nome
+tasklist /FI "IMAGENAME eq cloudflared.exe" 2>nul | find /I "cloudflared.exe" >nul
+if %errorlevel%==0 (
+    echo Matando cloudflared.exe...
+    taskkill /F /IM cloudflared.exe >nul 2>&1
 )
 
 echo.

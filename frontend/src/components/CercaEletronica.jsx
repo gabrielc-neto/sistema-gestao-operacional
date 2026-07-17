@@ -51,7 +51,7 @@ export default function CercaEletronica({ cercas = [] }) {
   return (
     <>
       {cercas.map(c => {
-        const cor = c.cor || "#2563eb";
+        const cor = c.cor || "var(--accent)";
         const style = {
           color: cor,
           weight: 2,

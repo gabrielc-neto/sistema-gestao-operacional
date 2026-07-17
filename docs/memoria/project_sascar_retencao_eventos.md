@@ -56,3 +56,12 @@ Adicionar banner na /jornada quando período passa de 4 dias:
 Wesley diz "ainda tá puxando errado o período" ou "vou perguntar SASCAR sobre histórico" → revisar este arquivo + decidir entre Caminho A/B/C.
 
 Relacionado: [[project_jornada_motorista_plano]], [[project_jornada_3fontes_plano]], [[reference_sascar_api]], [[project_producao_deploy_pausado]]
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **firebase**: [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]] · [[feedback_colocar_no_ar_completo]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

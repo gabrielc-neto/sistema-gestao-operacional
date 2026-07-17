@@ -12,3 +12,11 @@ Na estação do Wesley (Windows, shell PowerShell mas Bash tool roda bash), pass
 **Why:** O Bash tool interpreta `\` como escape antes do comando rodar. PowerShell aceitaria, mas as Bash calls não.
 
 **How to apply:** Sempre usar barras normais e aspas em paths Windows no Bash tool: `cd "C:/Users/Logistica01/projetos/logistica-ia"`. Vale pra subir Vite/Functions emulator do projeto [[project-estado-atual]] e qualquer comando com caminho absoluto.
+
+---
+
+## Relacionado por tema
+
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_colocar_no_ar_completo]]
+- **firebase**: [[feedback_auditoria_estatica_nao_basta]] · [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

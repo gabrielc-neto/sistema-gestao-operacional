@@ -302,3 +302,13 @@ Sem WhatsApp, sem Google Maps, sem app PWA motorista.
 3. **Cache em memória não é compartilhado entre instâncias** — se `maxInstances > 1` cada uma terá seu cache. Para essa escala (poucos usuários simultâneos) `maxInstances: 5` está OK.
 
 4. **Persistência no Firestore não inclui histórico** — só a última posição é salva. Pra trajeto histórico, criar subcoleção `sascar_posicoes/{id}/historico/{idPacote}` no futuro (gera muito write/read; ponderar).
+
+---
+
+## Relacionado
+
+- Anterior: [[09-rastreamento]]
+- Próximo: [[11-cercas-eletronicas]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

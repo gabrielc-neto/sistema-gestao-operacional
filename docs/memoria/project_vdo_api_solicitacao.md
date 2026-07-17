@@ -85,3 +85,12 @@ Wesley retorna com info do suporte VDO → atualizar este arquivo com:
 E revisar [[project_jornada_3fontes_plano]] Fase 2 com o caminho escolhido.
 
 Relacionado: [[project_jornada_3fontes_plano]], [[feedback_vdo_nao_sascar]], [[project_jornada_motorista_plano]]
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **firebase**: [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]] · [[feedback_colocar_no_ar_completo]]

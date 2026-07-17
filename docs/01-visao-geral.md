@@ -107,3 +107,12 @@ URL: https://pontual-logistica.web.app
 - ⏳ Multi-tenancy ativo (estrutura prevista, ainda não isolado por empresa)
 - ⏳ Cobrança Stripe
 - ⏳ Módulo Financeiro
+
+---
+
+## Relacionado
+
+- Próximo: [[02-arquitetura]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

@@ -9,3 +9,12 @@ Sempre que o usuário fizer perguntas sobre IA, agentes, RAG, cloud, function ca
 **Why:** Usuário quer respostas baseadas no conteúdo que ele mesmo curou no NotebookLM, não apenas no conhecimento geral do Claude.
 
 **How to apply:** Usar `notebooklm ask "<pergunta>"` com PYTHONUTF8=1 para consultar o notebook ativo. O notebook principal é "Gemini API Function Calling and FAME Agentic Workflows" (ID: f16c2ae5). Rodar via Bash e usar a resposta como base.
+
+---
+*Ver também: [[MEMORY|Índice de memórias]] · [[INDICE|Dashboard]] · [[CLAUDE|Contexto Pontual]]*
+
+---
+
+## Relacionado por tema
+
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

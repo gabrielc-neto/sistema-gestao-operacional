@@ -12,21 +12,21 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      try {
-        if (firebaseUser) {
+      if (firebaseUser) {
+        // Define o usuário assim que autentica (não espera o perfil).
+        setUser(firebaseUser);
+        try {
           const snap = await getDoc(doc(db, "usuarios", firebaseUser.uid));
-          setUser(firebaseUser);
           setProfile(snap.exists() ? snap.data() : {});
-        } else {
-          setUser(null);
-          setProfile(null);
+        } catch {
+          // Falha ao ler o perfil NÃO deve deslogar o usuário.
+          setProfile({});
         }
-      } catch {
+      } else {
         setUser(null);
         setProfile(null);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     });
     return unsub;
   }, []);

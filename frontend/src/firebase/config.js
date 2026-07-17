@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { initializeFirestore, memoryLocalCache } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
@@ -17,10 +17,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
-// Persistência offline multi-tab: 2ª carga em diante vem do IndexedDB local (instantâneo),
-// sincroniza em background. Funciona em todas as páginas que leem do `db`.
+// Cache em memória (sem IndexedDB persistente) — evita OSs "fantasma" no browser do usuário
+// quando conexão cai. Cada nova sessão vê o estado real do servidor.
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  localCache: memoryLocalCache(),
 });
 export const storage = getStorage(app);
 export const functions = getFunctions(app, "southamerica-east1");

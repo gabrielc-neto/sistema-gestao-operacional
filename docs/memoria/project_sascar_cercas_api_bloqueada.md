@@ -22,3 +22,12 @@ Wesley decidiu (2026-05-21): **cerca eletrônica vai ser gerenciada na SASCAR**,
 - Evento 658 (Ancora) = entrada/saída de cerca, se quiser eventos depois.
 
 Junto dos outros bloqueios de suporte SASCAR: [[project_sascar_ibutton_diagnostico]] (iButton 6/66), [[project_sascar_retencao_eventos]] (retenção curta). Ver [[reference_sascar_api]].
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **rbac**: [[feedback_sem_permissao]] · [[project-logistica-ia-frontend]] · [[project_apresentacao_mensal]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

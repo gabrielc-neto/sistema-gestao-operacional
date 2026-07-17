@@ -4,7 +4,7 @@ import { collection, getDocs, query, orderBy, addDoc, updateDoc, doc, onSnapshot
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
-import { Package, MapPin, ClipboardCheck, RefreshCw, LayoutDashboard, ShoppingCart } from "lucide-react";
+import { Package, MapPin, ClipboardCheck, RefreshCw, LayoutDashboard, ShoppingCart, History } from "lucide-react";
 import { STATUS_PNEU } from "../pneus/esquemas";
 import AbaEstoque from "../pneus/AbaEstoque";
 import AbaFrota from "../pneus/AbaFrota";
@@ -12,6 +12,7 @@ import AbaInspecao from "../pneus/AbaInspecao";
 import AbaRecapagem from "../pneus/AbaRecapagem";
 import AbaDashboard from "../pneus/AbaDashboard";
 import AbaCompras from "../pneus/AbaCompras";
+import AbaHistorico from "../pneus/AbaHistorico";
 
 // Normaliza nome pra comparação (case + espaço)
 const normNome = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -46,6 +47,7 @@ const ABAS = [
   { id: "frota",      label: "Frota",       icon: MapPin,         accent: "#2563eb" },
   { id: "inspecao",   label: "Inspeção",    icon: ClipboardCheck, accent: "#7c3aed" },
   { id: "recapagem",  label: "Recapagem",   icon: RefreshCw,      accent: "#b45309" },
+  { id: "historico",  label: "Histórico",   icon: History,        accent: "#7c3aed" },
   { id: "dashboard",  label: "Dashboard",   icon: LayoutDashboard, accent: "#0891b2" },
 ];
 
@@ -190,6 +192,7 @@ export default function Pneus() {
         {aba === "frota"     && <AbaFrota pneus={pneus} setPneus={setPneus} profile={profile} />}
         {aba === "inspecao"  && <AbaInspecao pneus={pneus} setPneus={setPneus} profile={profile} />}
         {aba === "recapagem" && <AbaRecapagem pneus={pneus} setPneus={setPneus} fornecedores={fornecedores} garantirFornecedor={garantirFornecedor} quemSou={quemSou} />}
+        {aba === "historico" && <AbaHistorico pneus={pneus} />}
         {aba === "dashboard" && <AbaDashboard pneus={pneus} />}
       </main>
     </div>

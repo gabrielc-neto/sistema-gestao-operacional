@@ -21,3 +21,15 @@ Apresentação mensal do sistema (manutenção, rastreio, jornada) para o setor 
 **Aprovado pelo Wesley (2026-05-20):** o resultado da primeira versão "ficou bom" — design/estrutura/paleta validados, manter esse padrão como base. O Wesley vai pedir MAIS MODIFICAÇÕES em cima desse arquivo. Editar/iterar o `.pptx` existente em vez de recriar do zero, preservando o estilo aprovado.
 
 Maio/2026: primeira entrega — entrada do colaborador Thiago (gestão de manutenção, OS, lançamento de notas, novos fornecedores). Arquivo: `Desktop\Apresentacao_Sistema_Maio2026.pptx`. Status: aprovado, em iteração.
+
+---
+*Ver também: [[MEMORY|Índice de memórias]] · [[INDICE|Dashboard]] · [[CLAUDE|Contexto Pontual]]*
+
+---
+
+## Relacionado por tema
+
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **rbac**: [[feedback_sem_permissao]] · [[project-logistica-ia-frontend]] · [[project_estado_atual]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

@@ -1,4 +1,4 @@
-const ASSET_VERSION = "20260616-1022";
+const ASSET_VERSION = "20260713-white";
 
 export default function LogoPontual({ height = 60, variant = "color" }) {
   const base = variant === "white" ? "/pontual-logo-white.png" : "/pontual-logo.png";

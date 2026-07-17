@@ -18,3 +18,12 @@ Frontend em `C:\Users\Logistica01\projetos\logistica-ia\frontend` (Vite+React, d
 **Why:** Wesley autorizou só os baixo-risco. Os 20 restantes mexem em mapa ao vivo, polling SASCAR (risco de loop = custo) e login/permissões (maior blast radius). Sem teste automatizado pra validar refactor.
 
 **How to apply:** NÃO "re-corrigir" os 20 sem pedido explícito. Se atacar, tela-por-tela com dev server aberto. 🔴 alto risco (Rastreamento, MapaFrota, useSascarPosicoes, contexts) = só com teste manual cuidadoso. Dashboard.jsx 100% limpo. Estilo cauteloso reforçado por [[feedback_analise_esportiva_checklist]].
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **rbac**: [[feedback_sem_permissao]] · [[project-logistica-ia-frontend]] · [[project_apresentacao_mensal]]

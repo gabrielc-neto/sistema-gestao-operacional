@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { collection, doc, setDoc, getDocs, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
-import LogoPontual from "../components/LogoPontual";
+import ModuleHeader from "../components/ModuleHeader";
 import { VEICULOS_IMPORT, MOTORISTAS_IMPORT, MANUTENCOES_IMPORT } from "../data/dadosFrota";
 import { MANUTENCOES_EXTRA } from "../data/dadosFrotaExtra";
-import { LAVAGEM_CALIBRAGEM_IMPORT } from "../data/dadosLavagemCalibragem";
+import { Truck, User, Wrench, ClipboardList, AlertTriangle, Trash2, Loader2, RefreshCw, Rocket, CheckCircle2 } from "lucide-react";
 
 // Normaliza nome para uso como ID de documento
 const toId = (s) => s.toLowerCase().trim().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
@@ -45,7 +45,7 @@ export default function ImportAdmin() {
   }
 
   if (!isAdmin) {
-    return <div style={s.wrap}><p style={{ padding: 40, color: "#dc2626" }}>Acesso restrito a administradores.</p></div>;
+    return <div style={s.wrap}><p style={{ padding: 40, color: "var(--danger)" }}>Acesso restrito a administradores.</p></div>;
   }
 
   // ── Importar Veículos ────────────────────────────────────────────────────
@@ -205,30 +205,6 @@ export default function ImportAdmin() {
     addLog(`Manutenções: ${salvos} registros importados.`, "ok");
   }
 
-  // ── Importar Lavagem + Calibragem (planilha "Controle Frota Lavagem Calibragem.xlsx") ─
-  async function importarLavagemCalibragem() {
-    addLog(`Importando Lavagem + Calibragem (${LAVAGEM_CALIBRAGEM_IMPORT.length} registros)...`, "info");
-    let salvos = 0;
-    for (const m of LAVAGEM_CALIBRAGEM_IMPORT) {
-      const placa = (m.placa || "").trim();
-      if (!placa || !m.tipo) continue;
-      const placaId = placa.toLowerCase().replace(/[^a-z0-9]/g, "_");
-      const docId = `${placaId}__${m.tipo}`;
-      const payload = {
-        tipo:        m.tipo,
-        label:       m.label || m.tipo,
-        grupo:       "Mecânica",
-        placa,
-        data_realiz: m.data_realiz || null,
-        venc:        m.venc || null,
-        updatedAt:   new Date().toISOString(),
-      };
-      await setDoc(doc(db, "manutencoes", docId), payload, { merge: true });
-      salvos++;
-    }
-    addLog(`Lavagem + Calibragem: ${salvos} registros importados.`, "ok");
-  }
-
   // ── Importar Manutenções Extra (abas restantes da planilha) ────────────────
   async function importarManutencoesExtra() {
     addLog(`Importando ${MANUTENCOES_EXTRA.length} registros extras (extintores, NR-20/35, licenças, engraxe, calibragem, bateria)...`, "info");
@@ -289,7 +265,6 @@ export default function ImportAdmin() {
       await importarMotoristas();
       await importarManutencoes();
       await importarManutencoesExtra();
-      await importarLavagemCalibragem();
       addLog("=== IMPORTAÇÃO CONCLUÍDA COM SUCESSO ===", "ok");
       setConcluido(true);
     } catch (e) {
@@ -302,97 +277,68 @@ export default function ImportAdmin() {
 
   return (
     <div style={s.wrap}>
-      <header style={s.header} className="pg-header">
-        <div className="pg-header-center" style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <LogoPontual height={36} variant="white" />
-          <h1 style={s.title}>Importação de Dados — Planilha Frota</h1>
-        </div>
-        <div className="pg-header-actions">
-          <button style={s.backBtn} onClick={() => navigate("/dashboard")}>← Dashboard</button>
-        </div>
-      </header>
+      <ModuleHeader title="Importação de Dados — Planilha Frota" />
 
-      <main style={s.main} className="pg-body">
+      <main style={s.main}>
         <div style={s.card}>
           <h2 style={s.cardTitle}>O que será importado</h2>
           <div style={s.preview}>
             <div style={s.previewItem}>
-              <span style={s.badge}>🚛 {VEICULOS_IMPORT.length}</span>
+              <span style={s.badge}><Truck size={14} /> {VEICULOS_IMPORT.length}</span>
               <div>
                 <strong>Veículos</strong>
                 <div style={s.previewDesc}>Adiciona: Chassi, RENAVAM, Tara, Ano Fab/Mod, Tipo Conjunto, Rota, Compartimentos, Capacidade</div>
               </div>
             </div>
             <div style={s.previewItem}>
-              <span style={s.badge}>👤 {MOTORISTAS_IMPORT.length}</span>
+              <span style={s.badge}><User size={14} /> {MOTORISTAS_IMPORT.length}</span>
               <div>
                 <strong>Motoristas</strong>
                 <div style={s.previewDesc}>Adiciona: CPF, Telefone, Nº Frota, Tipo — não sobrescreve CNH já cadastrada</div>
               </div>
             </div>
             <div style={s.previewItem}>
-              <span style={s.badge}>🔧 {MANUTENCOES_IMPORT.length}</span>
+              <span style={s.badge}><Wrench size={14} /> {MANUTENCOES_IMPORT.length}</span>
               <div>
                 <strong>Manutenções — Base</strong>
                 <div style={s.previewDesc}>CIV (cavalo + carretas), Tacógrafo, MOPP, Validade CNH com datas de vencimento reais</div>
               </div>
             </div>
             <div style={s.previewItem}>
-              <span style={s.badge}>📋 {MANUTENCOES_EXTRA.length}</span>
+              <span style={s.badge}><ClipboardList size={14} /> {MANUTENCOES_EXTRA.length}</span>
               <div>
                 <strong>Manutenções — Extra</strong>
                 <div style={s.previewDesc}>Extintor cabine/carreta, NR-20, NR-35, Licença PR/Federal, Engraxe, Calibragem, Bateria</div>
               </div>
             </div>
-            <div style={s.previewItem}>
-              <span style={s.badge}>🚿 {LAVAGEM_CALIBRAGEM_IMPORT.length}</span>
-              <div>
-                <strong>Lavagem + Calibragem</strong>
-                <div style={s.previewDesc}>Última lavagem/lubrificação (35d) e calibragem de pneus (10d) — planilha "Controle Frota Lavagem Calibragem"</div>
-              </div>
-            </div>
           </div>
 
           <div style={s.aviso}>
-            <strong>⚠️ Atenção:</strong> Esta importação usa <code>merge: true</code> — dados existentes são complementados, não apagados.
+            <strong style={{ display:"inline-flex", alignItems:"center", gap:6 }}><AlertTriangle size={15} /> Atenção:</strong> Esta importação usa <code>merge: true</code> — dados existentes são complementados, não apagados.
             Execute apenas uma vez. Se rodar novamente, sobrescreve com os mesmos dados.
           </div>
 
           <button
-            style={{ ...s.btn, marginBottom: 8, background:"#dc2626", opacity: rodando ? 0.6 : 1 }}
+            style={{ ...s.btn, marginBottom: 8, background:"var(--danger)", opacity: rodando ? 0.6 : 1, display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8 }}
             onClick={limparInvalidos}
             disabled={rodando}
           >
-            🗑 Limpar Registros Inválidos (carretas e lixo da importação)
+            <Trash2 size={16} /> Limpar Registros Inválidos (carretas e lixo da importação)
           </button>
 
           <button
-            style={{ ...s.btn, opacity: rodando ? 0.6 : 1 }}
+            style={{ ...s.btn, opacity: rodando ? 0.6 : 1, display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8 }}
             onClick={executar}
             disabled={rodando}
           >
-            {rodando ? "⏳ Importando..." : concluido ? "🔄 Reimportar (merge)" : "🚀 Executar Importação"}
-          </button>
-
-          <button
-            style={{ ...s.btn, marginTop: 8, background: "#0891b2", opacity: rodando ? 0.6 : 1 }}
-            onClick={async () => {
-              setRodando(true);
-              try { await importarLavagemCalibragem(); }
-              catch (e) { addLog(`ERRO: ${e.message}`, "erro"); }
-              finally { setRodando(false); }
-            }}
-            disabled={rodando}
-            title="Roda só o import de Lavagem + Calibragem (sem tocar em veículos/motoristas/outras manutenções)"
-          >
-            🚿 Importar só Lavagem + Calibragem
+            {rodando ? (<><Loader2 size={16} /> Importando...</>) : concluido ? (<><RefreshCw size={16} /> Reimportar (merge)</>) : (<><Rocket size={16} /> Executar Importação</>)}
           </button>
         </div>
 
         {log.length > 0 && (
           <div style={s.logBox}>
             {log.map((l, i) => (
-              <div key={i} style={{ ...s.logLine, color: l.tipo === "erro" ? "#dc2626" : l.tipo === "ok" ? "#15803d" : "#374151" }}>
+              <div key={i} style={{ ...s.logLine, color: l.tipo === "erro" ? "var(--danger)" : l.tipo === "ok" ? "var(--success)" : "var(--text)" }}>
                 <span style={s.logTs}>{l.ts}</span> {l.msg}
               </div>
             ))}
@@ -401,7 +347,7 @@ export default function ImportAdmin() {
 
         {concluido && (
           <div style={s.success}>
-            ✅ Todos os dados foram importados com sucesso!
+            <CheckCircle2 size={18} /> Todos os dados foram importados com sucesso!
             <button style={{ ...s.backBtnGreen }} onClick={() => navigate("/frota")}>Ver Frota →</button>
             <button style={{ ...s.backBtnGreen }} onClick={() => navigate("/motoristas")}>Ver Motoristas →</button>
             <button style={{ ...s.backBtnGreen }} onClick={() => navigate("/manutencao")}>Ver Manutenção →</button>
@@ -414,21 +360,21 @@ export default function ImportAdmin() {
 
 const s = {
   wrap:        { minHeight:"100vh", background:"var(--bg)", fontFamily:"system-ui,sans-serif" },
-  header:      { background:"#1a3a5c", borderBottom:"4px solid transparent", borderImage:"linear-gradient(90deg,#3d6b47,#6aaa5e,#b5d947,#f5c318,#f0a500) 1", padding:"10px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 2px 8px rgba(0,0,0,.15)" },
+  header:      { background:"var(--header-bg)", borderBottom: "1px solid var(--header-border)", padding:"10px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 2px 8px rgba(0,0,0,.15)" },
   title:       { color:"#fff", fontSize:"1.1rem", fontWeight:700, margin:0 },
-  backBtn:     { padding:"6px 16px", background:"#f5c318", border:"none", borderRadius:6, fontSize:".82rem", cursor:"pointer", color:"#1a3a5c", fontWeight:700 },
+  backBtn:     { padding:"6px 16px", background:"var(--header-btn-bg)", border:"none", borderRadius:6, fontSize:".82rem", cursor:"pointer", color:"var(--accent)", fontWeight:700, display:"inline-flex", alignItems:"center", gap:6 },
   main:        { padding:"32px 24px", maxWidth:800, margin:"0 auto", display:"flex", flexDirection:"column", gap:20 },
   card:        { background:"var(--card-bg)", border:"1px solid var(--border)", borderRadius:14, padding:28 },
-  cardTitle:   { fontSize:"1.1rem", fontWeight:700, color:"#1a3a5c", marginBottom:20, marginTop:0 },
+  cardTitle:   { fontSize:"1.1rem", fontWeight:700, color:"var(--accent)", marginBottom:20, marginTop:0 },
   preview:     { display:"flex", flexDirection:"column", gap:14, marginBottom:24 },
   previewItem: { display:"flex", alignItems:"flex-start", gap:14 },
-  badge:       { background:"#dbeafe", color:"#1d4ed8", borderRadius:10, padding:"4px 14px", fontWeight:700, fontSize:".9rem", whiteSpace:"nowrap", minWidth:80, textAlign:"center" },
+  badge:       { background:"var(--accent-soft)", color:"var(--accent)", borderRadius:10, padding:"4px 14px", fontWeight:700, fontSize:".9rem", whiteSpace:"nowrap", minWidth:80, display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6 },
   previewDesc: { fontSize:".8rem", color:"var(--text-muted)", marginTop:3, lineHeight:1.5 },
-  aviso:       { background:"#fef9c3", border:"1px solid #fde68a", borderRadius:8, padding:"12px 16px", fontSize:".83rem", color:"#92400e", marginBottom:20, lineHeight:1.6 },
-  btn:         { width:"100%", padding:"14px", background:"#1a3a5c", color:"#fff", border:"none", borderRadius:8, fontSize:"1rem", fontWeight:700, cursor:"pointer" },
-  logBox:      { background:"#0f172a", borderRadius:10, padding:20, fontFamily:"monospace", fontSize:".8rem", maxHeight:400, overflowY:"auto" },
+  aviso:       { background:"var(--warning-bg)", border:"1px solid #fde68a", borderRadius:8, padding:"12px 16px", fontSize:".83rem", color:"var(--warning)", marginBottom:20, lineHeight:1.6 },
+  btn:         { width:"100%", padding:"14px", background:"var(--accent)", color:"#fff", border:"none", borderRadius:8, fontSize:"1rem", fontWeight:700, cursor:"pointer" },
+  logBox:      { background:"var(--text)", borderRadius:10, padding:20, fontFamily:"monospace", fontSize:".8rem", maxHeight:400, overflowY:"auto" },
   logLine:     { marginBottom:4, lineHeight:1.5 },
-  logTs:       { color:"#64748b", marginRight:8 },
-  success:     { background:"#f0fdf4", border:"1px solid #86efac", borderRadius:10, padding:20, display:"flex", gap:12, alignItems:"center", flexWrap:"wrap", fontWeight:600, color:"#15803d" },
-  backBtnGreen:{ padding:"8px 16px", background:"#15803d", color:"#fff", border:"none", borderRadius:6, cursor:"pointer", fontWeight:600, fontSize:".85rem" },
+  logTs:       { color:"var(--text-muted)", marginRight:8 },
+  success:     { background:"var(--success-bg)", border:"1px solid #86efac", borderRadius:10, padding:20, display:"flex", gap:12, alignItems:"center", flexWrap:"wrap", fontWeight:600, color:"var(--success)" },
+  backBtnGreen:{ padding:"8px 16px", background:"var(--success)", color:"#fff", border:"none", borderRadius:6, cursor:"pointer", fontWeight:600, fontSize:".85rem" },
 };

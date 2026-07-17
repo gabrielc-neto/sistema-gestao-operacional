@@ -19,3 +19,10 @@ Wesley quer **capturar valor financeiro** pelo sistema de gestão logística que
 Regra: não inventar métricas (ver [[project_apresentacao_mensal]]) — números de infra são estimativa Blaze; HE/multas dependem de dado real da Pontual.
 
 Próximo passo oferecido e não iniciado: rascunho de como estruturar a sociedade do SaaS pra levar pro Gabriel/advogado.
+
+---
+
+## Relacionado por tema
+
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]
+- **apresentacao**: [[feedback_arquivo_explicito_obrigatorio]] · [[feedback_auto_skills]] · [[feedback_dados_reais]]

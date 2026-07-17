@@ -60,3 +60,12 @@ Jornada é efêmera (busca ao vivo) + SASCAR esquece em 3-4 dias = sem backup, s
 3. Guardar eventos brutos também ou só a jornada calculada? (brutos = poder recalcular se regra mudar)
 
 Relacionado: [[project_jornada_motorista_plano]], [[project_jornada_3fontes_plano]], [[project_sascar_retencao_eventos]], [[project_producao_deploy_pausado]], [[reference_sascar_api]]
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **firebase**: [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]] · [[feedback_colocar_no_ar_completo]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

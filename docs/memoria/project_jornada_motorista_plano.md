@@ -141,3 +141,12 @@ SEM gravação no Firestore necessária — SASCAR é fonte da verdade.
 Wesley diz "vamos pra fase A de jornada" → criar Cloud Function + página. Já tem base SASCAR rodando.
 
 Relacionado: [[project_rastreamento_sascar_fase2]], [[project_sascar_cameras_plano]], [[reference_sascar_api]]
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **firebase**: [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]] · [[feedback_colocar_no_ar_completo]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

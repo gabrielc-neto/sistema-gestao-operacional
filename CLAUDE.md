@@ -1,5 +1,48 @@
 # Sistema Logística IA — Distribuidora de Petróleo
 
+## ⚡ REGRAS PERMANENTES — LER ANTES DE FAZER QUALQUER COISA
+
+### 1. ANTES: consultar contexto
+
+Ao iniciar sessão nova, LER (sem perguntar ao user):
+
+1. **Última sessão** — `docs/sessoes/` (mais recente por data, foco na seção "Pendente / próximos passos")
+2. **Memórias** — `docs/memoria/MEMORY.md` (índice das 82+ decisões/feedbacks/projects)
+3. **Assunto específico** — se user cita tema, `grep` em `docs/conversas-claude/`
+
+**NÃO perguntar:** "onde paramos?", "qual contexto?", "já fizemos X?" — está tudo no vault.
+
+**Abrir com:** 1 frase resumindo pendências ("Vi que ontem paramos em [X], continuando...") ou 2-3 opções concretas.
+
+### 2. DURANTE: registrar toda modificação no vault
+
+**Cada bloco de trabalho** (não cada arquivo, mas cada ação lógica) → append em `docs/sessoes/YYYY-MM-DD.md`:
+
+```markdown
+## HH:MM — Título curto
+Descrição 2-3 linhas.
+Arquivos: file1, file2
+Resultado: OK / erro X
+```
+
+**Fazer:**
+- Mesmo sem commit git (user às vezes pede "não commite" e ainda quer o registro)
+- Mesmo em correções pequenas (1 linha basta)
+- Antes de tentativas destrutivas (registro do "antes")
+- Ao fim de cada resposta complexa (sem esperar user pedir)
+
+**Motivo:** user às vezes fecha terminal sem querer — o log é a única forma de recuperar contexto pra próxima sessão.
+
+### 3. TODA mensagem do user vai pro vault (automático)
+
+Hook `UserPromptSubmit` em `.claude/settings.json` chama `salvar-prompt-user.mjs` → grava cada prompt em `docs/prompts-user/YYYY-MM-DD.md` com timestamp.
+
+Se hook falhar, EU faço append manualmente. **Toda mensagem = potencialmente relevante** (regras futuras nascem de comentários casuais que o user faz).
+
+*Regras do user 2026-07-15 — economizar tokens + garantir continuidade + salvar tudo que é dito.*
+
+---
+
 ## Contexto da Empresa
 
 - **Setor**: Distribuidora de combustíveis (petróleo)
@@ -215,3 +258,17 @@ Popula 6 setores, 12 cargos e ~60 permissões. Idempotente — pode rodar vária
 ### Super Admin
 
 Usuário com `is_super_admin = true` ignora qualquer validação. Durante migração, `role: master`/`admin` legado também conta como Super Admin.
+
+---
+
+## Documentação relacionada
+
+- [[INDICE|🏠 Dashboard do vault]]
+- [[docs/01-visao-geral|1. Visão geral]]
+- [[docs/02-arquitetura|2. Arquitetura]]
+- [[docs/03-modelo-dados|3. Modelo de dados]]
+- [[docs/05-seguranca-rbac|5. Segurança/RBAC]]
+- [[docs/10-sascar-integracao|10. SASCAR]]
+- [[docs/15-roteirizacao|15. Roteirização]]
+- [[docs/memoria/MEMORY|🧠 Índice de memórias]]
+- [[docs/sessoes/2026-07-15|📅 Sessão atual]]

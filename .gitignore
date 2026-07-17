@@ -4,6 +4,18 @@
 .env.*.local
 *.local
 
+# Projetos experimentais / arquivados (não versionados)
+experimentos/
+arquivo/
+.obsidian/
+
+# Conversas Claude Code (podem conter dados operacionais/tokens)
+docs/conversas-claude/
+
+# Túnel Cloudflare — muda a cada boot
+TUNNEL-URL.md
+tunnel.log
+
 # Logs
 *.log
 logs

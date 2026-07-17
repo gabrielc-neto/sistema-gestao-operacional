@@ -17,3 +17,11 @@ Sólides só vale pra funcionário administrativo da Pontual. Motorista NÃO usa
 - Em qualquer dúvida sobre "ponto desse funcionário" — primeiro perguntar se é motorista ou ADM antes de propor solução.
 
 Relacionado: [[project_jornada_motorista_plano]], [[project_jornada_3fontes_plano]], [[project_logistica_rastreamento_levantamento]]
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **jornada**: [[feedback_projeto]] · [[feedback_vdo_nao_sascar]] · [[project_apresentacao_mensal]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]
