@@ -1,4 +1,4 @@
-# 12 — Migração para PostgreSQL + Arquitetura do TMS (produto SaaS)
+o que # 12 — Migração para PostgreSQL + Arquitetura do TMS (produto SaaS)
 
 [← voltar ao índice](README.md)
 
@@ -156,3 +156,13 @@ Começar pelos módulos que **vendem** (2, 3, 5). Pontual valida como cliente re
 ---
 
 **Próximos passos quando começar:** Fase 0 — criar projeto Supabase, modelar o schema (seção 4) com `empresa_id` + RLS, importar usuários. Validar isolamento multi-tenant com 2 empresas de teste antes de construir módulo.
+
+---
+
+## Relacionado
+
+- Anterior: [[11-cercas-eletronicas]]
+- Próximo: [[13-modulo-terceiros]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

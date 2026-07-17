@@ -1,21 +1,22 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { X } from "lucide-react";
 import {
   collection, getDocs, setDoc, deleteDoc,
   doc, query, orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
-import LogoPontual from "../components/LogoPontual";
+import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 const toId = (nome) =>
   nome.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
 
 const STATUS_COLORS = {
-  ativo:     { bg: "#dcfce7", color: "#15803d", label: "Ativo" },
-  inativo:   { bg: "#fef9c3", color: "#a16207", label: "Inativo" },
-  desligado: { bg: "#fee2e2", color: "#dc2626", label: "Desligado" },
+  ativo:     { bg: "var(--success-bg)", color: "var(--success)", label: "Ativo" },
+  inativo:   { bg: "var(--warning-bg)", color: "var(--warning)", label: "Inativo" },
+  desligado: { bg: "var(--danger-bg)", color: "var(--danger)", label: "Desligado" },
 };
 
 const DOCS_MOTORISTA = [
@@ -36,10 +37,10 @@ function calcStatus(vencStr) {
 }
 
 const STATUS_STYLE = {
-  vencido:  { bg: "#dc2626", color: "#fff" },
-  alerta:   { bg: "#f59e0b", color: "#fff" },
-  ok:       { bg: "#16a34a", color: "#fff" },
-  sem_data: { bg: "#e2e8f0", color: "#94a3b8" },
+  vencido:  { bg: "var(--danger)", color: "#fff" },
+  alerta:   { bg: "var(--warning)", color: "#fff" },
+  ok:       { bg: "var(--success)", color: "#fff" },
+  sem_data: { bg: "var(--border)", color: "var(--text-subtle)" },
 };
 
 function fmtDate(str) {
@@ -57,7 +58,6 @@ const EMPTY_FORM = {
 // ── componente ──────────────────────────────────────────────────────────────
 export default function Motoristas() {
   const { profile } = useAuth();
-  const navigate    = useNavigate();
   const canDelete   = ["master", "admin"].includes(profile?.role);
 
   const [motoristas, setMotoristas]   = useState([]);
@@ -196,15 +196,7 @@ export default function Motoristas() {
     <div style={s.wrap}>
 
       {/* HEADER */}
-      <header style={s.header} className="pg-header">
-        <div className="pg-logo"><LogoPontual height={36} variant="white" /></div>
-        <h1 style={s.headerTitle}>Motoristas</h1>
-        <div className="pg-header-actions">
-          <button style={s.backBtn} onClick={() => navigate("/dashboard")}>
-            ← Dashboard
-          </button>
-        </div>
-      </header>
+      <ModuleHeader title="Motoristas" />
 
       {/* TOOLBAR */}
       <div style={s.toolbar} className="pg-toolbar">
@@ -235,14 +227,14 @@ export default function Motoristas() {
 
       {/* BANNER ALERTAS */}
       {alertasBanner.length > 0 && (
-        <div style={{ background: "#fef2f2", borderBottom: "1px solid #fca5a5", padding: "10px 24px" }}>
-          <strong style={{ color: "#b91c1c", fontSize: 13 }}>Atenção — Documentos vencidos ou próximos do vencimento:</strong>
+        <div style={{ background: "var(--danger-bg)", borderBottom: "1px solid #fca5a5", padding: "10px 24px" }}>
+          <strong style={{ color: "var(--danger)", fontSize: 13 }}>Atenção — Documentos vencidos ou próximos do vencimento:</strong>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
             {alertasBanner.map((a, i) => (
               <span key={i} style={{
-                background: a.st === "vencido" ? "#fef2f2" : "#fffbeb",
-                border: `1px solid ${a.st === "vencido" ? "#fca5a5" : "#fcd34d"}`,
-                color: a.st === "vencido" ? "#b91c1c" : "#92400e",
+                background: a.st === "vencido" ? "var(--danger-bg)" : "var(--warning-bg)",
+                border: `1px solid ${a.st === "vencido" ? "var(--danger-border)" : "var(--warning-border)"}`,
+                color: a.st === "vencido" ? "var(--danger)" : "var(--warning)",
                 borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 600,
               }}>
                 {a.nome} — {a.label}: {fmtDate(a.venc)}
@@ -257,6 +249,27 @@ export default function Motoristas() {
 
       {/* CONTEÚDO */}
       <main style={s.main} className="pg-body">
+        <ExportBar
+          titulo="Motoristas"
+          arquivo="motoristas"
+          subtitulo={() => `${lista.length} motorista(s)${filtroStatus !== "todos" ? ` · filtro: ${filtroStatus}` : ""}${busca ? ` · busca: "${busca}"` : ""}`}
+          dados={() => ({
+            colunas: ["Nome", "Contrato", "CNH", "Categoria", "Telefone", "Status", "CNH venc.", "MOPP venc.", "NR-20 venc.", "NR-35 venc.", "Observações"],
+            linhas: lista.map((m) => [
+              m.nome || "",
+              m.tipoContrato === "px" ? "PX (agregado/PJ)" : "Interno (CLT)",
+              m.cnh || "",
+              m.cat || "",
+              m.tel || "",
+              STATUS_COLORS[m.status]?.label || m.status || "",
+              fmtDate(m.cnh_venc),
+              fmtDate(m.mopp_venc),
+              fmtDate(m.nr20_venc),
+              fmtDate(m.nr35_venc),
+              m.obs || "",
+            ]),
+          })}
+        />
         {loading ? (
           <p style={s.info}>Carregando...</p>
         ) : lista.length === 0 ? (
@@ -275,9 +288,9 @@ export default function Motoristas() {
                   </div>
                   <div style={{ marginBottom: 6 }}>
                     {m.tipoContrato === "px" ? (
-                      <span style={{ ...s.badge, background: "#ede9fe", color: "#6d28d9" }}>PX · agregado (PJ)</span>
+                      <span style={{ ...s.badge, background: "var(--accent-soft)", color: "var(--accent)" }}>PX · agregado (PJ)</span>
                     ) : (
-                      <span style={{ ...s.badge, background: "#dbeafe", color: "#1d4ed8" }}>Interno · frota (CLT)</span>
+                      <span style={{ ...s.badge, background: "var(--accent-soft)", color: "var(--accent)" }}>Interno · frota (CLT)</span>
                     )}
                   </div>
                   <div style={s.cardRow}>
@@ -294,7 +307,7 @@ export default function Motoristas() {
                   </div>
                   {/* Vencimentos */}
                   <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px dashed #e2e8f0" }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>Documentos</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-subtle)", marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>Documentos</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                       {DOCS_MOTORISTA.map(({ campo, label }) => {
                         const st = calcStatus(m[campo]);
@@ -342,7 +355,7 @@ export default function Motoristas() {
               <h2 style={s.modalTitle}>
                 {editando ? "Editar Motorista" : "Novo Motorista"}
               </h2>
-              <button style={s.closeBtn} onClick={fecharModal}>✕</button>
+              <button style={s.closeBtn} onClick={fecharModal}><X size={18}/></button>
             </div>
 
             <form onSubmit={salvar} style={s.form}>
@@ -411,7 +424,7 @@ export default function Motoristas() {
               </label>
 
               {/* Vencimentos */}
-              <div style={{ fontSize: ".82rem", fontWeight: 700, color: "#475569", borderTop: "1px solid #e5e7eb", paddingTop: 10, marginTop: 2 }}>
+              <div style={{ fontSize: ".82rem", fontWeight: 700, color: "var(--text-muted)", borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 2 }}>
                 Vencimentos de Documentos
               </div>
               <div style={s.row2}>
@@ -485,21 +498,21 @@ export default function Motoristas() {
 
 // ── estilos ──────────────────────────────────────────────────────────────────
 const s = {
-  wrap:        { minHeight: "100vh", background: "var(--bg)", fontFamily: "system-ui, sans-serif" },
+  wrap:        { minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)" },
 
   // header
-  header:      { background: "#1a3a5c", borderBottom: "4px solid transparent", borderImage: "linear-gradient(90deg, #3d6b47, #6aaa5e, #b5d947, #f5c318, #f0a500) 1", padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 8px rgba(0,0,0,.15)" },
+  header:      { background: "var(--header-bg)", borderBottom: "1px solid var(--header-border)", padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 8px rgba(0,0,0,.15)" },
   logo:        { height: 36, objectFit: "contain" },
   headerTitle: { color: "#fff", fontSize: "1.15rem", fontWeight: 700, margin: 0, flex: 1, textAlign: "center" },
-  backBtn:     { padding: "6px 16px", background: "#f5c318", border: "none", borderRadius: 6, fontSize: ".82rem", cursor: "pointer", color: "#1a3a5c", fontWeight: 700 },
+  backBtn:     { padding: "6px 16px", background: "var(--header-btn-bg)", border: "none", borderRadius: 6, fontSize: ".82rem", cursor: "pointer", color: "var(--accent)", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 },
 
   // toolbar
   toolbar:     { display: "flex", alignItems: "center", gap: 12, padding: "14px 24px", background: "var(--card-bg)", borderBottom: "1px solid var(--border)", flexWrap: "wrap" },
-  input:       { flex: 1, minWidth: 200, padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: ".9rem", outline: "none" },
+  input:       { flex: 1, minWidth: 200, padding: "8px 12px", border: "1px solid var(--border-strong)", borderRadius: 6, fontSize: ".9rem", outline: "none" },
   filtros:     { display: "flex", gap: 6 },
-  filtroBtn:   { padding: "6px 14px", border: "1px solid #cbd5e1", borderRadius: 20, background: "var(--bg)", cursor: "pointer", fontSize: ".8rem", color: "#475569" },
-  filtroBtnAtivo: { background: "#1a3a5c", color: "#fff", borderColor: "#1a3a5c" },
-  newBtn:      { padding: "7px 18px", background: "#1a3a5c", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: ".85rem" },
+  filtroBtn:   { padding: "6px 14px", border: "1px solid var(--border-strong)", borderRadius: 20, background: "var(--bg)", cursor: "pointer", fontSize: ".8rem", color: "var(--text-muted)" },
+  filtroBtnAtivo: { background: "var(--accent)", color: "#fff", borderColor: "var(--accent)" },
+  newBtn:      { padding: "7px 18px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: ".85rem" },
 
   // main / grid
   main:        { padding: "24px", maxWidth: 1200, margin: "0 auto" },
@@ -509,31 +522,31 @@ const s = {
   // card
   card:        { background: "var(--card-bg)", borderRadius: 10, padding: 18, border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(0,0,0,.06)" },
   cardHeader:  { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
-  cardNome:    { fontWeight: 700, color: "#1a3a5c", fontSize: "1rem", lineHeight: 1.3 },
+  cardNome:    { fontWeight: 700, color: "var(--accent)", fontSize: "1rem", lineHeight: 1.3 },
   badge:       { padding: "2px 10px", borderRadius: 20, fontSize: ".72rem", fontWeight: 700, whiteSpace: "nowrap" },
   cardRow:     { display: "flex", justifyContent: "space-between", marginBottom: 5, fontSize: ".84rem" },
-  cardLabel:   { color: "#94a3b8", fontWeight: 500 },
+  cardLabel:   { color: "var(--text-subtle)", fontWeight: 500 },
   cardVal:     { color: "var(--text)", fontWeight: 500 },
   cardObs:     { marginTop: 8, fontSize: ".78rem", color: "var(--text-muted)", background: "var(--bg)", padding: "6px 8px", borderRadius: 6, lineHeight: 1.4 },
   cardActions: { display: "flex", gap: 8, marginTop: 14 },
-  editBtn:     { flex: 1, padding: "6px 0", background: "#dbeafe", color: "#1d4ed8", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: ".82rem" },
-  delBtn:      { flex: 1, padding: "6px 0", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: ".82rem" },
+  editBtn:     { flex: 1, padding: "6px 0", background: "var(--accent-soft)", color: "var(--accent)", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: ".82rem" },
+  delBtn:      { flex: 1, padding: "6px 0", background: "var(--danger-bg)", color: "var(--danger)", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: ".82rem" },
 
   // modal / overlay
   overlay:     { position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 16 },
   modal:       { background: "var(--card-bg)", borderRadius: 12, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.25)" },
   modalHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 24px 0" },
-  modalTitle:  { fontSize: "1.1rem", fontWeight: 700, color: "#1a3a5c", margin: 0 },
+  modalTitle:  { fontSize: "1.1rem", fontWeight: 700, color: "var(--accent)", margin: 0 },
   closeBtn:    { background: "none", border: "none", fontSize: "1.1rem", cursor: "pointer", color: "var(--text-muted)" },
 
   // form
   form:        { padding: 24, display: "flex", flexDirection: "column", gap: 14 },
-  label:       { display: "flex", flexDirection: "column", gap: 5, fontSize: ".85rem", fontWeight: 600, color: "#374151" },
-  required:    { color: "#dc2626" },
-  fieldInput:  { padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: ".9rem", outline: "none", fontFamily: "inherit" },
+  label:       { display: "flex", flexDirection: "column", gap: 5, fontSize: ".85rem", fontWeight: 600, color: "var(--text)" },
+  required:    { color: "var(--danger)" },
+  fieldInput:  { padding: "8px 10px", border: "1px solid var(--border-strong)", borderRadius: 6, fontSize: ".9rem", outline: "none", fontFamily: "inherit" },
   row2:        { display: "flex", gap: 12 },
-  erroMsg:     { color: "#dc2626", fontSize: ".82rem", background: "#fee2e2", padding: "6px 10px", borderRadius: 6 },
+  erroMsg:     { color: "var(--danger)", fontSize: ".82rem", background: "var(--danger-bg)", padding: "6px 10px", borderRadius: 6 },
   formFooter:  { display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 },
-  cancelBtn:   { padding: "8px 20px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: ".85rem", color: "#475569" },
-  saveBtn:     { padding: "8px 24px", background: "#f5c318", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontSize: ".85rem", color: "#1a3a5c" },
+  cancelBtn:   { padding: "8px 20px", background: "var(--surface-3)", border: "1px solid var(--border-strong)", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: ".85rem", color: "var(--text-muted)" },
+  saveBtn:     { padding: "8px 24px", background: "var(--accent)", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontSize: ".85rem", color: "#fff" },
 };

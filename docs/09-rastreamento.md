@@ -183,3 +183,13 @@ Próximos itens previstos pro módulo (não implementados ainda):
 - Score motorista: frenagem brusca, curva agressiva (campos `eventos` do pacote SASCAR)
 - Integração com OC: bloqueio de OC quando motorista não cumpriu 11h de descanso (precisa VDO antes)
 - Bloqueio remoto via UI: pendente da doc XML-RPC da SASCAR
+
+---
+
+## Relacionado
+
+- Anterior: [[08-desenvolvimento]]
+- Próximo: [[10-sascar-integracao]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

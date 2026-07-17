@@ -232,3 +232,13 @@ Se o `serviceAccountKey.json` for comprometido:
 4. Salve em `scripts/serviceAccountKey.json` (sobrescrevendo)
 
 A chave excluída deixa de funcionar imediatamente.
+
+---
+
+## Relacionado
+
+- Anterior: [[04-modulos]]
+- Próximo: [[06-deploy]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]
