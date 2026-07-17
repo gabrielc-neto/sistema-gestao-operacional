@@ -8,6 +8,7 @@ import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import crypto from 'node:crypto';
 
 import {
   obterVeiculos,
@@ -405,4 +406,43 @@ function statusFromPacote(p) {
   if (ign) return 'PARADO_LIGADO';
   return 'ESTACIONADO';
 }
+
+// INTRANET — portão restrito (rede da base + palavra-chave)
+const INTRANET_SALT = 'pontual-intranet-v1';
+function hashIntranetKeyword(k) { return crypto.createHash('sha256').update(INTRANET_SALT + String(k)).digest('hex'); }
+function ipDoCliente(request) {
+  const xff = request.rawRequest?.headers?.['x-forwarded-for'];
+  if (xff) return String(xff).split(',')[0].trim();
+  return request.rawRequest?.ip || '';
+}
+function ipParaLong(ip) {
+  const p = String(ip).split('.'); if (p.length !== 4) return null;
+  let n = 0; for (const o of p) { const x = Number(o); if (!Number.isInteger(x) || x < 0 || x > 255) return null; n = n * 256 + x; }
+  return n >>> 0;
+}
+function ipCombina(ip, regra) {
+  if (!regra) return false; regra = String(regra).trim();
+  if (regra.includes('/')) {
+    const [base, bitsStr] = regra.split('/'); const bits = Number(bitsStr);
+    const ipL = ipParaLong(ip); const baseL = ipParaLong(base);
+    if (ipL == null || baseL == null || !Number.isInteger(bits) || bits < 0 || bits > 32) return false;
+    const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0;
+    return (ipL & mask) === (baseL & mask);
+  }
+  return String(ip) === regra;
+}
+export const intranetGate = onCall(async (request) => {
+  const { keyword } = request.data || {};
+  const snap = await db.collection('intranet').doc('config').get();
+  const cfg = snap.exists ? snap.data() : {};
+  const ips = Array.isArray(cfg.ips) ? cfg.ips.filter(Boolean) : [];
+  const ip = ipDoCliente(request);
+  const ipOk = ips.length === 0 || ips.some((r) => ipCombina(ip, r));
+  if (!ipOk) throw new HttpsError('permission-denied', 'Acesso à Intranet permitido apenas na rede da base.');
+  if (keyword == null || keyword === '') return { ipOk: true };
+  if (!cfg.keywordHash) throw new HttpsError('failed-precondition', 'Intranet ainda não configurada.');
+  if (hashIntranetKeyword(keyword) !== cfg.keywordHash) throw new HttpsError('permission-denied', 'Palavra-chave incorreta.');
+  return { ok: true };
+});
+
 

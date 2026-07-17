@@ -15,6 +15,8 @@ export const MODULOS = [
   { id: "oc",          label: "Ordens de Carregamento" },
   { id: "manutencao",  label: "Manutenção" },
   { id: "pneus",       label: "Pneus" },
+  { id: "compras",     label: "Compras" },
+  { id: "intranet",    label: "Intranet / Gerenciamento de Sistemas" },
   { id: "ferias",      label: "Férias" },
   { id: "historico",   label: "Histórico" },
   { id: "relatorios",  label: "Relatórios" },
@@ -54,6 +56,10 @@ const EXTRAS = [
   { nome: "pneus.instalar", descricao: "Instalar pneu em posição do veículo", modulo: "pneus", acao: "instalar" },
   { nome: "pneus.remover",  descricao: "Remover pneu de posição do veículo",  modulo: "pneus", acao: "remover"  },
   { nome: "pneus.rodizio",  descricao: "Rodízio (trocar posição) de pneu",    modulo: "pneus", acao: "rodizio"  },
+
+  { nome: "compras.aprovar",     descricao: "Aprovar pedido de compra",                  modulo: "compras",  acao: "aprovar"     },
+  { nome: "intranet.configurar", descricao: "Configurar Intranet / Gerenciamento",       modulo: "intranet", acao: "configurar"  },
+  { nome: "intranet.propostas",  descricao: "Gerenciar propostas + convites",            modulo: "intranet", acao: "propostas"   },
 ];
 
 function rotulo(modulo, acao) {

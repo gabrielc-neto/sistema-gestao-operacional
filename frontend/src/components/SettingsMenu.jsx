@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
+import { Settings, Sun, Moon, LogOut } from "lucide-react";
 
 const ROLE_LABEL = {
   master: "Administrador", admin: "Administrador", diretor: "Diretor",
@@ -47,9 +48,11 @@ export default function SettingsMenu() {
           color: "#fff",
           lineHeight: 1,
           transition: "background .15s",
+          display: "inline-flex",
+          alignItems: "center",
         }}
       >
-        ⚙️
+        <Settings size={20} />
       </button>
 
       {open && (
@@ -81,7 +84,7 @@ export default function SettingsMenu() {
               borderBottom: "1px solid var(--border)",
             }}
           >
-            <span style={{ fontSize: "1.1rem" }}>{isDark ? "☀️" : "🌙"}</span>
+            <span style={{ display: "inline-flex", alignItems: "center" }}>{isDark ? <Sun size={18} /> : <Moon size={18} />}</span>
             {isDark ? "Tema Claro" : "Tema Escuro"}
           </button>
 
@@ -92,10 +95,10 @@ export default function SettingsMenu() {
               display: "flex", alignItems: "center", gap: 10,
               width: "100%", padding: "11px 16px",
               background: "none", border: "none", textAlign: "left",
-              cursor: "pointer", fontSize: ".85rem", color: "#ef4444",
+              cursor: "pointer", fontSize: ".85rem", color: "var(--danger)",
             }}
           >
-            <span style={{ fontSize: "1.1rem" }}>🚪</span>
+            <span style={{ display: "inline-flex", alignItems: "center" }}><LogOut size={18} /></span>
             Sair
           </button>
         </div>
