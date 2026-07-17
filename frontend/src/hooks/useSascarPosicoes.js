@@ -1,9 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { callFunction } from "../firebase/callFunction";
 
-// Polling padrão 2 min — reduz pressão no Firestore (free tier 50k reads/dia).
-// SASCAR atualiza posição a cada ~30-60s no lado dele; 2min do frontend é OK operacionalmente.
-export function useSascarPosicoes({ intervalMs = 120_000 } = {}) {
+export function useSascarPosicoes({ intervalMs = 30_000 } = {}) {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -26,12 +24,7 @@ export function useSascarPosicoes({ intervalMs = 120_000 } = {}) {
   useEffect(() => {
     fetchOnce();
     timer.current = setInterval(fetchOnce, intervalMs);
-    // Só refaz ao voltar a aba se passou mais de 60s desde o último fetch
-    const onVisible = () => {
-      if (document.hidden) return;
-      const last = timer.lastMs || 0;
-      if (Date.now() - last > 60_000) { fetchOnce(); timer.lastMs = Date.now(); }
-    };
+    const onVisible = () => { if (!document.hidden) fetchOnce(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       clearInterval(timer.current);

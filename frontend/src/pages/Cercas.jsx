@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Polygon, Polyline, Marker, Circle, useMapEvents, useMap, Tooltip, LayersControl } from "react-leaflet";
 import { divIcon } from "leaflet";
-import { ArrowLeft, Trash2, X, Check, Search, Undo2, MapPin, Locate, Hexagon, Circle as CircleIcon, Pencil, Save } from "lucide-react";
+import { Trash2, X, Check, Search, Undo2, Locate, Hexagon, Circle as CircleIcon, Pencil, Save } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useCercas } from "../hooks/useCercas";
 import { useAuth } from "../contexts/AuthContext";
+import ModuleHeader from "../components/ModuleHeader";
+import ExportBar from "../components/ExportBar";
 
 const CORES = [
   { v: "#2563eb", n: "Azul" },
@@ -25,7 +26,7 @@ const CENTRO = [-25.5504, -49.3682]; // Araucária
 // Ícones
 function vertexIcon() {
   return divIcon({
-    html: `<div style="width:12px;height:12px;background:#1a3a5c;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.5)"></div>`,
+    html: `<div style="width:12px;height:12px;background:#18216E;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.5)"></div>`,
     className: "vertex-icon",
     iconSize: [16, 16],
     iconAnchor: [8, 8],
@@ -45,7 +46,7 @@ function editHandleIcon() {
 // Ícone do centro durante edição de círculo
 function centerHandleIcon() {
   return divIcon({
-    html: `<div style="width:22px;height:22px;background:#1a3a5c;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.45);cursor:grab;display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:#fff;border-radius:50%"></div></div>`,
+    html: `<div style="width:22px;height:22px;background:#18216E;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.45);cursor:grab;display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:#fff;border-radius:50%"></div></div>`,
     className: "center-handle-icon",
     iconSize: [28, 28],
     iconAnchor: [14, 14],
@@ -118,7 +119,6 @@ function formatarArea(m2) {
 }
 
 export default function Cercas() {
-  const navigate = useNavigate();
   const { cercas, loading } = useCercas();
   const { user } = useAuth();
 
@@ -414,58 +414,51 @@ export default function Cercas() {
   }, [formato, pontos, raio]);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f0f4f8", fontFamily: "system-ui" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)" }}>
       {/* Header */}
-      <div className="pg-header" style={{ padding: "0.6rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", borderBottom: "1px solid #e2e8f0", flexWrap: "wrap", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => navigate("/rastreamento")} style={btnGhost}>
-            <ArrowLeft size={16} /> Rastreamento
-          </button>
-          <h1 style={{ margin: 0, color: "#1a3a5c", fontSize: "1.1rem", display: "flex", alignItems: "center", gap: 6 }}>
-            <MapPin size={18} color="#ea580c" /> Cercas Eletrônicas
-          </h1>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {!drawing ? (
+      <ModuleHeader
+        title="Cercas Eletrônicas"
+        actions={
+          !drawing ? (
             <>
-              <button onClick={() => iniciarDesenho("circulo")} style={btnPrimary} title="Cerca circular (centro + raio)">
+              <button onClick={() => iniciarDesenho("circulo")} className="mod-hbtn-alt" title="Cerca circular (centro + raio)">
                 <CircleIcon size={14} /> Círculo
               </button>
-              <button onClick={() => iniciarDesenho("poligono")} style={btnGhost} title="Cerca por desenho ponto a ponto">
+              <button onClick={() => iniciarDesenho("poligono")} className="mod-hbtn-alt" title="Cerca por desenho ponto a ponto">
                 <Hexagon size={14} /> Polígono
               </button>
             </>
           ) : formato === "circulo" ? (
             <>
-              <button onClick={concluirDesenho} disabled={!centro} style={{ ...btnPrimary, background: centro ? "#16a34a" : "#94a3b8" }}>
+              <button onClick={concluirDesenho} disabled={!centro} className="mod-hbtn-alt" style={centro ? { background: "#16a34a" } : undefined}>
                 <Check size={16} /> Concluir
               </button>
-              <button onClick={cancelarDesenho} style={btnGhost}>
+              <button onClick={cancelarDesenho} className="mod-hbtn-alt">
                 <X size={16} /> Cancelar
               </button>
             </>
           ) : (
             <>
-              <button onClick={desfazerPonto} disabled={pontos.length === 0} style={{ ...btnGhost, opacity: pontos.length === 0 ? 0.5 : 1 }}>
+              <button onClick={desfazerPonto} disabled={pontos.length === 0} className="mod-hbtn-alt">
                 <Undo2 size={14} /> Desfazer ponto
               </button>
-              <button onClick={concluirDesenho} disabled={pontos.length < 3} style={{ ...btnPrimary, background: pontos.length >= 3 ? "#16a34a" : "#94a3b8" }}>
+              <button onClick={concluirDesenho} disabled={pontos.length < 3} className="mod-hbtn-alt" style={pontos.length >= 3 ? { background: "#16a34a" } : undefined}>
                 <Check size={16} /> Concluir ({pontos.length})
               </button>
-              <button onClick={cancelarDesenho} style={btnGhost}>
+              <button onClick={cancelarDesenho} className="mod-hbtn-alt">
                 <X size={16} /> Cancelar
               </button>
             </>
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
       <div className="cercas-grid">
         {/* Sidebar */}
         <div className="cercas-sidebar">
           {/* Busca de endereço */}
-          <div style={{ padding: "0.75rem", borderBottom: "1px solid #e2e8f0" }}>
-            <div style={{ fontSize: ".72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 6 }}>
+          <div style={{ padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>
+            <div style={{ fontSize: ".72rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 6 }}>
               Buscar local
             </div>
             <form onSubmit={buscarEndereco} style={{ display: "flex", gap: 4 }}>
@@ -480,13 +473,13 @@ export default function Cercas() {
                 <Search size={14} />
               </button>
             </form>
-            {buscando && <div style={{ marginTop: 6, color: "#94a3b8", fontSize: ".78rem" }}>Buscando...</div>}
+            {buscando && <div style={{ marginTop: 6, color: "var(--text-subtle)", fontSize: ".78rem" }}>Buscando...</div>}
             {resultados.length > 0 && (
-              <div style={{ marginTop: 6, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 6, maxHeight: 200, overflowY: "auto" }}>
+              <div style={{ marginTop: 6, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 6, maxHeight: 200, overflowY: "auto" }}>
                 {resultados.map((r, i) => (
                   <button key={i} onClick={() => escolherResultado(r)} style={resultBtn}>
                     <Locate size={12} style={{ flexShrink: 0, marginTop: 2 }} color="#ea580c" />
-                    <span style={{ fontSize: ".78rem", color: "#475569", textAlign: "left" }}>{r.nome}</span>
+                    <span style={{ fontSize: ".78rem", color: "var(--text-muted)", textAlign: "left" }}>{r.nome}</span>
                   </button>
                 ))}
               </div>
@@ -500,33 +493,54 @@ export default function Cercas() {
 
           {/* Lista de cercas */}
           <div style={{ padding: "0.75rem", flex: 1, overflowY: "auto" }}>
-            <div style={{ fontSize: ".72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 6 }}>
+            <div style={{ fontSize: ".72rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 6 }}>
               Cercas salvas ({cercasFiltradas.length}{filtroNome ? ` / ${cercas.length}` : ""})
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, padding: "0.3rem 0.5rem", marginBottom: 8 }}>
-              <Search size={14} color="#94a3b8" />
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 6, padding: "0.3rem 0.5rem", marginBottom: 8 }}>
+              <Search size={14} color="var(--text-subtle)" />
               <input
                 type="text"
                 value={filtroNome}
                 onChange={(e) => setFiltroNome(e.target.value)}
                 placeholder="Filtrar por nome ou tipo"
-                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: ".82rem", color: "#1a3a5c", minWidth: 0 }}
+                style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: ".82rem", color: "var(--accent)", minWidth: 0 }}
               />
               {filtroNome && (
-                <button onClick={() => setFiltroNome("")} title="Limpar filtro" style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", padding: 0, display: "flex" }}>
+                <button onClick={() => setFiltroNome("")} title="Limpar filtro" style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: 0, display: "flex" }}>
                   <X size={14} />
                 </button>
               )}
             </div>
-            {loading && <div style={{ color: "#94a3b8" }}>Carregando...</div>}
+            {!loading && cercasFiltradas.length > 0 && (
+              <ExportBar
+                compacto
+                align="left"
+                titulo="Cercas Eletrônicas"
+                arquivo="cercas"
+                subtitulo={() => `${cercasFiltradas.length} cerca(s)`}
+                dados={() => ({
+                  colunas: ["Nome", "Tipo", "Formato", "Detalhe", "Área"],
+                  linhas: cercasFiltradas.map((c) => [
+                    c.nome || "",
+                    c.tipo || "",
+                    c.formato === "circulo" ? "Círculo" : "Polígono",
+                    c.formato === "circulo"
+                      ? `raio ${(c.raio || 0).toLocaleString("pt-BR")} m`
+                      : `${c.pontos?.length || 0} pontos`,
+                    formatarArea(areaCerca(c)),
+                  ]),
+                })}
+              />
+            )}
+            {loading && <div style={{ color: "var(--text-subtle)" }}>Carregando...</div>}
             {!loading && cercas.length === 0 && (
-              <div style={{ color: "#94a3b8", fontSize: ".82rem", padding: "0.75rem", background: "#f8fafc", borderRadius: 6 }}>
+              <div style={{ color: "var(--text-subtle)", fontSize: ".82rem", padding: "0.75rem", background: "var(--surface-2)", borderRadius: 6 }}>
                 Nenhuma cerca ainda.<br/>
                 Use "Buscar local" pra ir pro endereço, depois "+ Nova cerca" e clica no mapa.
               </div>
             )}
             {!loading && cercas.length > 0 && cercasFiltradas.length === 0 && (
-              <div style={{ color: "#94a3b8", fontSize: ".82rem", padding: "0.5rem", textAlign: "center" }}>
+              <div style={{ color: "var(--text-subtle)", fontSize: ".82rem", padding: "0.5rem", textAlign: "center" }}>
                 Nenhuma cerca corresponde a "<strong>{filtroNome}</strong>"
               </div>
             )}
@@ -539,18 +553,18 @@ export default function Cercas() {
                 : `Polígono · ${c.pontos?.length || 0} pontos`;
               const sendoEditada = editingId === c.id;
               return (
-                <div key={c.id} style={{ padding: "0.55rem 0.65rem", background: sendoEditada ? "#fff7ed" : "#f8fafc", borderRadius: 6, marginBottom: 5, borderLeft: `3px solid ${c.cor}`, cursor: "pointer", boxShadow: sendoEditada ? "0 0 0 2px #ea580c" : "none" }}
+                <div key={c.id} style={{ padding: "0.55rem 0.65rem", background: sendoEditada ? "#fff7ed" : "var(--surface-2)", borderRadius: 6, marginBottom: 5, borderLeft: `3px solid ${c.cor}`, cursor: "pointer", boxShadow: sendoEditada ? "0 0 0 2px #ea580c" : "none" }}
                      onClick={() => setFocus(focusPoint)}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: 6 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, color: "#1a3a5c", fontSize: ".84rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
-                      <div style={{ fontSize: ".7rem", color: "#64748b" }}>
+                      <div style={{ fontWeight: 700, color: "var(--accent)", fontSize: ".84rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.nome}</div>
+                      <div style={{ fontSize: ".7rem", color: "var(--text-muted)" }}>
                         {c.tipo} · {descr} · {formatarArea(areaCerca(c))}
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                       {sendoEditada ? (
-                        <button onClick={(e) => { e.stopPropagation(); cancelarEdicao(); }} title="Cancelar edição" style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", padding: 2 }}>
+                        <button onClick={(e) => { e.stopPropagation(); cancelarEdicao(); }} title="Cancelar edição" style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: 2 }}>
                           <X size={14} />
                         </button>
                       ) : (
@@ -569,15 +583,15 @@ export default function Cercas() {
           </div>
 
           {drawing && formato === "poligono" && (
-            <div style={{ padding: "0.75rem", borderTop: "1px solid #e2e8f0", background: "#fef9c3", fontSize: ".8rem", color: "#854d0e" }}>
+            <div style={{ padding: "0.75rem", borderTop: "1px solid var(--border)", background: "#fef9c3", fontSize: ".8rem", color: "#854d0e" }}>
               <strong>Modo desenho (polígono):</strong> clique no mapa pra adicionar pontos<br/>
-              <strong>Pontos:</strong> {pontos.length} {pontos.length < 3 ? `(mín. ${3 - pontos.length} a mais)` : "✓"}<br/>
+              <strong>Pontos:</strong> {pontos.length} {pontos.length < 3 ? `(mín. ${3 - pontos.length} a mais)` : <Check size={14} color="var(--success)"/>}<br/>
               {pontos.length >= 3 && (<><strong>Área:</strong> {formatarArea(areaAtual)}</>)}
             </div>
           )}
 
           {editingId && (
-            <div style={{ padding: "0.75rem", borderTop: "1px solid #e2e8f0", background: "#fff7ed", fontSize: ".8rem", color: "#9a3412" }}>
+            <div style={{ padding: "0.75rem", borderTop: "1px solid var(--border)", background: "#fff7ed", fontSize: ".8rem", color: "#9a3412" }}>
               <strong>Editando cerca</strong>
               <div style={{ fontSize: ".74rem", color: "#9a3412", marginTop: 4 }}>
                 {editFormato === "circulo"
@@ -610,7 +624,7 @@ export default function Cercas() {
                         const v = Number(e.target.value);
                         if (Number.isFinite(v) && v > 0) setEditRaio(v);
                       }}
-                      style={{ width: 90, padding: "2px 6px", border: "1px solid #cbd5e1", borderRadius: 4, fontSize: ".8rem" }}
+                      style={{ width: 90, padding: "2px 6px", border: "1px solid var(--border-strong)", borderRadius: 4, fontSize: ".8rem" }}
                     /> m
                   </label>
                 </div>
@@ -632,7 +646,7 @@ export default function Cercas() {
           )}
 
           {drawing && formato === "circulo" && (
-            <div style={{ padding: "0.75rem", borderTop: "1px solid #e2e8f0", background: "#fef9c3", fontSize: ".8rem", color: "#854d0e" }}>
+            <div style={{ padding: "0.75rem", borderTop: "1px solid var(--border)", background: "#fef9c3", fontSize: ".8rem", color: "#854d0e" }}>
               <strong>Modo desenho (círculo):</strong> {centro ? "centro definido — ajuste o raio abaixo (ou clique de novo no mapa pra mover)" : "clique no mapa pra definir o centro"}<br/>
               {centro && (
                 <>
@@ -662,7 +676,7 @@ export default function Cercas() {
                         const v = Number(e.target.value);
                         if (Number.isFinite(v) && v > 0) setRaio(v);
                       }}
-                      style={{ width: 90, padding: "2px 6px", border: "1px solid #cbd5e1", borderRadius: 4, fontSize: ".8rem" }}
+                      style={{ width: 90, padding: "2px 6px", border: "1px solid var(--border-strong)", borderRadius: 4, fontSize: ".8rem" }}
                     /> m
                   </label>
                   <div style={{ marginTop: 6 }}>
@@ -703,7 +717,7 @@ export default function Cercas() {
               const tip = (
                 <Tooltip sticky direction="center">
                   <strong>{c.nome}</strong><br/>
-                  <span style={{ fontSize: ".74rem", color: "#64748b" }}>{c.tipo} · {formatarArea(areaCerca(c))} · clique pra editar</span>
+                  <span style={{ fontSize: ".74rem", color: "var(--text-muted)" }}>{c.tipo} · {formatarArea(areaCerca(c))} · clique pra editar</span>
                 </Tooltip>
               );
               const handlers = { click: () => { if (!drawing) iniciarEdicao(c); } };
@@ -814,8 +828,8 @@ export default function Cercas() {
         <div style={overlay}>
           <div style={card}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: "1.05rem" }}>Salvar cerca</h2>
-              <button onClick={cancelarDesenho} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}>
+              <h2 style={{ margin: 0, color: "var(--accent)", fontSize: "1.05rem" }}>Salvar cerca</h2>
+              <button onClick={cancelarDesenho} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}>
                 <X size={18} />
               </button>
             </div>
@@ -841,7 +855,7 @@ export default function Cercas() {
                 <button key={c.v} onClick={() => setCor(c.v)} style={{
                   width: 32, height: 32, borderRadius: 6,
                   background: c.v,
-                  border: cor === c.v ? "3px solid #1a3a5c" : "2px solid #e2e8f0",
+                  border: cor === c.v ? "3px solid var(--accent)" : "2px solid var(--border)",
                   cursor: "pointer",
                 }} title={c.n} />
               ))}
@@ -859,7 +873,7 @@ export default function Cercas() {
 
       <style>{`
         .cercas-grid { display: grid; grid-template-columns: 320px 1fr; height: calc(100vh - 48px); }
-        .cercas-sidebar { background: #fff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; }
+        .cercas-sidebar { background: #fff; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         @media (max-width: 700px) {
           .cercas-grid { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; }
           .cercas-sidebar { max-height: 40vh; }
@@ -869,11 +883,11 @@ export default function Cercas() {
   );
 }
 
-const btnPrimary = { display: "inline-flex", alignItems: "center", gap: 6, padding: "0.5rem 0.85rem", background: "#1a3a5c", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: ".84rem" };
-const btnGhost = { display: "inline-flex", alignItems: "center", gap: 6, padding: "0.45rem 0.75rem", background: "#fff", color: "#475569", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: ".82rem" };
-const inputBusca = { flex: 1, padding: "0.45rem 0.65rem", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: ".84rem", outline: "none" };
+const btnPrimary = { display: "inline-flex", alignItems: "center", gap: 6, padding: "0.5rem 0.85rem", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: ".84rem" };
+const btnGhost = { display: "inline-flex", alignItems: "center", gap: 6, padding: "0.45rem 0.75rem", background: "var(--card-bg)", color: "var(--text-muted)", border: "1px solid var(--border-strong)", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: ".82rem" };
+const inputBusca = { flex: 1, padding: "0.45rem 0.65rem", border: "1px solid var(--border-strong)", borderRadius: 6, fontSize: ".84rem", outline: "none" };
 const resultBtn = { display: "flex", alignItems: "flex-start", gap: 6, padding: "0.55rem 0.7rem", width: "100%", background: "transparent", border: "none", borderBottom: "1px solid #f1f5f9", cursor: "pointer", textAlign: "left" };
 const overlay = { position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 };
-const card = { background: "#fff", borderRadius: 12, padding: "1.25rem", width: 380, maxWidth: "90vw", boxShadow: "0 8px 24px rgba(0,0,0,0.2)" };
-const lbl = { display: "block", fontSize: ".74rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", marginBottom: 4 };
-const inp = { width: "100%", padding: "0.55rem 0.7rem", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: ".92rem", marginBottom: 12, fontFamily: "system-ui", boxSizing: "border-box" };
+const card = { background: "var(--card-bg)", borderRadius: 12, padding: "1.25rem", width: 380, maxWidth: "90vw", boxShadow: "0 8px 24px rgba(0,0,0,0.2)" };
+const lbl = { display: "block", fontSize: ".74rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", marginBottom: 4 };
+const inp = { width: "100%", padding: "0.55rem 0.7rem", border: "1px solid var(--border-strong)", borderRadius: 8, fontSize: ".92rem", marginBottom: 12, fontFamily: "var(--font)", boxSizing: "border-box" };

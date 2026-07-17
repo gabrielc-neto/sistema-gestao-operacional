@@ -110,7 +110,7 @@ export async function exportarJornadaPdf({ linhas, dataInicio, dataFim, ehPeriod
     <div style="font-family:Arial,sans-serif;padding:0;color:#0f172a">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1d4ed8;padding-bottom:8px;margin-bottom:10px">
         <div>
-          <div style="font-size:18px;font-weight:800;color:#1a3a5c">PONTUAL LOGÍSTICA</div>
+          <div style="font-size:18px;font-weight:800;color:#18216E">PONTUAL LOGÍSTICA</div>
           <div style="font-size:13px;color:#1d4ed8;font-weight:700;margin-top:2px">Relatório de Jornada &amp; Extras</div>
         </div>
         <div style="text-align:right;font-size:10px;color:#64748b">

@@ -91,7 +91,7 @@ function PainelTanquesSvg() {
           <stop offset="100%" stopColor="#231d14"/>
         </linearGradient>
         <linearGradient id="lp_ySwoosh" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"   stopColor="#f5c318"/>
+          <stop offset="0%"   stopColor="#FFD815"/>
           <stop offset="100%" stopColor="#fadb4a"/>
         </linearGradient>
       </defs>
@@ -143,8 +143,8 @@ function PainelTanquesSvg() {
 
       {/* piscina de contenção */}
       <rect x="50" y="540" width="500" height="170" fill="#1a1408" stroke="#5a4a30" strokeWidth="2"/>
-      <rect x="50" y="540" width="500" height="6"   fill="#f5c318" opacity="0.55"/>
-      <rect x="50" y="704" width="500" height="6"   fill="#f5c318" opacity="0.55"/>
+      <rect x="50" y="540" width="500" height="6"   fill="#FFD815" opacity="0.55"/>
+      <rect x="50" y="704" width="500" height="6"   fill="#FFD815" opacity="0.55"/>
 
       {/* tanque traseiro central */}
       <g>
