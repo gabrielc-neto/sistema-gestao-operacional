@@ -102,7 +102,7 @@ function AnimatedTruckMarker({ posicao, icon, children, ...rest }) {
 }
 
 const STATUS = {
-  EM_MOVIMENTO:  { color: "#16a34a", label: "Em movimento",   pulse: true  },
+  EM_MOVIMENTO:  { color: "#EA580C", label: "Em movimento",   pulse: true  },  // laranja "tracking" — padrão logística (ui-ux-pro-max)
   PARADO_LIGADO: { color: "#eab308", label: "Parado / ligado", pulse: false },
   ESTACIONADO:   { color: "var(--text-muted)", label: "Estacionado",     pulse: false },
   SEM_DADOS:     { color: "var(--text-subtle)", label: "Sem comunicação", pulse: false },
@@ -148,8 +148,8 @@ function buildMarkerHtml(p) {
   const placa = p.placa || `#${p.idVeiculo}`;
   const motorista = formatarMotorista(p.motoristaLogado);
   const idadeMin = minutosDecorridos(p.dataPosicao);
-  const stale = idadeMin > 15;          // sinal velho
-  const veryStale = idadeMin > 60;      // sem comunicação há mais de 1h
+  const stale = idadeMin > 120;         // era 15 — muito rígido (SASCAR envia 1 pacote/hora quando parado)
+  const veryStale = idadeMin > 720;     // era 60 — agora 12h (dia inteiro). Antes de 12h mantém cor real
   const pulse = cfg.pulse && !stale ? "pulse" : "";
   const opacityClass = veryStale ? "very-stale" : stale ? "stale" : "";
 
@@ -652,7 +652,7 @@ function PainelDestino({ destino, onDefinir, onLimpar }) {
 
 function Legenda() {
   const itens = [
-    ["#16a34a", "Em movimento"],
+    ["#EA580C", "Em movimento"],   // laranja "tracking" — sincronizado com STATUS.EM_MOVIMENTO
     ["#eab308", "Parado / ligado"],
     ["var(--text-muted)", "Estacionado"],
     ["#dc2626", "Bloqueado"],

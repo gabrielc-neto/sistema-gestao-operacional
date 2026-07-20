@@ -369,6 +369,8 @@ export default function Motoristas() {
                     setForm({ ...form, nome: e.target.value.toUpperCase() })
                   }
                   placeholder="NOME COMPLETO"
+                  autoCapitalize="characters"
+                  autoComplete="name"
                   required
                 />
               </label>
@@ -379,8 +381,12 @@ export default function Motoristas() {
                 <input
                   style={s.fieldInput}
                   value={form.cnh}
-                  onChange={(e) => setForm({ ...form, cnh: e.target.value })}
+                  onChange={(e) => setForm({ ...form, cnh: e.target.value.replace(/\D/g, "") })}
                   placeholder="00000000000"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={11}
+                  autoComplete="off"
                 />
               </label>
 
@@ -394,6 +400,8 @@ export default function Motoristas() {
                     onChange={(e) => setForm({ ...form, cat: e.target.value.toUpperCase() })}
                     placeholder="Ex: E, AE, D..."
                     maxLength={5}
+                    autoCapitalize="characters"
+                    autoComplete="off"
                   />
                 </label>
                 <label style={{ ...s.label, flex: 1 }}>
@@ -460,6 +468,9 @@ export default function Motoristas() {
                   value={form.tel}
                   onChange={(e) => setForm({ ...form, tel: e.target.value })}
                   placeholder="(00) 90000-0000"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
                 />
               </label>
 

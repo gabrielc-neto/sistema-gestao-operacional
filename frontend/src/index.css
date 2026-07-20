@@ -1,4 +1,15 @@
+/* Fontes — pairing "Dashboard Data" (ui-ux-pro-max): Fira Sans (labels) + Fira Code (números/placas/IDs) */
+@import url("https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap");
+
+/* Números tabulares: placas, KMs, R$, IDs SASCAR, CPK — alinha em coluna */
+.font-mono, [data-mono], code, kbd, samp,
+.placa, .cpk, .valor, .odometro, .id-sascar,
+th.numero, td.numero, .kpi-value, .numero-tabular {
+  font-family: 'Fira Code', 'Cascadia Code', ui-monospace, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -76,8 +87,9 @@
   --input-border:  var(--n-300);
 
   /* ── Tipografia ───────────────────────────────────────────── */
-  --font: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-display: 'Montserrat', system-ui, sans-serif;
+  --font: 'Fira Sans', 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-display: 'Fira Sans', 'Montserrat', system-ui, sans-serif;
+  --font-mono: 'Fira Code', 'Cascadia Code', ui-monospace, Consolas, monospace;
 
   /* ── Raios ────────────────────────────────────────────────── */
   --r-xs:6px; --r-sm:8px; --r-md:10px; --r-lg:14px; --r-xl:18px; --r-2xl:24px; --r-full:9999px;
@@ -833,4 +845,30 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); width
   }
   /* "Ver todas" fica cortado — permite quebra */
   .panel-link, [class*="panelLink"] { flex-shrink: 0 !important; }
+}
+
+
+/* ============ Legibilidade mobile: fontes < 12px sobem pra 12px ============ */
+/* Motoristas/Frota/Jornada tinham 150-267 elementos com fonte muito pequena
+ * (badges MOPP/NR, sub-labels, "última pos" tempo relativo, chips de status).
+ * Aumentar a rem base em mobile propaga pra tudo que usa .66rem/.68rem/.7rem/.72rem. */
+@media (max-width: 640px) {
+  html { font-size: 17px; }   /* era 16px — 6% maior em tudo */
+}
+
+/* Ajuste fino específico pros elementos que ficariam abaixo de 12px mesmo com o boost.
+ * Foco: badges de status, labels, tempos relativos em cards de motorista/frota. */
+@media (max-width: 640px) {
+  [style*="fontSize:.66rem"], [style*="fontSize: .66rem"], [style*="fontSize: '.66rem'"],
+  [style*="fontSize:.65rem"], [style*="fontSize: .65rem"],
+  [style*="fontSize:.68rem"], [style*="fontSize: .68rem"],
+  [style*="fontSize:.7rem"],  [style*="fontSize: .7rem"] {
+    font-size: 12px !important;
+    line-height: 1.35;
+  }
+  [style*="fontSize:.72rem"], [style*="fontSize: .72rem"],
+  [style*="fontSize:.74rem"], [style*="fontSize: .74rem"],
+  [style*="fontSize:.75rem"], [style*="fontSize: .75rem"] {
+    font-size: 12.5px !important;
+  }
 }

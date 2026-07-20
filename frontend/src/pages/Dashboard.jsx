@@ -48,17 +48,28 @@ function Donut({ segments, size = 148, stroke = 20 }) {
 }
 
 /* ─── KPI de topo (mesma linguagem visual dos cards do sistema) ───────────── */
-function KpiTile({ Icon, label, value, cor, bg, sub, alerta }) {
+function KpiTile({ Icon, label, value, cor, bg, sub, alerta, total }) {
+  // Bullet chart: se total > 0, mostra barra de progresso value/total (padrão dashboard denso - ui-ux-pro-max)
+  const temBullet = Number.isFinite(total) && total > 0 && Number.isFinite(value);
+  const pct = temBullet ? Math.min(100, Math.max(0, (value / total) * 100)) : 0;
   return (
     <div style={{ background:"var(--card-bg)", border:`1px solid ${alerta ? "var(--warning-border)" : "var(--border)"}`, borderRadius:"var(--r-lg)", boxShadow:"var(--sh-sm)", padding:"14px 16px", display:"flex", alignItems:"center", gap:12, minWidth:0 }}>
       <div style={{ width:40, height:40, borderRadius:10, background:bg, color:cor, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
         <Icon size={20} />
       </div>
-      <div style={{ minWidth:0 }}>
-        <div style={{ fontSize:"1.5rem", fontWeight:800, color: alerta ? "var(--warning)" : "var(--text)", lineHeight:1, fontFamily:"var(--font-display)" }}>{value}</div>
+      <div style={{ minWidth:0, flex:1 }}>
+        <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+          <div className="kpi-value numero-tabular" style={{ fontSize:"1.5rem", fontWeight:800, color: alerta ? "var(--warning)" : "var(--text)", lineHeight:1 }}>{value}</div>
+          {temBullet && <div className="numero-tabular" style={{ fontSize:".82rem", color:"var(--text-muted)", fontWeight:600 }}>/ {total}</div>}
+        </div>
         <div style={{ fontSize:".72rem", color:"var(--text-muted)", fontWeight:600, marginTop:3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
           {label}{sub ? <span style={{ color:"var(--text-subtle)", fontWeight:500 }}> · {sub}</span> : null}
         </div>
+        {temBullet && (
+          <div style={{ marginTop:6, height:4, background:"var(--border)", borderRadius:2, overflow:"hidden" }} role="progressbar" aria-valuenow={value} aria-valuemin="0" aria-valuemax={total} aria-label={`${label}: ${value} de ${total}`}>
+            <div style={{ width:`${pct}%`, height:"100%", background:cor, transition:"width .4s ease" }} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -192,10 +203,10 @@ export default function Dashboard() {
         {/* KPIs de topo — resumo da frota + rastreamento em tempo real */}
         <div className="dash-kpi" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(170px, 1fr))", gap:14, marginBottom:20 }}>
           <KpiTile Icon={Truck}        label="Frota total"       value={frota.totalFrota ?? "…"} cor="var(--accent)"  bg="var(--accent-soft)" />
-          <KpiTile Icon={CheckCircle2} label="Disponíveis"       value={ativos}                  cor="var(--success)" bg="var(--success-bg)" />
-          <KpiTile Icon={Navigation}   label="Em movimento"      value={statusFrota.EM_MOVIMENTO} cor="var(--tech-text)" bg="var(--tech-soft)" sub="tempo real" />
-          <KpiTile Icon={Lock}         label="Bloqueados"        value={bloq}                    cor="var(--danger)"  bg="var(--danger-bg)" />
-          <KpiTile Icon={WifiOff}      label="Sem comunicação"   value={statusFrota.SEM_DADOS}   cor="var(--warning)" bg="var(--warning-bg)" alerta={statusFrota.SEM_DADOS > 0} />
+          <KpiTile Icon={CheckCircle2} label="Disponíveis"       value={ativos}                   total={frota.totalFrota}  cor="var(--success)" bg="var(--success-bg)" />
+          <KpiTile Icon={Navigation}   label="Em movimento"      value={statusFrota.EM_MOVIMENTO} total={frota.totalFrota}  cor="#EA580C"        bg="#fff7ed" sub="tempo real" />
+          <KpiTile Icon={Lock}         label="Bloqueados"        value={bloq}                     total={frota.totalFrota}  cor="var(--danger)"  bg="var(--danger-bg)" />
+          <KpiTile Icon={WifiOff}      label="Sem comunicação"   value={statusFrota.SEM_DADOS}    total={frota.totalFrota}  cor="var(--warning)" bg="var(--warning-bg)" alerta={statusFrota.SEM_DADOS > 0} />
         </div>
 
         {/* Topo: Evolução de custos (esq) + Controle de Frota (dir) */}
