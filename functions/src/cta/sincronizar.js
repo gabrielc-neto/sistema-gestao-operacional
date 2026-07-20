@@ -136,7 +136,10 @@ export async function sincronizarCtaAgora({ token, dryRun = false, confirmar = t
   const inicioMs = Date.now();
 
   if (!dataInicio) {
-    const d = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+    // API CTA retorna 100 abastecimentos por chamada, ORDENADOS DO MAIS ANTIGO.
+    // Se pedirmos 30 dias atrás, buffer sempre volta os mesmos 100 antigos (que já estão no Firestore).
+    // Pedimos só últimos 7 dias — 100 pacotes cobre uma semana inteira de operação.
+    const d = new Date(Date.now() - 7 * 24 * 3600 * 1000);
     dataInicio = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
   }
 

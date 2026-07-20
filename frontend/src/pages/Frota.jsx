@@ -674,7 +674,7 @@ export default function Frota() {
               <div style={s.row}>
                 <div style={s.fg}>
                   <label style={s.lbl}>Placa Cavalo</label>
-                  <input style={s.inp} value={form.placa} onChange={e => campo("placa", e.target.value.toUpperCase())} disabled={!!editId} placeholder="AKD5988" />
+                  <input style={s.inp} value={form.placa} onChange={e => campo("placa", e.target.value.toUpperCase())} disabled={!!editId} placeholder="AKD5988" autoCapitalize="characters" autoComplete="off" maxLength={7} inputMode="text" spellCheck={false} />
                 </div>
                 <div style={s.fg}>
                   <label style={s.lbl}>Status</label>

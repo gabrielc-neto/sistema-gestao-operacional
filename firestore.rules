@@ -312,5 +312,19 @@ service cloud.firestore {
       allow delete: if temPermissao('frota.excluir') || isSuperAdmin();
     }
 
+    // Compras — pedidos internos + fornecedores + convites de proposta
+    match /compras/{doc=**} {
+      allow read:   if temPermissao('compras.ver')     || isSuperAdmin();
+      allow create: if temPermissao('compras.criar')   || isSuperAdmin();
+      allow update: if temPermissao('compras.editar')  || temPermissao('compras.aprovar') || isSuperAdmin();
+      allow delete: if temPermissao('compras.excluir') || isSuperAdmin();
+    }
+
+    // Intranet — configuração do portão (IPs autorizados + hash da chave) e propostas
+    match /intranet/{doc=**} {
+      allow read:   if temPermissao('intranet.ver')        || isSuperAdmin();
+      allow write:  if temPermissao('intranet.configurar') || isSuperAdmin();
+    }
+
   }
 }
