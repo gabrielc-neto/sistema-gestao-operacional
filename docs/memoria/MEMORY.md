@@ -1,5 +1,6 @@
 # 🧠 Índice de Memórias
 
+- [feedback-primeira-msg-confirmar-skills](feedback-primeira-msg-confirmar-skills.md) — "Ao receber \"oi\" (ou saudação equivalente) na PRIMEIRA MENSAGEM de uma nova sessão, confirmar automaticamente quais das 7 skills instaladas em 2026-07-20 estão ATIVAS. User quer certeza que carregaram."
 - [feedback-ui-perguntar-largura-altura](feedback_ui_perguntar_largura_altura.md) — "Quando Wesley pede ajuste de tamanho em UI (gráfico/card/modal), perguntar de cara largura/altura/ambos com opções concretas em vez de chutar uma dimensão e ir testando."
 - [project-cta-api-paginacao-antigo-primeiro](project-cta-api-paginacao-antigo-primeiro.md) — "CRÍTICO — API CTA retorna 100 abastecimentos por chamada ORDENADOS DO MAIS ANTIGO. Se pedir 30 dias, sempre volta os 100 antigos já sincronizados. Fix aplicado em functions/src/cta/sincronizar.js linha 139 (30d → 7d)"
 - [project-log-sessoes-detalhado-instrucoes](project-log-sessoes-detalhado-instrucoes.md) — Como funciona o log de sessões DETALHADO — cada bloco tem prompt do user + resposta claude + arquivos + tools. Hook auto-sessao-log.mjs foi reescrito em 20/07 pra gerar isso automaticamente
