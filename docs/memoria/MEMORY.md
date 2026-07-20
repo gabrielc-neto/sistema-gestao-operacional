@@ -1,125 +1,125 @@
 # 🧠 Índice de Memórias
 
-- [user-wesley](user_wesley.md) — "Wesley Silva Sampaio é o sócio/diretor da Pontual Logística que usa esta estação de trabalho — decisor de orçamento, deploy, escopo e arquitetura"
-- [arquivo-explicito-obrigatorio](feedback_arquivo_explicito_obrigatorio.md) — "Quando Wesley menciona \"essa apresentação / esse arquivo / esse doc\" SEM nomear, NÃO assumir nada da memória. Perguntar/pedir o nome exato antes de abrir qualquer arquivo."
-- [Arquivos sempre em Downloads](feedback_arquivos_downloads.md) — Quando Wesley mencionar nome de arquivo sem caminho, está em C:\Users\Logistica01\Downloads
-- [Consultar NotebookLM nas respostas](feedback_notebooklm_consulta.md) — Usuário quer que o conteúdo do NotebookLM seja sempre consultado ao responder perguntas relevantes
-- [Executar sem pedir permissão](feedback_sem_permissao.md) — Nunca pedir confirmação antes de agir — entregar resultado direto
-- [falar-inviavel-cedo](feedback_falar_inviavel_cedo.md) — "Wesley quer que eu fale ANTES quando uma feature nao e viavel, em vez de tentar varias abordagens sem avisar"
-- [feedback-abertura-sessao-consultar-contexto](feedback-abertura-sessao-consultar-contexto.md) — "Ao iniciar CADA sessão nova no Claude Code, consultar sessões anteriores + pendências antes de perguntar contexto ao user"
-- [feedback-auditoria-estatica-nao-basta](feedback_auditoria_estatica_nao_basta.md) — "Auditoria estática (ESLint, código morto, padrões) não pega bug de integração runtime. Sempre fazer smoke test do fluxo crítico end-to-end."
-- [feedback-auto-commit-quando-pedido](feedback-auto-commit-quando-pedido.md) — User autorizou commit + push sem pedir confirmação adicional quando ele pedir explicitamente
-- [feedback-bash-forward-slashes](feedback_bash_forward_slashes.md) — Nesta estação Windows o Bash tool come barras invertidas em paths — usar barras normais
-- [feedback-branch-supabase-nao-merge-tudo](feedback-branch-supabase-nao-merge-tudo.md) — "Branch feat/migracao-supabase removeu módulos críticos (Pneus completo, Vencimentos, Manutenção). Nunca merge inteiro — só cherry-pick seletivo"
-- [feedback-colocar-no-ar-completo](feedback_colocar_no_ar_completo.md) — "Quando Wesley pedir \"colocar no ar\" ou \"subir o sistema\", fazer checklist completo sem precisar pedir cada item separado"
-- [feedback-conversa-realtime-multi-claude](feedback-conversa-realtime-multi-claude.md) — Conversa completa (user+assistant) deve ser exportada em tempo real via hook Stop — user usa múltiplos Claudes e migra entre eles quando limite acaba
-- [feedback-disco-f-intocavel](feedback_disco_f_intocavel.md) — "Nunca tocar em nada no disco F: do PC do Wesley — apagar, mover, organizar, tudo proibido"
-- [feedback-downloads-nao-entra-obsidian](feedback-downloads-nao-entra-obsidian.md) — Downloads do PC (arquivo/downloads-*) NUNCA entram no Obsidian nem no grafo do vault
-- [feedback-faturamento-nao-eh-lucro](feedback-faturamento-nao-eh-lucro.md) — "Nunca chamar valor de venda de \"lucro\" - faturamento é soma de notas, lucro é o que sobra depois de custos e impostos"
-- [feedback-fluxo-bidirecional-multi-ia](feedback-fluxo-bidirecional-multi-ia.md) — "Fluxo BIDIRECIONAL entre IAs — quando user sai daqui pra outra IA e depois volta, eu leio o que ela escreveu no vault e continuo"
-- [feedback-hook-auto-memory-placeholder](feedback-hook-auto-memory-placeholder.md) — Hook auto-memory-hook.mjs sync é no-op (Memory package not available — skipping). Substituído por auto-memoria-sync.mjs que copia .claude/.../memory/*.md → docs/memoria/ e rebuilda MEMORY.md
-- [feedback-log-sessao-obsidian](feedback-log-sessao-obsidian.md) — Cada modificação (mesmo sem commit git) deve ser espelhada em docs/sessoes/YYYY-MM-DD.md do vault Obsidian
-- [feedback-login-fullbleed-cta-pattern](feedback-login-fullbleed-cta-pattern.md) — "Login pattern approved 2026-07-02 for logistica-ia — full-bleed background photo, empty landing with single \"Entrar\" CTA top-right, overlay card that appears on click"
-- [feedback-login-split-pattern](feedback-login-split-pattern.md) — Validated pattern for branded login screens — split layout (form left + institutional photo right) with cache-bust + SVG fallback component
-- [feedback-menu-blur-mapa-fix](feedback-menu-blur-mapa-fix.md) — "Ao abrir MenuNavegacao, aplicar blur+grayscale direto no .leaflet-container via JS (não CSS backdrop-filter — quebra em Edge InPrivate). Ver frontend/src/components/MenuNavegacao.jsx useEffect"
-- [feedback-nao-aplicar-moduleheader-telas-antigas](feedback-nao-aplicar-moduleheader-telas-antigas.md) — "ModuleHeader trazido da branch supabase depende de CSS vars (--header-bg, --font-display) que não existem no tema atual. Aplicar em telas antigas quebra o visual. Só usar nas telas que já vieram da supabase (Compras, Intranet, PropostaConvite)"
-- [feedback-nao-inventar-colunas](feedback_nao_inventar_colunas.md) — "Wesley pede planilha/cadastro com colunas X — entregar X, nunca X + Y + Z \"achando que ajuda\""
-- [feedback-nao-resetar-senha-sem-pedir](feedback-nao-resetar-senha-sem-pedir.md) — "Nunca resetar senha de usuário do Firebase Auth sem confirmação explícita — Firebase não guarda texto plano, ação irreversível"
-- [feedback-pneus-esquematico-aprovado](feedback-pneus-esquematico-aprovado.md) — Layout esquemático da aba /pneus/Inspeção aprovado após muitas iterações — chassi vertical + travessas restritas + cubos radiais + pneus 42x70 coloridos
-- [feedback-pneus-sem-sascar](feedback-pneus-sem-sascar.md) — "No módulo Gestão de Pneus do logistica-ia, todos os campos de KM/odômetro são preenchidos manualmente — nunca puxar da API SASCAR"
-- [feedback-projeto](feedback_projeto.md) — Feedbacks e decisões técnicas consolidadas do Wesley sobre o projeto Pontual
-- [feedback-salvar-tudo-user-diz](feedback-salvar-tudo-user-diz.md) — TUDO que o user digitar deve ser salvo automaticamente no vault Obsidian em docs/prompts-user/YYYY-MM-DD.md
-- [feedback-solides-so-adm](feedback_solides_so_adm.md) — Sólides é ponto SÓ pro pessoal ADM da Pontual. Motorista é controlado por SASCAR (tablet SasMDT + GPS + VDO). Não cruzar jornada de motorista com Sólides.
-- [feedback-sugerir-direto-quando-opiniao-formada](feedback-sugerir-direto-quando-opiniao-formada.md) — "Quando tiver opinião formada, sugerir direto em vez de perguntar opções neutras"
-- [feedback-svg-logo-iteration-cost](feedback-svg-logo-iteration-cost.md) — "Não iterar SVG/PNG de marca a olho — se 2ª tentativa falhar, oferecer alternativa textual e parar"
-- [feedback-trocar-imagem-em-slide-flatten](feedback-trocar-imagem-em-slide-flatten.md) — "Quando user pede pra trocar SÓ a foto num slide-imagem-flatten (PNG composto), usar PIL para substituir só o bbox da foto, nunca recompor layout do zero"
-- [feedback-ui-perguntar-largura-altura](feedback_ui_perguntar_largura_altura.md) — "Quando Wesley pede ajuste de tamanho em UI (gráfico/card/modal), perguntar de cara largura/altura/ambos com opções concretas em vez de chutar uma dimensão e ir testando."
-- [feedback-vdo-nao-sascar](feedback_vdo_nao_sascar.md) — "VDO (tacógrafo) e SASCAR (rastreamento) são fornecedores DIFERENTES da Pontual. Contratos separados, APIs separadas. Nunca tratar como mesma empresa."
-- [feedback-windows-file-watcher](feedback-windows-file-watcher.md) — "Vite/HMR on Windows ignores file edits made from Claude's bash shell — user must restart dev server manually"
-- [firestore-emulator-quebra-filtros](feedback-firestore-emulator-quebra-filtros.md) — Subir Firestore emulator junto com Functions emulator quebra qualquer Cloud Function que cruza dados com coleções em produção — Functions emulator roteia auto pro Firestore emulator (vazio) e filtros viram no-op
-- [nao-expor-custos-wesley](feedback_nao_expor_custos_wesley.md) — Nunca expor número do custo/horas do Wesley em material de negociação — dá munição contra ele
-- [responsivo-classes-helper-pontual](feedback-responsivo-classes-helper.md) — Sistema logistica-ia já tem infra responsiva madura em index.css — telas novas devem consumir classes helper existentes em vez de recriar
-- [Salvar tudo em memória](feedback_salvar_contexto.md) — O usuário quer que tudo que ele enviar seja salvo na memória para manter contexto permanente entre conversas
-- [Sempre usar dados reais, nunca fictícios](feedback_dados_reais.md) — Usuário não aceita dados fictícios/placeholder — sempre usar os arquivos reais fornecidos
-- [Tooling — Node.js only, no Python](feedback_nodejs_only.md) — Python não está instalado na máquina do usuário; todo processamento de dados deve usar Node.js com better-sqlite3
-- [Web search obrigatório em análises esportivas](feedback_web_search_obrigatorio.md) — Sempre ativar WebSearch/WebFetch ao pesquisar jogos, times ou stats — nunca usar dados de treinamento
-- [apresentacao-mensal](project_apresentacao_mensal.md) — "Como montar a apresentação mensal do sistema de logística — formato, local e o impedimento do agente presentation-curator"
-- [Configuração MCPs Claude Code](project_mcp_config.md) — MCPs instalados e configurados pelo usuário no Claude Code
-- [cta-smart-integracao-pontual](project-cta-smart-integracao.md) — Pontual usa CTA Smart (ctasmart.com.br) na bomba do pátio — motorista abastece antes de sair e reabastece na volta; base pra módulo Combustível + CPK real
-- [Frota Pontual — HTML App de Controle de Frota](project_frota_pontual_html.md) — App HTML single-file completo para controle de frota da PONTUAL LOGÍSTICA, salvo em C:\Users\Logistica01\Desktop\frota_pontual.html
-- [Gestão Financeira — Prévia aprovada](project_gestao_financeira_preview.md) — Layout e seções do módulo de custos/lucro/faturamento aprovado pelo Wesley para implementar futuramente
-- [GitHub do usuário](project_github.md) — Conta GitHub e tentativa de listar repositórios
-- [Levantamento Logística & Rastreamento — Pontual](project_logistica_rastreamento_levantamento.md) — Mapeamento completo de funcionalidades TMS/rastreamento para transportadora de combustível, organizado por fase e dependência de API
-- [manutencao-3abas](project_manutencao_3abas.md) — Modulo Manutencao tem 3 abas separadas — Abertura de OS / Lancamento de OS (conclusao) / Lancamento de NF (financeiro). Fluxo segue planilha real Pontual.
-- [manutencao-arquivo-zerado-incidente](project_manutencao_arquivo_zerado_incidente.md) — Incidente 1-jun a 3-jun — Manutencao.jsx zerado (0 bytes) por 3 dias sem ninguem perceber; padrao de risco
-- [MemPalace — Configuração e Automação](project_mempalace.md) — MemPalace instalado e configurado em 2026-04-28 com mineração diária automática
-- [Padrão visual das apresentações Pontual](project_padrao_apresentacoes.md) — Paleta de cores e fonte padrão para todas as apresentações da empresa, baseado no arquivo PICOS_VELOCIDADE_PONTUAL APROVADA APRESENTAÇÃO
-- [project_frontend_lint_estado](project_frontend_lint_estado.md) — "Estado do lint no frontend logistica-ia — 25 avisos de hook deixados de propósito, react-refresh desligado"
-- [project-banco-aws-decidido](project_banco_aws_decidido.md) — "DECISAO confirmada 2026-06-12 — banco AWS RDS PostgreSQL + S3, rodando via Docker. Firebase temporario ate cutover."
-- [project-branches-github-multiplas](project-branches-github-multiplas.md) — 4 branches ativas no GitHub - cada uma com propósito específico + branch Laravel/MySQL já pronta pra migração Hostinger
-- [project-carga-perigosa](project_carga_perigosa.md) — "100% da carga da Pontual é perigosa (combustível, classe ONU). Hazmat é sempre ligado — sem toggle por viagem."
-- [project-conjuntos-akd5988-bbe9588](project-conjuntos-akd5988-bbe9588.md) — Conjuntos atuais dos cavalos AKD5988 (simples com AKC4906) e BBE9588 (rodotrem com AQR9387+AQR9374) — dados do Firestore em 2026-07-17
-- [project-contas-claude-user](project-contas-claude-user.md) — User usa APENAS Claude AI (Claude.ai + Claude Code). 2 contas planejadas — não usa ChatGPT/Gemini/outras IAs
-- [project-cta-externo-lancamento-manual](project-cta-externo-lancamento-manual.md) — "No CTA Smart, abastecimento em posto externo obriga motorista a lançar litros + valor total pago manualmente"
-- [project-cta-nfe-so-externo](project-cta-nfe-so-externo.md) — Regra fiscal — abastecimento no pátio Pontual (CTA Smart) não precisa de NFe; só postos externos exigem
-- [project-custo-motorista-pontual](project-custo-motorista-pontual.md) — Estrutura salarial e custo/hora dos motoristas Pontual — usado no cálculo de custo de viagem
-- [project-estado-atual](project_estado_atual.md) — "Estado atual do projeto Logística IA e como retomar trabalho após reboot do PC — comandos exatos, processos rodando, próximos passos"
-- [project-excel-vencimentos-frota](project_excel_vencimentos_frota.md) — "Planilha Excel de controle de vencimentos da frota — estrutura, scripts Python, lições aprendidas, sessão 12/06/2026"
-- [project-firestore-emulator-off](project_firestore_emulator_off.md) — Firestore emulator local NÃO deve subir no setup dev — causa dessincronia com Cloud onde frontend escreve. Functions emulator usa service account pra ler Cloud direto.
-- [project-frota-pontual-eixos](project-frota-pontual-eixos.md) — Frota Pontual — cavalo sempre 3 eixos (trucado/traçado). Configurações reais e eixos totais por tipo.
-- [project-ibutton-descontinuado](project_ibutton_descontinuado.md) — 2026-06-09 — iButton SASCAR NÃO é mais usado. Substituído por login com usuário + senha que o motorista digita no tablet SasMDT.
-- [project-jdk21-user-install](project-jdk21-user-install.md) — JDK 21 instalado em user-level no projeto logistica-ia para Firebase emulators
-- [project-jornada-3fontes-plano](project_jornada_3fontes_plano.md) — "Arquitetura de controle de jornada da Pontual cruzando 3 fontes — tablet SasMDT, GPS SASCAR e tacógrafo VDO (.DDD). Fase 1 entregue (tablet), Fases 2-4 mapeadas."
-- [project-jornada-historico-plano](project_jornada_historico_plano.md) — Plano pra arquivar jornada diariamente no Firestore — habilita relatório mensal/folha. Hoje SASCAR só guarda ~3-4 dias e nada é salvo. Bloqueado por Blaze (cron).
-- [project-jornada-motorista-plano](project_jornada_motorista_plano.md) — "Plano pra construir página /jornada na Pontual replicando o relatório \"Jornada & Extras\" do portal SASCAR (rotas.seg.br/torre1/frames/jornada.html). Usa Lei 13.103/2015 + CLT art. 58/59/71."
-- [project-levantamento-logistica](project_levantamento_logistica.md) — "Inventário do TMS na parte de logística operacional (escopo: tudo MENOS CT-e/MDF-e/RBAC/financeiro). Doc 14 no repo. Top 5 gaps e top 5 bloqueadores externos identificados em 2026-05-23"
-- [project-logistica-ia-frontend](project-logistica-ia-frontend.md) — "logistica-ia frontend stack — Vite + React, common ports and restart pattern"
-- [project-manutencao-os-wip](project_manutencao_os_wip.md) — "Fluxo \"abrir OS + finalizar OS\" em Manutencao.jsx está em WIP — não liberado pros usuários ainda. finalizarOS e acaoOS NÃO são código morto."
-- [project-migracao-hostinger](project-migracao-hostinger.md) — Sistema vai migrar pra banco de dados Hostinger — NÃO subir mais dados no Firestore
-- [project-migracao-laravel-hostinger](project-migracao-laravel-hostinger.md) — Sistema atual React+Firebase será migrado pra Laravel+MySQL na Hostinger. Fases planejadas + trade-offs concretos + esforço estimado
-- [project-migracao-postgresql-tms](project_migracao_postgresql_tms.md) — "PLANO estratégico (2026-05-21): migrar Logística IA do Firebase pra PostgreSQL/Supabase e virar produto TMS SaaS multi-tenant pra vender a outras transportadoras"
-- [project-modelo-custo-viagem-pontual](project-modelo-custo-viagem-pontual.md) — Modelo econômico para cálculo de custo real de viagem (combustível + pedágio + motorista + refeições) — base para /rotas e comparativos
-- [project-modulo-compras-branch-supabase](project-modulo-compras-branch-supabase.md) — Módulo Compras existe pronto na branch feat/migracao-supabase (1023 linhas Compras.jsx + 80 utils/compras.js). Cherry-pick recomendado antes da migração Laravel
-- [project-modulo-terceiros](project_modulo_terceiros.md) — "Desenho do módulo Transportadoras Terceiras do TMS — cadastro, alocação na OC, frete contratado, CT-e recebido. Doc 13 no projeto"
-- [project-modulo-vencimentos-existente](project-modulo-vencimentos-existente.md) — "Sistema Pontual JÁ TEM módulo de vencimentos em manutencao/AbaConjuntoVencimentos.jsx — não criar módulo novo, adicionar tipos no existente"
-- [project-motorista-caminhao-pontual](project_motorista_caminhao_pontual.md) — "Regra operacional da Pontual — motorista tem CAMINHÃO HABITUAL mas pode trocar quando o normal vai pra serviço/manutenção. iButton segue o motorista, não o caminhão."
-- [project-nf-nordica-substitui-civ](project-nf-nordica-substitui-civ.md) — NF Nordica em cavalo novo substitui CIV por 1 ano (vencimento = emissão + 365 dias)
-- [project-operacao-pontual-tamanho](project_operacao_pontual_tamanho.md) — "Tamanho real da operacao Pontual em 2026-05-26 - 36 motoristas + 5-6 admin. Corrige \"66 motoristas\" de memorias antigas"
-- [project-outras-ias-e-backups](project-outras-ias-e-backups.md) — "Fontes secundárias de contexto - Codex CLI, claude-flow, OneDrive backup auto, VS Code extensions"
-- [project-pedagio-veloe](project_pedagio_veloe.md) — Provedor de pedágio da frota interna Pontual é Veloe (não Sem Parar/ConectCar). Alvo da futura integração de custo/viagem.
-- [project-pendrive-backup](project-pendrive-backup.md) — "Pendrive de backup do user é D: (NUNCA F:), com padrão Backup-Logistica-YYYY-MM-DD"
-- [project-pontual](project_pontual.md) — "Sistema Pontual Logística — gestão de frota e despacho para distribuidora de combustíveis, stack Firebase + React + FastAPI"
-- [project-pontual-devolucao-pattern](project-pontual-devolucao-pattern.md) — Como identificar devoluções de venda na planilha de Faturamento Pontual (não existe coluna explícita)
-- [project-pontual-eixos-ls-6-corrigido](project-pontual-eixos-ls-6-corrigido.md) — "CORREÇÃO — cavalo Pontual + carreta LS CARREGADO = 6 eixos (3+3), NÃO 5. Ajustado em pedagios.js EIXOS_POR_TIPO e eixosDoVeiculo() em 2026-07-17"
-- [project-pontual-logo-white-aprovada](project-pontual-logo-white-aprovada.md) — Logo branca da Pontual no Dashboard — versão final aprovada em 2026-06-16
-- [project-producao-deploy-pausado](project_producao_deploy_pausado.md) — "Deploy de produção do Pontual Logística IA pausado em 2026-05-18 aguardando decisão sobre cartão pro Blaze. Auditoria de segurança feita, secrets untracked, rotação pendente."
-- [project-rastreamento-precisao-2026-06-08](project_rastreamento_precisao_2026-06-08.md) — REVERTIDO 2026-06-08 — 4 correcoes de precisao no rastreamento aplicadas e revertidas no mesmo dia. Wesley achou pior. Manter como registro do que NAO fazer sem mais info.
-- [project-rastreamento-sascar-fase2](project_rastreamento_sascar_fase2.md) — "Fase 2 do TMS Pontual entregue — Firebase Functions + módulo Rastreamento React com mapa Leaflet, busca, motorista logado, status em tempo real"
-- [project-responsivo-mobile](project_responsivo_mobile.md) — Convenções de responsividade mobile no Pontual Logística — utility classes em index.css que sobrescrevem inline styles via !important
-- [project-roteirizacao-plano](project_roteirizacao_plano.md) — "DESENHO da roteirização (Doc 15): rota+ETA via OpenRouteService grátis + pedágio por eixo via API. Pré-requisito = cadastro de clientes/destinos."
-- [project-roteirizacao-teste](project_roteirizacao_teste.md) — Protótipo isolado de roteirização (teste_rota.html no Desktop). Rota+ETA+pedágio funcionando fora do sistema. Estado e como retomar.
-- [project-sascar-cameras-plano](project_sascar_cameras_plano.md) — Plano de 4 fases pra integrar câmeras SASCAR (Streamax) no dashboard. Fase 0 = ligar SASCAR e descobrir o que está liberado antes de codar.
-- [project-sascar-cercas-api-bloqueada](project_sascar_cercas_api_bloqueada.md) — "Cercas via API SASCAR (obterPontosReferencia) está BLOQUEADA pro usuário PONTUALPONTUAL — pedido de liberação pendente pro suporte. Wesley quer cerca via SASCAR, não no nosso editor."
-- [project-sascar-ibutton-diagnostico](project_sascar_ibutton_diagnostico.md) — "Diagnóstico iButton da frota Pontual (2026-05-18) + perguntas pra fazer pro suporte SASCAR. Hardware presente em 100%, mas só 6 motoristas usam."
-- [project-sascar-retencao-eventos](project_sascar_retencao_eventos.md) — SASCAR API obterEventosTempoDirecao tem retenção curta — eventos > 3-4 dias retornam vazio. Bloqueador pra período longo na página /jornada. Descoberto 2026-05-19.
-- [project-scraping-tms](project_scraping_tms.md) — "Onde web scraping (Scrapling) ajuda de verdade no TMS da Pontual — análise honesta API vs scraping. Foco: enriquecer precificação de frete (pedágio, diesel, piso ANTT)"
-- [project-sessao-2026-07-17-mudancas](project-sessao-2026-07-17-mudancas.md) — "Sessão 17/07 — migração seletiva supabase, Dashboard novo, Login cards, mobile iOS restaurado, remoção Rotas/Locais (features canceladas)"
-- [project-tms-saas-decisao](project_tms_saas_decisao.md) — PAUSADO 2026-05-26 - ideia de virar SaaS para vender foi pausada. Foco volta a ser TMS interno da Pontual. Documentos antigos no Desktop ficam arquivados.
-- [project-valorizacao-monetizacao](project_valorizacao_monetizacao.md) — "Objetivo do Wesley: ser valorizado e ganhar mais pelo sistema que desenvolve. Plano em 3 passos + one-page de valor já criado no Desktop"
-- [project-vdo-api-solicitacao](project_vdo_api_solicitacao.md) — Pedido formal de API/integração pro suporte VDO Fleet (Continental). Texto pronto + 3 caminhos de integração + plano enquanto API não chega.
-- [Projeto Logística IA — Pontual Logística](project_logistica_ia.md) — React+Firebase para Pontual Logística — sistema de gestão operacional completo
-- [proposta-valor-tms](project_proposta_valor_tms.md) — "Proposta de cobrança do TMS Pontual — arquivo SEPARADO da apresentação, tiers Premium R$ 6.500/10.000/15.000 (Maio/2026)"
-- [rastreamento-eta-destino](project_rastreamento_eta_destino.md) — "Rastreamento ganhou painel \"Definir destino\" no popup de cada veiculo — autocomplete Nominatim, calcula rota truck+hazmat via Valhalla, mostra distancia+ETA. Sem persistencia."
-- [Relatório Transportadores Terceiros — Erlei e João](project_relatorio_terceiro.md) — Geração de PPTX de análise anual para transportadores terceirizados Erlei e João, dados 2025, com colunas de litros inconsistentes entre arquivos
-- [Relatórios VDO — Picos de Velocidade](project_relatorio_vdo.md) — Automação de picos de velocidade — caminhos, estrutura e regras da automação
-- [sessao-2026-06-03](project_sessao_2026-06-03.md) — "Sessao 03-jun — smoke test descobriu 3 bugs (Manutencao zerado, OC sem indice, Atrelamento key duplicada), refactor 3 abas Manutencao, ETA por Valhalla no Rastreamento. 8 commits."
-- [xadm-fiscal-mdfe](project-xadm-fiscal.md) — "MDF-e (e provavelmente outros docs fiscais) é feito no XADM 7.12 G19, ERP legado em ZIM — sistema novo NÃO deve reimplementar"
-- [project-tms-mapa-completo](project_tms_mapa_completo.md) — "Documento-mapa do TMS no Desktop: arquitetura (camadas), 15 módulos, integrações com API, dados sem API, capacidades possíveis e roadmap — tudo com o que cada peça faz"
-- [reference-cta-smart-api](reference-cta-smart-api.md) — "API CTA Smart (bomba de combustível do pátio Pontual) — endpoint, token, formato XML, rate limit"
-- [reference-firebase-service-account-pendrive](reference-firebase-service-account-pendrive.md) — "Chave service account do Firebase pontual-logistica fica nos backups do pendrive D:, path scripts/serviceAccountKey.json — usar com GOOGLE_APPLICATION_CREDENTIALS pra deploy sem `firebase login`"
-- [reference-firestore-cache-offline](reference_firestore_cache_offline.md) — "Cache offline do Firestore está LIGADO no projeto logistica-ia (persistentLocalCache multi-tab). Como funciona, riscos, e pegadinha do Vite cache invalidando quando mexe em deps do Firebase"
-- [reference-padrao-visual-pontual-xlsx](reference_padrao_visual_pontual_xlsx.md) — Paleta visual Pontual oficial pra planilhas Excel — usar como base em qualquer xlsx novo
-- [reference-sascar-api](reference_sascar_api.md) — "SASCAR SasIntegra Web Service — endpoint, autenticação, métodos principais e exemplos SOAP para integração de rastreamento veicular"
+- [feedback_arquivo_explicito_obrigatorio](feedback_arquivo_explicito_obrigatorio.md) — name: arquivo-explicito-obrigatorio
+- [feedback_arquivos_downloads](feedback_arquivos_downloads.md) — name: Arquivos sempre em Downloads
+- [feedback_auditoria_estatica_nao_basta](feedback_auditoria_estatica_nao_basta.md) — name: feedback-auditoria-estatica-nao-basta
 - [feedback_auto_skills](feedback_auto_skills.md) — name: Auto-ativar skills proativamente
+- [feedback_bash_forward_slashes](feedback_bash_forward_slashes.md) — name: feedback-bash-forward-slashes
+- [feedback_colocar_no_ar_completo](feedback_colocar_no_ar_completo.md) — name: feedback-colocar-no-ar-completo
+- [feedback_dados_reais](feedback_dados_reais.md) — name: Sempre usar dados reais, nunca fictícios
+- [feedback_disco_f_intocavel](feedback_disco_f_intocavel.md) — name: feedback-disco-f-intocavel
+- [feedback_falar_inviavel_cedo](feedback_falar_inviavel_cedo.md) — name: falar-inviavel-cedo
+- [feedback_nao_expor_custos_wesley](feedback_nao_expor_custos_wesley.md) — name: nao-expor-custos-wesley
+- [feedback_nao_inventar_colunas](feedback_nao_inventar_colunas.md) — name: feedback-nao-inventar-colunas
 - [feedback_nao_subir_sem_aprovacao](feedback_nao_subir_sem_aprovacao.md) — name: ""
+- [feedback_nodejs_only](feedback_nodejs_only.md) — name: Tooling — Node.js only, no Python
+- [feedback_notebooklm_consulta](feedback_notebooklm_consulta.md) — name: Consultar NotebookLM nas respostas
+- [feedback_projeto](feedback_projeto.md) — name: feedback-projeto
+- [feedback_salvar_contexto](feedback_salvar_contexto.md) — name: Salvar tudo em memória
+- [feedback_sem_permissao](feedback_sem_permissao.md) — name: Executar sem pedir permissão
+- [feedback_solides_so_adm](feedback_solides_so_adm.md) — name: feedback-solides-so-adm
+- [feedback_ui_perguntar_largura_altura](feedback_ui_perguntar_largura_altura.md) — name: feedback-ui-perguntar-largura-altura
+- [feedback_vdo_nao_sascar](feedback_vdo_nao_sascar.md) — name: feedback-vdo-nao-sascar
+- [feedback_web_search_obrigatorio](feedback_web_search_obrigatorio.md) — name: Web search obrigatório em análises esportivas
+- [feedback-abertura-sessao-consultar-contexto](feedback-abertura-sessao-consultar-contexto.md) — name: feedback-abertura-sessao-consultar-contexto
+- [feedback-auto-commit-quando-pedido](feedback-auto-commit-quando-pedido.md) — name: feedback-auto-commit-quando-pedido
+- [feedback-branch-supabase-nao-merge-tudo](feedback-branch-supabase-nao-merge-tudo.md) — name: feedback-branch-supabase-nao-merge-tudo
+- [feedback-conversa-realtime-multi-claude](feedback-conversa-realtime-multi-claude.md) — name: feedback-conversa-realtime-multi-claude
+- [feedback-downloads-nao-entra-obsidian](feedback-downloads-nao-entra-obsidian.md) — name: feedback-downloads-nao-entra-obsidian
+- [feedback-faturamento-nao-eh-lucro](feedback-faturamento-nao-eh-lucro.md) — name: feedback-faturamento-nao-eh-lucro
+- [feedback-firestore-emulator-quebra-filtros](feedback-firestore-emulator-quebra-filtros.md) — name: firestore-emulator-quebra-filtros
+- [feedback-fluxo-bidirecional-multi-ia](feedback-fluxo-bidirecional-multi-ia.md) — name: feedback-fluxo-bidirecional-multi-ia
+- [feedback-hook-auto-memory-placeholder](feedback-hook-auto-memory-placeholder.md) — name: feedback-hook-auto-memory-placeholder
+- [feedback-log-sessao-obsidian](feedback-log-sessao-obsidian.md) — name: feedback-log-sessao-obsidian
+- [feedback-login-fullbleed-cta-pattern](feedback-login-fullbleed-cta-pattern.md) — name: feedback-login-fullbleed-cta-pattern
+- [feedback-login-split-pattern](feedback-login-split-pattern.md) — name: feedback-login-split-pattern
+- [feedback-menu-blur-mapa-fix](feedback-menu-blur-mapa-fix.md) — name: feedback-menu-blur-mapa-fix
+- [feedback-nao-aplicar-moduleheader-telas-antigas](feedback-nao-aplicar-moduleheader-telas-antigas.md) — name: feedback-nao-aplicar-moduleheader-telas-antigas
+- [feedback-nao-resetar-senha-sem-pedir](feedback-nao-resetar-senha-sem-pedir.md) — name: feedback-nao-resetar-senha-sem-pedir
+- [feedback-pneus-esquematico-aprovado](feedback-pneus-esquematico-aprovado.md) — name: feedback-pneus-esquematico-aprovado
+- [feedback-pneus-sem-sascar](feedback-pneus-sem-sascar.md) — name: feedback-pneus-sem-sascar
+- [feedback-responsivo-classes-helper](feedback-responsivo-classes-helper.md) — name: responsivo-classes-helper-pontual
+- [feedback-salvar-tudo-user-diz](feedback-salvar-tudo-user-diz.md) — name: feedback-salvar-tudo-user-diz
+- [feedback-sugerir-direto-quando-opiniao-formada](feedback-sugerir-direto-quando-opiniao-formada.md) — name: feedback-sugerir-direto-quando-opiniao-formada
+- [feedback-svg-logo-iteration-cost](feedback-svg-logo-iteration-cost.md) — name: feedback-svg-logo-iteration-cost
+- [feedback-trocar-imagem-em-slide-flatten](feedback-trocar-imagem-em-slide-flatten.md) — name: feedback-trocar-imagem-em-slide-flatten
+- [feedback-windows-file-watcher](feedback-windows-file-watcher.md) — name: feedback-windows-file-watcher
+- [project_apresentacao_mensal](project_apresentacao_mensal.md) — name: apresentacao-mensal
+- [project_banco_aws_decidido](project_banco_aws_decidido.md) — name: project-banco-aws-decidido
+- [project_carga_perigosa](project_carga_perigosa.md) — name: project-carga-perigosa
+- [project_estado_atual](project_estado_atual.md) — name: project-estado-atual
+- [project_excel_vencimentos_frota](project_excel_vencimentos_frota.md) — name: project-excel-vencimentos-frota
+- [project_firestore_emulator_off](project_firestore_emulator_off.md) — name: project-firestore-emulator-off
+- [project_frontend_lint_estado](project_frontend_lint_estado.md) — name: project_frontend_lint_estado
+- [project_frota_pontual_html](project_frota_pontual_html.md) — name: Frota Pontual — HTML App de Controle de Frota
+- [project_gestao_financeira_preview](project_gestao_financeira_preview.md) — name: Gestão Financeira — Prévia aprovada
+- [project_github](project_github.md) — name: GitHub do usuário
+- [project_ibutton_descontinuado](project_ibutton_descontinuado.md) — name: project-ibutton-descontinuado
+- [project_jornada_3fontes_plano](project_jornada_3fontes_plano.md) — name: project-jornada-3fontes-plano
+- [project_jornada_historico_plano](project_jornada_historico_plano.md) — name: project-jornada-historico-plano
+- [project_jornada_motorista_plano](project_jornada_motorista_plano.md) — name: project-jornada-motorista-plano
+- [project_levantamento_logistica](project_levantamento_logistica.md) — name: project-levantamento-logistica
+- [project_logistica_ia](project_logistica_ia.md) — name: Projeto Logística IA — Pontual Logística
+- [project_logistica_rastreamento_levantamento](project_logistica_rastreamento_levantamento.md) — name: Levantamento Logística & Rastreamento — Pontual
+- [project_manutencao_3abas](project_manutencao_3abas.md) — name: manutencao-3abas
+- [project_manutencao_arquivo_zerado_incidente](project_manutencao_arquivo_zerado_incidente.md) — name: manutencao-arquivo-zerado-incidente
+- [project_manutencao_os_wip](project_manutencao_os_wip.md) — name: project-manutencao-os-wip
+- [project_mcp_config](project_mcp_config.md) — name: Configuração MCPs Claude Code
+- [project_mempalace](project_mempalace.md) — name: MemPalace — Configuração e Automação
+- [project_migracao_postgresql_tms](project_migracao_postgresql_tms.md) — name: project-migracao-postgresql-tms
+- [project_modulo_terceiros](project_modulo_terceiros.md) — name: project-modulo-terceiros
+- [project_motorista_caminhao_pontual](project_motorista_caminhao_pontual.md) — name: project-motorista-caminhao-pontual
+- [project_operacao_pontual_tamanho](project_operacao_pontual_tamanho.md) — name: project-operacao-pontual-tamanho
+- [project_padrao_apresentacoes](project_padrao_apresentacoes.md) — name: Padrão visual das apresentações Pontual
+- [project_pedagio_veloe](project_pedagio_veloe.md) — name: project-pedagio-veloe
+- [project_pontual](project_pontual.md) — name: project-pontual
+- [project_producao_deploy_pausado](project_producao_deploy_pausado.md) — name: project-producao-deploy-pausado
+- [project_proposta_valor_tms](project_proposta_valor_tms.md) — name: proposta-valor-tms
+- [project_rastreamento_eta_destino](project_rastreamento_eta_destino.md) — name: rastreamento-eta-destino
+- [project_rastreamento_precisao_2026-06-08](project_rastreamento_precisao_2026-06-08.md) — name: project-rastreamento-precisao-2026-06-08
+- [project_rastreamento_sascar_fase2](project_rastreamento_sascar_fase2.md) — name: project-rastreamento-sascar-fase2
 - [project_relatorio_px](project_relatorio_px.md) — name: Relatório PX — Scripts e Próximo Passo
+- [project_relatorio_terceiro](project_relatorio_terceiro.md) — name: Relatório Transportadores Terceiros — Erlei e João
+- [project_relatorio_vdo](project_relatorio_vdo.md) — name: Relatórios VDO — Picos de Velocidade
+- [project_responsivo_mobile](project_responsivo_mobile.md) — name: project-responsivo-mobile
+- [project_roteirizacao_plano](project_roteirizacao_plano.md) — name: project-roteirizacao-plano
+- [project_roteirizacao_teste](project_roteirizacao_teste.md) — name: project-roteirizacao-teste
+- [project_sascar_cameras_plano](project_sascar_cameras_plano.md) — name: project-sascar-cameras-plano
+- [project_sascar_cercas_api_bloqueada](project_sascar_cercas_api_bloqueada.md) — name: project-sascar-cercas-api-bloqueada
+- [project_sascar_ibutton_diagnostico](project_sascar_ibutton_diagnostico.md) — name: project-sascar-ibutton-diagnostico
+- [project_sascar_retencao_eventos](project_sascar_retencao_eventos.md) — name: project-sascar-retencao-eventos
+- [project_scraping_tms](project_scraping_tms.md) — name: project-scraping-tms
+- [project_sessao_2026-06-03](project_sessao_2026-06-03.md) — name: sessao-2026-06-03
+- [project_tms_mapa_completo](project_tms_mapa_completo.md) — name: project-tms-mapa-completo
+- [project_tms_saas_decisao](project_tms_saas_decisao.md) — name: project-tms-saas-decisao
+- [project_valorizacao_monetizacao](project_valorizacao_monetizacao.md) — name: project-valorizacao-monetizacao
+- [project_vdo_api_solicitacao](project_vdo_api_solicitacao.md) — name: project-vdo-api-solicitacao
+- [project-branches-github-multiplas](project-branches-github-multiplas.md) — name: project-branches-github-multiplas
+- [project-conjuntos-akd5988-bbe9588](project-conjuntos-akd5988-bbe9588.md) — name: project-conjuntos-akd5988-bbe9588
+- [project-contas-claude-user](project-contas-claude-user.md) — name: project-contas-claude-user
+- [project-cta-externo-lancamento-manual](project-cta-externo-lancamento-manual.md) — name: project-cta-externo-lancamento-manual
+- [project-cta-nfe-so-externo](project-cta-nfe-so-externo.md) — name: project-cta-nfe-so-externo
+- [project-cta-smart-integracao](project-cta-smart-integracao.md) — name: cta-smart-integracao-pontual
+- [project-custo-motorista-pontual](project-custo-motorista-pontual.md) — name: project-custo-motorista-pontual
+- [project-frota-pontual-eixos](project-frota-pontual-eixos.md) — name: project-frota-pontual-eixos
+- [project-jdk21-user-install](project-jdk21-user-install.md) — name: project-jdk21-user-install
+- [project-logistica-ia-frontend](project-logistica-ia-frontend.md) — name: project-logistica-ia-frontend
+- [project-migracao-hostinger](project-migracao-hostinger.md) — name: project-migracao-hostinger
+- [project-migracao-laravel-hostinger](project-migracao-laravel-hostinger.md) — name: project-migracao-laravel-hostinger
+- [project-modelo-custo-viagem-pontual](project-modelo-custo-viagem-pontual.md) — name: project-modelo-custo-viagem-pontual
+- [project-modulo-compras-branch-supabase](project-modulo-compras-branch-supabase.md) — name: project-modulo-compras-branch-supabase
+- [project-modulo-vencimentos-existente](project-modulo-vencimentos-existente.md) — name: project-modulo-vencimentos-existente
+- [project-nf-nordica-substitui-civ](project-nf-nordica-substitui-civ.md) — name: project-nf-nordica-substitui-civ
+- [project-outras-ias-e-backups](project-outras-ias-e-backups.md) — name: project-outras-ias-e-backups
+- [project-pendrive-backup](project-pendrive-backup.md) — name: project-pendrive-backup
+- [project-pontual-devolucao-pattern](project-pontual-devolucao-pattern.md) — name: project-pontual-devolucao-pattern
+- [project-pontual-eixos-ls-6-corrigido](project-pontual-eixos-ls-6-corrigido.md) — name: project-pontual-eixos-ls-6-corrigido
+- [project-pontual-logo-white-aprovada](project-pontual-logo-white-aprovada.md) — name: project-pontual-logo-white-aprovada
+- [project-sessao-2026-07-17-mudancas](project-sessao-2026-07-17-mudancas.md) — name: project-sessao-2026-07-17-mudancas
+- [project-xadm-fiscal](project-xadm-fiscal.md) — name: xadm-fiscal-mdfe
+- [reference_firestore_cache_offline](reference_firestore_cache_offline.md) — name: reference-firestore-cache-offline
+- [reference_padrao_visual_pontual_xlsx](reference_padrao_visual_pontual_xlsx.md) — name: reference-padrao-visual-pontual-xlsx
+- [reference_sascar_api](reference_sascar_api.md) — name: reference-sascar-api
+- [reference-cta-smart-api](reference-cta-smart-api.md) — name: reference-cta-smart-api
+- [reference-firebase-service-account-pendrive](reference-firebase-service-account-pendrive.md) — name: reference-firebase-service-account-pendrive
+- [user_wesley](user_wesley.md) — name: user-wesley
