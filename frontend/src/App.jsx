@@ -6,6 +6,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { RBACProvider } from "./rbac/RBACContext";
 import RotaProtegida from "./rbac/RotaProtegida";
 import Login from "./pages/Login";
+import InstallPWA from "./components/InstallPWA";
 
 const Dashboard   = lazy(() => import("./pages/Dashboard"));
 const Frota       = lazy(() => import("./pages/Frota"));
@@ -103,6 +104,7 @@ export default function App() {
                   <Route path="/import"          element={<PrivateRoute><ImportAdmin /></PrivateRoute>} />
                 </Routes>
               </Suspense>
+              <InstallPWA />
             </BrowserRouter>
           </PermissionsProvider>
         </RBACProvider>
