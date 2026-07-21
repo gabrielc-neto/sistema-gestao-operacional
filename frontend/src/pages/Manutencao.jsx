@@ -25,7 +25,7 @@ import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
   FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet, Gauge, SprayCan, Package,
   ClipboardCheck, Store, Camera, Circle, AlertCircle, CheckCircle2, Lightbulb, Award, Trash2,
-  AlertOctagon, ShoppingCart as ShoppingCartIco, Clock, CheckSquare, Brain,
+  AlertOctagon, ShoppingCart as ShoppingCartIco, Clock, CheckSquare, Brain, Printer,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -1792,6 +1792,33 @@ export default function Manutencao() {
     } finally {
       setUploadando(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  // Imprimir anexo direto — abre em janela nova + dispara print. Funciona
+  // pra PDF (visor nativo do browser) e imagens (envolve em <img>).
+  function imprimirAnexo(a) {
+    if (!a?.url) return;
+    const isImg = (a.contentType || "").startsWith("image/");
+    const w = window.open("", "_blank", "width=900,height=1100");
+    if (!w) {
+      alert("Popup bloqueado. Libere popups pra este site OU use Abrir + Ctrl+P.");
+      return;
+    }
+    if (isImg) {
+      w.document.write(`
+        <!doctype html><html><head><title>${a.nome}</title>
+        <style>body{margin:0;padding:20px;background:#fff;text-align:center;font-family:sans-serif}img{max-width:100%;height:auto}@media print{body{padding:0}}</style>
+        </head><body onload="setTimeout(()=>window.print(),400)">
+        <img src="${a.url}" alt="${a.nome}" />
+        </body></html>
+      `);
+      w.document.close();
+    } else {
+      // PDF ou outro tipo — abre direto e chama print. Alguns browsers exigem
+      // que o PDF renderize primeiro; delay de 800ms é o pratico.
+      w.location.href = a.url;
+      setTimeout(() => { try { w.print(); } catch {} }, 1200);
     }
   }
 
@@ -4649,13 +4676,24 @@ export default function Manutencao() {
                             </div>
                           </div>
                           <a href={a.url} target="_blank" rel="noopener noreferrer"
-                            style={{ background:"#dbeafe", color:"#1d4ed8", border:"none", borderRadius:5, padding:"4px 10px", fontSize:".75rem", fontWeight:700, textDecoration:"none" }}>
-                            Abrir
+                            title="Abrir em nova aba"
+                            style={{ background:"#dbeafe", color:"#1d4ed8", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4 }}>
+                            <Eye size={12} /> Abrir
                           </a>
+                          <a href={a.url} download={a.nome}
+                            title="Baixar pro seu PC"
+                            style={{ background:"#dcfce7", color:"#15803d", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4 }}>
+                            <FileDown size={12} /> Baixar
+                          </a>
+                          <button type="button" onClick={() => imprimirAnexo(a)}
+                            title="Abrir e imprimir direto"
+                            style={{ background:"#e0e7ff", color:"#4338ca", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:4 }}>
+                            <Printer size={12} /> Imprimir
+                          </button>
                           <button type="button" onClick={() => removerAnexo(i)}
-                            style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".9rem", fontWeight:700 }}
+                            style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", padding:2 }}
                             title="Excluir anexo">
-                            ✕
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       );
@@ -5276,13 +5314,24 @@ export default function Manutencao() {
                             </div>
                           </div>
                           <a href={a.url} target="_blank" rel="noopener noreferrer"
-                            style={{ background:"#dbeafe", color:"#1d4ed8", border:"none", borderRadius:5, padding:"4px 10px", fontSize:".75rem", fontWeight:700, textDecoration:"none" }}>
-                            Abrir
+                            title="Abrir em nova aba"
+                            style={{ background:"#dbeafe", color:"#1d4ed8", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4 }}>
+                            <Eye size={12} /> Abrir
                           </a>
+                          <a href={a.url} download={a.nome}
+                            title="Baixar pro seu PC"
+                            style={{ background:"#dcfce7", color:"#15803d", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4 }}>
+                            <FileDown size={12} /> Baixar
+                          </a>
+                          <button type="button" onClick={() => imprimirAnexo(a)}
+                            title="Abrir e imprimir direto"
+                            style={{ background:"#e0e7ff", color:"#4338ca", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:4 }}>
+                            <Printer size={12} /> Imprimir
+                          </button>
                           <button type="button" onClick={() => removerAnexoLanc(i)}
-                            style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".9rem", fontWeight:700 }}
+                            style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", padding:2 }}
                             title="Excluir anexo">
-                            ✕
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       );
