@@ -46,17 +46,17 @@ const TIPOS = [
   { id:"nr20",             label:"NR-20",                 grupo:"Motorista",    desc:"Certificação NR-20 — Segurança e Saúde no Trabalho com Inflamáveis",        campos:["data_realiz","venc","local","resp","obs"] },
   { id:"nr35",             label:"NR-35",                 grupo:"Motorista",    desc:"Certificação NR-35 — Trabalho em Altura",                                   campos:["data_realiz","venc","local","resp","obs"] },
   // Mecânica
-  { id:"oleo",             label:"Troca de Óleo",         grupo:"Mecânica",     desc:"Troca do óleo do motor e filtros",                                          campos:["data_realiz","venc","km_atual","local","resp","obs"] },
+  { id:"oleo",             label:"Troca de Óleo",         grupo:"Mecânica",     desc:"Troca do óleo do motor e filtros",                                          campos:["data_realiz","venc","km_atual","km_prox","local","resp","obs"] },
   { id:"bateria",          label:"Bateria",               grupo:"Mecânica",     desc:"Troca ou verificação da bateria",                                           campos:["data_realiz","venc","local","resp","obs"] },
-  { id:"engraxe",          label:"Engraxe Geral",         grupo:"Mecânica",     desc:"Engraxe geral de quinta-roda, rolamentos e articulações",                  campos:["data_realiz","venc","km_atual","local","resp","obs"] },
-  { id:"pneus",            label:"Pneus",                 grupo:"Mecânica",     desc:"Troca, recapagem ou rodízio de pneus",                                      campos:["data_realiz","venc","km_atual","local","resp","obs"] },
-  { id:"freios",           label:"Freios",                grupo:"Mecânica",     desc:"Verificação e ajuste do sistema de freios (lonas, discos, cilindros)",      campos:["data_realiz","venc","km_atual","local","resp","obs"] },
-  { id:"suspensao",        label:"Suspensão",             grupo:"Mecânica",     desc:"Revisão e manutenção da suspensão e amortecedores",                        campos:["data_realiz","venc","km_atual","local","resp","obs"] },
-  { id:"alinhamento",      label:"Alinhamento",           grupo:"Mecânica",     desc:"Alinhamento e balanceamento de rodas",                                      campos:["data_realiz","venc","km_atual","local","resp","obs"] },
-  { id:"arrefecimento",    label:"Arrefecimento",         grupo:"Mecânica",     desc:"Revisão do sistema de arrefecimento — radiador, fluido e mangueiras",      campos:["data_realiz","venc","km_atual","local","resp","obs"] },
-  { id:"embreagem",        label:"Embreagem",             grupo:"Mecânica",     desc:"Troca ou ajuste da embreagem",                                              campos:["data_realiz","venc","km_atual","local","resp","obs"] },
-  { id:"diferencial",      label:"Diferencial / Câmbio",  grupo:"Mecânica",     desc:"Revisão e troca de óleo do diferencial e caixa de câmbio",                 campos:["data_realiz","venc","km_atual","local","resp","obs"] },
-  { id:"preventiva",       label:"Preventiva",            grupo:"Mecânica",     desc:"Manutenção preventiva geral programada por KM ou período",                  campos:["data_realiz","venc","km_atual","local","resp","obs"] },
+  { id:"engraxe",          label:"Engraxe Geral",         grupo:"Mecânica",     desc:"Engraxe geral de quinta-roda, rolamentos e articulações",                  campos:["data_realiz","venc","km_atual","km_prox","local","resp","obs"] },
+  { id:"pneus",            label:"Pneus",                 grupo:"Mecânica",     desc:"Troca, recapagem ou rodízio de pneus",                                      campos:["data_realiz","venc","km_atual","km_prox","local","resp","obs"] },
+  { id:"freios",           label:"Freios",                grupo:"Mecânica",     desc:"Verificação e ajuste do sistema de freios (lonas, discos, cilindros)",      campos:["data_realiz","venc","km_atual","km_prox","local","resp","obs"] },
+  { id:"suspensao",        label:"Suspensão",             grupo:"Mecânica",     desc:"Revisão e manutenção da suspensão e amortecedores",                        campos:["data_realiz","venc","km_atual","km_prox","local","resp","obs"] },
+  { id:"alinhamento",      label:"Alinhamento",           grupo:"Mecânica",     desc:"Alinhamento e balanceamento de rodas",                                      campos:["data_realiz","venc","km_atual","km_prox","local","resp","obs"] },
+  { id:"arrefecimento",    label:"Arrefecimento",         grupo:"Mecânica",     desc:"Revisão do sistema de arrefecimento — radiador, fluido e mangueiras",      campos:["data_realiz","venc","km_atual","km_prox","local","resp","obs"] },
+  { id:"embreagem",        label:"Embreagem",             grupo:"Mecânica",     desc:"Troca ou ajuste da embreagem",                                              campos:["data_realiz","venc","km_atual","km_prox","local","resp","obs"] },
+  { id:"diferencial",      label:"Diferencial / Câmbio",  grupo:"Mecânica",     desc:"Revisão e troca de óleo do diferencial e caixa de câmbio",                 campos:["data_realiz","venc","km_atual","km_prox","local","resp","obs"] },
+  { id:"preventiva",       label:"Preventiva",            grupo:"Mecânica",     desc:"Manutenção preventiva geral programada por KM ou período",                  campos:["data_realiz","venc","km_atual","km_prox","local","resp","obs"] },
   { id:"lavagem",          label:"Lavagem",               grupo:"Mecânica",     desc:"Lavagem do veículo — intervalo padrão 35 dias, alerta 5 dias antes",         campos:["data_realiz","venc","local","resp","obs"] },
   { id:"lubrificacao",     label:"Lubrificação",          grupo:"Mecânica",     desc:"Lubrificação/engraxamento — intervalo padrão 35 dias, alerta 5 dias antes",  campos:["data_realiz","venc","local","resp","obs"] },
   { id:"calibragem",       label:"Calibragem de Pneus",   grupo:"Mecânica",     desc:"Calibragem de pneus — intervalo padrão 10 dias, alerta 2 dias antes",        campos:["data_realiz","venc","local","resp","obs"] },
@@ -69,11 +69,12 @@ const CAMPO_LABEL = {
   local:       "Local / Oficina",
   numero_doc:  "Número do Documento",
   km_atual:    "KM na Realização",
+  km_prox:     "Próxima manutenção (KM)",
   resp:        "Responsável",
   obs:         "Observações",
 };
 
-const EMPTY_FORM = { data_realiz:"", venc:"", agendamento:"", local:"", numero_doc:"", km_atual:"", resp:"", obs:"" };
+const EMPTY_FORM = { data_realiz:"", venc:"", agendamento:"", local:"", numero_doc:"", km_atual:"", km_prox:"", resp:"", obs:"" };
 
 // Abertura de OS — form vazio (bloqueia o veículo, NÃO tem custo)
 const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "", fornecedor: "", fornecedorCnpj: "" };
@@ -153,25 +154,48 @@ const GRUPO_COLOR = {
 
 // ── Status ────────────────────────────────────────────────────────────────
 // Assinatura tolerante: aceita string (venc só) ou registro inteiro (para checar agendamento)
-function calcStatus(vencStrOuRec) {
+// Aceita (vencStr) ou (rec) ou (rec, ctx={odometroAtual}).
+// Se ctx.odometroAtual e rec.km_prox setados, cruza: vence pelo que vier primeiro.
+// KM_ALERTA_LIMITE = 1000 km faltando pra próxima manutenção → 'alerta' por KM.
+function calcStatus(vencStrOuRec, ctx = {}) {
   const isObj = vencStrOuRec && typeof vencStrOuRec === "object";
   const vencStr = isObj ? vencStrOuRec.venc : vencStrOuRec;
   const agendamento = isObj ? vencStrOuRec.agendamento : null;
-  if (!vencStr) return "sem_data";
-  const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const venc = new Date(vencStr + "T00:00:00");
-  const diff = Math.ceil((venc - hoje) / 86400000);
-  if (diff < 0) {
-    // Vencido, mas se tem agendamento FUTURO da nova inspeção, mostra como "agendado"
-    if (agendamento) {
-      const dag = new Date(agendamento + "T00:00:00");
-      const diffAg = Math.ceil((dag - hoje) / 86400000);
-      if (diffAg >= 0) return "agendado";
-    }
-    return "vencido";
+  const kmProx = isObj ? Number(vencStrOuRec.km_prox) : null;
+  const odometroAtual = Number(ctx?.odometroAtual);
+
+  // 1) Cheque por KM (se dado disponível) — vence quando odômetro passar do km_prox
+  let statusKm = null;
+  if (Number.isFinite(kmProx) && kmProx > 0 && Number.isFinite(odometroAtual) && odometroAtual > 0) {
+    const faltamKm = kmProx - odometroAtual;
+    if (faltamKm <= 0) statusKm = "vencido";
+    else if (faltamKm <= 1000) statusKm = "alerta";
+    else statusKm = "ok";
   }
-  if (diff <= 30) return "alerta";
-  return "ok";
+
+  // 2) Cheque por data
+  let statusData = "sem_data";
+  if (vencStr) {
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const venc = new Date(vencStr + "T00:00:00");
+    const diff = Math.ceil((venc - hoje) / 86400000);
+    if (diff < 0) {
+      if (agendamento) {
+        const dag = new Date(agendamento + "T00:00:00");
+        const diffAg = Math.ceil((dag - hoje) / 86400000);
+        if (diffAg >= 0) statusData = "agendado";
+        else statusData = "vencido";
+      } else {
+        statusData = "vencido";
+      }
+    } else if (diff <= 30) statusData = "alerta";
+    else statusData = "ok";
+  }
+
+  // 3) Combina — vence pelo mais crítico
+  const ORDER = { vencido: 0, alerta: 1, agendado: 2, ok: 3, sem_data: 4 };
+  if (statusKm === null) return statusData;
+  return ORDER[statusKm] < ORDER[statusData] ? statusKm : statusData;
 }
 
 const STATUS_ORDER = { vencido: 0, alerta: 1, agendado: 2, ok: 3, sem_data: 4 };
@@ -1015,7 +1039,7 @@ export default function Manutencao() {
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
-  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","fornecedores","os","os_lanc","lancamento","cadastros"];
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","fornecedores","cpk","os","os_lanc","lancamento","cadastros"];
   const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavagem:"lavagem", lubrificacao:"lubrificacao", calibragem:"calibragem", estoque:"estoque", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
     (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
@@ -1378,8 +1402,9 @@ export default function Manutencao() {
   }, []);
 
   const alertaCount = useMemo(() => {
-    const novosPend  = Object.values(registros).filter(r => ["vencido","alerta"].includes(calcStatus(r))).length;
-    const legadoPend = legacy.filter(r => ["vencido","alerta"].includes(calcStatus(r))).length;
+    const ctxFor = (r) => ({ odometroAtual: Number(odometroDe?.(normP(r.placa))?.km) || null });
+    const novosPend  = Object.values(registros).filter(r => ["vencido","alerta"].includes(calcStatus(r, ctxFor(r)))).length;
+    const legadoPend = legacy.filter(r => ["vencido","alerta"].includes(calcStatus(r, ctxFor(r)))).length;
     return novosPend + legadoPend;
   }, [registros, legacy]);
 
@@ -1436,9 +1461,10 @@ export default function Manutencao() {
     });
 
     const p = normP(placa);
+    const odometroDaPlaca = Number(odometroDe?.(p)?.km) || null;
     const tiposStatus = tiposVeiculo.map(t => {
       const rec = registros[`${p}__${t.id}`] || null;
-      return { ...t, record: rec, status: calcStatus(rec) };
+      return { ...t, record: rec, status: calcStatus(rec, { odometroAtual: odometroDaPlaca }) };
     });
     const grps = {};
     tiposStatus.forEach(t => {
@@ -1463,10 +1489,10 @@ export default function Manutencao() {
   const listaPorTipo = useMemo(() => {
     return todosRegistros
       .filter(r => r.tipo === filtroTipo)
-      .map(r => ({ ...r, _status: calcStatus(r) }))
+      .map(r => ({ ...r, _status: calcStatus(r, { odometroAtual: Number(odometroDe?.(normP(r.placa))?.km) || null }) }))
       .filter(r => filtroStTipo === "todos" || r._status === filtroStTipo)
       .sort((a,b) => (STATUS_ORDER[a._status]||3) - (STATUS_ORDER[b._status]||3) || (a.venc||"").localeCompare(b.venc||""));
-  }, [todosRegistros, filtroTipo, filtroStTipo]);
+  }, [todosRegistros, filtroTipo, filtroStTipo, odometroDe]);
 
   // ── Aba Alertas ───────────────────────────────────────────────────────
   // Mapa placa-normalizada → Set de tipos aplicáveis (só pra placas que customizaram a lista)
@@ -1486,7 +1512,7 @@ export default function Manutencao() {
       ...legacy.map(r => ({ ...r, _label: r.item || "—" })),
     ];
     return tudo
-      .map(r => ({ ...r, _status: calcStatus(r) }))
+      .map(r => ({ ...r, _status: calcStatus(r, { odometroAtual: Number(odometroDe?.(normP(r.placa))?.km) || null }) }))
       .filter(r => {
         // Oculta alerta de tipo que a placa removeu da lista aplicável
         if (r.tipo) {
@@ -1509,9 +1535,11 @@ export default function Manutencao() {
     setForm(rec ? {
       data_realiz: rec.data_realiz || "",
       venc:        rec.venc        || "",
+      agendamento: rec.agendamento || "",
       local:       rec.local       || "",
       numero_doc:  rec.numero_doc  || "",
       km_atual:    rec.km_atual    || "",
+      km_prox:     rec.km_prox     || "",
       resp:        rec.resp        || "",
       obs:         rec.obs         || "",
     } : { ...EMPTY_FORM });
@@ -1660,9 +1688,11 @@ export default function Manutencao() {
         grupo:       modal.tipo.grupo,
         venc:        form.venc,
         data_realiz: form.data_realiz || null,
+        agendamento: form.agendamento || null,
         local:       form.local.trim()       || null,
         numero_doc:  form.numero_doc.trim()  || null,
         km_atual:    form.km_atual.trim()    || null,
+        km_prox:     form.km_prox.trim()     || null,
         resp:        form.resp.trim()        || null,
         obs:         form.obs.trim()         || null,
         anexos:      Array.isArray(anexos) ? anexos : [],
@@ -2653,6 +2683,7 @@ export default function Manutencao() {
             <span style={s.navGroupLabel}>Financeiro</span>
             <NavTab icon={Receipt} label="Lançamento de NF" active={aba==="lancamento"} onClick={() => setAba("lancamento")} accent="#4338ca"
               badge={lancamentos.length > 0 ? { text: lancamentos.length, color: "#4338ca" } : null} />
+            <NavTab icon={TrendingUp} label="CPK" active={aba==="cpk"} onClick={() => setAba("cpk")} accent="#4338ca" />
           </div>
         )}
 
@@ -3207,6 +3238,163 @@ export default function Manutencao() {
                       </tbody>
                     </table>
                   </div>
+                </div>
+              </>
+            );
+          })()}
+        </main>
+      )}
+
+      {/* ── ABA: CPK — Custo Por KM rodado (últimos 12 meses) ────────── */}
+      {aba === "cpk" && podeVerAba("nf") && (
+        <main style={s.main} className="pg-body">
+          {(() => {
+            const AGORA = Date.now();
+            const DOZE_MESES = 12 * 30 * 86400000;
+            const CORTE = AGORA - DOZE_MESES;
+
+            function parseData(x) {
+              if (!x) return null;
+              if (typeof x === "object" && typeof x.toMillis === "function") return x.toMillis();
+              const ms = Date.parse(x);
+              return Number.isFinite(ms) ? ms : null;
+            }
+
+            // Agrega custo + hodômetros por placa (12 meses)
+            const porPlaca = new Map(); // placa → { gasto, hodMin, hodMax, entradas: [] }
+            function bump(placa, valor, hodometro, data) {
+              if (!placa) return;
+              const p = String(placa).toUpperCase().trim();
+              const ts = parseData(data);
+              if (!ts || ts < CORTE) return;
+              const cur = porPlaca.get(p) || { gasto: 0, hodMin: Infinity, hodMax: 0, entradas: 0 };
+              cur.gasto += Number(valor) || 0;
+              cur.entradas += 1;
+              const km = Number(hodometro);
+              if (Number.isFinite(km) && km > 0) {
+                cur.hodMin = Math.min(cur.hodMin, km);
+                cur.hodMax = Math.max(cur.hodMax, km);
+              }
+              porPlaca.set(p, cur);
+            }
+            ordensServico.forEach(os => {
+              if (osStatus(os) !== "finalizada") return;
+              bump(os.placa, os.valorTotal, os.hodometroSaida ?? os.hodometro, os.criadoEm || os.dataHora);
+            });
+            (lancamentos || []).forEach(l => bump(l.placa, l.valorTotal || l.valor, l.hodometro, l.data || l.criadoEm));
+
+            // Enriquecer com odômetro atual SASCAR — usa como hodMax se for maior
+            const linhas = [];
+            for (const [placa, d] of porPlaca) {
+              const kmSascar = Number(odometroDe?.(placa)?.km) || null;
+              const hodMax = Math.max(d.hodMax, kmSascar || 0);
+              const kmRodado = d.hodMin !== Infinity && hodMax > d.hodMin ? hodMax - d.hodMin : 0;
+              const cpk = kmRodado > 0 ? d.gasto / kmRodado : null;
+              linhas.push({
+                placa,
+                gasto: d.gasto,
+                entradas: d.entradas,
+                kmMin: d.hodMin === Infinity ? null : d.hodMin,
+                kmMax: hodMax || null,
+                kmRodado,
+                cpk,
+              });
+            }
+            linhas.sort((a, b) => (b.cpk ?? -1) - (a.cpk ?? -1));
+
+            const totalGasto = linhas.reduce((s, x) => s + x.gasto, 0);
+            const totalKm = linhas.reduce((s, x) => s + x.kmRodado, 0);
+            const mediaGeralCpk = totalKm > 0 ? totalGasto / totalKm : 0;
+            const comCpk = linhas.filter(l => l.cpk != null);
+            const topCpk = comCpk[0]?.cpk || 0;
+            const bottomCpk = comCpk[comCpk.length - 1]?.cpk || 0;
+
+            return (
+              <>
+                {/* KPIs topo */}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:12, marginBottom:16 }}>
+                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Média CPK frota</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{mediaGeralCpk > 0 ? fmtBRL(mediaGeralCpk) + "/km" : "—"}</div>
+                  </div>
+                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Total gasto 12m</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{fmtBRL(totalGasto)}</div>
+                  </div>
+                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Total km rodados</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{totalKm.toLocaleString("pt-BR")}</div>
+                  </div>
+                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Mais caro / mais barato</div>
+                    <div style={{ fontSize:"1rem", fontWeight:800, color:"#1a3a5c" }}>
+                      <span style={{ color:"#b91c1c" }}>{fmtBRL(topCpk)}</span>
+                      {" / "}
+                      <span style={{ color:"#15803d" }}>{fmtBRL(bottomCpk)}</span>
+                    </div>
+                    <div style={{ fontSize:".7rem", color:"#94a3b8", marginTop:2 }}>Δ {topCpk && bottomCpk ? ((topCpk / bottomCpk - 1) * 100).toFixed(0) : 0}% de diferença</div>
+                  </div>
+                </div>
+
+                <div style={{ background:"#fff", borderRadius:12, overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,.06)", marginBottom:16 }}>
+                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0" }}>
+                    <h2 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>Custo por KM rodado — últimos 12 meses</h2>
+                    <p style={{ margin:"4px 0 0 0", fontSize:".75rem", color:"#64748b" }}>
+                      Cruza gastos (OS finalizadas + lançamentos) com KM rodado (min-max dos hodômetros + SASCAR atual).
+                      Ordenado do mais caro pro mais barato. <strong>Delta vs média</strong>: veículos +20% acima merecem avaliação de substituição.
+                    </p>
+                  </div>
+                  <div style={{ overflowX:"auto" }} className="table-wrap">
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".88rem" }}>
+                      <thead>
+                        <tr style={{ background:"#f8fafc", borderBottom:"1px solid #e2e8f0" }}>
+                          <th style={thOS}>#</th>
+                          <th style={thOS}>Placa</th>
+                          <th style={thOS}>Gastos 12m</th>
+                          <th style={thOS}>KM inicial</th>
+                          <th style={thOS}>KM final</th>
+                          <th style={thOS}>KM rodado</th>
+                          <th style={thOS}>Entradas</th>
+                          <th style={thOS}>CPK</th>
+                          <th style={thOS}>vs média</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {linhas.length === 0 ? (
+                          <tr><td colSpan={9} style={{ padding:"2rem", textAlign:"center", color:"#94a3b8" }}>Sem dados nos últimos 12 meses.</td></tr>
+                        ) : linhas.map((l, i) => {
+                          const delta = mediaGeralCpk > 0 && l.cpk != null ? ((l.cpk - mediaGeralCpk) / mediaGeralCpk) * 100 : null;
+                          const critico = delta != null && delta > 20;
+                          const bom = delta != null && delta < -20;
+                          return (
+                            <tr key={l.placa} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                              <td style={tdOS}>{i+1}</td>
+                              <td style={{ ...tdOS, fontWeight:700 }}>{l.placa}</td>
+                              <td style={{ ...tdOS, fontWeight:600 }}>{fmtBRL(l.gasto)}</td>
+                              <td style={tdOS}>{l.kmMin?.toLocaleString("pt-BR") ?? "—"}</td>
+                              <td style={tdOS}>{l.kmMax?.toLocaleString("pt-BR") ?? "—"}</td>
+                              <td style={tdOS}>{l.kmRodado > 0 ? l.kmRodado.toLocaleString("pt-BR") : "—"}</td>
+                              <td style={tdOS}>{l.entradas}</td>
+                              <td style={{ ...tdOS, fontWeight:700, color: critico ? "#b91c1c" : bom ? "#15803d" : "#1a3a5c" }}>
+                                {l.cpk != null ? fmtBRL(l.cpk) + "/km" : <span style={{ color:"#94a3b8" }}>sem KM</span>}
+                              </td>
+                              <td style={tdOS}>
+                                {delta == null ? "—" : (
+                                  <span style={{ background: critico ? "#fee2e2" : bom ? "#dcfce7" : "#f1f5f9", color: critico ? "#b91c1c" : bom ? "#15803d" : "#64748b", fontSize:".78rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
+                                    {delta > 0 ? "+" : ""}{delta.toFixed(1)}%
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div style={{ background:"#fef9c3", border:"1px solid #fde68a", borderRadius:8, padding:"12px 16px", fontSize:".82rem", color:"#78350f" }}>
+                  💡 <strong>Como interpretar:</strong> se um veículo aparece com "sem KM" é porque não tem hodômetro registrado em nenhuma entrada de custo (adicione KM nas OS/lançamentos). A qualidade do CPK melhora quando você registra o hodômetro em cada OS ou usa import de NF-e (que já vem com hodômetro se tiver na nota).
                 </div>
               </>
             );
@@ -4248,30 +4436,54 @@ export default function Manutencao() {
             </div>
 
             <form onSubmit={salvar} style={s.form}>
-              {(modal.tipo.campos || ["data_realiz","venc","local","resp","obs"]).map(campo => (
-                campo === "obs" ? (
-                  <label key={campo} style={s.fieldLabel}>
-                    {CAMPO_LABEL[campo]}
-                    <textarea
-                      style={{ ...s.fieldInput, resize:"vertical", minHeight:64 }}
-                      value={form[campo]}
-                      onChange={e => setForm({ ...form, [campo]: e.target.value })}
-                      placeholder="Detalhes adicionais..."
-                    />
-                  </label>
-                ) : (
+              {(modal.tipo.campos || ["data_realiz","venc","local","resp","obs"]).map(campo => {
+                if (campo === "obs") {
+                  return (
+                    <label key={campo} style={s.fieldLabel}>
+                      {CAMPO_LABEL[campo]}
+                      <textarea
+                        style={{ ...s.fieldInput, resize:"vertical", minHeight:64 }}
+                        value={form[campo]}
+                        onChange={e => setForm({ ...form, [campo]: e.target.value })}
+                        placeholder="Detalhes adicionais..."
+                      />
+                    </label>
+                  );
+                }
+                if (campo === "km_atual" || campo === "km_prox") {
+                  const kmSascar = modal?.placa ? Number(odometroDe?.(normP(modal.placa))?.km) : null;
+                  const hint = campo === "km_prox"
+                    ? (kmSascar ? `Odômetro atual SASCAR: ${kmSascar.toLocaleString("pt-BR")} km` : "Ex: 300000")
+                    : (kmSascar ? `Sugestão SASCAR: ${kmSascar.toLocaleString("pt-BR")}` : "KM atual do veículo");
+                  return (
+                    <label key={campo} style={s.fieldLabel}>
+                      {CAMPO_LABEL[campo]}
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="numeric"
+                        style={s.fieldInput}
+                        value={form[campo]}
+                        onChange={e => setForm({ ...form, [campo]: e.target.value.replace(/\D/g, "") })}
+                        placeholder={hint}
+                      />
+                    </label>
+                  );
+                }
+                return (
                   <label key={campo} style={s.fieldLabel}>
                     {CAMPO_LABEL[campo]}
                     <input
-                      type={["venc","data_realiz"].includes(campo) ? "date" : "text"}
+                      type={["venc","data_realiz","agendamento"].includes(campo) ? "date" : "text"}
                       style={s.fieldInput}
                       value={form[campo]}
                       onChange={e => setForm({ ...form, [campo]: e.target.value })}
                       required={campo === "venc"}
                     />
                   </label>
-                )
-              ))}
+                );
+              })}
 
               {/* ── Anexos ───────────────────────────────────────────── */}
               <div style={{ borderTop:"1px dashed #cbd5e1", paddingTop:14, marginTop:4 }}>
