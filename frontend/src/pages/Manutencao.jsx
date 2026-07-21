@@ -15,10 +15,9 @@ import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
 import AbaControleRotina from "../manutencao/AbaControleRotina";
 import AbaEstoque from "../manutencao/AbaEstoque";
-import AbaMultas from "../manutencao/AbaMultas";
 import AbaRequisicoes from "../manutencao/AbaRequisicoes";
-import AbaTimeline from "../manutencao/AbaTimeline";
 import AbaVistoria from "../manutencao/AbaVistoria";
+// AbaMultas + AbaTimeline: arquivos mantidos em /manutencao/ pra reativar futuramente
 import AbaPreditiva from "../manutencao/AbaPreditiva";
 import ChecklistMensalPanel from "./ChecklistMensalPanel";
 import {
@@ -1046,7 +1045,7 @@ export default function Manutencao() {
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
-  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","requisicoes","fornecedores","cpk","preditiva","multas","timeline","vistoria","os","os_lanc","lancamento","cadastros"];
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","requisicoes","fornecedores","cpk","preditiva","vistoria","os","os_lanc","lancamento","cadastros"];
   const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavagem:"lavagem", lubrificacao:"lubrificacao", calibragem:"calibragem", estoque:"estoque", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
     (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
@@ -2657,7 +2656,6 @@ export default function Manutencao() {
           <div style={s.navGroup}>
             <span style={s.navGroupLabel}>Visão</span>
             <NavTab icon={LayoutDashboard} label="Dashboard" active={aba==="dashboard"} onClick={() => setAba("dashboard")} accent="#0891b2" />
-          <NavTab icon={Clock} label="Timeline" active={aba==="timeline"} onClick={() => setAba("timeline")} accent="#7c3aed" />
           </div>
         )}
 
@@ -2686,7 +2684,6 @@ export default function Manutencao() {
             {podeVerAba("calibragem") && (
               <NavTab icon={Gauge} label="Calibragem" active={aba==="calibragem"} onClick={() => setAba("calibragem")} accent="#dc2626" />
             )}
-            <NavTab icon={AlertOctagon} label="Multas" active={aba==="multas"} onClick={() => setAba("multas")} accent="#b91c1c" />
           </div>
         )}
 
@@ -3290,24 +3287,10 @@ export default function Manutencao() {
         </main>
       )}
 
-      {/* ── ABA: MULTAS de trânsito ─────────────────────────────────── */}
-      {aba === "multas" && (
-        <main style={s.main} className="pg-body">
-          <AbaMultas veiculos={veiculos} motoristas={motoristas} quemSou={quemSou} />
-        </main>
-      )}
-
       {/* ── ABA: REQUISIÇÕES de compra ─────────────────────────────── */}
       {aba === "requisicoes" && (
         <main style={s.main} className="pg-body">
           <AbaRequisicoes itensCatalogo={itensCatalogo} quemSou={quemSou} podeAprovar={isSuperAdmin || temPermissao?.("requisicoes.aprovar")} />
-        </main>
-      )}
-
-      {/* ── ABA: TIMELINE consolidada do veículo ───────────────────── */}
-      {aba === "timeline" && (
-        <main style={s.main} className="pg-body">
-          <AbaTimeline veiculos={veiculos} ordensServico={ordensServico} registrosManut={registros} motoristas={motoristas} />
         </main>
       )}
 
