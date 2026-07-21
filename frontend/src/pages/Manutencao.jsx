@@ -15,11 +15,14 @@ import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
 import AbaControleRotina from "../manutencao/AbaControleRotina";
 import AbaEstoque from "../manutencao/AbaEstoque";
+import AbaMultas from "../manutencao/AbaMultas";
+import AbaRequisicoes from "../manutencao/AbaRequisicoes";
 import ChecklistMensalPanel from "./ChecklistMensalPanel";
 import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
   FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet, Gauge, SprayCan, Package,
   ClipboardCheck, Store, Camera, Circle, AlertCircle, CheckCircle2, Lightbulb, Award, Trash2,
+  AlertOctagon, ShoppingCart as ShoppingCartIco, Clock, CheckSquare,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -1040,7 +1043,7 @@ export default function Manutencao() {
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
-  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","fornecedores","cpk","os","os_lanc","lancamento","cadastros"];
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","requisicoes","fornecedores","cpk","multas","os","os_lanc","lancamento","cadastros"];
   const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavagem:"lavagem", lubrificacao:"lubrificacao", calibragem:"calibragem", estoque:"estoque", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
     (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
@@ -2652,6 +2655,7 @@ export default function Manutencao() {
             {podeVerAba("calibragem") && (
               <NavTab icon={Gauge} label="Calibragem" active={aba==="calibragem"} onClick={() => setAba("calibragem")} accent="#dc2626" />
             )}
+            <NavTab icon={AlertOctagon} label="Multas" active={aba==="multas"} onClick={() => setAba("multas")} accent="#b91c1c" />
           </div>
         )}
 
@@ -2660,6 +2664,7 @@ export default function Manutencao() {
             <span style={s.navGroupLabel}>Insumos</span>
             <NavTab icon={Package} label="Estoque" active={aba==="estoque"} onClick={() => setAba("estoque")} accent="#0f172a" />
             <NavTab icon={Store} label="Fornecedores" active={aba==="fornecedores"} onClick={() => setAba("fornecedores")} accent="#0f172a" />
+            <NavTab icon={ShoppingCartIco} label="Requisições" active={aba==="requisicoes"} onClick={() => setAba("requisicoes")} accent="#4338ca" />
           </div>
         )}
 
@@ -3249,6 +3254,20 @@ export default function Manutencao() {
               </>
             );
           })()}
+        </main>
+      )}
+
+      {/* ── ABA: MULTAS de trânsito ─────────────────────────────────── */}
+      {aba === "multas" && (
+        <main style={s.main} className="pg-body">
+          <AbaMultas veiculos={veiculos} motoristas={motoristas} quemSou={quemSou} />
+        </main>
+      )}
+
+      {/* ── ABA: REQUISIÇÕES de compra ─────────────────────────────── */}
+      {aba === "requisicoes" && (
+        <main style={s.main} className="pg-body">
+          <AbaRequisicoes itensCatalogo={itensCatalogo} quemSou={quemSou} podeAprovar={isSuperAdmin || temPermissao?.("requisicoes.aprovar")} />
         </main>
       )}
 
