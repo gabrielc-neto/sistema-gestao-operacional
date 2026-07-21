@@ -4592,6 +4592,34 @@ export default function Manutencao() {
                     </label>
                   );
                 }
+                if (campo === "agendamento") {
+                  // Destaca visualmente se o item venceu — sinaliza que precisa agendar
+                  const hojeIso = new Date().toISOString().slice(0, 10);
+                  const vencido = form.venc && form.venc < hojeIso;
+                  const preenchido = !!form.agendamento;
+                  const bg = vencido && !preenchido ? "#fef3c7" : preenchido ? "#dcfce7" : undefined;
+                  const borda = vencido && !preenchido ? "#fbbf24" : preenchido ? "#86efac" : undefined;
+                  return (
+                    <label key={campo} style={{ ...s.fieldLabel, background: bg, border: borda ? `1px solid ${borda}` : undefined, padding: bg ? 10 : undefined, borderRadius: 6 }}>
+                      {CAMPO_LABEL[campo]}
+                      <input
+                        type="date"
+                        style={s.fieldInput}
+                        value={form[campo]}
+                        onChange={e => setForm({ ...form, [campo]: e.target.value })}
+                      />
+                      <span style={{ fontSize: ".72rem", color: vencido && !preenchido ? "#92400e" : preenchido ? "#166534" : "#64748b", marginTop: 4, display: "inline-flex", alignItems: "flex-start", gap: 5 }}>
+                        {vencido && !preenchido && <AlertTriangle size={12} style={{ marginTop: 1, flexShrink: 0 }} />}
+                        {preenchido && <CheckCircle2 size={12} style={{ marginTop: 1, flexShrink: 0 }} />}
+                        <span>{vencido && !preenchido
+                          ? "Item vencido — informe a data agendada da nova inspeção pra postergar o status."
+                          : preenchido
+                          ? "Enquanto essa data não passar, status fica 'Agendado' (não conta como vencido)."
+                          : "Opcional. Preencha quando agendar nova inspeção após vencimento — posterga o status até essa data."}</span>
+                      </span>
+                    </label>
+                  );
+                }
                 return (
                   <label key={campo} style={s.fieldLabel}>
                     {CAMPO_LABEL[campo]}
