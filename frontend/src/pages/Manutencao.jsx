@@ -17,12 +17,15 @@ import AbaControleRotina from "../manutencao/AbaControleRotina";
 import AbaEstoque from "../manutencao/AbaEstoque";
 import AbaMultas from "../manutencao/AbaMultas";
 import AbaRequisicoes from "../manutencao/AbaRequisicoes";
+import AbaTimeline from "../manutencao/AbaTimeline";
+import AbaVistoria from "../manutencao/AbaVistoria";
+import AbaPreditiva from "../manutencao/AbaPreditiva";
 import ChecklistMensalPanel from "./ChecklistMensalPanel";
 import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
   FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet, Gauge, SprayCan, Package,
   ClipboardCheck, Store, Camera, Circle, AlertCircle, CheckCircle2, Lightbulb, Award, Trash2,
-  AlertOctagon, ShoppingCart as ShoppingCartIco, Clock, CheckSquare,
+  AlertOctagon, ShoppingCart as ShoppingCartIco, Clock, CheckSquare, Brain,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -1025,7 +1028,7 @@ function SeletorAno({ anos, valor, onChange }) {
 // ── Componente ─────────────────────────────────────────────────────────────
 export default function Manutencao() {
   const { profile } = useAuth();
-  const { temPermissao } = useRBAC();
+  const { temPermissao, isSuperAdmin } = useRBAC();
   const { odometroDe, dadosDe, loading: sascarLoading, ultima: sascarUltima, refetch: refetchSascar } = useOdometrosSascar();
   const navigate    = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1043,7 +1046,7 @@ export default function Manutencao() {
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
-  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","requisicoes","fornecedores","cpk","multas","os","os_lanc","lancamento","cadastros"];
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","requisicoes","fornecedores","cpk","preditiva","multas","timeline","vistoria","os","os_lanc","lancamento","cadastros"];
   const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavagem:"lavagem", lubrificacao:"lubrificacao", calibragem:"calibragem", estoque:"estoque", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
     (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
@@ -2627,6 +2630,7 @@ export default function Manutencao() {
           <div style={s.navGroup}>
             <span style={s.navGroupLabel}>Visão</span>
             <NavTab icon={LayoutDashboard} label="Dashboard" active={aba==="dashboard"} onClick={() => setAba("dashboard")} accent="#0891b2" />
+          <NavTab icon={Clock} label="Timeline" active={aba==="timeline"} onClick={() => setAba("timeline")} accent="#7c3aed" />
           </div>
         )}
 
@@ -2684,6 +2688,7 @@ export default function Manutencao() {
         <div style={s.navGroup}>
           <span style={s.navGroupLabel}>Preventiva</span>
           <NavTab icon={ClipboardCheck} label="Checklist Mensal" active={aba==="checklist"} onClick={() => setAba("checklist")} accent="#0891b2" />
+          <NavTab icon={CheckSquare} label="Vistoria/DVIR" active={aba==="vistoria"} onClick={() => setAba("vistoria")} accent="#0891b2" />
         </div>
 
         {podeVerAba("nf") && (
@@ -2692,6 +2697,7 @@ export default function Manutencao() {
             <NavTab icon={Receipt} label="Lançamento de NF" active={aba==="lancamento"} onClick={() => setAba("lancamento")} accent="#4338ca"
               badge={lancamentos.length > 0 ? { text: lancamentos.length, color: "#4338ca" } : null} />
             <NavTab icon={TrendingUp} label="CPK" active={aba==="cpk"} onClick={() => setAba("cpk")} accent="#4338ca" />
+            <NavTab icon={Brain} label="Preditiva" active={aba==="preditiva"} onClick={() => setAba("preditiva")} accent="#7c3aed" />
           </div>
         )}
 
@@ -3268,6 +3274,27 @@ export default function Manutencao() {
       {aba === "requisicoes" && (
         <main style={s.main} className="pg-body">
           <AbaRequisicoes itensCatalogo={itensCatalogo} quemSou={quemSou} podeAprovar={isSuperAdmin || temPermissao?.("requisicoes.aprovar")} />
+        </main>
+      )}
+
+      {/* ── ABA: TIMELINE consolidada do veículo ───────────────────── */}
+      {aba === "timeline" && (
+        <main style={s.main} className="pg-body">
+          <AbaTimeline veiculos={veiculos} ordensServico={ordensServico} registrosManut={registros} motoristas={motoristas} />
+        </main>
+      )}
+
+      {/* ── ABA: VISTORIA/DVIR — checklist antes/depois viagem ─────── */}
+      {aba === "vistoria" && (
+        <main style={s.main} className="pg-body">
+          <AbaVistoria veiculos={veiculos} motoristas={motoristas} quemSou={quemSou} />
+        </main>
+      )}
+
+      {/* ── ABA: PREDITIVA — previsão baseada em histórico ─────────── */}
+      {aba === "preditiva" && (
+        <main style={s.main} className="pg-body">
+          <AbaPreditiva veiculos={veiculos} ordensServico={ordensServico} odometroDe={odometroDe} />
         </main>
       )}
 
