@@ -18,7 +18,7 @@ import ChecklistMensalPanel from "./ChecklistMensalPanel";
 import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
   FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet, Gauge, SprayCan, Package,
-  ClipboardCheck,
+  ClipboardCheck, Store,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -201,6 +201,20 @@ function osStatus(os) {
 // instante de criação da OS (fallback pra OS antigas)
 function osCriadoEm(os) {
   return os?.criadoEm || os?.dataHora || null;
+}
+
+// Aging OS — quantos dias a OS está aberta (ordenação + cor visual)
+// Retorna { dias, cor, bg, texto, urgencia }. urgencia: 'critico'|'atencao'|'normal'
+function osAging(os) {
+  const base = osCriadoEm(os);
+  if (!base) return { dias: null, cor: "#94a3b8", bg: "#f1f5f9", texto: "—", urgencia: "normal" };
+  const ms = typeof base === "object" && base.toMillis ? base.toMillis() : Date.parse(base);
+  if (!Number.isFinite(ms)) return { dias: null, cor: "#94a3b8", bg: "#f1f5f9", texto: "—", urgencia: "normal" };
+  const dias = Math.floor((Date.now() - ms) / 86400000);
+  if (dias >= 14) return { dias, cor: "#b91c1c", bg: "#fee2e2", texto: `🔴 ${dias}d`, urgencia: "critico" };
+  if (dias >= 7)  return { dias, cor: "#b45309", bg: "#fef3c7", texto: `🟡 ${dias}d`, urgencia: "atencao" };
+  if (dias >= 1)  return { dias, cor: "#15803d", bg: "#dcfce7", texto: `🟢 ${dias}d`, urgencia: "normal" };
+  return { dias, cor: "#15803d", bg: "#dcfce7", texto: `🟢 hoje`, urgencia: "normal" };
 }
 
 // OS só é editável enquanto aberta E dentro das 24h da abertura
@@ -1001,7 +1015,7 @@ export default function Manutencao() {
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
-  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","os","os_lanc","lancamento","cadastros"];
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","fornecedores","os","os_lanc","lancamento","cadastros"];
   const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavagem:"lavagem", lubrificacao:"lubrificacao", calibragem:"calibragem", estoque:"estoque", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
     (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
@@ -2534,6 +2548,7 @@ export default function Manutencao() {
           <div style={s.navGroup}>
             <span style={s.navGroupLabel}>Insumos</span>
             <NavTab icon={Package} label="Estoque" active={aba==="estoque"} onClick={() => setAba("estoque")} accent="#0f172a" />
+            <NavTab icon={Store} label="Fornecedores" active={aba==="fornecedores"} onClick={() => setAba("fornecedores")} accent="#0f172a" />
           </div>
         )}
 
@@ -2934,6 +2949,193 @@ export default function Manutencao() {
         </main>
       )}
 
+      {/* ── ABA: FORNECEDORES — ranking por preço médio, quantidade e categorias ── */}
+      {aba === "fornecedores" && podeVerAba("estoque") && (
+        <main style={s.main} className="pg-body">
+          {(() => {
+            // Agrega dados de OS finalizadas + lançamentos por fornecedor
+            const stats = new Map(); // fornecedor → { osCount, valorTotal, servicos: {tipo→{n,total}}, ultimoUso, placas }
+            function bump(nome, valor, servico, placa, data) {
+              if (!nome) return;
+              const key = nome.trim();
+              if (!key) return;
+              const cur = stats.get(key) || { fornecedor: key, osCount: 0, valorTotal: 0, servicos: {}, ultimoUso: null, placas: new Set() };
+              cur.osCount += 1;
+              cur.valorTotal += Number(valor) || 0;
+              if (servico) {
+                cur.servicos[servico] = cur.servicos[servico] || { n: 0, total: 0 };
+                cur.servicos[servico].n += 1;
+                cur.servicos[servico].total += Number(valor) || 0;
+              }
+              if (placa) cur.placas.add(placa);
+              if (data) {
+                const ts = typeof data === "object" && data.toMillis ? data.toMillis() : Date.parse(data);
+                if (Number.isFinite(ts) && (!cur.ultimoUso || ts > cur.ultimoUso)) cur.ultimoUso = ts;
+              }
+              stats.set(key, cur);
+            }
+            ordensServico.forEach(os => {
+              if (osStatus(os) === "finalizada") bump(os.fornecedor, os.valorTotal, os.tipoServico, os.placa, os.criadoEm || os.dataHora);
+            });
+            (lancamentos || []).forEach(l => bump(l.fornecedor, l.valorTotal || l.valor, l.tipoLancamento, l.placa, l.data || l.criadoEm));
+
+            const lista = [...stats.values()]
+              .map(x => ({
+                ...x,
+                placasCount: x.placas.size,
+                ticketMedio: x.osCount > 0 ? x.valorTotal / x.osCount : 0,
+                servicoTop: Object.entries(x.servicos).sort((a, b) => b[1].total - a[1].total)[0]?.[0] || "—",
+              }))
+              .sort((a, b) => b.valorTotal - a.valorTotal);
+
+            const totalGasto = lista.reduce((s, x) => s + x.valorTotal, 0);
+            const totalOS = lista.reduce((s, x) => s + x.osCount, 0);
+            const mediaGeral = totalOS > 0 ? totalGasto / totalOS : 0;
+
+            // Comparativo por serviço — quem é o mais barato pra cada tipo
+            const porServico = new Map();
+            lista.forEach(f => {
+              Object.entries(f.servicos).forEach(([serv, dados]) => {
+                if (dados.n === 0) return;
+                const ticket = dados.total / dados.n;
+                const cur = porServico.get(serv) || [];
+                cur.push({ fornecedor: f.fornecedor, ticket, n: dados.n, total: dados.total });
+                porServico.set(serv, cur);
+              });
+            });
+            const rankingPorServico = [...porServico.entries()]
+              .filter(([, arr]) => arr.length >= 2)
+              .map(([serv, arr]) => {
+                const sorted = [...arr].sort((a, b) => a.ticket - b.ticket);
+                return { servico: serv, opcoes: sorted, maisBarato: sorted[0], maisCaro: sorted[sorted.length-1] };
+              })
+              .sort((a, b) => (b.maisCaro.ticket - b.maisBarato.ticket) - (a.maisCaro.ticket - a.maisBarato.ticket));
+
+            return (
+              <>
+                {/* KPIs topo */}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:12, marginBottom:16 }}>
+                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Fornecedores ativos</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{lista.length}</div>
+                  </div>
+                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Total gasto histórico</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{fmtBRL(totalGasto)}</div>
+                  </div>
+                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Total de OS</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{totalOS}</div>
+                  </div>
+                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Ticket médio geral</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{fmtBRL(mediaGeral)}</div>
+                  </div>
+                </div>
+
+                {/* Ranking geral por valor total gasto */}
+                <div style={{ background:"#fff", borderRadius:12, overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,.06)", marginBottom:16 }}>
+                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0" }}>
+                    <h2 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>Ranking de fornecedores por gasto</h2>
+                    <p style={{ margin:"4px 0 0 0", fontSize:".75rem", color:"#64748b" }}>Ordenado do maior pro menor · ticket médio destaca quem tá acima/abaixo da média geral</p>
+                  </div>
+                  <div style={{ overflowX:"auto" }} className="table-wrap">
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".88rem" }}>
+                      <thead>
+                        <tr style={{ background:"#f8fafc", borderBottom:"1px solid #e2e8f0" }}>
+                          <th style={thOS}>#</th>
+                          <th style={thOS}>Fornecedor</th>
+                          <th style={thOS}>OS</th>
+                          <th style={thOS}>Placas atendidas</th>
+                          <th style={thOS}>Total gasto</th>
+                          <th style={thOS}>Ticket médio</th>
+                          <th style={thOS}>vs média geral</th>
+                          <th style={thOS}>Serviço + comum</th>
+                          <th style={thOS}>Último uso</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lista.length === 0 ? (
+                          <tr><td colSpan={9} style={{ padding:"2rem", textAlign:"center", color:"#94a3b8" }}>Nenhuma OS finalizada com fornecedor cadastrado.</td></tr>
+                        ) : lista.map((f, i) => {
+                          const delta = mediaGeral > 0 ? ((f.ticketMedio - mediaGeral) / mediaGeral) * 100 : 0;
+                          const acima = delta > 5;
+                          const abaixo = delta < -5;
+                          return (
+                            <tr key={f.fornecedor} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                              <td style={tdOS}>{i+1}</td>
+                              <td style={{ ...tdOS, fontWeight:600 }}>{f.fornecedor}</td>
+                              <td style={tdOS}>{f.osCount}</td>
+                              <td style={tdOS}>{f.placasCount}</td>
+                              <td style={{ ...tdOS, fontWeight:700, color:"#1a3a5c" }}>{fmtBRL(f.valorTotal)}</td>
+                              <td style={tdOS}>{fmtBRL(f.ticketMedio)}</td>
+                              <td style={tdOS}>
+                                <span style={{ background: acima ? "#fee2e2" : abaixo ? "#dcfce7" : "#f1f5f9", color: acima ? "#b91c1c" : abaixo ? "#15803d" : "#64748b", fontSize:".78rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
+                                  {delta > 0 ? "+" : ""}{delta.toFixed(1)}%
+                                </span>
+                              </td>
+                              <td style={tdOS}>{f.servicoTop}</td>
+                              <td style={tdOS}>{f.ultimoUso ? new Date(f.ultimoUso).toLocaleDateString("pt-BR") : "—"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Comparativo por serviço — quem cobra mais barato pra cada tipo */}
+                <div style={{ background:"#fff", borderRadius:12, overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0" }}>
+                    <h2 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>Comparativo por serviço — quem cobra mais barato</h2>
+                    <p style={{ margin:"4px 0 0 0", fontSize:".75rem", color:"#64748b" }}>Só aparecem serviços com 2+ fornecedores. Ordenado pela maior diferença de preço.</p>
+                  </div>
+                  <div style={{ overflowX:"auto" }} className="table-wrap">
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".88rem" }}>
+                      <thead>
+                        <tr style={{ background:"#f8fafc", borderBottom:"1px solid #e2e8f0" }}>
+                          <th style={thOS}>Serviço</th>
+                          <th style={thOS}>🥇 Mais barato</th>
+                          <th style={thOS}>Ticket barato</th>
+                          <th style={thOS}>💸 Mais caro</th>
+                          <th style={thOS}>Ticket caro</th>
+                          <th style={thOS}>Diferença</th>
+                          <th style={thOS}>Economia se trocar</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rankingPorServico.length === 0 ? (
+                          <tr><td colSpan={7} style={{ padding:"2rem", textAlign:"center", color:"#94a3b8" }}>Sem serviço com 2+ fornecedores pra comparar.</td></tr>
+                        ) : rankingPorServico.map(r => {
+                          const diff = r.maisCaro.ticket - r.maisBarato.ticket;
+                          const pctDiff = r.maisBarato.ticket > 0 ? (diff / r.maisBarato.ticket) * 100 : 0;
+                          const economia = (r.maisCaro.ticket - r.maisBarato.ticket) * r.maisCaro.n;
+                          return (
+                            <tr key={r.servico} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                              <td style={{ ...tdOS, fontWeight:600 }}>{r.servico}</td>
+                              <td style={{ ...tdOS, color:"#15803d", fontWeight:600 }}>{r.maisBarato.fornecedor}</td>
+                              <td style={tdOS}>{fmtBRL(r.maisBarato.ticket)}</td>
+                              <td style={{ ...tdOS, color:"#b91c1c", fontWeight:600 }}>{r.maisCaro.fornecedor}</td>
+                              <td style={tdOS}>{fmtBRL(r.maisCaro.ticket)}</td>
+                              <td style={tdOS}>
+                                <span style={{ background:"#fef3c7", color:"#b45309", fontSize:".78rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
+                                  +{pctDiff.toFixed(0)}%
+                                </span>
+                              </td>
+                              <td style={{ ...tdOS, fontWeight:700, color:"#15803d" }}>{fmtBRL(economia)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </main>
+      )}
+
       {/* ── ABA: ORDENS DE SERVIÇO ────────────────────────────────────── */}
       {aba === "os" && podeVerAba("os_abertura") && (
         <main style={s.main} className="pg-body">
@@ -3211,67 +3413,91 @@ export default function Manutencao() {
       {/* ── ABA: LANÇAMENTO DE OS (conclusão — registra KM saída, mecânico, oficina, serviço executado) ── */}
       {aba === "os_lanc" && podeVerAba("os_lancamento") && (
         <main style={s.main} className="pg-body">
-          <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
-              <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem" }}>
-                OSs abertas — registrar conclusão ({ordensServico.filter(o => osStatus(o) !== "finalizada").length})
-              </h2>
-              <p style={{ margin: "4px 0 0 0", fontSize: ".75rem", color: "#64748b" }}>
-                Concluir a OS registra KM de saída, mecânico, oficina e serviço executado, e libera o veículo.
-              </p>
-            </div>
-            <div style={{ overflowX: "auto" }} className="table-wrap">
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".88rem" }}>
-                <thead>
-                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                    <th style={thOS}>OS</th>
-                    <th style={thOS}>Abertura</th>
-                    <th style={thOS}>Placa</th>
-                    <th style={thOS}>Tipo</th>
-                    <th style={thOS}>Motorista</th>
-                    <th style={thOS}>KM entrada</th>
-                    <th style={thOS}>Fornecedor</th>
-                    <th style={thOS}>Total R$</th>
-                    <th style={thOS}>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    const abertas = ordensServico.filter(o => osStatus(o) !== "finalizada");
-                    if (abertas.length === 0) {
-                      return (
-                        <tr><td colSpan={9} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+          {(() => {
+            // Aging OS — computa uma vez, reutiliza pra contador e ordenação
+            const abertas = ordensServico.filter(o => osStatus(o) !== "finalizada");
+            const comAging = abertas
+              .map(os => ({ os, aging: osAging(os) }))
+              .sort((a, b) => (b.aging.dias ?? -1) - (a.aging.dias ?? -1)); // mais antigas primeiro
+            const criticas = comAging.filter(x => x.aging.urgencia === "critico").length;
+            const atencao  = comAging.filter(x => x.aging.urgencia === "atencao").length;
+            return (
+              <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+                <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
+                  <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+                    OSs abertas — registrar conclusão ({abertas.length})
+                    {criticas > 0 && (
+                      <span title={`${criticas} OS aberta(s) há 14 dias ou mais — investigar`} style={{ background:"#fee2e2", color:"#b91c1c", fontSize:".72rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
+                        🔴 {criticas} crítica{criticas > 1 ? "s" : ""} (≥14d)
+                      </span>
+                    )}
+                    {atencao > 0 && (
+                      <span title={`${atencao} OS aberta(s) entre 7 e 13 dias`} style={{ background:"#fef3c7", color:"#b45309", fontSize:".72rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
+                        🟡 {atencao} em atenção (7-13d)
+                      </span>
+                    )}
+                  </h2>
+                  <p style={{ margin: "4px 0 0 0", fontSize: ".75rem", color: "#64748b" }}>
+                    Concluir a OS registra KM de saída, mecânico, oficina e serviço executado, e libera o veículo. <strong>Ordenado por mais tempo aberta.</strong>
+                  </p>
+                </div>
+                <div style={{ overflowX: "auto" }} className="table-wrap">
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".88rem" }}>
+                    <thead>
+                      <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                        <th style={thOS}>OS</th>
+                        <th style={thOS}>Aberta há</th>
+                        <th style={thOS}>Abertura</th>
+                        <th style={thOS}>Placa</th>
+                        <th style={thOS}>Tipo</th>
+                        <th style={thOS}>Motorista</th>
+                        <th style={thOS}>KM entrada</th>
+                        <th style={thOS}>Fornecedor</th>
+                        <th style={thOS}>Total R$</th>
+                        <th style={thOS}>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {abertas.length === 0 ? (
+                        <tr><td colSpan={10} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
                           Nenhuma OS aberta — todas finalizadas
                         </td></tr>
-                      );
-                    }
-                    return abertas.map(os => (
-                      <tr key={os.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={tdOS}><strong style={{ color: "#1a3a5c" }}>{os.numero}</strong></td>
-                        <td style={tdOS}>{fmtDateTimeBR(os.dataHora)}</td>
-                        <td style={tdOS}><strong>{os.placa}</strong></td>
-                        <td style={tdOS}>{os.tipoServico}</td>
-                        <td style={tdOS}>{os.motoristaNome}</td>
-                        <td style={tdOS}>{os.hodometro != null ? os.hodometro : "—"}</td>
-                        <td style={tdOS}>{os.fornecedor || <span style={{color:"#94a3b8"}}>—</span>}</td>
-                        <td style={{ ...tdOS, fontWeight: 700, color: os.valorTotal > 0 ? "#1a3a5c" : "#94a3b8" }}>
-                          {os.valorTotal > 0 ? fmtBRL(os.valorTotal) : "—"}
-                        </td>
-                        <td style={tdOS}>
-                          <button
-                            onClick={() => abrirConclusaoOS(os)}
-                            style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
-                          >
-                            Concluir
-                          </button>
-                        </td>
-                      </tr>
-                    ));
-                  })()}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                      ) : comAging.map(({ os, aging }) => (
+                        <tr key={os.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={tdOS}><strong style={{ color: "#1a3a5c" }}>{os.numero}</strong></td>
+                          <td style={tdOS}>
+                            <span
+                              title={aging.dias != null ? `${aging.dias} dia(s) desde a abertura` : "Sem data de abertura"}
+                              style={{ background: aging.bg, color: aging.cor, fontWeight: 700, fontSize: ".78rem", padding: "3px 8px", borderRadius: 999, whiteSpace: "nowrap" }}
+                            >
+                              {aging.texto}
+                            </span>
+                          </td>
+                          <td style={tdOS}>{fmtDateTimeBR(os.dataHora)}</td>
+                          <td style={tdOS}><strong>{os.placa}</strong></td>
+                          <td style={tdOS}>{os.tipoServico}</td>
+                          <td style={tdOS}>{os.motoristaNome}</td>
+                          <td style={tdOS}>{os.hodometro != null ? os.hodometro : "—"}</td>
+                          <td style={tdOS}>{os.fornecedor || <span style={{color:"#94a3b8"}}>—</span>}</td>
+                          <td style={{ ...tdOS, fontWeight: 700, color: os.valorTotal > 0 ? "#1a3a5c" : "#94a3b8" }}>
+                            {os.valorTotal > 0 ? fmtBRL(os.valorTotal) : "—"}
+                          </td>
+                          <td style={tdOS}>
+                            <button
+                              onClick={() => abrirConclusaoOS(os)}
+                              style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
+                            >
+                              Concluir
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
         </main>
       )}
 
