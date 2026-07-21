@@ -18,7 +18,7 @@ import ChecklistMensalPanel from "./ChecklistMensalPanel";
 import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
   FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet, Gauge, SprayCan, Package,
-  ClipboardCheck, Store,
+  ClipboardCheck, Store, Camera, Circle, AlertCircle, CheckCircle2, Lightbulb, Award, Trash2,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -235,10 +235,10 @@ function osAging(os) {
   const ms = typeof base === "object" && base.toMillis ? base.toMillis() : Date.parse(base);
   if (!Number.isFinite(ms)) return { dias: null, cor: "#94a3b8", bg: "#f1f5f9", texto: "—", urgencia: "normal" };
   const dias = Math.floor((Date.now() - ms) / 86400000);
-  if (dias >= 14) return { dias, cor: "#b91c1c", bg: "#fee2e2", texto: `🔴 ${dias}d`, urgencia: "critico" };
-  if (dias >= 7)  return { dias, cor: "#b45309", bg: "#fef3c7", texto: `🟡 ${dias}d`, urgencia: "atencao" };
-  if (dias >= 1)  return { dias, cor: "#15803d", bg: "#dcfce7", texto: `🟢 ${dias}d`, urgencia: "normal" };
-  return { dias, cor: "#15803d", bg: "#dcfce7", texto: `🟢 hoje`, urgencia: "normal" };
+  if (dias >= 14) return { dias, cor: "#b91c1c", bg: "#fee2e2", texto: `${dias}d`, urgencia: "critico" };
+  if (dias >= 7)  return { dias, cor: "#b45309", bg: "#fef3c7", texto: `${dias}d`, urgencia: "atencao" };
+  if (dias >= 1)  return { dias, cor: "#15803d", bg: "#dcfce7", texto: `${dias}d`, urgencia: "normal" };
+  return { dias, cor: "#15803d", bg: "#dcfce7", texto: `hoje`, urgencia: "normal" };
 }
 
 // OS só é editável enquanto aberta E dentro das 24h da abertura
@@ -3204,9 +3204,9 @@ export default function Manutencao() {
                       <thead>
                         <tr style={{ background:"#f8fafc", borderBottom:"1px solid #e2e8f0" }}>
                           <th style={thOS}>Serviço</th>
-                          <th style={thOS}>🥇 Mais barato</th>
+                          <th style={thOS}>Mais barato</th>
                           <th style={thOS}>Ticket barato</th>
-                          <th style={thOS}>💸 Mais caro</th>
+                          <th style={thOS}>Mais caro</th>
                           <th style={thOS}>Ticket caro</th>
                           <th style={thOS}>Diferença</th>
                           <th style={thOS}>Economia se trocar</th>
@@ -3222,9 +3222,13 @@ export default function Manutencao() {
                           return (
                             <tr key={r.servico} style={{ borderBottom:"1px solid #f1f5f9" }}>
                               <td style={{ ...tdOS, fontWeight:600 }}>{r.servico}</td>
-                              <td style={{ ...tdOS, color:"#15803d", fontWeight:600 }}>{r.maisBarato.fornecedor}</td>
+                              <td style={{ ...tdOS, color:"#15803d", fontWeight:600 }}>
+                                <span style={{ display:"inline-flex", alignItems:"center", gap:5 }}><Award size={13} /> {r.maisBarato.fornecedor}</span>
+                              </td>
                               <td style={tdOS}>{fmtBRL(r.maisBarato.ticket)}</td>
-                              <td style={{ ...tdOS, color:"#b91c1c", fontWeight:600 }}>{r.maisCaro.fornecedor}</td>
+                              <td style={{ ...tdOS, color:"#b91c1c", fontWeight:600 }}>
+                                <span style={{ display:"inline-flex", alignItems:"center", gap:5 }}><TrendingUp size={13} /> {r.maisCaro.fornecedor}</span>
+                              </td>
                               <td style={tdOS}>{fmtBRL(r.maisCaro.ticket)}</td>
                               <td style={tdOS}>
                                 <span style={{ background:"#fef3c7", color:"#b45309", fontSize:".78rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
@@ -3393,8 +3397,11 @@ export default function Manutencao() {
                   </div>
                 </div>
 
-                <div style={{ background:"#fef9c3", border:"1px solid #fde68a", borderRadius:8, padding:"12px 16px", fontSize:".82rem", color:"#78350f" }}>
-                  💡 <strong>Como interpretar:</strong> se um veículo aparece com "sem KM" é porque não tem hodômetro registrado em nenhuma entrada de custo (adicione KM nas OS/lançamentos). A qualidade do CPK melhora quando você registra o hodômetro em cada OS ou usa import de NF-e (que já vem com hodômetro se tiver na nota).
+                <div style={{ background:"#fef9c3", border:"1px solid #fde68a", borderRadius:8, padding:"12px 16px", fontSize:".82rem", color:"#78350f", display:"flex", alignItems:"flex-start", gap:10 }}>
+                  <Lightbulb size={18} style={{ flexShrink:0, marginTop:2 }} />
+                  <div>
+                    <strong>Como interpretar:</strong> se um veículo aparece com "sem KM" é porque não tem hodômetro registrado em nenhuma entrada de custo (adicione KM nas OS/lançamentos). A qualidade do CPK melhora quando você registra o hodômetro em cada OS ou usa import de NF-e (que já vem com hodômetro se tiver na nota).
+                  </div>
                 </div>
               </>
             );
@@ -3693,13 +3700,15 @@ export default function Manutencao() {
                   <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
                     OSs abertas — registrar conclusão ({abertas.length})
                     {criticas > 0 && (
-                      <span title={`${criticas} OS aberta(s) há 14 dias ou mais — investigar`} style={{ background:"#fee2e2", color:"#b91c1c", fontSize:".72rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
-                        🔴 {criticas} crítica{criticas > 1 ? "s" : ""} (≥14d)
+                      <span title={`${criticas} OS aberta(s) há 14 dias ou mais — investigar`} style={{ background:"#fee2e2", color:"#b91c1c", fontSize:".72rem", fontWeight:700, padding:"3px 8px", borderRadius:999, display:"inline-flex", alignItems:"center", gap:5 }}>
+                        <AlertCircle size={12} />
+                        {criticas} crítica{criticas > 1 ? "s" : ""} (≥14d)
                       </span>
                     )}
                     {atencao > 0 && (
-                      <span title={`${atencao} OS aberta(s) entre 7 e 13 dias`} style={{ background:"#fef3c7", color:"#b45309", fontSize:".72rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
-                        🟡 {atencao} em atenção (7-13d)
+                      <span title={`${atencao} OS aberta(s) entre 7 e 13 dias`} style={{ background:"#fef3c7", color:"#b45309", fontSize:".72rem", fontWeight:700, padding:"3px 8px", borderRadius:999, display:"inline-flex", alignItems:"center", gap:5 }}>
+                        <AlertTriangle size={12} />
+                        {atencao} em atenção (7-13d)
                       </span>
                     )}
                   </h2>
@@ -3734,8 +3743,9 @@ export default function Manutencao() {
                           <td style={tdOS}>
                             <span
                               title={aging.dias != null ? `${aging.dias} dia(s) desde a abertura` : "Sem data de abertura"}
-                              style={{ background: aging.bg, color: aging.cor, fontWeight: 700, fontSize: ".78rem", padding: "3px 8px", borderRadius: 999, whiteSpace: "nowrap" }}
+                              style={{ background: aging.bg, color: aging.cor, fontWeight: 700, fontSize: ".78rem", padding: "3px 8px", borderRadius: 999, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}
                             >
+                              <Circle size={8} fill={aging.cor} stroke="none" />
                               {aging.texto}
                             </span>
                           </td>
@@ -3753,9 +3763,10 @@ export default function Manutencao() {
                               <button
                                 onClick={() => setFotosOsModal(os)}
                                 title={`${(os.fotos?.length || 0)} foto(s)`}
-                                style={{ background: (os.fotos?.length || 0) > 0 ? "#dbeafe" : "#f1f5f9", border:"none", color:(os.fotos?.length || 0) > 0 ? "#1d4ed8" : "#64748b", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 10px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:4 }}
+                                style={{ background: (os.fotos?.length || 0) > 0 ? "#dbeafe" : "#f1f5f9", border:"none", color:(os.fotos?.length || 0) > 0 ? "#1d4ed8" : "#64748b", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 10px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:5 }}
                               >
-                                📷 {os.fotos?.length || 0}
+                                <Camera size={13} />
+                                {os.fotos?.length || 0}
                               </button>
                               <button
                                 onClick={() => abrirConclusaoOS(os)}
@@ -4361,7 +4372,9 @@ export default function Manutencao() {
           <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:12, maxWidth:900, width:"100%", maxHeight:"90vh", overflow:"auto", padding:24 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
               <div>
-                <h2 style={{ margin:0, color:"#1a3a5c", fontSize:"1.1rem" }}>📷 Fotos da OS {fotosOsModal.numero}</h2>
+                <h2 style={{ margin:0, color:"#1a3a5c", fontSize:"1.1rem", display:"flex", alignItems:"center", gap:8 }}>
+                  <Camera size={20} /> Fotos da OS {fotosOsModal.numero}
+                </h2>
                 <p style={{ margin:"4px 0 0 0", fontSize:".8rem", color:"#64748b" }}>
                   {fotosOsModal.placa} · {fotosOsModal.tipoServico} · {(fotosOsModal.fotos?.length || 0)} foto(s)
                 </p>
@@ -4379,8 +4392,8 @@ export default function Manutencao() {
                 disabled={fotosUploading}
                 style={{ display:"none" }}
               />
-              <span style={{ color:"#0369a1", fontWeight:600, fontSize:".9rem" }}>
-                {fotosUploading ? "⏳ Enviando..." : "📤 Adicionar fotos (câmera ou galeria)"}
+              <span style={{ color:"#0369a1", fontWeight:600, fontSize:".9rem", display:"inline-flex", alignItems:"center", gap:6 }}>
+                {fotosUploading ? <><Circle size={12} className="anim-spin" /> Enviando...</> : <><Camera size={16} /> Adicionar fotos (câmera ou galeria)</>}
               </span>
               <div style={{ fontSize:".72rem", color:"#64748b", marginTop:4 }}>
                 Comprimido automaticamente pra 1600px · Firebase Storage grátis até 5GB
@@ -4410,9 +4423,9 @@ export default function Manutencao() {
                         <span>{new Date(foto.criadoEm).toLocaleDateString("pt-BR")}</span>
                         <button
                           onClick={() => removerFotoOS(fotosOsModal, idx)}
-                          style={{ background:"none", border:"none", color:"#b91c1c", cursor:"pointer", fontSize:".78rem", padding:2 }}
+                          style={{ background:"none", border:"none", color:"#b91c1c", cursor:"pointer", padding:2, display:"inline-flex", alignItems:"center" }}
                           title="Remover foto"
-                        >🗑️</button>
+                        ><Trash2 size={14} /></button>
                       </div>
                     </div>
                   </div>
