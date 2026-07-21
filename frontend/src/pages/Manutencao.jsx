@@ -544,7 +544,7 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
       </div>
 
       <div>
-        <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="auto" preserveAspectRatio="xMidYMid meet" style={{ display: "block" }}>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ display: "block", width: "100%", height: "auto" }}>
           {/* Grade horizontal + rótulos do eixo Y */}
           {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
             const y = padT + innerH * (1 - p);
