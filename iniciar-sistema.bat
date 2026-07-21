@@ -188,12 +188,20 @@ if defined TUNNEL_URL (
 echo.
 
 REM ------------------------------------------------------------
-REM [5/5] Daemon de notificações de vencimentos (toast Windows)
+REM [5/6] Daemon de notificações de vencimentos (toast + email 07:00)
 REM       Roda em background, verifica a cada 4h
 REM ------------------------------------------------------------
-echo [5/5] Iniciando daemon de vencimentos (toast Windows)...
+echo [5/6] Iniciando daemon de vencimentos (toast + email)...
 start "Notif Vencimentos" /min cmd /c "cd /d %~dp0functions && node scripts/notificar-vencimentos.mjs --daemon"
 echo   OK — daemon rodando em janela minimizada. Fecha ela pra parar as notificacoes.
+echo.
+
+REM ------------------------------------------------------------
+REM [6/6] Daemon de relatório mensal (roda dia 1 do mês 06:00)
+REM ------------------------------------------------------------
+echo [6/6] Iniciando daemon de relatorio mensal...
+start "Relatorio Mensal" /min cmd /c "cd /d %~dp0functions && node scripts/relatorio-mensal.mjs --daemon"
+echo   OK — daemon rodando. Gera .pptx em arquivo/relatorios-mensais/ dia 1 as 06:00.
 echo.
 
 REM ------------------------------------------------------------
