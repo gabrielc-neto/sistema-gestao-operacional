@@ -16,8 +16,7 @@ import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
 import AbaControleRotina from "../manutencao/AbaControleRotina";
 import AbaEstoque from "../manutencao/AbaEstoque";
 import AbaRequisicoes from "../manutencao/AbaRequisicoes";
-import AbaVistoria from "../manutencao/AbaVistoria";
-// AbaMultas + AbaTimeline: arquivos mantidos em /manutencao/ pra reativar futuramente
+// AbaMultas + AbaTimeline + AbaVistoria: arquivos mantidos em /manutencao/ pra reativar futuramente
 import AbaPreditiva from "../manutencao/AbaPreditiva";
 import ChecklistMensalPanel from "./ChecklistMensalPanel";
 import {
@@ -1045,7 +1044,7 @@ export default function Manutencao() {
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
-  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","requisicoes","fornecedores","cpk","preditiva","vistoria","os","os_lanc","lancamento","cadastros"];
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","requisicoes","fornecedores","cpk","preditiva","os","os_lanc","lancamento","cadastros"];
   const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavagem:"lavagem", lubrificacao:"lubrificacao", calibragem:"calibragem", estoque:"estoque", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
     (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
@@ -2712,7 +2711,6 @@ export default function Manutencao() {
         <div style={s.navGroup}>
           <span style={s.navGroupLabel}>Preventiva</span>
           <NavTab icon={ClipboardCheck} label="Checklist Mensal" active={aba==="checklist"} onClick={() => setAba("checklist")} accent="#0891b2" />
-          <NavTab icon={CheckSquare} label="Vistoria/DVIR" active={aba==="vistoria"} onClick={() => setAba("vistoria")} accent="#0891b2" />
         </div>
 
         {podeVerAba("nf") && (
@@ -3291,13 +3289,6 @@ export default function Manutencao() {
       {aba === "requisicoes" && (
         <main style={s.main} className="pg-body">
           <AbaRequisicoes itensCatalogo={itensCatalogo} quemSou={quemSou} podeAprovar={isSuperAdmin || temPermissao?.("requisicoes.aprovar")} />
-        </main>
-      )}
-
-      {/* ── ABA: VISTORIA/DVIR — checklist antes/depois viagem ─────── */}
-      {aba === "vistoria" && (
-        <main style={s.main} className="pg-body">
-          <AbaVistoria veiculos={veiculos} motoristas={motoristas} quemSou={quemSou} />
         </main>
       )}
 
