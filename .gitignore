@@ -62,3 +62,8 @@ __pycache__/
 # Tooling local (Claude Flow / orquestração — metadata de sessão, regenerado)
 .claude-flow/
 **/.claude-flow/
+
+
+# Email config (contém app password Gmail)
+functions/scripts/email-config.json
+

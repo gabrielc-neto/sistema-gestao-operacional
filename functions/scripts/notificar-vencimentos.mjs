@@ -1,23 +1,33 @@
 #!/usr/bin/env node
-// Notifica vencimentos de manutenção via toast Windows
+// Notifica vencimentos de manutenção via toast Windows + email diário (Gmail SMTP)
 // Uso: node scripts/notificar-vencimentos.mjs
-//      node scripts/notificar-vencimentos.mjs --daemon   (fica rodando, notifica a cada 4h)
-//      node scripts/notificar-vencimentos.mjs --silent   (loga sem disparar toast — pra dry-run)
+//      node scripts/notificar-vencimentos.mjs --daemon   (fica rodando, toast cada 4h + email 07:00)
+//      node scripts/notificar-vencimentos.mjs --silent   (loga sem disparar toast/email — dry-run)
+//      node scripts/notificar-vencimentos.mjs --email-agora  (força envio de email agora, mesmo fora das 7h)
+//
+// Config email (arquivo functions/scripts/email-config.json — gitignored):
+//   { "gmailUser": "...@gmail.com", "gmailAppPassword": "xxxx", "destinatarios": ["..."] }
+// App password: https://myaccount.google.com/apppasswords (ativa 2FA primeiro)
 
 import admin from 'firebase-admin';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import nodemailer from 'nodemailer';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // serviceAccountKey.json fica em scripts/ do REPO (não do functions/)
 const SA_PATH = path.join(__dirname, '..', '..', 'scripts', 'serviceAccountKey.json');
+const EMAIL_CONFIG_PATH = path.join(__dirname, 'email-config.json');
 
 // Flags
 const DAEMON = process.argv.includes('--daemon');
 const SILENT = process.argv.includes('--silent');
+const EMAIL_AGORA = process.argv.includes('--email-agora');
 const INTERVAL_HORAS = 4;
+const HORA_EMAIL_DIARIO = 7; // 07:00 BRT
+let ultimoEmailEnviadoEmData = null; // "YYYY-MM-DD" pra evitar duplicidade no mesmo dia
 
 // Inicializa Firebase Admin (produção)
 try {
@@ -61,7 +71,70 @@ function parseVenc(v) {
   return isNaN(d.getTime()) ? null : d;
 }
 
-async function checarEnotificar() {
+/** Envia email diário via Gmail SMTP */
+async function enviarEmail({ vencidos, proximos7, proximos15 }) {
+  if (SILENT) { console.log('[SILENT] email skipado'); return; }
+  if (!existsSync(EMAIL_CONFIG_PATH)) {
+    console.log('⚠ email-config.json não existe — pular envio. Crie:', EMAIL_CONFIG_PATH);
+    return;
+  }
+  const cfg = JSON.parse(readFileSync(EMAIL_CONFIG_PATH, 'utf8'));
+  if (!cfg.gmailUser || !cfg.gmailAppPassword || !Array.isArray(cfg.destinatarios) || cfg.destinatarios.length === 0) {
+    console.log('⚠ email-config.json incompleto — precisa gmailUser + gmailAppPassword + destinatarios');
+    return;
+  }
+
+  const transp = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: cfg.gmailUser, pass: cfg.gmailAppPassword },
+  });
+
+  const dataBR = new Date().toLocaleDateString('pt-BR');
+  const total = vencidos.length + proximos7.length + proximos15.length;
+
+  function bloco(items, titulo, cor) {
+    if (items.length === 0) return '';
+    const linhas = items.slice(0, 30).map(i => {
+      const quando = i.diffDias < 0 ? `venceu há ${-i.diffDias}d` : (i.diffDias === 0 ? 'vence hoje' : `${i.diffDias}d`);
+      return `<tr><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:14px">${i.tipo}</td><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:14px;font-weight:600">${i.placa || i.motorista || '—'}</td><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;font-size:14px;color:${cor}">${quando}</td></tr>`;
+    }).join('');
+    return `
+      <h3 style="color:${cor};margin:16px 0 6px;font-size:15px">${titulo} (${items.length})</h3>
+      <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden">
+        <thead><tr style="background:#f8fafc"><th style="padding:6px 10px;text-align:left;font-size:12px;color:#64748b">Item</th><th style="padding:6px 10px;text-align:left;font-size:12px;color:#64748b">Placa/Motorista</th><th style="padding:6px 10px;text-align:left;font-size:12px;color:#64748b">Prazo</th></tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>${items.length > 30 ? `<p style="font-size:12px;color:#64748b;margin:4px 0">+${items.length-30} outros — ver /manutencao?aba=alertas</p>` : ''}
+    `;
+  }
+
+  const html = `
+    <div style="font-family:system-ui,-apple-system,sans-serif;max-width:640px;margin:0 auto;padding:20px;background:#f8fafc">
+      <h2 style="color:#1a3a5c;margin:0 0 4px">📅 Pontual Logística — Vencimentos ${dataBR}</h2>
+      <p style="color:#64748b;margin:0 0 16px;font-size:14px">${total} item(s) para atenção nos próximos 15 dias.</p>
+      ${bloco(vencidos, '🔴 Vencidos', '#b91c1c')}
+      ${bloco(proximos7, '🟡 Vencem em até 7 dias', '#b45309')}
+      ${bloco(proximos15, '🟢 Vencem em 8-15 dias', '#15803d')}
+      <p style="margin-top:20px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8">
+        Abrir sistema: <a href="http://localhost:5175/manutencao?aba=alertas" style="color:#4338ca">Alertas de manutenção</a><br>
+        Email automático — daemon rodando em ${process.env.COMPUTERNAME || 'PC local'}
+      </p>
+    </div>
+  `;
+
+  try {
+    await transp.sendMail({
+      from: `"Pontual Logística" <${cfg.gmailUser}>`,
+      to: cfg.destinatarios.join(', '),
+      subject: `📅 Vencimentos Pontual ${dataBR} — ${vencidos.length > 0 ? `🔴 ${vencidos.length} vencidos` : `${total} atenção`}`,
+      html,
+    });
+    console.log(`✉️  Email enviado pra ${cfg.destinatarios.length} destinatário(s)`);
+  } catch (e) {
+    console.error('❌ envio email falhou:', e.message);
+  }
+}
+
+async function checarEnotificar({ tambemEmail = false } = {}) {
   const HOJE = new Date();
   HOJE.setHours(0, 0, 0, 0);
   const LIMITE = new Date(HOJE.getTime() + 15 * 86400000);
@@ -129,18 +202,38 @@ async function checarEnotificar() {
     console.log('\n  🟡 PRÓXIMOS 7 DIAS:');
     proximos7.slice(0, 10).forEach(i => console.log(`    · ${i.tipo} ${i.placa || i.motorista} — ${i.diffDias}d`));
   }
+
+  // Email diário — se solicitado
+  if (tambemEmail) {
+    await enviarEmail({ vencidos, proximos7, proximos15 });
+    ultimoEmailEnviadoEmData = new Date().toISOString().slice(0, 10);
+  }
+}
+
+function ehHoraDeEmailDiario() {
+  const agora = new Date();
+  const horaBRT = (agora.getUTCHours() - 3 + 24) % 24;
+  const hojeBRT = new Date(agora.getTime() - 3*3600*1000).toISOString().slice(0, 10);
+  if (ultimoEmailEnviadoEmData === hojeBRT) return false; // já enviou hoje
+  return horaBRT === HORA_EMAIL_DIARIO;
 }
 
 async function main() {
   console.log('🔔 Notificar Vencimentos Pontual — iniciado', new Date().toISOString());
-  await checarEnotificar();
+  await checarEnotificar({ tambemEmail: EMAIL_AGORA });
 
   if (DAEMON) {
     const ms = INTERVAL_HORAS * 3600 * 1000;
-    console.log(`\n📅 Daemon ativo — próxima verificação em ${INTERVAL_HORAS}h`);
+    console.log(`\n📅 Daemon ativo — toast cada ${INTERVAL_HORAS}h · email diário 07:00`);
     setInterval(async () => {
-      try { await checarEnotificar(); } catch (e) { console.error('erro loop:', e.message); }
+      try { await checarEnotificar({ tambemEmail: ehHoraDeEmailDiario() }); } catch (e) { console.error('erro loop:', e.message); }
     }, ms);
+    // Loop dedicado só pro email — checa a cada 30min se é hora
+    setInterval(async () => {
+      if (ehHoraDeEmailDiario()) {
+        try { await checarEnotificar({ tambemEmail: true }); } catch (e) { console.error('erro email:', e.message); }
+      }
+    }, 30 * 60 * 1000);
     // Mantém processo vivo
     return;
   }

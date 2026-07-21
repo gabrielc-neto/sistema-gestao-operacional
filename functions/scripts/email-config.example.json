@@ -1,0 +1,9 @@
+{
+  "_comentario": "Copiar este arquivo pra email-config.json (mesma pasta) e preencher. Gmail App Password: https://myaccount.google.com/apppasswords (ativa 2FA primeiro).",
+  "gmailUser": "seu-email@gmail.com",
+  "gmailAppPassword": "xxxx xxxx xxxx xxxx",
+  "destinatarios": [
+    "rosilda.lima75@gmail.com",
+    "logistica01@pontualpetroleo.com.br"
+  ]
+}
