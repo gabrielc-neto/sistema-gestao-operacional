@@ -1058,6 +1058,9 @@ export default function Manutencao() {
   const [erroOS,         setErroOS]         = useState("");
   // edição / finalização de OS
   const [editOS,         setEditOS]         = useState(null); // { os } sendo editada
+  const [fotosOsModal,   setFotosOsModal]   = useState(null); // OS com galeria de fotos aberta
+  const [fotosUploading, setFotosUploading] = useState(false);
+  const [fotosErro,      setFotosErro]      = useState("");
   const [formEditOS,     setFormEditOS]     = useState({ ...EMPTY_OS });
   const [salvandoEdit,   setSalvandoEdit]   = useState(false);
   const salvandoEditRef                     = useRef(false);
@@ -2007,6 +2010,81 @@ export default function Manutencao() {
       alert("Erro ao finalizar: " + e.message);
     } finally {
       setAcaoOS(null);
+    }
+  }
+
+  // Upload de foto pra OS (Firebase Storage — 5GB grátis)
+  // Comprime a 1600px lado máximo antes de subir (economiza banda + storage)
+  async function comprimirImagem(file, maxLado = 1600, qualidade = 0.82) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const escala = Math.min(1, maxLado / Math.max(img.width, img.height));
+        const w = Math.round(img.width * escala);
+        const h = Math.round(img.height * escala);
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error("comprimir falhou")), "image/jpeg", qualidade);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("carregar imagem falhou")); };
+      img.src = url;
+    });
+  }
+
+  async function uploadFotosOS(os, fileList) {
+    if (!os?.id) return;
+    const files = Array.from(fileList || []).filter(f => f.type.startsWith("image/"));
+    if (files.length === 0) return;
+    setFotosErro(""); setFotosUploading(true);
+    try {
+      const novasFotos = [...(os.fotos || [])];
+      for (const file of files) {
+        const blob = await comprimirImagem(file);
+        const ts = Date.now();
+        const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/\.[^.]+$/, ".jpg");
+        const path = `os-fotos/${os.id}/${ts}_${safe}`;
+        const ref = storageRef(storage, path);
+        await uploadBytes(ref, blob, { contentType: "image/jpeg" });
+        const url = await getDownloadURL(ref);
+        novasFotos.push({
+          nome: file.name,
+          url, path,
+          tamanho: blob.size,
+          criadoEm: new Date().toISOString(),
+          criadoPor: profile?.email || profile?.nome || "—",
+        });
+      }
+      await updateDoc(doc(db, "ordens_servico", os.id), { fotos: novasFotos, updatedAt: new Date().toISOString() });
+      const osAtualizada = { ...os, fotos: novasFotos };
+      setOrdensServico(prev => prev.map(o => o.id === os.id ? osAtualizada : o));
+      setFotosOsModal(osAtualizada);
+    } catch (e) {
+      console.error("uploadFotosOS:", e);
+      setFotosErro("Erro no upload: " + (e?.message || e));
+    } finally {
+      setFotosUploading(false);
+    }
+  }
+
+  async function removerFotoOS(os, idx) {
+    if (!os?.id) return;
+    const foto = os.fotos?.[idx];
+    if (!foto) return;
+    if (!window.confirm(`Remover foto "${foto.nome}"?`)) return;
+    try {
+      try { await deleteObject(storageRef(storage, foto.path)); } catch (e) { console.warn("delete storage:", e); }
+      const novasFotos = os.fotos.filter((_, i) => i !== idx);
+      await updateDoc(doc(db, "ordens_servico", os.id), { fotos: novasFotos, updatedAt: new Date().toISOString() });
+      const osAtualizada = { ...os, fotos: novasFotos };
+      setOrdensServico(prev => prev.map(o => o.id === os.id ? osAtualizada : o));
+      setFotosOsModal(osAtualizada);
+    } catch (e) {
+      console.error("removerFotoOS:", e);
+      setFotosErro("Erro ao remover: " + (e?.message || e));
     }
   }
 
@@ -3483,12 +3561,21 @@ export default function Manutencao() {
                             {os.valorTotal > 0 ? fmtBRL(os.valorTotal) : "—"}
                           </td>
                           <td style={tdOS}>
-                            <button
-                              onClick={() => abrirConclusaoOS(os)}
-                              style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
-                            >
-                              Concluir
-                            </button>
+                            <div style={{ display:"flex", gap:6 }}>
+                              <button
+                                onClick={() => setFotosOsModal(os)}
+                                title={`${(os.fotos?.length || 0)} foto(s)`}
+                                style={{ background: (os.fotos?.length || 0) > 0 ? "#dbeafe" : "#f1f5f9", border:"none", color:(os.fotos?.length || 0) > 0 ? "#1d4ed8" : "#64748b", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 10px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:4 }}
+                              >
+                                📷 {os.fotos?.length || 0}
+                              </button>
+                              <button
+                                onClick={() => abrirConclusaoOS(os)}
+                                style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
+                              >
+                                Concluir
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -4078,6 +4165,74 @@ export default function Manutencao() {
             </div>
           </div>
         </main>
+      )}
+
+      {/* ── MODAL: FOTOS DA OS (galeria + upload) ─────────────────────── */}
+      {fotosOsModal && (
+        <div onClick={() => { setFotosOsModal(null); setFotosErro(""); }} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.5)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:12, maxWidth:900, width:"100%", maxHeight:"90vh", overflow:"auto", padding:24 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <div>
+                <h2 style={{ margin:0, color:"#1a3a5c", fontSize:"1.1rem" }}>📷 Fotos da OS {fotosOsModal.numero}</h2>
+                <p style={{ margin:"4px 0 0 0", fontSize:".8rem", color:"#64748b" }}>
+                  {fotosOsModal.placa} · {fotosOsModal.tipoServico} · {(fotosOsModal.fotos?.length || 0)} foto(s)
+                </p>
+              </div>
+              <button onClick={() => { setFotosOsModal(null); setFotosErro(""); }} style={{ background:"none", border:"none", fontSize:"1.5rem", cursor:"pointer", color:"#64748b" }}>✕</button>
+            </div>
+
+            <label style={{ display:"block", padding:"12px 16px", background:"#f0f9ff", border:"2px dashed #0ea5e9", borderRadius:8, textAlign:"center", cursor:"pointer", marginBottom:16 }}>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                capture="environment"
+                onChange={e => uploadFotosOS(fotosOsModal, e.target.files)}
+                disabled={fotosUploading}
+                style={{ display:"none" }}
+              />
+              <span style={{ color:"#0369a1", fontWeight:600, fontSize:".9rem" }}>
+                {fotosUploading ? "⏳ Enviando..." : "📤 Adicionar fotos (câmera ou galeria)"}
+              </span>
+              <div style={{ fontSize:".72rem", color:"#64748b", marginTop:4 }}>
+                Comprimido automaticamente pra 1600px · Firebase Storage grátis até 5GB
+              </div>
+            </label>
+
+            {fotosErro && (
+              <div style={{ background:"#fee2e2", color:"#b91c1c", padding:"8px 12px", borderRadius:6, marginBottom:12, fontSize:".85rem" }}>
+                {fotosErro}
+              </div>
+            )}
+
+            {(fotosOsModal.fotos?.length || 0) === 0 ? (
+              <div style={{ textAlign:"center", padding:"40px 20px", color:"#94a3b8" }}>
+                Nenhuma foto ainda. Registrar antes/durante/depois do serviço ajuda em garantia e auditoria.
+              </div>
+            ) : (
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:12 }}>
+                {fotosOsModal.fotos.map((foto, idx) => (
+                  <div key={foto.path} style={{ border:"1px solid #e2e8f0", borderRadius:8, overflow:"hidden", background:"#f8fafc", position:"relative" }}>
+                    <a href={foto.url} target="_blank" rel="noopener noreferrer">
+                      <img src={foto.url} alt={foto.nome} style={{ width:"100%", height:150, objectFit:"cover", display:"block" }} />
+                    </a>
+                    <div style={{ padding:"6px 8px", fontSize:".72rem", color:"#64748b" }}>
+                      <div style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={foto.nome}>{foto.nome}</div>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:4 }}>
+                        <span>{new Date(foto.criadoEm).toLocaleDateString("pt-BR")}</span>
+                        <button
+                          onClick={() => removerFotoOS(fotosOsModal, idx)}
+                          style={{ background:"none", border:"none", color:"#b91c1c", cursor:"pointer", fontSize:".78rem", padding:2 }}
+                          title="Remover foto"
+                        >🗑️</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ── MODAL ─────────────────────────────────────────────────────── */}

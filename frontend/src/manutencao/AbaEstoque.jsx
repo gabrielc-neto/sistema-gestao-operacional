@@ -435,6 +435,9 @@ export default function AbaEstoque({ veiculos, quemSou }) {
   const [modalItem, setModalItem] = useState(null); // null = fechado, "novo" = novo, obj = editar
   const [modalEnt, setModalEnt] = useState(false);
   const [modalSai, setModalSai] = useState(false);
+  const [modalImportNfe, setModalImportNfe] = useState(null); // null = fechado, {nfe} = preview de items pra confirmar
+  const [importNfeErro, setImportNfeErro] = useState("");
+  const [importNfeSalvando, setImportNfeSalvando] = useState(false);
 
   // Load em tempo real
   useEffect(() => {
@@ -446,6 +449,144 @@ export default function AbaEstoque({ veiculos, quemSou }) {
     }, err => console.warn("estoque_movimentacoes onSnapshot:", err));
     return () => { un1(); un2(); };
   }, []);
+
+  // Parse XML NF-e e extrai items (formato SEFAZ padrão)
+  function parseNfeXml(xmlText) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, "text/xml");
+    if (doc.querySelector("parsererror")) throw new Error("XML inválido");
+    // Suporta <nfeProc><NFe> ou <NFe> direto
+    const infNFe = doc.querySelector("infNFe");
+    if (!infNFe) throw new Error("XML não parece ser uma NF-e válida (sem <infNFe>)");
+    const get = (parent, tag) => parent?.querySelector(tag)?.textContent?.trim() || "";
+    const emit = infNFe.querySelector("emit");
+    const ide = infNFe.querySelector("ide");
+    const total = infNFe.querySelector("total ICMSTot");
+    const fornecedor = get(emit, "xNome");
+    const cnpj = get(emit, "CNPJ") || get(emit, "CPF");
+    const numeroNfe = get(ide, "nNF");
+    const serie = get(ide, "serie");
+    const dataEmissao = get(ide, "dhEmi") || get(ide, "dEmi");
+    const valorTotal = Number(get(total, "vNF") || 0);
+    const items = [];
+    infNFe.querySelectorAll("det").forEach(det => {
+      const prod = det.querySelector("prod");
+      if (!prod) return;
+      items.push({
+        nItem: det.getAttribute("nItem") || "",
+        codigo: get(prod, "cProd"),
+        ean: get(prod, "cEAN"),
+        nome: get(prod, "xProd"),
+        ncm: get(prod, "NCM"),
+        cfop: get(prod, "CFOP"),
+        unidade: get(prod, "uCom") || "UN",
+        quantidade: Number(get(prod, "qCom") || 0),
+        valorUnitario: Number(get(prod, "vUnCom") || 0),
+        valorTotal: Number(get(prod, "vProd") || 0),
+        // Categoria: chuta pelos termos comuns no nome
+        categoria: guessCategoria(get(prod, "xProd")),
+        // Se true, cria novo item no catálogo. Se false, é linked a `linkItemId`
+        criarNovo: true,
+        linkItemId: null,
+      });
+    });
+    return { fornecedor, cnpj, numeroNfe, serie, dataEmissao, valorTotal, items };
+  }
+
+  // Chuta categoria baseado em palavras-chave do nome
+  function guessCategoria(nome) {
+    const n = String(nome || "").toLowerCase();
+    if (/óleo|oleo|lubrific/.test(n)) return "oleos";
+    if (/arla/.test(n)) return "arla";
+    if (/fluido/.test(n)) return "fluidos";
+    if (/filtro/.test(n)) return "filtros";
+    if (/pneu/.test(n)) return "pneus";
+    if (/mangot|mangueira/.test(n)) return "mangotes";
+    if (/bateria|lâmpada|lampada|sensor|elétric|eletric|farol/.test(n)) return "pecas_ele";
+    if (/luva|óculos|oculos|botina|epi/.test(n)) return "epi";
+    if (/chave|alicate|macaco|ferramenta/.test(n)) return "ferramentas";
+    if (/freio|embreag|correia|amortec|coxim|junta|pastilha|disco/.test(n)) return "pecas_mec";
+    return "outros";
+  }
+
+  async function abrirImportNfe(file) {
+    setImportNfeErro("");
+    try {
+      const text = await file.text();
+      const nfe = parseNfeXml(text);
+      if (nfe.items.length === 0) throw new Error("NF-e não tem itens (<det>)");
+      setModalImportNfe(nfe);
+    } catch (e) {
+      setImportNfeErro("Erro ao ler XML: " + (e?.message || e));
+      setModalImportNfe(null);
+    }
+  }
+
+  async function confirmarImportNfe() {
+    if (!modalImportNfe) return;
+    setImportNfeSalvando(true);
+    setImportNfeErro("");
+    try {
+      const nfe = modalImportNfe;
+      const catalogoPorNome = new Map(itens.map(it => [String(it.nome || "").toLowerCase().trim(), it]));
+
+      for (const it of nfe.items) {
+        let itemId = null;
+        if (it.criarNovo) {
+          // Ou reutiliza item existente com mesmo nome, ou cria novo
+          const nomeKey = String(it.nome).toLowerCase().trim();
+          const existente = catalogoPorNome.get(nomeKey);
+          if (existente) {
+            itemId = existente.id;
+          } else {
+            const cat = catMap[it.categoria] || catMap["outros"];
+            const ref = await addDoc(collection(db, "estoque_itens"), {
+              nome: it.nome,
+              categoria: it.categoria,
+              unidade: cat?.unidade || it.unidade || "UN",
+              saldoAtual: 0,
+              custoMedio: 0,
+              codigo: it.codigo || "",
+              ean: it.ean || "",
+              ncm: it.ncm || "",
+              criadoEm: new Date().toISOString(),
+              criadoPor: quemSou?.() || "—",
+              atualizadoEm: new Date().toISOString(),
+              atualizadoPor: quemSou?.() || "—",
+            });
+            itemId = ref.id;
+          }
+        } else if (it.linkItemId) {
+          itemId = it.linkItemId;
+        } else {
+          continue; // pulou sem escolha
+        }
+
+        // Cria movimentação de entrada
+        await salvarMov({
+          itemId,
+          tipo: "entrada",
+          quantidade: it.quantidade,
+          custoUnitario: it.valorUnitario,
+          valorTotal: it.valorTotal,
+          fornecedor: nfe.fornecedor,
+          cnpjFornecedor: nfe.cnpj,
+          nfeNumero: nfe.numeroNfe,
+          nfeSerie: nfe.serie,
+          nfeData: nfe.dataEmissao,
+          origem: "import_nfe",
+          obs: `NF-e ${nfe.numeroNfe}/${nfe.serie} · ${nfe.fornecedor}`,
+        });
+      }
+
+      setModalImportNfe(null);
+    } catch (e) {
+      console.error("confirmarImportNfe:", e);
+      setImportNfeErro("Erro ao importar: " + (e?.message || e));
+    } finally {
+      setImportNfeSalvando(false);
+    }
+  }
 
   // Salvar item (catálogo)
   async function salvarItem(payload) {
@@ -589,10 +730,24 @@ export default function AbaEstoque({ veiculos, quemSou }) {
             <button style={s.btn("#dc2626")} onClick={() => setModalSai(true)} disabled={itens.length === 0}>
               <ArrowUpFromLine size={14} /> Saída
             </button>
+            <label style={{ ...s.btn("#4338ca"), cursor: "pointer" }} title="Importar NF-e (XML SEFAZ) — cadastra itens e registra entrada automaticamente">
+              📄 Importar NF-e
+              <input
+                type="file"
+                accept=".xml,text/xml,application/xml"
+                onChange={e => { if (e.target.files?.[0]) abrirImportNfe(e.target.files[0]); e.target.value = ""; }}
+                style={{ display: "none" }}
+              />
+            </label>
             <button style={s.btn("#0f172a")} onClick={() => setModalItem("novo")}>
               <Plus size={14} /> Novo item
             </button>
           </div>
+          {importNfeErro && !modalImportNfe && (
+            <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "8px 12px", borderRadius: 6, fontSize: ".85rem", marginTop: -6 }}>
+              {importNfeErro}
+            </div>
+          )}
 
           <div style={s.tableWrap}>
             {itensFiltrados.length === 0 ? (
@@ -745,6 +900,109 @@ export default function AbaEstoque({ veiculos, quemSou }) {
           onSalvar={salvarMov}
           onFechar={() => setModalSai(false)}
         />
+      )}
+      {modalImportNfe && (
+        <div onClick={() => !importNfeSalvando && setModalImportNfe(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.5)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:12, maxWidth:1100, width:"100%", maxHeight:"90vh", overflow:"auto", padding:24 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+              <div>
+                <h2 style={{ margin:0, color:"#1a3a5c", fontSize:"1.1rem" }}>📄 Importar NF-e — Preview</h2>
+                <p style={{ margin:"4px 0 0 0", fontSize:".85rem", color:"#64748b" }}>
+                  <strong>{modalImportNfe.fornecedor}</strong> · CNPJ {modalImportNfe.cnpj}
+                  <br />NF nº {modalImportNfe.numeroNfe}/{modalImportNfe.serie} · {modalImportNfe.dataEmissao?.slice(0,10)} · Total {fmtBRL(modalImportNfe.valorTotal)}
+                </p>
+              </div>
+              <button onClick={() => !importNfeSalvando && setModalImportNfe(null)} style={{ background:"none", border:"none", fontSize:"1.5rem", cursor:"pointer", color:"#64748b" }}>✕</button>
+            </div>
+
+            <p style={{ fontSize:".82rem", color:"#475569", marginBottom:12 }}>
+              <strong>{modalImportNfe.items.length}</strong> item(s) na NF-e. Confira categorias antes de importar (chuta pelo nome, você pode ajustar).
+              Itens marcados <strong>criam novos</strong> no catálogo (ou reusam se nome bater exato). Todos geram <strong>movimentação de entrada</strong> com custo unitário da NF.
+            </p>
+
+            <div style={{ overflowX:"auto", border:"1px solid #e2e8f0", borderRadius:8, marginBottom:12 }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".84rem" }}>
+                <thead>
+                  <tr style={{ background:"#f8fafc" }}>
+                    <th style={s.th}>#</th>
+                    <th style={s.th}>Nome</th>
+                    <th style={s.th}>Categoria</th>
+                    <th style={s.th}>Qtd</th>
+                    <th style={s.th}>V. Unit</th>
+                    <th style={s.th}>V. Total</th>
+                    <th style={s.th}>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {modalImportNfe.items.map((it, i) => (
+                    <tr key={i} style={i % 2 ? s.zebra : null}>
+                      <td style={s.td}>{it.nItem}</td>
+                      <td style={s.td}>
+                        <div style={{ fontWeight:600 }}>{it.nome}</div>
+                        {it.codigo && <div style={{ fontSize:".72rem", color:"#94a3b8" }}>cod: {it.codigo}</div>}
+                      </td>
+                      <td style={s.td}>
+                        <select
+                          value={it.categoria}
+                          onChange={e => {
+                            const novo = e.target.value;
+                            setModalImportNfe(prev => ({
+                              ...prev,
+                              items: prev.items.map((x, idx) => idx === i ? { ...x, categoria: novo } : x)
+                            }));
+                          }}
+                          style={{ padding:"4px 8px", borderRadius:5, border:"1px solid #e2e8f0", fontSize:".78rem" }}
+                        >
+                          {CATEGORIAS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                        </select>
+                      </td>
+                      <td style={s.td}>{fmtQ(it.quantidade, catMap[it.categoria]?.unidade || it.unidade)}</td>
+                      <td style={s.td}>{fmtBRL(it.valorUnitario)}</td>
+                      <td style={{ ...s.td, fontWeight:700 }}>{fmtBRL(it.valorTotal)}</td>
+                      <td style={s.td}>
+                        <label style={{ display:"inline-flex", alignItems:"center", gap:4, cursor:"pointer", fontSize:".78rem" }}>
+                          <input
+                            type="checkbox"
+                            checked={it.criarNovo}
+                            onChange={e => {
+                              const chk = e.target.checked;
+                              setModalImportNfe(prev => ({
+                                ...prev,
+                                items: prev.items.map((x, idx) => idx === i ? { ...x, criarNovo: chk } : x)
+                              }));
+                            }}
+                          />
+                          Importar
+                        </label>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {importNfeErro && (
+              <div style={{ background:"#fee2e2", color:"#b91c1c", padding:"8px 12px", borderRadius:6, marginBottom:12, fontSize:".85rem" }}>
+                {importNfeErro}
+              </div>
+            )}
+
+            <div style={{ display:"flex", justifyContent:"flex-end", gap:8 }}>
+              <button
+                onClick={() => setModalImportNfe(null)}
+                disabled={importNfeSalvando}
+                style={{ padding:"8px 16px", borderRadius:8, background:"#f1f5f9", color:"#475569", border:"none", cursor:"pointer", fontWeight:600 }}
+              >Cancelar</button>
+              <button
+                onClick={confirmarImportNfe}
+                disabled={importNfeSalvando}
+                style={{ padding:"8px 20px", borderRadius:8, background:"#4338ca", color:"#fff", border:"none", cursor:"pointer", fontWeight:700 }}
+              >
+                {importNfeSalvando ? "⏳ Importando..." : `Importar ${modalImportNfe.items.filter(x => x.criarNovo).length} item(s)`}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
