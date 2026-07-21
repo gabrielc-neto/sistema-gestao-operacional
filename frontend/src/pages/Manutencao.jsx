@@ -1401,14 +1401,14 @@ export default function Manutencao() {
     return () => unsubs.forEach(u => { try { u(); } catch {} });
   }, []);
 
+  const normP = (p) => (p || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
   const alertaCount = useMemo(() => {
     const ctxFor = (r) => ({ odometroAtual: Number(odometroDe?.(normP(r.placa))?.km) || null });
     const novosPend  = Object.values(registros).filter(r => ["vencido","alerta"].includes(calcStatus(r, ctxFor(r)))).length;
     const legadoPend = legacy.filter(r => ["vencido","alerta"].includes(calcStatus(r, ctxFor(r)))).length;
     return novosPend + legadoPend;
-  }, [registros, legacy]);
-
-  const normP = (p) => (p || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }, [registros, legacy, odometroDe]);
 
   // Catálogo final = built-in + personalizados (Firestore). Custom já vem com id próprio.
   const TIPOS_TODOS = useMemo(() => {
