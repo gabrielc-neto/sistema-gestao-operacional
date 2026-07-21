@@ -9,7 +9,7 @@ import {
 import { db } from "../firebase/config";
 import {
   Package, Plus, ArrowDownToLine, ArrowUpFromLine, History,
-  Search, Edit3, Trash2, X, AlertTriangle, TrendingUp, TrendingDown, Droplets
+  Search, Edit3, Trash2, X, AlertTriangle, TrendingUp, TrendingDown, Droplets, FileUp
 } from "lucide-react";
 
 // ═══ CATÁLOGO DE CATEGORIAS + UNIDADE PADRÃO ═══
@@ -731,7 +731,7 @@ export default function AbaEstoque({ veiculos, quemSou }) {
               <ArrowUpFromLine size={14} /> Saída
             </button>
             <label style={{ ...s.btn("#4338ca"), cursor: "pointer" }} title="Importar NF-e (XML SEFAZ) — cadastra itens e registra entrada automaticamente">
-              📄 Importar NF-e
+              <FileUp size={14} /> Importar NF-e
               <input
                 type="file"
                 accept=".xml,text/xml,application/xml"
@@ -906,7 +906,9 @@ export default function AbaEstoque({ veiculos, quemSou }) {
           <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:12, maxWidth:1100, width:"100%", maxHeight:"90vh", overflow:"auto", padding:24 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
               <div>
-                <h2 style={{ margin:0, color:"#1a3a5c", fontSize:"1.1rem" }}>📄 Importar NF-e — Preview</h2>
+                <h2 style={{ margin:0, color:"#1a3a5c", fontSize:"1.1rem", display:"flex", alignItems:"center", gap:8 }}>
+                  <FileUp size={20} /> Importar NF-e — Preview
+                </h2>
                 <p style={{ margin:"4px 0 0 0", fontSize:".85rem", color:"#64748b" }}>
                   <strong>{modalImportNfe.fornecedor}</strong> · CNPJ {modalImportNfe.cnpj}
                   <br />NF nº {modalImportNfe.numeroNfe}/{modalImportNfe.serie} · {modalImportNfe.dataEmissao?.slice(0,10)} · Total {fmtBRL(modalImportNfe.valorTotal)}
@@ -998,7 +1000,7 @@ export default function AbaEstoque({ veiculos, quemSou }) {
                 disabled={importNfeSalvando}
                 style={{ padding:"8px 20px", borderRadius:8, background:"#4338ca", color:"#fff", border:"none", cursor:"pointer", fontWeight:700 }}
               >
-                {importNfeSalvando ? "⏳ Importando..." : `Importar ${modalImportNfe.items.filter(x => x.criarNovo).length} item(s)`}
+                {importNfeSalvando ? "Importando..." : `Importar ${modalImportNfe.items.filter(x => x.criarNovo).length} item(s)`}
               </button>
             </div>
           </div>
