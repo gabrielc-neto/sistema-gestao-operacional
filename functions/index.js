@@ -97,29 +97,55 @@ export const sascarVeiculos = onCall(
   }
 );
 
-// --- sascarPosicoes: última posição por veículo (cache 30s) ---
+// --- sascarPosicoes: última posição por veículo (cache 5min) ---
+// SASCAR API é fila: cada obterPacotePosicoesMotorista devolve pacotes dos MAIS ANTIGOS
+// primeiro. Precisamos fazer loop até esvaziar a fila (ou hit safety limit) pra chegar
+// nos pacotes frescos. Rate limit SASCAR: 1 req/60s → sleep 65s entre calls.
 export const sascarPosicoes = onCall(
-  { secrets: [SASCAR_USUARIO, SASCAR_SENHA] },
+  { secrets: [SASCAR_USUARIO, SASCAR_SENHA], timeoutSeconds: 300 },
   async (request) => {
     requireAuth(request);
     return await safeRun('sascarPosicoes', async () => {
     const { data, age, fresh } = await cached('posicoes', 300_000, async () => {
-      // 1) Em paralelo: chama SASCAR + lê estado anterior + cercas cadastradas
-      const [pacotes, veiculos, snapshot, cercasSnap] = await Promise.all([
-        obterPacotePosicoesMotorista({
-          usuario: SASCAR_USUARIO.value(),
-          senha: SASCAR_SENHA.value(),
-          quantidade: 3000,
-        }),
-        obterVeiculos({
-          usuario: SASCAR_USUARIO.value(),
-          senha: SASCAR_SENHA.value(),
-          quantidade: 1000,
-          idVeiculo: 0,
-        }),
-        db.collection(COL_POSICOES).get(),
-        db.collection(COL_CERCAS).get(),
-      ]);
+      // 1a) Consome fila SASCAR: até 4 chamadas ou até vir < 3000 (esvaziou)
+      const pacotes = [];
+      for (let i = 0; i < 4; i++) {
+        try {
+          const lote = await obterPacotePosicoesMotorista({
+            usuario: SASCAR_USUARIO.value(),
+            senha: SASCAR_SENHA.value(),
+            quantidade: 3000,
+          });
+          pacotes.push(...lote);
+          if (lote.length < 3000) break; // fila esvaziou
+          if (i < 3) await new Promise(r => setTimeout(r, 65000)); // rate limit SASCAR 60s
+        } catch (e) {
+          console.warn(`sascarPosicoes loop iter=${i} falhou: ${e?.message}`);
+          break;
+        }
+      }
+      console.log(`sascarPosicoes: total ${pacotes.length} pacotes consumidos da fila SASCAR`);
+
+      // 1b) SASCAR (sempre) + Firestore leituras (com fallback se quota estourou)
+      const veiculos = await obterVeiculos({
+        usuario: SASCAR_USUARIO.value(),
+        senha: SASCAR_SENHA.value(),
+        quantidade: 1000,
+        idVeiculo: 0,
+      });
+
+      let snapshot = { forEach: () => {} };
+      let cercasSnap = { forEach: () => {} };
+      let firestoreOk = true;
+      try {
+        [snapshot, cercasSnap] = await Promise.all([
+          db.collection(COL_POSICOES).get(),
+          db.collection(COL_CERCAS).get(),
+        ]);
+      } catch (e) {
+        firestoreOk = false;
+        console.warn(`[sascarPosicoes] Firestore leitura falhou (${e?.code || e?.message}) — retornando dados SASCAR direto sem estado persistido`);
+      }
 
       // 2) Posições novas (idVeiculo → pacote)
       const novas = new Map();
@@ -229,7 +255,12 @@ export const sascarPosicoes = onCall(
         persistidas.set(id, enriched); // reflete em memória
         writes++;
       }
-      if (writes > 0 || eventos > 0) await batch.commit();
+      if (firestoreOk && (writes > 0 || eventos > 0)) {
+        try { await batch.commit(); }
+        catch (e) {
+          console.warn(`[sascarPosicoes] Firestore write falhou (${e?.code || e?.message}) — posições SASCAR ainda retornadas via memória`);
+        }
+      }
 
       // 5) Resultado: 1 registro por veículo cadastrado, com posição persistida quando existir
       const resultado = veiculos.map(v => {
