@@ -711,6 +711,34 @@ export default function AbaEstoque({ veiculos, quemSou }) {
         </button>
       </div>
 
+      {/* Alerta de itens abaixo do mínimo — só se tem algum */}
+      {kpi.abaixoMin > 0 && (() => {
+        const abaixo = itens.filter(i => Number(i.saldoAtual || 0) < Number(i.estoqueMinimo || 0));
+        return (
+          <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:10, padding:"12px 16px", display:"flex", alignItems:"flex-start", gap:12 }}>
+            <AlertTriangle size={20} color="#dc2626" style={{ flexShrink:0, marginTop:2 }} />
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontWeight:700, color:"#b91c1c", fontSize:".9rem", marginBottom:6 }}>
+                {abaixo.length} {abaixo.length === 1 ? "item" : "itens"} abaixo do estoque mínimo — repor urgente
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                {abaixo.slice(0, 12).map(it => (
+                  <button
+                    key={it.id}
+                    onClick={() => setModalItem(it)}
+                    title={`Editar — atual: ${fmtQ(Number(it.saldoAtual||0), it.unidade)} · mín: ${fmtQ(Number(it.estoqueMinimo||0), it.unidade)}`}
+                    style={{ background:"#fff", border:"1px solid #fca5a5", color:"#991b1b", padding:"4px 10px", borderRadius:999, fontSize:".78rem", fontWeight:600, cursor:"pointer" }}
+                  >
+                    {it.nome} <span style={{ color:"#dc2626", marginLeft:4 }}>{fmtQ(Number(it.saldoAtual||0), it.unidade)}/{fmtQ(Number(it.estoqueMinimo||0), it.unidade)}</span>
+                  </button>
+                ))}
+                {abaixo.length > 12 && <span style={{ fontSize:".78rem", color:"#7f1d1d", padding:"4px 6px" }}>+{abaixo.length - 12} outros</span>}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* CATÁLOGO */}
       {subaba === "catalogo" && (
         <>

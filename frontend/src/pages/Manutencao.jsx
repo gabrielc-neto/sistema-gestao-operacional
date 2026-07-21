@@ -10,6 +10,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useRBAC } from "../rbac/RBACContext";
 import { useOdometrosSascar } from "../hooks/useOdometrosSascar";
 import LogoPontual from "../components/LogoPontual";
+import PadAssinatura from "../components/PadAssinatura";
 import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
 import AbaControleRotina from "../manutencao/AbaControleRotina";
@@ -78,7 +79,7 @@ const EMPTY_FORM = { data_realiz:"", venc:"", agendamento:"", local:"", numero_d
 
 // Abertura de OS — form vazio (bloqueia o veículo, NÃO tem custo)
 const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "", fornecedor: "", fornecedorCnpj: "" };
-const EMPTY_CONCLUSAO = { kmSaida: "", mecanico: "", oficina: "", servicoExecutado: "", fornecedor: "", fornecedorCnpj: "" };
+const EMPTY_CONCLUSAO = { kmSaida: "", mecanico: "", oficina: "", servicoExecutado: "", fornecedor: "", fornecedorCnpj: "", assinaturaMotorista: null, garantiaDias: "90" };
 
 // Lançamento de NF — registro de nota fiscal/custo (NÃO bloqueia o veículo)
 // Sugestões iniciais do "Tipo de lançamento" (campo é cadastrável — aceita novos)
@@ -2201,6 +2202,8 @@ export default function Manutencao() {
         fornecedorCnpj,
         itens,
         valorTotal,
+        assinaturaMotorista: formConclusao.assinaturaMotorista || null,
+        garantiaDias: Number(formConclusao.garantiaDias) || 90,
       };
       await updateDoc(doc(db, "ordens_servico", os.id), dados);
       setOrdensServico(prev => prev.map(o => o.id === os.id ? { ...o, ...dados } : o));
@@ -3412,6 +3415,38 @@ export default function Manutencao() {
       {/* ── ABA: ORDENS DE SERVIÇO ────────────────────────────────────── */}
       {aba === "os" && podeVerAba("os_abertura") && (
         <main style={s.main} className="pg-body">
+          {/* Alerta de garantia — se placa+tipoServico teve OS finalizada há < garantiaDias */}
+          {(() => {
+            if (!formOS.placa || !formOS.tipoServico) return null;
+            const hoje = Date.now();
+            const anteriores = ordensServico.filter(o =>
+              o.status === "finalizada" &&
+              o.placa === formOS.placa &&
+              o.tipoServico === formOS.tipoServico
+            ).map(o => {
+              const finMs = o.finalizadaEm ? Date.parse(o.finalizadaEm) : null;
+              const garantia = Number(o.garantiaDias) || 90;
+              const diasDesde = finMs ? Math.floor((hoje - finMs) / 86400000) : null;
+              const emGarantia = diasDesde != null && diasDesde <= garantia;
+              return { os: o, diasDesde, garantia, emGarantia };
+            }).filter(x => x.emGarantia).sort((a, b) => a.diasDesde - b.diasDesde);
+            if (anteriores.length === 0) return null;
+            const primeiro = anteriores[0];
+            return (
+              <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 10, padding: "12px 16px", marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <AlertCircle size={20} color="#b91c1c" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, color: "#991b1b", fontSize: ".9rem" }}>
+                    Serviço ainda em garantia — cobre do fornecedor antes de gerar nova OS
+                  </div>
+                  <div style={{ fontSize: ".82rem", color: "#7f1d1d", marginTop: 4 }}>
+                    OS <strong>{primeiro.os.numero}</strong> ({primeiro.os.tipoServico}) foi finalizada há <strong>{primeiro.diasDesde} dia(s)</strong> —
+                    garantia de {primeiro.garantia} dias{primeiro.os.fornecedor ? <> · fornecedor: <strong>{primeiro.os.fornecedor}</strong></> : null}.
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
           {/* Formulário de nova OS */}
           <div style={{ background: "#fff", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <h2 style={{ margin: "0 0 0.75rem 0", color: "#1a3a5c", fontSize: "1.05rem" }}>Abrir ordem de serviço <span style={{ fontWeight:400, fontSize:".8rem", color:"#64748b" }}>— bloqueia o veículo</span></h2>
@@ -4689,6 +4724,22 @@ export default function Manutencao() {
                 />
               </label>
 
+              <label style={s.fieldLabel}>
+                Garantia da peça/serviço (dias)
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  style={s.fieldInput}
+                  value={formConclusao.garantiaDias}
+                  onChange={e => setFormConclusao({ ...formConclusao, garantiaDias: e.target.value.replace(/\D/g, "") })}
+                  placeholder="90"
+                />
+                <span style={{ fontSize: ".7rem", color: "#64748b", marginTop: 4 }}>
+                  Se abrir outra OS com mesma peça antes deste prazo, sistema alerta pra acionar garantia.
+                </span>
+              </label>
+
               {/* Fornecedor + CNPJ */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div style={s.fieldLabel}>
@@ -4810,6 +4861,15 @@ export default function Manutencao() {
                     </tbody>
                   </table>
                 )}
+              </div>
+
+              {/* Assinatura digital do motorista — evita disputa ("recebi/não recebi") */}
+              <div style={{ borderTop: "1px dashed #cbd5e1", paddingTop: 14, marginTop: 8 }}>
+                <PadAssinatura
+                  label={`Assinatura do motorista (${concluindoOS?.motoristaNome || "—"})`}
+                  value={formConclusao.assinaturaMotorista}
+                  onChange={png => setFormConclusao({ ...formConclusao, assinaturaMotorista: png })}
+                />
               </div>
 
               {erroConclusao && <p style={s.erroMsg}>{erroConclusao}</p>}

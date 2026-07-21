@@ -4,6 +4,8 @@ import { db } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
+import VeiculoQR from "../components/VeiculoQR";
+import { QrCode } from "lucide-react";
 
 const MOTIVOS_BLOQUEIO = ["CIV", "CIPP", "Manutenção", "Documentos vencidos", "Revisão", "Outro"];
 
@@ -169,6 +171,7 @@ export default function Frota() {
   const [filtro, setFiltro]       = useState("");
   const [statusFiltro, setStatusFiltro] = useState("ativo");
   const [modal, setModal]         = useState(false);
+  const [qrModal, setQrModal]     = useState(null); // placa do veículo pra mostrar QR
   const [form, setForm]           = useState(VAZIO);
   const [editId, setEditId]       = useState(null);
   const [salvando, setSalvando]   = useState(false);
@@ -385,10 +388,10 @@ export default function Frota() {
     manutencao: veiculos.filter(v => v.status === "manutencao").length,
   };
   const statItems = [
-    { label:"Total da frota", value:stats.total,       Icon:Ico.Truck,  bg:"#e0e7ff", color:"#4338ca" },
-    { label:"Disponíveis",     value:stats.disponivel, Icon:Ico.Check,  bg:"#dcfce7", color:"#15803d" },
-    { label:"Em viagem",       value:stats.emViagem,   Icon:Ico.Route,  bg:"#dbeafe", color:"#1d4ed8" },
-    { label:"Em manutenção",   value:stats.manutencao, Icon:Ico.Wrench, bg:"#fef3c7", color:"#b45309" },
+    { label:"Total da frota", value:stats.total,       Icon:Ico.Truck,  bg:"#e0e7ff", color:"#4338ca", filtro:"todos" },
+    { label:"Disponíveis",     value:stats.disponivel, Icon:Ico.Check,  bg:"#dcfce7", color:"#15803d", filtro:"ativo" },
+    { label:"Em viagem",       value:stats.emViagem,   Icon:Ico.Route,  bg:"#dbeafe", color:"#1d4ed8", filtro:"em_viagem" },
+    { label:"Em manutenção",   value:stats.manutencao, Icon:Ico.Wrench, bg:"#fef3c7", color:"#b45309", filtro:"manutencao" },
   ];
 
   return (
@@ -422,19 +425,40 @@ export default function Frota() {
         </div>
       </header>
 
-      {/* Linha de estatísticas (inspirado no guia pontual-frota) */}
+      {/* Linha de estatísticas — clicáveis, sincronizam com statusFiltro */}
       <div style={s.statsRow}>
-        {statItems.map(({ label, value, Icon, bg, color }) => (
-          <div key={label} style={s.statCard}>
-            <div style={{ ...s.statIcon, background: bg, color }}>
-              <Icon size={20} />
+        {statItems.map(({ label, value, Icon, bg, color, filtro: kpiFiltro }) => {
+          const ativo = statusFiltro === kpiFiltro;
+          const onClick = () => setStatusFiltro(ativo ? "todos" : kpiFiltro);
+          return (
+            <div
+              key={label}
+              onClick={onClick}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+              role="button"
+              tabIndex={0}
+              aria-pressed={ativo}
+              title={ativo ? `Remover filtro "${label}"` : `Filtrar por ${label}`}
+              style={{
+                ...s.statCard,
+                border: ativo ? `2px solid ${color}` : (s.statCard?.border || "1px solid transparent"),
+                boxShadow: ativo ? `0 0 0 3px ${bg}` : (s.statCard?.boxShadow || undefined),
+                cursor: "pointer",
+                transition: "transform .15s ease, box-shadow .15s ease, border-color .15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
+            >
+              <div style={{ ...s.statIcon, background: bg, color }}>
+                <Icon size={20} />
+              </div>
+              <div style={{ minWidth:0 }}>
+                <div style={s.statValue} className="frota-display">{value}</div>
+                <div style={s.statLabel}>{label}</div>
+              </div>
             </div>
-            <div style={{ minWidth:0 }}>
-              <div style={s.statValue} className="frota-display">{value}</div>
-              <div style={s.statLabel}>{label}</div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div style={s.toolbar} className="pg-toolbar">
@@ -566,6 +590,14 @@ export default function Frota() {
                             {bloqueado ? <Ico.Lock size={15} /> : <Ico.Unlock size={15} />}
                           </button>
                         )}
+                        <button
+                          className="frota-card-action"
+                          style={{ ...s.lockBtn, background: "#f3e8ff", color: "#7c3aed", opacity: 1 }}
+                          onClick={(e) => { e.stopPropagation(); setQrModal(v.placa); }}
+                          title="Ver QR Code do veículo"
+                        >
+                          <QrCode size={15} />
+                        </button>
                         <button
                           className="frota-card-action"
                           style={{ ...s.lockBtn, background: "#dbeafe", color: "#1d4ed8", opacity: 1 }}
@@ -855,12 +887,13 @@ export default function Frota() {
                 disabled={salvando || feriasAtivas.has(form.motorista)}
                 title={feriasAtivas.has(form.motorista) ? "Motorista em férias — remova o atrelamento para salvar" : ""}
               >
-                {salvando ? "Salvando..." : "💾 Salvar"}
+                {salvando ? "Salvando..." : "Salvar"}
               </button>
             </div>
           </div>
         </div>
       )}
+      {qrModal && <VeiculoQR placa={qrModal} onClose={() => setQrModal(null)} />}
     </div>
   );
 }
