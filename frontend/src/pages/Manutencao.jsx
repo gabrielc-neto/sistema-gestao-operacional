@@ -1107,6 +1107,8 @@ export default function Manutencao() {
   // Lançamento de NF (registro de nota fiscal/custo — NÃO bloqueia veículo)
   const [lancamentos,     setLancamentos]     = useState([]);
   const [formLanc,        setFormLanc]        = useState({ ...EMPTY_LANC });
+  const [abastecimentos,  setAbastecimentos]  = useState([]); // pra CPK sub-aba Combustível
+  const [subCpk,          setSubCpk]          = useState("total"); // total | pneu | manutencao | combustivel
 
   // Resolve o odômetro SASCAR de uma placa.
   // Se placa é carreta (sem rastreador), acha o cavalo que tem ela atrelada
@@ -1386,6 +1388,11 @@ export default function Manutencao() {
         setLancamentos(lancs);
         marcaCarregado("lanc");
       }, e => { console.warn("lancamentos_os onSnapshot:", e); marcaCarregado("lanc"); }),
+
+      // cta_abastecimentos — usado no CPK Combustível
+      onSnapshot(collection(db, "cta_abastecimentos"), snap => {
+        setAbastecimentos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      }, e => { console.warn("cta_abastecimentos onSnapshot:", e); }),
 
       // itens_manutencao (catálogo)
       onSnapshot(collection(db, "itens_manutencao"), snap => {
@@ -3314,16 +3321,26 @@ export default function Manutencao() {
               return Number.isFinite(ms) ? ms : null;
             }
 
-            // Agrega custo + hodômetros por placa (12 meses)
-            const porPlaca = new Map(); // placa → { gasto, hodMin, hodMax, entradas: [] }
-            function bump(placa, valor, hodometro, data) {
+            // Classifica um serviço como "pneu" quando texto contém "pneu"
+            const ehPneu = (txt) => /pneu/i.test(String(txt || ""));
+
+            // Agrega por placa E por categoria (total, pneu, manutencao, combustivel)
+            const porPlaca = new Map();
+            function bump(placa, valor, hodometro, data, categoria) {
               if (!placa) return;
               const p = String(placa).toUpperCase().trim();
               const ts = parseData(data);
               if (!ts || ts < CORTE) return;
-              const cur = porPlaca.get(p) || { gasto: 0, hodMin: Infinity, hodMax: 0, entradas: 0 };
-              cur.gasto += Number(valor) || 0;
-              cur.entradas += 1;
+              const cur = porPlaca.get(p) || {
+                total: { gasto: 0, entradas: 0 },
+                pneu: { gasto: 0, entradas: 0 },
+                manutencao: { gasto: 0, entradas: 0 },
+                combustivel: { gasto: 0, entradas: 0 },
+                hodMin: Infinity, hodMax: 0,
+              };
+              const v = Number(valor) || 0;
+              cur.total.gasto += v; cur.total.entradas += 1;
+              cur[categoria].gasto += v; cur[categoria].entradas += 1;
               const km = Number(hodometro);
               if (Number.isFinite(km) && km > 0) {
                 cur.hodMin = Math.min(cur.hodMin, km);
@@ -3331,45 +3348,79 @@ export default function Manutencao() {
               }
               porPlaca.set(p, cur);
             }
+
             ordensServico.forEach(os => {
               if (osStatus(os) !== "finalizada") return;
-              bump(os.placa, os.valorTotal, os.hodometroSaida ?? os.hodometro, os.criadoEm || os.dataHora);
+              const cat = ehPneu(os.tipoServico) ? "pneu" : "manutencao";
+              bump(os.placa, os.valorTotal, os.hodometroSaida ?? os.hodometro, os.criadoEm || os.dataHora, cat);
             });
-            (lancamentos || []).forEach(l => bump(l.placa, l.valorTotal || l.valor, l.hodometro, l.data || l.criadoEm));
+            (lancamentos || []).forEach(l => {
+              const cat = ehPneu(l.tipoLancamento || l.tipoServico) ? "pneu" : "manutencao";
+              bump(l.placa, l.valorTotal || l.valor, l.hodometro, l.data || l.criadoEm, cat);
+            });
+            (abastecimentos || []).forEach(a => {
+              bump(a.placa, a.valor || a.valorTotal, a.hodometro, a.dataAbastecimento || a.data || a.criadoEm, "combustivel");
+            });
 
             // Enriquecer com odômetro atual SASCAR — usa como hodMax se for maior
+            // Pega gasto/entradas da sub-aba selecionada (total | pneu | manutencao | combustivel)
             const linhas = [];
             for (const [placa, d] of porPlaca) {
               const kmSascar = Number(odometroDe?.(placa)?.km) || null;
               const hodMax = Math.max(d.hodMax, kmSascar || 0);
               const kmRodado = d.hodMin !== Infinity && hodMax > d.hodMin ? hodMax - d.hodMin : 0;
-              const cpk = kmRodado > 0 ? d.gasto / kmRodado : null;
+              const subDados = d[subCpk] || d.total;
+              const cpk = kmRodado > 0 ? subDados.gasto / kmRodado : null;
               linhas.push({
                 placa,
-                gasto: d.gasto,
-                entradas: d.entradas,
+                gasto: subDados.gasto,
+                entradas: subDados.entradas,
                 kmMin: d.hodMin === Infinity ? null : d.hodMin,
                 kmMax: hodMax || null,
                 kmRodado,
                 cpk,
               });
             }
-            linhas.sort((a, b) => (b.cpk ?? -1) - (a.cpk ?? -1));
+            // Filtra veículos que não têm gasto na categoria selecionada
+            const linhasComGasto = linhas.filter(l => l.gasto > 0);
+            linhasComGasto.sort((a, b) => (b.cpk ?? -1) - (a.cpk ?? -1));
 
-            const totalGasto = linhas.reduce((s, x) => s + x.gasto, 0);
-            const totalKm = linhas.reduce((s, x) => s + x.kmRodado, 0);
+            const totalGasto = linhasComGasto.reduce((s, x) => s + x.gasto, 0);
+            const totalKm = linhasComGasto.reduce((s, x) => s + x.kmRodado, 0);
             const mediaGeralCpk = totalKm > 0 ? totalGasto / totalKm : 0;
-            const comCpk = linhas.filter(l => l.cpk != null);
+            const comCpk = linhasComGasto.filter(l => l.cpk != null);
             const topCpk = comCpk[0]?.cpk || 0;
             const bottomCpk = comCpk[comCpk.length - 1]?.cpk || 0;
 
+            const SUB_LABEL = { total: "Total geral", pneu: "Pneu", manutencao: "Manutenção", combustivel: "Combustível" };
+            const SUB_COR = { total: "#1a3a5c", pneu: "#0f172a", manutencao: "#7c3aed", combustivel: "#0891b2" };
+
             return (
               <>
+                {/* Sub-tabs — categoria do CPK */}
+                <div style={{ display:"flex", gap:4, background:"#f1f5f9", padding:4, borderRadius:10, marginBottom:16, alignSelf:"flex-start", flexWrap:"wrap" }}>
+                  {["total","pneu","manutencao","combustivel"].map(k => (
+                    <button
+                      key={k}
+                      onClick={() => setSubCpk(k)}
+                      style={{
+                        padding:"8px 16px", borderRadius:8, border:"none",
+                        background: subCpk === k ? "#fff" : "transparent",
+                        color: subCpk === k ? SUB_COR[k] : "#475569",
+                        boxShadow: subCpk === k ? "0 1px 3px rgba(15,23,42,.1)" : "none",
+                        fontWeight:700, fontSize:".84rem", cursor:"pointer", fontFamily:"inherit",
+                      }}
+                    >
+                      {SUB_LABEL[k]}
+                    </button>
+                  ))}
+                </div>
+
                 {/* KPIs topo */}
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:12, marginBottom:16 }}>
                   <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
-                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Média CPK frota</div>
-                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{mediaGeralCpk > 0 ? fmtBRL(mediaGeralCpk) + "/km" : "—"}</div>
+                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Média CPK {SUB_LABEL[subCpk].toLowerCase()}</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color: SUB_COR[subCpk] }}>{mediaGeralCpk > 0 ? fmtBRL(mediaGeralCpk) + "/km" : "—"}</div>
                   </div>
                   <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
                     <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Total gasto 12m</div>
@@ -3392,10 +3443,13 @@ export default function Manutencao() {
 
                 <div style={{ background:"#fff", borderRadius:12, overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,.06)", marginBottom:16 }}>
                   <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0" }}>
-                    <h2 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>Custo por KM rodado — últimos 12 meses</h2>
+                    <h2 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>CPK {SUB_LABEL[subCpk]} — últimos 12 meses</h2>
                     <p style={{ margin:"4px 0 0 0", fontSize:".75rem", color:"#64748b" }}>
-                      Cruza gastos (OS finalizadas + lançamentos) com KM rodado (min-max dos hodômetros + SASCAR atual).
-                      Ordenado do mais caro pro mais barato. <strong>Delta vs média</strong>: veículos +20% acima merecem avaliação de substituição.
+                      {subCpk === "pneu"        && "Gastos de OS/lançamentos com serviço contendo \"pneu\" no nome."}
+                      {subCpk === "combustivel" && "Gastos vindos da coleção cta_abastecimentos (CTA Smart)."}
+                      {subCpk === "manutencao"  && "OS e lançamentos que NÃO são de pneu. Cobre óleo, freio, revisão, embreagem, etc."}
+                      {subCpk === "total"       && "Soma de TUDO: manutenção + pneu + combustível."}
+                      {" "}Cruza com KM rodado (min-max hodômetros + SASCAR atual). Ordenado do mais caro pro mais barato.
                     </p>
                   </div>
                   <div style={{ overflowX:"auto" }} className="table-wrap">
@@ -3414,9 +3468,9 @@ export default function Manutencao() {
                         </tr>
                       </thead>
                       <tbody>
-                        {linhas.length === 0 ? (
-                          <tr><td colSpan={9} style={{ padding:"2rem", textAlign:"center", color:"#94a3b8" }}>Sem dados nos últimos 12 meses.</td></tr>
-                        ) : linhas.map((l, i) => {
+                        {linhasComGasto.length === 0 ? (
+                          <tr><td colSpan={9} style={{ padding:"2rem", textAlign:"center", color:"#94a3b8" }}>Sem dados de {SUB_LABEL[subCpk].toLowerCase()} nos últimos 12 meses.</td></tr>
+                        ) : linhasComGasto.map((l, i) => {
                           const delta = mediaGeralCpk > 0 && l.cpk != null ? ((l.cpk - mediaGeralCpk) / mediaGeralCpk) * 100 : null;
                           const critico = delta != null && delta > 20;
                           const bom = delta != null && delta < -20;
