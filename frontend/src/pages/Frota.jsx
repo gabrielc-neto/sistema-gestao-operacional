@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
 import VeiculoQR from "../components/VeiculoQR";
-import { QrCode } from "lucide-react";
+import { QrCode, Rows3, LayoutGrid, Columns2, Lock as LockIco, Unlock as UnlockIco, Edit3 } from "lucide-react";
 
 const MOTIVOS_BLOQUEIO = ["CIV", "CIPP", "Manutenção", "Documentos vencidos", "Revisão", "Outro"];
 
@@ -172,6 +172,9 @@ export default function Frota() {
   const [statusFiltro, setStatusFiltro] = useState("ativo");
   const [modal, setModal]         = useState(false);
   const [qrModal, setQrModal]     = useState(null); // placa do veículo pra mostrar QR
+  const [modoView, setModoView]   = useState(() => localStorage.getItem("frota_view") || "cards"); // cards | tabela | split
+  const [splitSel, setSplitSel]   = useState(null); // veículo selecionado no modo split
+  useEffect(() => { localStorage.setItem("frota_view", modoView); }, [modoView]);
   const [form, setForm]           = useState(VAZIO);
   const [editId, setEditId]       = useState(null);
   const [salvando, setSalvando]   = useState(false);
@@ -485,9 +488,33 @@ export default function Frota() {
             </button>
           ))}
         </div>
+        {/* Toggle modo de visualização — cards | tabela | split */}
+        <div style={{ display:"inline-flex", gap:2, background:"#f1f5f9", padding:3, borderRadius:8, marginLeft:8 }}>
+          {[
+            { id:"cards",  icon:LayoutGrid, label:"Cards"  },
+            { id:"tabela", icon:Rows3,      label:"Tabela" },
+            { id:"split",  icon:Columns2,   label:"Split"  },
+          ].map(({ id, icon:Ic, label }) => (
+            <button
+              key={id}
+              onClick={() => setModoView(id)}
+              title={`Visualização: ${label}`}
+              style={{
+                padding:"6px 10px", borderRadius:6, border:"none",
+                background: modoView === id ? "#fff" : "transparent",
+                color: modoView === id ? "#1a3a5c" : "#64748b",
+                boxShadow: modoView === id ? "0 1px 3px rgba(15,23,42,.1)" : "none",
+                cursor:"pointer", fontWeight:700, fontSize:".78rem",
+                display:"inline-flex", alignItems:"center", gap:5, fontFamily:"inherit",
+              }}
+            >
+              <Ic size={14} /> {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {loading ? <p style={s.loading}>Carregando...</p> : (
+      {loading ? <p style={s.loading}>Carregando...</p> : modoView === "cards" ? (
         <div style={s.grid} className="pg-grid">
           {lista.map(v => {
             const bloqueado = v.bloqueio?.ativo;
@@ -631,6 +658,161 @@ export default function Frota() {
             );
           })}
           {lista.length === 0 && <p style={s.vazio}>Nenhum veículo encontrado.</p>}
+        </div>
+      ) : modoView === "tabela" ? (
+        // ═══ MODO TABELA (SAP/Totvs-like) ═══
+        <div style={{ background:"#fff", borderRadius:10, overflow:"hidden", border:"1px solid #e2e8f0" }}>
+          <div style={{ overflowX:"auto" }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".85rem", fontVariantNumeric:"tabular-nums" }}>
+              <thead>
+                <tr style={{ background:"#f8fafc", borderBottom:"2px solid #e2e8f0" }}>
+                  <th style={{ padding:"10px 12px", textAlign:"left", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:".04em" }}>Placa</th>
+                  <th style={{ padding:"10px 12px", textAlign:"left", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:".04em" }}>Tipo</th>
+                  <th style={{ padding:"10px 12px", textAlign:"left", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:".04em" }}>Modelo</th>
+                  <th style={{ padding:"10px 12px", textAlign:"left", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:".04em" }}>Fabricante</th>
+                  <th style={{ padding:"10px 12px", textAlign:"left", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:".04em" }}>Ano</th>
+                  <th style={{ padding:"10px 12px", textAlign:"left", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:".04em" }}>Motorista</th>
+                  <th style={{ padding:"10px 12px", textAlign:"left", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:".04em" }}>Status</th>
+                  <th style={{ padding:"10px 12px", textAlign:"right", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:".04em" }}>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lista.length === 0 ? (
+                  <tr><td colSpan={8} style={{ padding:"40px 16px", textAlign:"center", color:"#94a3b8" }}>Nenhum veículo encontrado.</td></tr>
+                ) : lista.map((v, i) => {
+                  const bloqueado = v.bloqueio?.ativo;
+                  return (
+                    <tr key={v.id} style={{ borderBottom:"1px solid #f1f5f9", background: i % 2 ? "#fafcff" : "#fff", opacity: v.status === "inativo" ? 0.55 : 1 }}>
+                      <td style={{ padding:"9px 12px", fontWeight:700, color:"#1a3a5c", letterSpacing:".02em" }}>
+                        {bloqueado && <LockIco size={12} style={{ color:"#dc2626", marginRight:6, verticalAlign:"middle" }} />}
+                        {v.placa}
+                      </td>
+                      <td style={{ padding:"9px 12px", color:"#475569" }}>{v.tipo || "—"}</td>
+                      <td style={{ padding:"9px 12px", color:"#1a3a5c" }}>{v.modelo || "—"}</td>
+                      <td style={{ padding:"9px 12px", color:"#475569" }}>{(v.fabricante || "—").split("/")[0]}</td>
+                      <td style={{ padding:"9px 12px", color:"#475569" }}>{v.ano || "—"}</td>
+                      <td style={{ padding:"9px 12px", color:"#475569" }}>{v.motorista || "—"}</td>
+                      <td style={{ padding:"9px 12px" }}>
+                        <span style={{ background:STATUS_COR[v.status]||"#f1f5f9", color:STATUS_TEXT[v.status]||"#94a3b8", padding:"2px 8px", borderRadius:999, fontSize:".72rem", fontWeight:700, display:"inline-flex", alignItems:"center", gap:4 }}>
+                          <span style={{ width:6, height:6, borderRadius:"50%", background: STATUS_STRIPE[v.status]||"#cbd5e1" }} />
+                          {STATUS_LABEL[v.status] || v.status}
+                        </span>
+                      </td>
+                      <td style={{ padding:"9px 12px", textAlign:"right" }}>
+                        <div style={{ display:"inline-flex", gap:4 }}>
+                          {(canBlock || canUnblock) && (
+                            <button onClick={() => abrirBloqueio(v)} title={bloqueado ? "Desbloquear" : "Bloquear"}
+                              style={{ background: bloqueado ? "#fee2e2" : "#f1f5f9", color: bloqueado ? "#dc2626" : "#64748b", border:"none", padding:"5px 7px", borderRadius:5, cursor:"pointer", display:"inline-flex" }}>
+                              {bloqueado ? <LockIco size={13} /> : <UnlockIco size={13} />}
+                            </button>
+                          )}
+                          <button onClick={() => setQrModal(v.placa)} title="QR Code"
+                            style={{ background:"#f3e8ff", color:"#7c3aed", border:"none", padding:"5px 7px", borderRadius:5, cursor:"pointer", display:"inline-flex" }}>
+                            <QrCode size={13} />
+                          </button>
+                          <button onClick={() => abrirEditar(v)} title="Editar"
+                            style={{ background:"#dbeafe", color:"#1d4ed8", border:"none", padding:"5px 7px", borderRadius:5, cursor:"pointer", display:"inline-flex" }}>
+                            <Edit3 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ padding:"8px 14px", background:"#f8fafc", borderTop:"1px solid #e2e8f0", fontSize:".75rem", color:"#64748b" }}>
+            {lista.length} registro{lista.length === 1 ? "" : "s"}
+          </div>
+        </div>
+      ) : (
+        // ═══ MODO SPLIT (Salesforce-like) ═══
+        <div style={{ display:"grid", gridTemplateColumns:"280px 1fr", gap:14, minHeight:500 }}>
+          <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e2e8f0", overflow:"hidden", maxHeight:"70vh", overflowY:"auto" }}>
+            <div style={{ padding:"10px 14px", background:"#f8fafc", borderBottom:"1px solid #e2e8f0", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase" }}>
+              {lista.length} veículo{lista.length === 1 ? "" : "s"}
+            </div>
+            {lista.length === 0 ? (
+              <div style={{ padding:30, textAlign:"center", color:"#94a3b8" }}>Nenhum veículo</div>
+            ) : lista.map(v => {
+              const sel = splitSel?.id === v.id;
+              const bloq = v.bloqueio?.ativo;
+              return (
+                <button key={v.id} onClick={() => setSplitSel(v)} style={{
+                  display:"block", width:"100%", textAlign:"left", padding:"10px 14px",
+                  background: sel ? "#eff6ff" : "transparent",
+                  borderLeft: sel ? "3px solid #1d4ed8" : "3px solid transparent",
+                  border:"none", borderBottom:"1px solid #f1f5f9", cursor:"pointer", fontFamily:"inherit",
+                }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ width:8, height:8, borderRadius:"50%", background: STATUS_STRIPE[v.status]||"#cbd5e1" }} />
+                    <span style={{ fontWeight:700, color:"#1a3a5c", letterSpacing:".02em" }}>{v.placa}</span>
+                    {bloq && <LockIco size={11} color="#dc2626" />}
+                  </div>
+                  <div style={{ fontSize:".76rem", color:"#64748b", marginTop:2 }}>{v.modelo || "—"} · {v.fabricante?.split("/")[0] || "—"}</div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e2e8f0", padding: splitSel ? 20 : 0, minHeight:400 }}>
+            {!splitSel ? (
+              <div style={{ padding:60, textAlign:"center", color:"#94a3b8" }}>
+                Selecione um veículo à esquerda pra ver detalhes
+              </div>
+            ) : (
+              <>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+                  <div>
+                    <div style={{ fontSize:"1.6rem", fontWeight:800, color:"#1a3a5c", letterSpacing:".02em" }}>{splitSel.placa}</div>
+                    <div style={{ fontSize:".92rem", color:"#475569", marginTop:2 }}>{splitSel.modelo || "—"} · {splitSel.fabricante?.split("/")[0] || "—"} {splitSel.ano ? `· ${splitSel.ano}` : ""}</div>
+                  </div>
+                  <span style={{ background:STATUS_COR[splitSel.status]||"#f1f5f9", color:STATUS_TEXT[splitSel.status]||"#94a3b8", padding:"4px 12px", borderRadius:999, fontSize:".78rem", fontWeight:700 }}>
+                    {STATUS_LABEL[splitSel.status] || splitSel.status}
+                  </span>
+                </div>
+
+                {splitSel.bloqueio?.ativo && (
+                  <div style={{ background:"#fee2e2", border:"1px solid #fca5a5", borderRadius:6, padding:"8px 12px", marginBottom:14, color:"#991b1b", fontSize:".85rem", display:"inline-flex", alignItems:"center", gap:6 }}>
+                    <LockIco size={14} /> Bloqueado: {splitSel.bloqueio.motivo}
+                  </div>
+                )}
+
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:14, marginTop:12 }}>
+                  {[
+                    ["Tipo",        splitSel.tipo || "—"],
+                    ["Chassi",      splitSel.chassi ? splitSel.chassi.slice(-8) : "—"],
+                    ["Renavam",     splitSel.renavam || "—"],
+                    ["Tara",        splitSel.tara ? `${splitSel.tara} kg` : "—"],
+                    ["Capacidade",  splitSel.capacidadeTotal ? `${splitSel.capacidadeTotal} L` : "—"],
+                    ["Motorista",   splitSel.motorista || "—"],
+                    ["Eixos",       splitSel.eixos || "—"],
+                    ["Rastreador",  splitSel.rastreador || "—"],
+                  ].map(([k,val]) => (
+                    <div key={k}>
+                      <div style={{ fontSize:".7rem", color:"#94a3b8", textTransform:"uppercase", letterSpacing:".04em", fontWeight:700 }}>{k}</div>
+                      <div style={{ fontSize:".95rem", color:"#1a3a5c", fontWeight:600, marginTop:2 }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display:"flex", gap:8, marginTop:24, paddingTop:16, borderTop:"1px solid #e2e8f0", flexWrap:"wrap" }}>
+                  <button onClick={() => abrirEditar(splitSel)} style={{ background:"#1a3a5c", color:"#fff", border:"none", padding:"8px 16px", borderRadius:6, cursor:"pointer", fontWeight:600, display:"inline-flex", alignItems:"center", gap:6 }}>
+                    <Edit3 size={14} /> Editar
+                  </button>
+                  {(canBlock || canUnblock) && (
+                    <button onClick={() => abrirBloqueio(splitSel)} style={{ background: splitSel.bloqueio?.ativo ? "#fee2e2" : "#f1f5f9", color: splitSel.bloqueio?.ativo ? "#dc2626" : "#475569", border:"none", padding:"8px 16px", borderRadius:6, cursor:"pointer", fontWeight:600, display:"inline-flex", alignItems:"center", gap:6 }}>
+                      {splitSel.bloqueio?.ativo ? <><UnlockIco size={14} /> Desbloquear</> : <><LockIco size={14} /> Bloquear</>}
+                    </button>
+                  )}
+                  <button onClick={() => setQrModal(splitSel.placa)} style={{ background:"#f3e8ff", color:"#7c3aed", border:"none", padding:"8px 16px", borderRadius:6, cursor:"pointer", fontWeight:600, display:"inline-flex", alignItems:"center", gap:6 }}>
+                    <QrCode size={14} /> QR Code
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 
