@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Rows3, LayoutGrid, Columns2, Edit3, Trash2, Lock as LockIco } from "lucide-react";
 import {
   collection, getDocs, setDoc, deleteDoc,
   doc, query, orderBy,
@@ -64,6 +64,9 @@ export default function Motoristas() {
   const [loading, setLoading]         = useState(true);
   const [busca, setBusca]             = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [modoView, setModoView] = useState(() => localStorage.getItem("motoristas_view") || "cards");
+  const [splitSel, setSplitSel] = useState(null);
+  useEffect(() => { localStorage.setItem("motoristas_view", modoView); }, [modoView]);
   const [modalOpen, setModalOpen]     = useState(false);
   const [editando, setEditando]       = useState(null); // id do doc em edição
   const [form, setForm]               = useState(EMPTY_FORM);
@@ -220,6 +223,25 @@ export default function Motoristas() {
             </button>
           ))}
         </div>
+        <div style={{ display:"inline-flex", gap:2, background:"#f1f5f9", padding:3, borderRadius:8 }}>
+          {[
+            { id:"cards",  icon:LayoutGrid, label:"Cards"  },
+            { id:"tabela", icon:Rows3,      label:"Tabela" },
+            { id:"split",  icon:Columns2,   label:"Split"  },
+          ].map(({ id, icon:Ic, label }) => (
+            <button key={id} onClick={() => setModoView(id)} title={`Visualização: ${label}`}
+              style={{
+                padding:"6px 10px", borderRadius:6, border:"none",
+                background: modoView === id ? "#fff" : "transparent",
+                color: modoView === id ? "#1a3a5c" : "#64748b",
+                boxShadow: modoView === id ? "0 1px 3px rgba(15,23,42,.1)" : "none",
+                cursor:"pointer", fontWeight:700, fontSize:".78rem",
+                display:"inline-flex", alignItems:"center", gap:5, fontFamily:"inherit",
+              }}>
+              <Ic size={14} /> {label}
+            </button>
+          ))}
+        </div>
         <button style={s.newBtn} onClick={abrirNovo}>
           + Novo Motorista
         </button>
@@ -274,7 +296,7 @@ export default function Motoristas() {
           <p style={s.info}>Carregando...</p>
         ) : lista.length === 0 ? (
           <p style={s.info}>Nenhum motorista encontrado.</p>
-        ) : (
+        ) : modoView === "cards" ? (
           <div style={s.grid}>
             {lista.map((m) => {
               const sc = STATUS_COLORS[m.status] || STATUS_COLORS.inativo;
@@ -343,6 +365,157 @@ export default function Motoristas() {
                 </div>
               );
             })}
+          </div>
+        ) : modoView === "tabela" ? (
+          // ═══ MODO TABELA ═══
+          <div style={{ background:"#fff", borderRadius:10, overflow:"hidden", border:"1px solid #e2e8f0" }}>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".85rem", fontVariantNumeric:"tabular-nums" }}>
+                <thead>
+                  <tr style={{ background:"#f8fafc", borderBottom:"2px solid #e2e8f0" }}>
+                    {["Nome","Contrato","CNH","Cat.","Telefone","Status","Documentos","Ações"].map(h => (
+                      <th key={h} style={{ padding:"10px 12px", textAlign: h === "Ações" ? "right" : "left", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:".04em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.map((m, i) => {
+                    const sc = STATUS_COLORS[m.status] || STATUS_COLORS.inativo;
+                    const docsAlerta = DOCS_MOTORISTA.filter(d => ["vencido","alerta"].includes(calcStatus(m[d.campo]))).length;
+                    return (
+                      <tr key={m.id} style={{ borderBottom:"1px solid #f1f5f9", background: i % 2 ? "#fafcff" : "#fff" }}>
+                        <td style={{ padding:"9px 12px", fontWeight:600, color:"#1a3a5c" }}>{m.nome}</td>
+                        <td style={{ padding:"9px 12px", color:"#475569", fontSize:".78rem" }}>{m.tipoContrato === "px" ? "PX (PJ)" : "Interno (CLT)"}</td>
+                        <td style={{ padding:"9px 12px", color:"#475569" }}>{m.cnh || "—"}</td>
+                        <td style={{ padding:"9px 12px", color:"#475569" }}>{m.cat || "—"}</td>
+                        <td style={{ padding:"9px 12px", color:"#475569" }}>{m.tel || "—"}</td>
+                        <td style={{ padding:"9px 12px" }}>
+                          <span style={{ background: sc.bg, color: sc.color, padding:"2px 8px", borderRadius:999, fontSize:".72rem", fontWeight:700 }}>{sc.label}</span>
+                        </td>
+                        <td style={{ padding:"9px 12px" }}>
+                          {docsAlerta > 0
+                            ? <span style={{ background:"var(--danger-bg)", color:"var(--danger)", padding:"2px 8px", borderRadius:4, fontSize:".72rem", fontWeight:700 }}>{docsAlerta} pendente(s)</span>
+                            : <span style={{ color:"var(--success)", fontSize:".78rem", fontWeight:600 }}>Em dia</span>}
+                        </td>
+                        <td style={{ padding:"9px 12px", textAlign:"right" }}>
+                          <div style={{ display:"inline-flex", gap:4 }}>
+                            <button onClick={() => abrirEditar(m)} title="Editar"
+                              style={{ background:"#dbeafe", color:"#1d4ed8", border:"none", padding:"5px 7px", borderRadius:5, cursor:"pointer", display:"inline-flex" }}>
+                              <Edit3 size={13} />
+                            </button>
+                            {canDelete && (
+                              <button onClick={() => excluir(m.id, m.nome)} title="Excluir"
+                                style={{ background:"#fee2e2", color:"#dc2626", border:"none", padding:"5px 7px", borderRadius:5, cursor:"pointer", display:"inline-flex" }}>
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ padding:"8px 14px", background:"#f8fafc", borderTop:"1px solid #e2e8f0", fontSize:".75rem", color:"#64748b" }}>
+              {lista.length} motorista{lista.length === 1 ? "" : "s"}
+            </div>
+          </div>
+        ) : (
+          // ═══ MODO SPLIT ═══
+          <div style={{ display:"grid", gridTemplateColumns:"280px 1fr", gap:14, minHeight:500 }}>
+            <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e2e8f0", overflow:"hidden", maxHeight:"70vh", overflowY:"auto" }}>
+              <div style={{ padding:"10px 14px", background:"#f8fafc", borderBottom:"1px solid #e2e8f0", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase" }}>
+                {lista.length} motorista{lista.length === 1 ? "" : "s"}
+              </div>
+              {lista.map(m => {
+                const sel = splitSel?.id === m.id;
+                const sc = STATUS_COLORS[m.status] || STATUS_COLORS.inativo;
+                const docsAlerta = DOCS_MOTORISTA.filter(d => ["vencido","alerta"].includes(calcStatus(m[d.campo]))).length;
+                return (
+                  <button key={m.id} onClick={() => setSplitSel(m)} style={{
+                    display:"block", width:"100%", textAlign:"left", padding:"10px 14px",
+                    background: sel ? "#eff6ff" : "transparent",
+                    borderLeft: sel ? "3px solid #1d4ed8" : "3px solid transparent",
+                    border:"none", borderBottom:"1px solid #f1f5f9", cursor:"pointer", fontFamily:"inherit",
+                  }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <span style={{ width:8, height:8, borderRadius:"50%", background: sc.color }} />
+                      <span style={{ fontWeight:700, color:"#1a3a5c" }}>{m.nome}</span>
+                      {docsAlerta > 0 && <span style={{ marginLeft:"auto", background:"var(--danger-bg)", color:"var(--danger)", fontSize:".68rem", padding:"1px 6px", borderRadius:4, fontWeight:700 }}>{docsAlerta}</span>}
+                    </div>
+                    <div style={{ fontSize:".76rem", color:"#64748b", marginTop:2 }}>{m.cnh || "sem CNH"} · {m.cat || "—"}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e2e8f0", padding: splitSel ? 20 : 0, minHeight:400 }}>
+              {!splitSel ? (
+                <div style={{ padding:60, textAlign:"center", color:"#94a3b8" }}>Selecione um motorista à esquerda pra ver detalhes</div>
+              ) : (
+                <>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+                    <div>
+                      <div style={{ fontSize:"1.4rem", fontWeight:800, color:"#1a3a5c" }}>{splitSel.nome}</div>
+                      <div style={{ fontSize:".85rem", color:"#475569", marginTop:2 }}>
+                        {splitSel.tipoContrato === "px" ? "PX · agregado (PJ)" : "Interno · frota (CLT)"}
+                      </div>
+                    </div>
+                    <span style={{ background:(STATUS_COLORS[splitSel.status]||STATUS_COLORS.inativo).bg, color:(STATUS_COLORS[splitSel.status]||STATUS_COLORS.inativo).color, padding:"4px 12px", borderRadius:999, fontSize:".78rem", fontWeight:700 }}>
+                      {(STATUS_COLORS[splitSel.status]||STATUS_COLORS.inativo).label}
+                    </span>
+                  </div>
+
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:14, marginTop:12 }}>
+                    {[
+                      ["CNH",       splitSel.cnh || "—"],
+                      ["Categoria", splitSel.cat || "—"],
+                      ["Telefone",  splitSel.tel || "—"],
+                      ["CPF",       splitSel.cpf || "—"],
+                      ["Admissão",  splitSel.admissao ? fmtDate(splitSel.admissao) : "—"],
+                    ].map(([k,val]) => (
+                      <div key={k}>
+                        <div style={{ fontSize:".7rem", color:"#94a3b8", textTransform:"uppercase", letterSpacing:".04em", fontWeight:700 }}>{k}</div>
+                        <div style={{ fontSize:".95rem", color:"#1a3a5c", fontWeight:600, marginTop:2 }}>{val}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop:20, paddingTop:16, borderTop:"1px solid #e2e8f0" }}>
+                    <div style={{ fontSize:".7rem", color:"#94a3b8", textTransform:"uppercase", letterSpacing:".04em", fontWeight:700, marginBottom:8 }}>Documentos</div>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                      {DOCS_MOTORISTA.map(({ campo, label }) => {
+                        const st = calcStatus(splitSel[campo]);
+                        const sty = STATUS_STYLE[st];
+                        return (
+                          <span key={campo} style={{ fontSize:12, fontWeight:700, background:sty.bg, color:sty.color, borderRadius:4, padding:"3px 10px" }}>
+                            {label}{splitSel[campo] ? ` · ${fmtDate(splitSel[campo])}` : " · sem data"}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {splitSel.obs && (
+                    <div style={{ marginTop:16, padding:"10px 14px", background:"#f8fafc", borderRadius:6, fontSize:".85rem", color:"#475569" }}>
+                      <strong>Obs:</strong> {splitSel.obs}
+                    </div>
+                  )}
+
+                  <div style={{ display:"flex", gap:8, marginTop:24, paddingTop:16, borderTop:"1px solid #e2e8f0" }}>
+                    <button onClick={() => abrirEditar(splitSel)} style={{ background:"#1a3a5c", color:"#fff", border:"none", padding:"8px 16px", borderRadius:6, cursor:"pointer", fontWeight:600, display:"inline-flex", alignItems:"center", gap:6 }}>
+                      <Edit3 size={14} /> Editar
+                    </button>
+                    {canDelete && (
+                      <button onClick={() => excluir(splitSel.id, splitSel.nome)} style={{ background:"#fee2e2", color:"#dc2626", border:"none", padding:"8px 16px", borderRadius:6, cursor:"pointer", fontWeight:600, display:"inline-flex", alignItems:"center", gap:6 }}>
+                        <Trash2 size={14} /> Excluir
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
       </main>
