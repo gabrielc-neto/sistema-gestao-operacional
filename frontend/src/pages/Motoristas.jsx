@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { X, Rows3, LayoutGrid, Columns2, Edit3, Trash2, Lock as LockIco } from "lucide-react";
+import { X, Rows3, LayoutGrid, Columns2, Edit3, Trash2, Lock as LockIco, Camera, User as UserIco } from "lucide-react";
 import {
   collection, getDocs, setDoc, deleteDoc,
   doc, query, orderBy,
 } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { db, storage } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import ModuleHeader from "../components/ModuleHeader";
 import ExportBar from "../components/ExportBar";
@@ -53,7 +54,24 @@ const EMPTY_FORM = {
   nome: "", cnh: "", cat: "", tel: "", status: "ativo", obs: "",
   cnh_venc: "", mopp_venc: "", nr20_venc: "", nr35_venc: "",
   tipoContrato: "interno", // "interno" (CLT/frota Pontual) | "px" (PJ/agregado)
+  foto: null, // { url, path } — Firebase Storage
 };
+
+// Componente reutilizável — avatar redondo do motorista (foto ou iniciais)
+function Avatar({ motorista, size = 40, style = {} }) {
+  const foto = motorista?.foto?.url;
+  const iniciais = String(motorista?.nome || "").trim().split(/\s+/).slice(0, 2).map(x => x[0] || "").join("").toUpperCase() || "?";
+  if (foto) {
+    return <img src={foto} alt={motorista.nome} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: "1px solid #e2e8f0", flexShrink: 0, ...style }} />;
+  }
+  const bg = ["#dbeafe","#dcfce7","#fef3c7","#fee2e2","#f3e8ff","#cffafe","#fed7aa","#e0e7ff"][Math.abs(iniciais.charCodeAt(0)) % 8];
+  const cor = ["#1d4ed8","#15803d","#b45309","#b91c1c","#7c3aed","#0891b2","#c2410c","#4338ca"][Math.abs(iniciais.charCodeAt(0)) % 8];
+  return (
+    <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color: cor, display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: size * 0.36, flexShrink: 0, border: "1px solid #e2e8f0", ...style }}>
+      {iniciais}
+    </div>
+  );
+}
 
 // ── componente ──────────────────────────────────────────────────────────────
 export default function Motoristas() {
@@ -134,6 +152,7 @@ export default function Motoristas() {
       nr20_venc: m.nr20_venc || "",
       nr35_venc: m.nr35_venc || "",
       tipoContrato: m.tipoContrato || "interno",
+      foto: m.foto || null,
     });
     setErro("");
     setModalOpen(true);
@@ -144,6 +163,45 @@ export default function Motoristas() {
     setEditando(null);
     setForm(EMPTY_FORM);
     setErro("");
+  }
+
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+
+  async function uploadFotoMotorista(file) {
+    if (!file) return;
+    setUploadingFoto(true);
+    try {
+      // Compressão pra 400px lado maior, JPEG 82%
+      const img = new Image();
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file);
+      });
+      img.src = dataUrl;
+      await new Promise(res => { img.onload = res; });
+      const esc = Math.min(1, 400 / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width * esc; canvas.height = img.height * esc;
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.82));
+      const idAtual = editando || toId(form.nome.trim() || `tmp-${Date.now()}`);
+      const path = `motoristas/${idAtual}/foto.jpg`;
+      const ref = storageRef(storage, path);
+      await uploadBytes(ref, blob, { contentType: "image/jpeg" });
+      const url = await getDownloadURL(ref);
+      setForm(f => ({ ...f, foto: { url, path } }));
+    } catch (e) {
+      alert("Erro no upload da foto: " + (e?.message || e));
+    } finally {
+      setUploadingFoto(false);
+    }
+  }
+
+  async function removerFotoMotorista() {
+    if (!form.foto?.path) { setForm(f => ({ ...f, foto: null })); return; }
+    if (!window.confirm("Remover foto do motorista?")) return;
+    try { await deleteObject(storageRef(storage, form.foto.path)); } catch {}
+    setForm(f => ({ ...f, foto: null }));
   }
 
   // ── salvar ────────────────────────────────────────────────────────────────
@@ -168,6 +226,7 @@ export default function Motoristas() {
         nr20_venc: form.nr20_venc || null,
         nr35_venc: form.nr35_venc || null,
         tipoContrato: form.tipoContrato || "interno",
+        foto: form.foto || null,
         updatedAt: new Date().toISOString(),
       };
       if (!editando) data.createdAt = new Date().toISOString();
@@ -302,9 +361,12 @@ export default function Motoristas() {
               const sc = STATUS_COLORS[m.status] || STATUS_COLORS.inativo;
               return (
                 <div key={m.id} style={s.card}>
-                  <div style={s.cardHeader}>
-                    <span style={s.cardNome}>{m.nome}</span>
-                    <span style={{ ...s.badge, background: sc.bg, color: sc.color }}>
+                  <div style={{ ...s.cardHeader, display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <Avatar motorista={m} size={44} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={s.cardNome}>{m.nome}</span>
+                    </div>
+                    <span style={{ ...s.badge, background: sc.bg, color: sc.color, flexShrink: 0 }}>
                       {sc.label}
                     </span>
                   </div>
@@ -384,7 +446,12 @@ export default function Motoristas() {
                     const docsAlerta = DOCS_MOTORISTA.filter(d => ["vencido","alerta"].includes(calcStatus(m[d.campo]))).length;
                     return (
                       <tr key={m.id} style={{ borderBottom:"1px solid #f1f5f9", background: i % 2 ? "#fafcff" : "#fff" }}>
-                        <td style={{ padding:"9px 12px", fontWeight:600, color:"#1a3a5c" }}>{m.nome}</td>
+                        <td style={{ padding:"7px 12px", fontWeight:600, color:"#1a3a5c" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <Avatar motorista={m} size={28} />
+                            <span>{m.nome}</span>
+                          </div>
+                        </td>
                         <td style={{ padding:"9px 12px", color:"#475569", fontSize:".78rem" }}>{m.tipoContrato === "px" ? "PX (PJ)" : "Interno (CLT)"}</td>
                         <td style={{ padding:"9px 12px", color:"#475569" }}>{m.cnh || "—"}</td>
                         <td style={{ padding:"9px 12px", color:"#475569" }}>{m.cat || "—"}</td>
@@ -434,17 +501,20 @@ export default function Motoristas() {
                 const docsAlerta = DOCS_MOTORISTA.filter(d => ["vencido","alerta"].includes(calcStatus(m[d.campo]))).length;
                 return (
                   <button key={m.id} onClick={() => setSplitSel(m)} style={{
-                    display:"block", width:"100%", textAlign:"left", padding:"10px 14px",
+                    display:"flex", width:"100%", textAlign:"left", padding:"10px 14px", gap:10, alignItems:"center",
                     background: sel ? "#eff6ff" : "transparent",
                     borderLeft: sel ? "3px solid #1d4ed8" : "3px solid transparent",
                     border:"none", borderBottom:"1px solid #f1f5f9", cursor:"pointer", fontFamily:"inherit",
                   }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <span style={{ width:8, height:8, borderRadius:"50%", background: sc.color }} />
-                      <span style={{ fontWeight:700, color:"#1a3a5c" }}>{m.nome}</span>
-                      {docsAlerta > 0 && <span style={{ marginLeft:"auto", background:"var(--danger-bg)", color:"var(--danger)", fontSize:".68rem", padding:"1px 6px", borderRadius:4, fontWeight:700 }}>{docsAlerta}</span>}
+                    <Avatar motorista={m} size={36} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <span style={{ width:8, height:8, borderRadius:"50%", background: sc.color, flexShrink:0 }} />
+                        <span style={{ fontWeight:700, color:"#1a3a5c", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.nome}</span>
+                        {docsAlerta > 0 && <span style={{ marginLeft:"auto", background:"var(--danger-bg)", color:"var(--danger)", fontSize:".68rem", padding:"1px 6px", borderRadius:4, fontWeight:700, flexShrink:0 }}>{docsAlerta}</span>}
+                      </div>
+                      <div style={{ fontSize:".76rem", color:"#64748b", marginTop:2 }}>{m.cnh || "sem CNH"} · {m.cat || "—"}</div>
                     </div>
-                    <div style={{ fontSize:".76rem", color:"#64748b", marginTop:2 }}>{m.cnh || "sem CNH"} · {m.cat || "—"}</div>
                   </button>
                 );
               })}
@@ -455,14 +525,17 @@ export default function Motoristas() {
                 <div style={{ padding:60, textAlign:"center", color:"#94a3b8" }}>Selecione um motorista à esquerda pra ver detalhes</div>
               ) : (
                 <>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-                    <div>
-                      <div style={{ fontSize:"1.4rem", fontWeight:800, color:"#1a3a5c" }}>{splitSel.nome}</div>
-                      <div style={{ fontSize:".85rem", color:"#475569", marginTop:2 }}>
-                        {splitSel.tipoContrato === "px" ? "PX · agregado (PJ)" : "Interno · frota (CLT)"}
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14, gap:14 }}>
+                    <div style={{ display:"flex", gap:14, alignItems:"center", flex:1, minWidth:0 }}>
+                      <Avatar motorista={splitSel} size={72} />
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ fontSize:"1.4rem", fontWeight:800, color:"#1a3a5c", overflow:"hidden", textOverflow:"ellipsis" }}>{splitSel.nome}</div>
+                        <div style={{ fontSize:".85rem", color:"#475569", marginTop:2 }}>
+                          {splitSel.tipoContrato === "px" ? "PX · agregado (PJ)" : "Interno · frota (CLT)"}
+                        </div>
                       </div>
                     </div>
-                    <span style={{ background:(STATUS_COLORS[splitSel.status]||STATUS_COLORS.inativo).bg, color:(STATUS_COLORS[splitSel.status]||STATUS_COLORS.inativo).color, padding:"4px 12px", borderRadius:999, fontSize:".78rem", fontWeight:700 }}>
+                    <span style={{ background:(STATUS_COLORS[splitSel.status]||STATUS_COLORS.inativo).bg, color:(STATUS_COLORS[splitSel.status]||STATUS_COLORS.inativo).color, padding:"4px 12px", borderRadius:999, fontSize:".78rem", fontWeight:700, flexShrink:0 }}>
                       {(STATUS_COLORS[splitSel.status]||STATUS_COLORS.inativo).label}
                     </span>
                   </div>
@@ -532,6 +605,26 @@ export default function Motoristas() {
             </div>
 
             <form onSubmit={salvar} style={s.form}>
+              {/* Foto */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 12px", background: "#f8fafc", borderRadius: 8, marginBottom: 12 }}>
+                <Avatar motorista={form} size={64} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: ".8rem", fontWeight: 700, color: "#1a3a5c", marginBottom: 4 }}>Foto do motorista</div>
+                  <div style={{ fontSize: ".72rem", color: "#64748b", marginBottom: 6 }}>Comprimida automaticamente pra 400px · JPEG</div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <label style={{ background: "#dbeafe", color: "#1d4ed8", padding: "5px 12px", borderRadius: 6, cursor: "pointer", fontSize: ".78rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                      <Camera size={13} /> {uploadingFoto ? "Enviando..." : form.foto ? "Trocar" : "Escolher"}
+                      <input type="file" accept="image/*" capture="user" style={{ display: "none" }} onChange={e => uploadFotoMotorista(e.target.files?.[0])} disabled={uploadingFoto} />
+                    </label>
+                    {form.foto && (
+                      <button type="button" onClick={removerFotoMotorista} style={{ background: "#fee2e2", color: "#b91c1c", padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: ".78rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                        <Trash2 size={12} /> Remover
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Nome */}
               <label style={s.label}>
                 Nome
