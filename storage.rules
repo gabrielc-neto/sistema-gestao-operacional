@@ -25,6 +25,43 @@ service firebase.storage {
                    && request.resource.size < 15 * 1024 * 1024;
     }
 
+    // Foto de perfil do motorista (path: motoristas/{motoristaId}/foto.jpg)
+    match /motoristas/{fileName=**} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024   // 5 MB máx
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Fotos anexadas nas OS (aba OS Concluir → botão camera na tabela)
+    match /os-fotos/{fileName=**} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 15 * 1024 * 1024;
+    }
+
+    // Anexos de multas (aba Multas — atualmente desativada mas se reativar)
+    match /multas/{fileName=**} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 15 * 1024 * 1024;
+    }
+
+    // Fotos de vistorias/DVIR (atualmente desativado mas se reativar)
+    match /vistorias/{fileName=**} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 15 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Anexos gerais de manutenção (docs CIV/CIPP/CRLV/etc)
+    match /manutencoes/{fileName=**} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 15 * 1024 * 1024;
+    }
+
     // Default: bloqueia
     match /{allPaths=**} {
       allow read, write: if false;

@@ -187,11 +187,23 @@ export default function Motoristas() {
       const idAtual = editando || toId(form.nome.trim() || `tmp-${Date.now()}`);
       const path = `motoristas/${idAtual}/foto.jpg`;
       const ref = storageRef(storage, path);
-      await uploadBytes(ref, blob, { contentType: "image/jpeg" });
+      // Timeout de 30s pra não ficar preso em "Enviando..." se Storage bloquear
+      const uploadPromise = uploadBytes(ref, blob, { contentType: "image/jpeg" });
+      await Promise.race([
+        uploadPromise,
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout — Storage Rules podem estar bloqueando esta pasta. Deploy do storage.rules pendente.")), 30000)),
+      ]);
       const url = await getDownloadURL(ref);
       setForm(f => ({ ...f, foto: { url, path } }));
     } catch (e) {
-      alert("Erro no upload da foto: " + (e?.message || e));
+      const msg = e?.message || String(e);
+      if (msg.includes("permission-denied") || msg.includes("unauthorized")) {
+        alert("Permissão negada pelo Firebase Storage. As regras de storage.rules precisam ser deployadas em produção (pasta motoristas/ não está autorizada ainda).");
+      } else if (msg.includes("timeout")) {
+        alert(msg);
+      } else {
+        alert("Erro no upload da foto: " + msg);
+      }
     } finally {
       setUploadingFoto(false);
     }
