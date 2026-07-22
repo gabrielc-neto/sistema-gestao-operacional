@@ -5,7 +5,21 @@ import {
   doc, query, orderBy, onSnapshot,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { uploadArquivo } from "../services/cloudinary";
+import { uploadArquivo as uploadCloudinary } from "../services/cloudinary";
+import { uploadArquivoVPS } from "../services/pontualApi";
+import {
+  listAll as dsListAll,
+  watch as dsWatch,
+  save as dsSave,
+  insert as dsInsert,
+  patch as dsPatch,
+  remove as dsRemove,
+} from "../services/manutencaoDataSource";
+
+// Se VITE_USE_VPS_MANUTENCAO=true, uploads vão pra VPS local. Senão Cloudinary.
+const uploadArquivo = String(import.meta.env.VITE_USE_VPS_MANUTENCAO || "").toLowerCase() === "true"
+  ? uploadArquivoVPS
+  : uploadCloudinary;
 import { useAuth } from "../contexts/AuthContext";
 import { useRBAC } from "../rbac/RBACContext";
 import { useOdometrosSascar } from "../hooks/useOdometrosSascar";
@@ -1248,18 +1262,20 @@ export default function Manutencao() {
     setLoading(true);
     try {
       // queries em paralelo, cada uma com try local pra não derrubar as outras
-      const [snapM, snapV, snapMot, snapOS, snapLanc, snapCat, snapTC] = await Promise.all([
-        getDocs(collection(db, "manutencoes")).catch(e => { console.warn("manutencoes:", e); return null; }),
+      // Coleções migradas pra VPS usam dsListAll (retorna array já formatado)
+      // Coleções ainda no Firestore usam getDocs
+      const [listaM, snapV, snapMot, listaOS, listaLanc, snapCat, listaTC] = await Promise.all([
+        dsListAll("manutencoes").catch(e => { console.warn("manutencoes:", e); return null; }),
         getDocs(query(collection(db, "veiculos"), orderBy("placa"))).catch(e => { console.warn("veiculos:", e); return null; }),
         getDocs(collection(db, "motoristas")).catch(e => { console.warn("motoristas:", e); return null; }),
-        getDocs(collection(db, "ordens_servico")).catch(e => { console.warn("ordens_servico:", e); return null; }),
-        getDocs(collection(db, "lancamentos_os")).catch(e => { console.warn("lancamentos_os:", e); return null; }),
+        dsListAll("ordens_servico").catch(e => { console.warn("ordens_servico:", e); return null; }),
+        dsListAll("lancamentos_os").catch(e => { console.warn("lancamentos_os:", e); return null; }),
         getDocs(collection(db, "itens_manutencao")).catch(e => { console.warn("itens_manutencao:", e); return null; }),
-        getDocs(collection(db, "tipos_manutencao_custom")).catch(e => { console.warn("tipos_manutencao_custom:", e); return null; }),
+        dsListAll("tipos_manutencao_custom").catch(e => { console.warn("tipos_manutencao_custom:", e); return null; }),
       ]);
 
       // tipos personalizados — schema: { label, grupo, desc, campos[], criadoEm, criadoPor }
-      const tcs = snapTC ? snapTC.docs.map(d => ({ id: d.id, ...d.data() })) : [];
+      const tcs = listaTC || [];
       tcs.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
       setTiposCustom(tcs);
 
@@ -1274,13 +1290,13 @@ export default function Manutencao() {
       setMotoristas(motsAtivos);
 
       // ordens de serviço: ordena por criadoEm desc localmente
-      const oss = snapOS ? snapOS.docs.map(d => ({ id: d.id, ...d.data() })) : [];
-      oss.sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""));
+      const oss = listaOS || [];
+      oss.sort((a, b) => (b.criadoEm || b.created_at || "").localeCompare(a.criadoEm || a.created_at || ""));
       setOrdensServico(oss);
 
       // lançamentos de OS (registro de serviço/custo): ordena por criadoEm desc
-      const lancs = snapLanc ? snapLanc.docs.map(d => ({ id: d.id, ...d.data() })) : [];
-      lancs.sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""));
+      const lancs = listaLanc || [];
+      lancs.sort((a, b) => (b.criadoEm || b.created_at || "").localeCompare(a.criadoEm || a.created_at || ""));
       setLancamentos(lancs);
 
       // catálogo de serviços/peças: ordena por nome
@@ -1288,13 +1304,12 @@ export default function Manutencao() {
       cat.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
       setItensCatalogo(cat);
 
-      if (!snapM || !snapV) return;
+      if (!listaM || !snapV) return;
       const normP = (p) => (p || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
       const map = {};
       const leg = [];
       const todos = [];
-      snapM.docs.forEach(d => {
-        const data = { id: d.id, ...d.data() };
+      listaM.forEach(data => {
         if (data.tipo) {
           map[`${normP(data.placa)}__${data.tipo}`] = data;
           todos.push(data);
@@ -1332,7 +1347,7 @@ export default function Manutencao() {
 
     const unsubs = [
       // manutencoes → registros + legacy + todosRegistros
-      onSnapshot(collection(db, "manutencoes"), snap => {
+      dsWatch("manutencoes", snap => {
         const map = {}, leg = [], todos = [];
         snap.docs.forEach(d => {
           const data = { id: d.id, ...d.data() };
@@ -1347,7 +1362,7 @@ export default function Manutencao() {
         setTodosRegistros(todos);
         setLegacy(leg);
         marcaCarregado("m");
-      }, e => { console.warn("manutencoes onSnapshot:", e); marcaCarregado("m"); }),
+      }),
 
       // veículos → veiculos (só ativos, ordenado por placa)
       onSnapshot(query(collection(db, "veiculos"), orderBy("placa")), snap => {
@@ -1375,20 +1390,20 @@ export default function Manutencao() {
       }, e => { console.warn("motoristas onSnapshot:", e); marcaCarregado("mot"); }),
 
       // ordens_servico
-      onSnapshot(collection(db, "ordens_servico"), snap => {
+      dsWatch("ordens_servico", snap => {
         const oss = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        oss.sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""));
+        oss.sort((a, b) => (b.criadoEm || b.created_at || "").localeCompare(a.criadoEm || a.created_at || ""));
         setOrdensServico(oss);
         marcaCarregado("os");
-      }, e => { console.warn("ordens_servico onSnapshot:", e); marcaCarregado("os"); }),
+      }),
 
       // lancamentos_os
-      onSnapshot(collection(db, "lancamentos_os"), snap => {
+      dsWatch("lancamentos_os", snap => {
         const lancs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        lancs.sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""));
+        lancs.sort((a, b) => (b.criadoEm || b.created_at || "").localeCompare(a.criadoEm || a.created_at || ""));
         setLancamentos(lancs);
         marcaCarregado("lanc");
-      }, e => { console.warn("lancamentos_os onSnapshot:", e); marcaCarregado("lanc"); }),
+      }),
 
       // cta_abastecimentos — usado no CPK Combustível
       onSnapshot(collection(db, "cta_abastecimentos"), snap => {
@@ -1404,12 +1419,12 @@ export default function Manutencao() {
       }, e => { console.warn("itens_manutencao onSnapshot:", e); marcaCarregado("cat"); }),
 
       // tipos_manutencao_custom
-      onSnapshot(collection(db, "tipos_manutencao_custom"), snap => {
+      dsWatch("tipos_manutencao_custom", snap => {
         const tcs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         tcs.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
         setTiposCustom(tcs);
         marcaCarregado("tc");
-      }, e => { console.warn("tipos_manutencao_custom onSnapshot:", e); marcaCarregado("tc"); }),
+      }),
     ];
     return () => unsubs.forEach(u => { try { u(); } catch {} });
   }, []);
@@ -1614,7 +1629,8 @@ export default function Manutencao() {
     }
     setSalvandoTipo(true); setErroTipo("");
     try {
-      await addDoc(collection(db, "tipos_manutencao_custom"), {
+      await dsInsert("tipos_manutencao_custom", {
+        slug: label.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40),
         label,
         grupo: novoTipo.grupo,
         desc: (novoTipo.desc || "").trim(),
@@ -1638,7 +1654,7 @@ export default function Manutencao() {
     if (!label) { setErroTipo("Informe o nome do tipo."); return; }
     setSalvandoTipo(true); setErroTipo("");
     try {
-      await updateDoc(doc(db, "tipos_manutencao_custom", editTipo.id), {
+      await dsPatch("tipos_manutencao_custom", editTipo.id, {
         label,
         grupo: editTipo.grupo,
         desc: (editTipo.desc || "").trim(),
@@ -1659,7 +1675,7 @@ export default function Manutencao() {
   async function excluirTipoCustom(t) {
     if (!confirm(`Excluir tipo "${t.label}"?\n\nRegistros já lançados com esse tipo permanecem no histórico, mas o tipo some das opções novas.`)) return;
     try {
-      await deleteDoc(doc(db, "tipos_manutencao_custom", t.id));
+      await dsRemove("tipos_manutencao_custom", t.id);
       await carregarTudo();
     } catch (e) {
       console.error("excluirTipoCustom:", e);
@@ -1712,7 +1728,7 @@ export default function Manutencao() {
         updatedAt:   new Date().toISOString(),
       };
       if (!modal.record) payload.createdAt = new Date().toISOString();
-      await setDoc(doc(db, "manutencoes", docId), payload, { merge: true });
+      await dsSave("manutencoes", docId, payload);
       await carregarTudo();
       fecharModal();
     } catch(e) {
@@ -1727,7 +1743,7 @@ export default function Manutencao() {
     if (!window.confirm(`Excluir registro de "${label}"?`)) return;
     try {
       // Anexos ficam órfãos no Cloudinary (sem API secret no browser não dá pra deletar)
-      await deleteDoc(doc(db, "manutencoes", docId));
+      await dsRemove("manutencoes", docId);
       await carregarTudo();
     } catch {
       alert("Erro ao excluir.");
@@ -1770,7 +1786,7 @@ export default function Manutencao() {
         setAnexos(atualizado);
         // Persiste imediato: se modal.record existe, atualiza Firestore agora; senão fica pendente até user clicar Salvar
         if (modal.record?.id) {
-          await updateDoc(doc(db, "manutencoes", modal.record.id), { anexos: atualizado, updatedAt: new Date().toISOString() });
+          await dsPatch("manutencoes", modal.record.id, { anexos: atualizado, updatedAt: new Date().toISOString() });
           // atualiza registros local sem refazer fetch completo
           setRegistros(prev => {
             const key = `${modal.placa}__${modal.tipo.id}`;
@@ -1823,7 +1839,7 @@ export default function Manutencao() {
       const atualizado = anexos.filter((_, i) => i !== idx);
       setAnexos(atualizado);
       if (modal?.record?.id) {
-        await updateDoc(doc(db, "manutencoes", modal.record.id), { anexos: atualizado, updatedAt: new Date().toISOString() });
+        await dsPatch("manutencoes", modal.record.id, { anexos: atualizado, updatedAt: new Date().toISOString() });
         setRegistros(prev => {
           const key = `${modal.placa}__${modal.tipo.id}`;
           return prev[key] ? { ...prev, [key]: { ...prev[key], anexos: atualizado } } : prev;
@@ -1870,7 +1886,7 @@ export default function Manutencao() {
         const atualizado = [...anexosLanc, ...novos];
         setAnexosLanc(atualizado);
         // Persiste imediato — Firestore + lista local
-        await updateDoc(doc(db, "lancamentos_os", editLanc.id), { anexos: atualizado, editadoEm: new Date().toISOString() });
+        await dsPatch("lancamentos_os", editLanc.id, { anexos: atualizado, editadoEm: new Date().toISOString() });
         setLancamentos(prev => prev.map(x => x.id === editLanc.id ? { ...x, anexos: atualizado } : x));
       }
     } catch (e) {
@@ -1891,7 +1907,7 @@ export default function Manutencao() {
       const atualizado = anexosLanc.filter((_, i) => i !== idx);
       setAnexosLanc(atualizado);
       if (editLanc?.id) {
-        await updateDoc(doc(db, "lancamentos_os", editLanc.id), { anexos: atualizado, editadoEm: new Date().toISOString() });
+        await dsPatch("lancamentos_os", editLanc.id, { anexos: atualizado, editadoEm: new Date().toISOString() });
         setLancamentos(prev => prev.map(x => x.id === editLanc.id ? { ...x, anexos: atualizado } : x));
       }
     } catch (e) {
@@ -2001,7 +2017,7 @@ export default function Manutencao() {
         criadoPor:     profile?.email || profile?.nome || "—",
         criadoEm:      agora.toISOString(),
       };
-      const ref = await addDoc(collection(db, "ordens_servico"), payload);
+      const ref = await dsInsert("ordens_servico", payload);
       const osCriada = { id: ref.id, ...payload };
       // Não fazer optimistic push: onSnapshot já traz a OS nova.
       // Optimistic aqui duplicava porque o snapshot chegava antes do await resolver.
@@ -2034,7 +2050,7 @@ export default function Manutencao() {
     setAcaoOS(os.id);
     try {
       const agora = new Date().toISOString();
-      await updateDoc(doc(db, "ordens_servico", os.id), {
+      await dsPatch("ordens_servico", os.id, {
         status: "finalizada",
         finalizadaEm: agora,
         finalizadaPor: quemSou(),
@@ -2099,7 +2115,7 @@ export default function Manutencao() {
           criadoPor: profile?.email || profile?.nome || "—",
         });
       }
-      await updateDoc(doc(db, "ordens_servico", os.id), { fotos: novasFotos, updatedAt: new Date().toISOString() });
+      await dsPatch("ordens_servico", os.id, { fotos: novasFotos, updatedAt: new Date().toISOString() });
       const osAtualizada = { ...os, fotos: novasFotos };
       setOrdensServico(prev => prev.map(o => o.id === os.id ? osAtualizada : o));
       setFotosOsModal(osAtualizada);
@@ -2118,7 +2134,7 @@ export default function Manutencao() {
     if (!window.confirm(`Remover foto "${foto.nome}"?`)) return;
     try {
       const novasFotos = os.fotos.filter((_, i) => i !== idx);
-      await updateDoc(doc(db, "ordens_servico", os.id), { fotos: novasFotos, updatedAt: new Date().toISOString() });
+      await dsPatch("ordens_servico", os.id, { fotos: novasFotos, updatedAt: new Date().toISOString() });
       const osAtualizada = { ...os, fotos: novasFotos };
       setOrdensServico(prev => prev.map(o => o.id === os.id ? osAtualizada : o));
       setFotosOsModal(osAtualizada);
@@ -2214,7 +2230,7 @@ export default function Manutencao() {
         assinaturaMotorista: formConclusao.assinaturaMotorista || null,
         garantiaDias: Number(formConclusao.garantiaDias) || 90,
       };
-      await updateDoc(doc(db, "ordens_servico", os.id), dados);
+      await dsPatch("ordens_servico", os.id, dados);
       setOrdensServico(prev => prev.map(o => o.id === os.id ? { ...o, ...dados } : o));
       const veiculo = veiculoDaOS(os);
       if (veiculo) {
@@ -2278,7 +2294,7 @@ export default function Manutencao() {
         editadoEm:     new Date().toISOString(),
         editadoPor:    quemSou(),
       };
-      await updateDoc(doc(db, "ordens_servico", editOS.id), updates);
+      await dsPatch("ordens_servico", editOS.id, updates);
       const osAtualizada = { ...editOS, ...updates };
       setOrdensServico(prev => prev.map(o => (o.id === editOS.id ? osAtualizada : o)));
 
@@ -2308,7 +2324,7 @@ export default function Manutencao() {
     if (!canDelete) return;
     if (!window.confirm(`Excluir ${os.numero}?`)) return;
     try {
-      await deleteDoc(doc(db, "ordens_servico", os.id));
+      await dsRemove("ordens_servico", os.id);
       setOrdensServico(prev => prev.filter(x => x.id !== os.id));
       // se essa OS estava bloqueando o veículo, libera (se não houver outra OS aberta nele)
       if (osStatus(os) === "aberta") {
@@ -2482,7 +2498,7 @@ export default function Manutencao() {
         criadoPor:      profile?.email || profile?.nome || "—",
         criadoEm:       agora.toISOString(),
       };
-      const ref = await addDoc(collection(db, "lancamentos_os"), payload);
+      const ref = await dsInsert("lancamentos_os", payload);
       setLancamentos(prev => [{ id: ref.id, ...payload }, ...prev]);
       setFormLanc({ ...EMPTY_LANC });
       setLancItens([]);
@@ -2565,7 +2581,7 @@ export default function Manutencao() {
         editadoEm:    new Date().toISOString(),
         editadoPor:   quemSou(),
       };
-      await updateDoc(doc(db, "lancamentos_os", editLanc.id), updates);
+      await dsPatch("lancamentos_os", editLanc.id, updates);
       setLancamentos(prev => prev.map(x => (x.id === editLanc.id ? { ...x, ...updates } : x)));
       fecharEditLanc();
     } catch (e) {
@@ -2581,7 +2597,7 @@ export default function Manutencao() {
     if (!window.confirm(`Excluir o lançamento ${l.numero}?`)) return;
     try {
       // Anexos ficam órfãos no Cloudinary (sem API secret no browser não dá pra deletar)
-      await deleteDoc(doc(db, "lancamentos_os", l.id));
+      await dsRemove("lancamentos_os", l.id);
       setLancamentos(prev => prev.filter(x => x.id !== l.id));
     } catch (e) {
       alert("Erro ao excluir: " + e.message);
