@@ -1,6 +1,5 @@
 // Utilitários do módulo de Compras (propostas de gastos + valores comprados).
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "../firebase/config";
+import { uploadArquivo } from "../services/cloudinary";
 
 // ---------- Dinheiro ----------
 export function fmtBRL(n) {
@@ -62,14 +61,10 @@ export function linkConvite(propostaId, token) {
   return `${base}/proposta-convite/${propostaId}?token=${token}`;
 }
 
-// ---------- Anexos (Firebase Storage) ----------
+// ---------- Anexos (Cloudinary) ----------
 export async function uploadAnexo(propostaId, file) {
-  const safe = String(file.name || "arquivo").replace(/[^\w.-]+/g, "_");
-  const path = `propostas_compra/${propostaId}/${Date.now()}_${safe}`;
-  const r = ref(storage, path);
-  await uploadBytes(r, file, { contentType: file.type || "application/octet-stream" });
-  const url = await getDownloadURL(r);
-  return { nome: file.name, url, path, tipo: file.type || "", tamanho: file.size || 0 };
+  const meta = await uploadArquivo(file, { folder: `propostas_compra/${propostaId}` });
+  return { nome: file.name, url: meta.url, path: meta.publicId, tipo: file.type || "", tamanho: file.size || 0 };
 }
 
 export function tamanhoLegivel(bytes) {
