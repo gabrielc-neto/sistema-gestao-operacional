@@ -16,6 +16,7 @@ import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
 import AbaControleRotina from "../manutencao/AbaControleRotina";
 import AbaEstoque from "../manutencao/AbaEstoque";
 import AbaRequisicoes from "../manutencao/AbaRequisicoes";
+import AbaIndicadores from "../manutencao/AbaIndicadores";
 // AbaMultas + AbaTimeline + AbaVistoria: arquivos mantidos em /manutencao/ pra reativar futuramente
 import AbaPreditiva from "../manutencao/AbaPreditiva";
 import ChecklistMensalPanel from "./ChecklistMensalPanel";
@@ -1044,7 +1045,7 @@ export default function Manutencao() {
   const [veiculos,       setVeiculos]       = useState([]);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
-  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","requisicoes","fornecedores","cpk","preditiva","os","os_lanc","lancamento","cadastros"];
+  const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","requisicoes","fornecedores","cpk","preditiva","indicadores","os","os_lanc","lancamento","cadastros"];
   const SUB_PORARBA = { dashboard:"dashboard", veiculo:"por_veiculo", tipo:"por_tipo", alertas:"alertas", conjunto:"conjunto", lavagem:"lavagem", lubrificacao:"lubrificacao", calibragem:"calibragem", estoque:"estoque", os:"os_abertura", os_lanc:"os_lancamento", lancamento:"nf", cadastros:"cadastros" };
   const primeiraAba = (
     (abaInicialUrl && ABAS_VALIDAS.includes(abaInicialUrl) && podeVerAba(SUB_PORARBA[abaInicialUrl])) ? abaInicialUrl :
@@ -2727,6 +2728,7 @@ export default function Manutencao() {
               badge={lancamentos.length > 0 ? { text: lancamentos.length, color: "#4338ca" } : null} />
             <NavTab icon={TrendingUp} label="CPK" active={aba==="cpk"} onClick={() => setAba("cpk")} accent="#4338ca" />
             <NavTab icon={Brain} label="Preditiva" active={aba==="preditiva"} onClick={() => setAba("preditiva")} accent="#7c3aed" />
+            <NavTab icon={LayoutDashboard} label="Indicadores" active={aba==="indicadores"} onClick={() => setAba("indicadores")} accent="#0891b2" />
           </div>
         )}
 
@@ -3296,6 +3298,13 @@ export default function Manutencao() {
       {aba === "requisicoes" && (
         <main style={s.main} className="pg-body">
           <AbaRequisicoes itensCatalogo={itensCatalogo} quemSou={quemSou} podeAprovar={isSuperAdmin || temPermissao?.("requisicoes.aprovar")} />
+        </main>
+      )}
+
+      {/* ── ABA: INDICADORES — Preventiva x Corretiva + Disponibilidade ── */}
+      {aba === "indicadores" && (
+        <main style={s.main} className="pg-body">
+          <AbaIndicadores veiculos={veiculos} ordensServico={ordensServico} lancamentos={lancamentos} />
         </main>
       )}
 
