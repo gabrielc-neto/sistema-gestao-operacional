@@ -4,8 +4,8 @@ import {
   collection, getDocs, setDoc, deleteDoc, addDoc, updateDoc,
   doc, query, orderBy, onSnapshot,
 } from "firebase/firestore";
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, storage } from "../firebase/config";
+import { db } from "../firebase/config";
+import { uploadArquivo } from "../services/cloudinary";
 import { useAuth } from "../contexts/AuthContext";
 import { useRBAC } from "../rbac/RBACContext";
 import { useOdometrosSascar } from "../hooks/useOdometrosSascar";
@@ -1726,15 +1726,7 @@ export default function Manutencao() {
   async function excluir(docId, label) {
     if (!window.confirm(`Excluir registro de "${label}"?`)) return;
     try {
-      // tenta apagar anexos do Storage antes (best-effort — ignora se falhar)
-      const rec = modal?.record;
-      if (Array.isArray(rec?.anexos)) {
-        for (const a of rec.anexos) {
-          if (a.path) {
-            try { await deleteObject(storageRef(storage, a.path)); } catch { /* ignore */ }
-          }
-        }
-      }
+      // Anexos ficam órfãos no Cloudinary (sem API secret no browser não dá pra deletar)
       await deleteDoc(doc(db, "manutencoes", docId));
       await carregarTudo();
     } catch {
@@ -1762,17 +1754,11 @@ export default function Manutencao() {
           setErroAnexo(`${file.name}: arquivo maior que 10 MB.`);
           continue;
         }
-        // eslint-disable-next-line react-hooks/purity -- handler de evento, não render
-        const ts = Date.now();
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
-        const path = `manutencoes/${modal.placa}/${modal.tipo.id}/${ts}_${safeName}`;
-        const ref = storageRef(storage, path);
-        await uploadBytes(ref, file, { contentType: file.type });
-        const url = await getDownloadURL(ref);
+        const meta = await uploadArquivo(file, { folder: `manutencoes/${modal.placa}/${modal.tipo.id}` });
         novos.push({
           nome: file.name,
-          url,
-          path,
+          url: meta.url,
+          path: meta.publicId,
           contentType: file.type,
           tamanho: file.size,
           criadoEm: new Date().toISOString(),
@@ -1834,9 +1820,6 @@ export default function Manutencao() {
     if (!window.confirm(`Excluir anexo "${a.nome}"?`)) return;
     setErroAnexo("");
     try {
-      if (a.path) {
-        try { await deleteObject(storageRef(storage, a.path)); } catch (e) { console.warn("delete storage:", e); }
-      }
       const atualizado = anexos.filter((_, i) => i !== idx);
       setAnexos(atualizado);
       if (modal?.record?.id) {
@@ -1876,15 +1859,9 @@ export default function Manutencao() {
           setErroAnexoLanc(`${file.name}: arquivo maior que 10 MB.`);
           continue;
         }
-        // eslint-disable-next-line react-hooks/purity -- handler de evento
-        const ts = Date.now();
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
-        const path = `lancamentos_os/${editLanc.id}/${ts}_${safeName}`;
-        const ref = storageRef(storage, path);
-        await uploadBytes(ref, file, { contentType: file.type });
-        const url = await getDownloadURL(ref);
+        const meta = await uploadArquivo(file, { folder: `lancamentos_os/${editLanc.id}` });
         novos.push({
-          nome: file.name, url, path,
+          nome: file.name, url: meta.url, path: meta.publicId,
           contentType: file.type, tamanho: file.size,
           criadoEm: new Date().toISOString(), criadoPor: quemSou(),
         });
@@ -1911,9 +1888,6 @@ export default function Manutencao() {
     if (!window.confirm(`Excluir anexo "${a.nome}"?`)) return;
     setErroAnexoLanc("");
     try {
-      if (a.path) {
-        try { await deleteObject(storageRef(storage, a.path)); } catch (e) { console.warn("delete storage:", e); }
-      }
       const atualizado = anexosLanc.filter((_, i) => i !== idx);
       setAnexosLanc(atualizado);
       if (editLanc?.id) {
@@ -2114,15 +2088,12 @@ export default function Manutencao() {
       const novasFotos = [...(os.fotos || [])];
       for (const file of files) {
         const blob = await comprimirImagem(file);
-        const ts = Date.now();
         const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/\.[^.]+$/, ".jpg");
-        const path = `os-fotos/${os.id}/${ts}_${safe}`;
-        const ref = storageRef(storage, path);
-        await uploadBytes(ref, blob, { contentType: "image/jpeg" });
-        const url = await getDownloadURL(ref);
+        const arquivoJpg = new File([blob], safe, { type: "image/jpeg" });
+        const meta = await uploadArquivo(arquivoJpg, { folder: `os-fotos/${os.id}` });
         novasFotos.push({
           nome: file.name,
-          url, path,
+          url: meta.url, path: meta.publicId,
           tamanho: blob.size,
           criadoEm: new Date().toISOString(),
           criadoPor: profile?.email || profile?.nome || "—",
@@ -2146,7 +2117,6 @@ export default function Manutencao() {
     if (!foto) return;
     if (!window.confirm(`Remover foto "${foto.nome}"?`)) return;
     try {
-      try { await deleteObject(storageRef(storage, foto.path)); } catch (e) { console.warn("delete storage:", e); }
       const novasFotos = os.fotos.filter((_, i) => i !== idx);
       await updateDoc(doc(db, "ordens_servico", os.id), { fotos: novasFotos, updatedAt: new Date().toISOString() });
       const osAtualizada = { ...os, fotos: novasFotos };
@@ -2610,14 +2580,7 @@ export default function Manutencao() {
     if (!canDelete) return;
     if (!window.confirm(`Excluir o lançamento ${l.numero}?`)) return;
     try {
-      // limpa anexos do Storage (best-effort)
-      if (Array.isArray(l.anexos)) {
-        for (const a of l.anexos) {
-          if (a.path) {
-            try { await deleteObject(storageRef(storage, a.path)); } catch { /* ignore */ }
-          }
-        }
-      }
+      // Anexos ficam órfãos no Cloudinary (sem API secret no browser não dá pra deletar)
       await deleteDoc(doc(db, "lancamentos_os", l.id));
       setLancamentos(prev => prev.filter(x => x.id !== l.id));
     } catch (e) {

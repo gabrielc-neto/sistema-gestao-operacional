@@ -48,12 +48,35 @@ function Donut({ segments, size = 148, stroke = 20 }) {
 }
 
 /* ─── KPI de topo (mesma linguagem visual dos cards do sistema) ───────────── */
-function KpiTile({ Icon, label, value, cor, bg, sub, alerta, total }) {
+function KpiTile({ Icon, label, value, cor, bg, sub, alerta, total, onClick, ativo }) {
   // Bullet chart: se total > 0, mostra barra de progresso value/total (padrão dashboard denso - ui-ux-pro-max)
   const temBullet = Number.isFinite(total) && total > 0 && Number.isFinite(value);
   const pct = temBullet ? Math.min(100, Math.max(0, (value / total) * 100)) : 0;
+  const clickable = typeof onClick === "function";
+  // Borda destacada quando ativo (filtro aplicado) — usa a cor do próprio KPI
+  const borderColor = ativo ? cor : (alerta ? "var(--warning-border)" : "var(--border)");
+  const borderWidth = ativo ? 2 : 1;
   return (
-    <div style={{ background:"var(--card-bg)", border:`1px solid ${alerta ? "var(--warning-border)" : "var(--border)"}`, borderRadius:"var(--r-lg)", boxShadow:"var(--sh-sm)", padding:"14px 16px", display:"flex", alignItems:"center", gap:12, minWidth:0 }}>
+    <div
+      onClick={clickable ? onClick : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      aria-pressed={clickable ? ativo : undefined}
+      title={clickable ? (ativo ? `Remover filtro "${label}"` : `Filtrar por ${label}`) : undefined}
+      style={{
+        background:"var(--card-bg)",
+        border:`${borderWidth}px solid ${borderColor}`,
+        borderRadius:"var(--r-lg)",
+        boxShadow: ativo ? "0 0 0 3px " + bg : "var(--sh-sm)",
+        padding: ativo ? `${13-(borderWidth-1)}px ${15-(borderWidth-1)}px` : "14px 16px",
+        display:"flex", alignItems:"center", gap:12, minWidth:0,
+        cursor: clickable ? "pointer" : "default",
+        transition:"transform .15s ease, box-shadow .15s ease, border-color .15s ease",
+      }}
+      onMouseEnter={clickable ? (e) => { e.currentTarget.style.transform = "translateY(-1px)"; } : undefined}
+      onMouseLeave={clickable ? (e) => { e.currentTarget.style.transform = "translateY(0)"; } : undefined}
+    >
       <div style={{ width:40, height:40, borderRadius:10, background:bg, color:cor, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
         <Icon size={20} />
       </div>
@@ -86,6 +109,9 @@ export default function Dashboard() {
   const [recentOS,  setRecentOS]  = useState([]);
   const [erro,      setErro]      = useState(false);
   const [buscaMapa, setBuscaMapa] = useState(""); // busca no widget do mapa
+  const [filtroStatus, setFiltroStatus] = useState(null); // null | 'EM_MOVIMENTO' | 'SEM_DADOS' | 'PARADO_LIGADO' | 'ESTACIONADO' — filtro clicando nos KPIs
+  // Toggle: clicar de novo remove o filtro
+  const toggleFiltro = (status) => setFiltroStatus(cur => cur === status ? null : status);
 
   useEffect(() => { document.title = "Gestão Operacional - Pontual Brasil Petróleo"; }, []);
 
@@ -202,11 +228,16 @@ export default function Dashboard() {
 
         {/* KPIs de topo — resumo da frota + rastreamento em tempo real */}
         <div className="dash-kpi" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(170px, 1fr))", gap:14, marginBottom:20 }}>
-          <KpiTile Icon={Truck}        label="Frota total"       value={frota.totalFrota ?? "…"} cor="var(--accent)"  bg="var(--accent-soft)" />
-          <KpiTile Icon={CheckCircle2} label="Disponíveis"       value={ativos}                   total={frota.totalFrota}  cor="var(--success)" bg="var(--success-bg)" />
-          <KpiTile Icon={Navigation}   label="Em movimento"      value={statusFrota.EM_MOVIMENTO} total={frota.totalFrota}  cor="#EA580C"        bg="#fff7ed" sub="tempo real" />
-          <KpiTile Icon={Lock}         label="Bloqueados"        value={bloq}                     total={frota.totalFrota}  cor="var(--danger)"  bg="var(--danger-bg)" />
-          <KpiTile Icon={WifiOff}      label="Sem comunicação"   value={statusFrota.SEM_DADOS}    total={frota.totalFrota}  cor="var(--warning)" bg="var(--warning-bg)" alerta={statusFrota.SEM_DADOS > 0} />
+          <KpiTile Icon={Truck}        label="Frota total"       value={frota.totalFrota ?? "…"} cor="var(--accent)"  bg="var(--accent-soft)"
+                   onClick={() => navigate("/frota")} />
+          <KpiTile Icon={CheckCircle2} label="Disponíveis"       value={ativos}                   total={frota.totalFrota}  cor="var(--success)" bg="var(--success-bg)"
+                   onClick={() => navigate("/frota?status=disponivel")} />
+          <KpiTile Icon={Navigation}   label="Em movimento"      value={statusFrota.EM_MOVIMENTO} total={frota.totalFrota}  cor="#EA580C"        bg="#fff7ed" sub="tempo real"
+                   onClick={() => toggleFiltro("EM_MOVIMENTO")} ativo={filtroStatus === "EM_MOVIMENTO"} />
+          <KpiTile Icon={Lock}         label="Bloqueados"        value={bloq}                     total={frota.totalFrota}  cor="var(--danger)"  bg="var(--danger-bg)"
+                   onClick={() => navigate("/frota?status=bloqueado")} />
+          <KpiTile Icon={WifiOff}      label="Sem comunicação"   value={statusFrota.SEM_DADOS}    total={frota.totalFrota}  cor="var(--warning)" bg="var(--warning-bg)" alerta={statusFrota.SEM_DADOS > 0}
+                   onClick={() => toggleFiltro("SEM_DADOS")} ativo={filtroStatus === "SEM_DADOS"} />
         </div>
 
         {/* Topo: Evolução de custos (esq) + Controle de Frota (dir) */}
@@ -248,6 +279,15 @@ export default function Dashboard() {
             <MapPin size={16} color="var(--accent)" />
             <span style={st.panelTitle}>Rastreamento em tempo real</span>
             <span style={st.chip}><Navigation size={11} /> {emMovimento} em movimento</span>
+            {filtroStatus && (
+              <button
+                onClick={() => setFiltroStatus(null)}
+                title="Remover filtro"
+                style={{ display:"inline-flex", alignItems:"center", gap:6, background:"#fff7ed", color:"#EA580C", border:"1px solid #fed7aa", borderRadius:999, padding:"3px 10px", fontSize:".72rem", fontWeight:700, cursor:"pointer" }}
+              >
+                Filtro: {filtroStatus === "EM_MOVIMENTO" ? "Em movimento" : filtroStatus === "SEM_DADOS" ? "Sem comunicação" : filtroStatus} ✕
+              </button>
+            )}
             <div className="dash-busca-mapa" style={{ display:"flex", alignItems:"center", gap:6, marginLeft:"auto", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:8, padding:"4px 10px", minWidth:0, flex:"1 1 220px", maxWidth:320 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color:"var(--text-muted)", flexShrink:0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input
@@ -269,12 +309,19 @@ export default function Dashboard() {
             </div>
           ) : (
             <MapaFrota
-              posicoes={buscaMapa ? posicoes.filter(p => {
-                const t = buscaMapa.trim().toUpperCase();
-                return (p.placa || "").toUpperCase().includes(t)
+              posicoes={(() => {
+                let filtradas = posicoes;
+                if (filtroStatus) filtradas = filtradas.filter(p => p.statusTexto === filtroStatus);
+                if (buscaMapa) {
+                  const t = buscaMapa.trim().toUpperCase();
+                  filtradas = filtradas.filter(p =>
+                    (p.placa || "").toUpperCase().includes(t)
                     || (p.motorista || "").toUpperCase().includes(t)
-                    || (p.cidade || "").toUpperCase().includes(t);
-              }) : posicoes}
+                    || (p.cidade || "").toUpperCase().includes(t)
+                  );
+                }
+                return filtradas;
+              })()}
               focusPlaca={buscaMapa.trim().toUpperCase() || null}
               height={520}
             />

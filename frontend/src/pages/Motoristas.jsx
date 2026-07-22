@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { X, Rows3, LayoutGrid, Columns2, Edit3, Trash2, Lock as LockIco, Camera, User as UserIco } from "lucide-react";
+import { X, Rows3, LayoutGrid, Columns2, Edit3, Trash2, Lock as LockIco, Paperclip, ExternalLink, FileText, AlertCircle, Camera } from "lucide-react";
 import {
   collection, getDocs, setDoc, deleteDoc,
   doc, query, orderBy,
 } from "firebase/firestore";
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, storage } from "../firebase/config";
+import { db } from "../firebase/config";
+import { uploadArquivo, cloudinaryConfigured } from "../services/cloudinary";
 import { useAuth } from "../contexts/AuthContext";
 import ModuleHeader from "../components/ModuleHeader";
 import ExportBar from "../components/ExportBar";
@@ -54,7 +54,8 @@ const EMPTY_FORM = {
   nome: "", cnh: "", cat: "", tel: "", status: "ativo", obs: "",
   cnh_venc: "", mopp_venc: "", nr20_venc: "", nr35_venc: "",
   tipoContrato: "interno", // "interno" (CLT/frota Pontual) | "px" (PJ/agregado)
-  foto: null, // { url, path } — Firebase Storage
+  foto: null,
+  documentos: {}, // { cnh: {url, publicId, nome, ...}, mopp: {...}, nr20: {...}, nr35: {...} }
 };
 
 // Componente reutilizável — avatar redondo do motorista (foto ou iniciais)
@@ -82,7 +83,14 @@ export default function Motoristas() {
   const [loading, setLoading]         = useState(true);
   const [busca, setBusca]             = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
-  const [modoView, setModoView] = useState(() => localStorage.getItem("motoristas_view") || "cards");
+  const [modoView, setModoView] = useState(() => {
+    // migração v1: força split como default (2026-07-22); depois disso respeita escolha do user
+    if (localStorage.getItem("motoristas_view_v") !== "1") {
+      localStorage.setItem("motoristas_view", "split");
+      localStorage.setItem("motoristas_view_v", "1");
+    }
+    return localStorage.getItem("motoristas_view") || "split";
+  });
   const [splitSel, setSplitSel] = useState(null);
   useEffect(() => { localStorage.setItem("motoristas_view", modoView); }, [modoView]);
   const [modalOpen, setModalOpen]     = useState(false);
@@ -90,6 +98,33 @@ export default function Motoristas() {
   const [form, setForm]               = useState(EMPTY_FORM);
   const [salvando, setSalvando]       = useState(false);
   const [erro, setErro]               = useState("");
+  const [uploadingDoc, setUploadingDoc] = useState(""); // "cnh"|"mopp"|"nr20"|"nr35"|""
+
+  async function uploadDocMotorista(tipo, file) {
+    if (!file) return;
+    if (!cloudinaryConfigured()) {
+      alert("Cloudinary não configurado. Adicione VITE_CLOUDINARY_CLOUD_NAME no .env.local e reinicie o dev server.");
+      return;
+    }
+    setUploadingDoc(tipo);
+    try {
+      const meta = await uploadArquivo(file, { folder: `motoristas/docs/${tipo}` });
+      setForm(f => ({ ...f, documentos: { ...(f.documentos || {}), [tipo]: meta } }));
+    } catch (e) {
+      alert("Erro no upload: " + (e?.message || e));
+    } finally {
+      setUploadingDoc("");
+    }
+  }
+
+  function removerDocMotorista(tipo) {
+    if (!window.confirm("Remover este documento?")) return;
+    setForm(f => {
+      const docs = { ...(f.documentos || {}) };
+      delete docs[tipo];
+      return { ...f, documentos: docs };
+    });
+  }
 
   // ── load ──────────────────────────────────────────────────────────────────
   async function carregar() {
@@ -153,6 +188,7 @@ export default function Motoristas() {
       nr35_venc: m.nr35_venc || "",
       tipoContrato: m.tipoContrato || "interno",
       foto: m.foto || null,
+      documentos: m.documentos || {},
     });
     setErro("");
     setModalOpen(true);
@@ -169,9 +205,13 @@ export default function Motoristas() {
 
   async function uploadFotoMotorista(file) {
     if (!file) return;
+    if (!cloudinaryConfigured()) {
+      alert("Cloudinary não configurado.");
+      return;
+    }
     setUploadingFoto(true);
     try {
-      // Compressão pra 400px lado maior, JPEG 82%
+      // Compressão local: 400px lado maior, JPEG 82% (poupa quota Cloudinary)
       const img = new Image();
       const dataUrl = await new Promise((res, rej) => {
         const r = new FileReader();
@@ -184,35 +224,18 @@ export default function Motoristas() {
       canvas.width = img.width * esc; canvas.height = img.height * esc;
       canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
       const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.82));
-      const idAtual = editando || toId(form.nome.trim() || `tmp-${Date.now()}`);
-      const path = `motoristas/${idAtual}/foto.jpg`;
-      const ref = storageRef(storage, path);
-      // Timeout de 30s pra não ficar preso em "Enviando..." se Storage bloquear
-      const uploadPromise = uploadBytes(ref, blob, { contentType: "image/jpeg" });
-      await Promise.race([
-        uploadPromise,
-        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout — Storage Rules podem estar bloqueando esta pasta. Deploy do storage.rules pendente.")), 30000)),
-      ]);
-      const url = await getDownloadURL(ref);
-      setForm(f => ({ ...f, foto: { url, path } }));
+      const arquivoComprimido = new File([blob], "foto.jpg", { type: "image/jpeg" });
+      const meta = await uploadArquivo(arquivoComprimido, { folder: "motoristas/fotos" });
+      setForm(f => ({ ...f, foto: meta }));
     } catch (e) {
-      const msg = e?.message || String(e);
-      if (msg.includes("permission-denied") || msg.includes("unauthorized")) {
-        alert("Permissão negada pelo Firebase Storage. As regras de storage.rules precisam ser deployadas em produção (pasta motoristas/ não está autorizada ainda).");
-      } else if (msg.includes("timeout")) {
-        alert(msg);
-      } else {
-        alert("Erro no upload da foto: " + msg);
-      }
+      alert("Erro no upload: " + (e?.message || e));
     } finally {
       setUploadingFoto(false);
     }
   }
 
-  async function removerFotoMotorista() {
-    if (!form.foto?.path) { setForm(f => ({ ...f, foto: null })); return; }
-    if (!window.confirm("Remover foto do motorista?")) return;
-    try { await deleteObject(storageRef(storage, form.foto.path)); } catch {}
+  function removerFotoMotorista() {
+    if (!window.confirm("Remover foto?")) return;
     setForm(f => ({ ...f, foto: null }));
   }
 
@@ -239,6 +262,7 @@ export default function Motoristas() {
         nr35_venc: form.nr35_venc || null,
         tipoContrato: form.tipoContrato || "interno",
         foto: form.foto || null,
+        documentos: form.documentos || {},
         updatedAt: new Date().toISOString(),
       };
       if (!editando) data.createdAt = new Date().toISOString();
@@ -341,7 +365,7 @@ export default function Motoristas() {
       )}
 
       {/* CONTEÚDO */}
-      <main style={s.main} className="pg-body">
+      <main style={modoView === "split" ? { ...s.main, maxWidth: "none", padding: "16px 20px" } : s.main} className="pg-body">
         <ExportBar
           titulo="Motoristas"
           arquivo="motoristas"
@@ -502,8 +526,8 @@ export default function Motoristas() {
           </div>
         ) : (
           // ═══ MODO SPLIT ═══
-          <div style={{ display:"grid", gridTemplateColumns:"280px 1fr", gap:14, minHeight:500 }}>
-            <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e2e8f0", overflow:"hidden", maxHeight:"70vh", overflowY:"auto" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"420px 1fr", gap:14, minHeight:500 }}>
+            <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e2e8f0", overflow:"hidden", maxHeight:"75vh", overflowY:"auto" }}>
               <div style={{ padding:"10px 14px", background:"#f8fafc", borderBottom:"1px solid #e2e8f0", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase" }}>
                 {lista.length} motorista{lista.length === 1 ? "" : "s"}
               </div>
@@ -582,6 +606,24 @@ export default function Motoristas() {
                     </div>
                   </div>
 
+                  {splitSel.documentos && Object.keys(splitSel.documentos).length > 0 && (
+                    <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #e2e8f0" }}>
+                      <div style={{ fontSize:".7rem", color:"#94a3b8", textTransform:"uppercase", letterSpacing:".04em", fontWeight:700, marginBottom:8 }}>Anexos</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                        {Object.entries(splitSel.documentos).map(([tipo, d]) => (
+                          <a key={tipo} href={d.url} target="_blank" rel="noopener noreferrer"
+                            style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 10px", background:"#f8fafc", borderRadius:6, textDecoration:"none", color:"#1a3a5c", fontSize:".8rem", border:"1px solid #e2e8f0" }}>
+                            <FileText size={13} />
+                            <span style={{ fontWeight:700, minWidth:55, textTransform:"uppercase" }}>{tipo}</span>
+                            <span style={{ flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#475569" }}>{d.nome}</span>
+                            <span style={{ color:"#94a3b8", fontSize:".72rem" }}>{(d.tamanho/1024).toFixed(0)} KB</span>
+                            <ExternalLink size={12} style={{ color:"#1d4ed8" }} />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {splitSel.obs && (
                     <div style={{ marginTop:16, padding:"10px 14px", background:"#f8fafc", borderRadius:6, fontSize:".85rem", color:"#475569" }}>
                       <strong>Obs:</strong> {splitSel.obs}
@@ -617,16 +659,16 @@ export default function Motoristas() {
             </div>
 
             <form onSubmit={salvar} style={s.form}>
-              {/* Foto */}
+              {/* Avatar + Upload de foto */}
               <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 12px", background: "#f8fafc", borderRadius: 8, marginBottom: 12 }}>
                 <Avatar motorista={form} size={64} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: ".8rem", fontWeight: 700, color: "#1a3a5c", marginBottom: 4 }}>Foto do motorista</div>
-                  <div style={{ fontSize: ".72rem", color: "#64748b", marginBottom: 6 }}>Comprimida automaticamente pra 400px · JPEG</div>
+                  <div style={{ fontSize: ".72rem", color: "#64748b", marginBottom: 6 }}>Comprimida para 400px · JPEG</div>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <label style={{ background: "#dbeafe", color: "#1d4ed8", padding: "5px 12px", borderRadius: 6, cursor: "pointer", fontSize: ".78rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <label style={{ background: "#dbeafe", color: "#1d4ed8", padding: "5px 12px", borderRadius: 6, cursor: uploadingFoto ? "wait" : "pointer", fontSize: ".78rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
                       <Camera size={13} /> {uploadingFoto ? "Enviando..." : form.foto ? "Trocar" : "Escolher"}
-                      <input type="file" accept="image/*" capture="user" style={{ display: "none" }} onChange={e => uploadFotoMotorista(e.target.files?.[0])} disabled={uploadingFoto} />
+                      <input type="file" accept="image/*" capture="user" style={{ display: "none" }} disabled={uploadingFoto} onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; uploadFotoMotorista(f); }} />
                     </label>
                     {form.foto && (
                       <button type="button" onClick={removerFotoMotorista} style={{ background: "#fee2e2", color: "#b91c1c", padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: ".78rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
@@ -737,6 +779,58 @@ export default function Motoristas() {
                     onChange={(e) => setForm({ ...form, nr35_venc: e.target.value })} />
                 </label>
               </div>
+
+              {/* Anexos de Documentos */}
+              <div style={{ fontSize: ".82rem", fontWeight: 700, color: "var(--text-muted)", borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 2 }}>
+                Anexos (PDF ou foto)
+              </div>
+              {!cloudinaryConfigured() && (
+                <div style={{ background:"#fef3c7", color:"#92400e", padding:"8px 12px", borderRadius:6, fontSize:".78rem", display:"flex", alignItems:"center", gap:6 }}>
+                  <AlertCircle size={14} /> Anexos não configurados. Peça pro admin adicionar <code style={{background:"#fde68a",padding:"1px 5px",borderRadius:3}}>VITE_CLOUDINARY_CLOUD_NAME</code> no .env.local.
+                </div>
+              )}
+              {[
+                { tipo: "cnh",  label: "CNH" },
+                { tipo: "mopp", label: "MOPP" },
+                { tipo: "nr20", label: "NR-20" },
+                { tipo: "nr35", label: "NR-35" },
+                { tipo: "aso",  label: "ASO" },
+                { tipo: "outro", label: "Outro" },
+              ].map(({ tipo, label }) => {
+                const doc = form.documentos?.[tipo];
+                const subindo = uploadingDoc === tipo;
+                return (
+                  <div key={tipo} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 10px", background:"#f8fafc", borderRadius:6, border:"1px solid #e2e8f0" }}>
+                    <div style={{ minWidth:60, fontSize:".78rem", fontWeight:700, color:"#1a3a5c" }}>{label}</div>
+                    <div style={{ flex:1, fontSize:".76rem", color:"#64748b", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {doc ? (
+                        <span title={doc.nome} style={{ display:"inline-flex", alignItems:"center", gap:5 }}>
+                          <FileText size={12} /> {doc.nome} <span style={{ color:"#94a3b8" }}>· {(doc.tamanho/1024).toFixed(0)} KB</span>
+                        </span>
+                      ) : (
+                        <span style={{ color:"#94a3b8", fontStyle:"italic" }}>Nenhum arquivo anexado</span>
+                      )}
+                    </div>
+                    <label style={{ background:"#dbeafe", color:"#1d4ed8", padding:"4px 10px", borderRadius:5, cursor: subindo ? "wait" : "pointer", fontSize:".72rem", fontWeight:600, display:"inline-flex", alignItems:"center", gap:4 }}>
+                      <Paperclip size={11} /> {subindo ? "Enviando..." : doc ? "Trocar" : "Anexar"}
+                      <input type="file" accept="image/*,.pdf" style={{ display:"none" }} disabled={subindo || !cloudinaryConfigured()}
+                        onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; uploadDocMotorista(tipo, f); }} />
+                    </label>
+                    {doc && (
+                      <>
+                        <a href={doc.url} target="_blank" rel="noopener noreferrer" title="Abrir em nova aba"
+                          style={{ background:"#dcfce7", color:"#166534", padding:"4px 8px", borderRadius:5, textDecoration:"none", display:"inline-flex", alignItems:"center" }}>
+                          <ExternalLink size={11} />
+                        </a>
+                        <button type="button" onClick={() => removerDocMotorista(tipo)} title="Remover"
+                          style={{ background:"#fee2e2", color:"#b91c1c", border:"none", padding:"4px 8px", borderRadius:5, cursor:"pointer", display:"inline-flex" }}>
+                          <Trash2 size={11} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
 
               {/* Telefone */}
               <label style={s.label}>

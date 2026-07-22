@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore";
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, storage } from "../firebase/config";
+import { db } from "../firebase/config";
+import { uploadArquivo } from "../services/cloudinary";
 import { exportChecklistMensalPdf } from "../utils/pdfChecklistMensal";
 
 // ────────────────────────────────────────────────────────────────
@@ -135,18 +135,8 @@ export default function ChecklistMensalPanel({ veiculos, profile }) {
     setUploading(true);
     setErro("");
     try {
-      // se já tinha foto nesse slot, apaga a antiga
-      const antiga = form.fotos?.[slotKey];
-      if (antiga?.path) {
-        try { await deleteObject(storageRef(storage, antiga.path)); } catch (e) { console.warn("delete storage:", e); }
-      }
-      const ts = Date.now();
-      const safe = file.name.replace(/[^A-Za-z0-9._-]/g, "_");
-      const path = `checklists_mensais/${ts}_${slotKey}_${safe}`;
-      const r = storageRef(storage, path);
-      await uploadBytes(r, file, { contentType: file.type });
-      const url = await getDownloadURL(r);
-      setForm(f => ({ ...f, fotos: { ...f.fotos, [slotKey]: { url, path } } }));
+      const meta = await uploadArquivo(file, { folder: `checklists_mensais/${slotKey}` });
+      setForm(f => ({ ...f, fotos: { ...f.fotos, [slotKey]: { url: meta.url, path: meta.publicId } } }));
     } catch (err) {
       setErro(`Erro ao anexar foto (${slotKey}): ` + err.message);
     } finally {
@@ -158,9 +148,7 @@ export default function ChecklistMensalPanel({ veiculos, profile }) {
     const foto = form.fotos?.[slotKey];
     if (!foto) return;
     if (!window.confirm("Remover essa foto?")) return;
-    try {
-      if (foto.path) await deleteObject(storageRef(storage, foto.path));
-    } catch (e) { console.warn("delete storage:", e); }
+    // Foto fica órfã no Cloudinary (sem API secret no browser não dá pra deletar)
     setForm(f => {
       const novo = { ...f.fotos };
       delete novo[slotKey];
@@ -197,15 +185,7 @@ export default function ChecklistMensalPanel({ veiculos, profile }) {
   async function excluir(ck) {
     if (!window.confirm(`Excluir o checklist de ${ck.placaCavalo || "—"} (${ck.mesRef || "—"})?`)) return;
     try {
-      // apaga fotos do storage — suporta formato antigo (array) e novo (objeto por slot)
-      const listaFotos = Array.isArray(ck.fotos)
-        ? ck.fotos
-        : Object.values(ck.fotos || {});
-      for (const foto of listaFotos) {
-        if (foto?.path) {
-          try { await deleteObject(storageRef(storage, foto.path)); } catch (e) { console.warn("delete storage:", e); }
-        }
-      }
+      // Fotos ficam órfãs no Cloudinary (sem API secret no browser não dá pra deletar)
       await deleteDoc(doc(db, "checklists_mensais", ck.id));
     } catch (e) {
       alert("Erro ao excluir: " + e.message);

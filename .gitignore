@@ -67,3 +67,4 @@ __pycache__/
 # Email config (contém app password Gmail)
 functions/scripts/email-config.json
 
+scripts/.env.vps
