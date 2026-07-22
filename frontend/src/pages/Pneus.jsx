@@ -4,8 +4,7 @@ import { collection, getDocs, query, orderBy, addDoc, updateDoc, doc, onSnapshot
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
-import { Package, MapPin, ClipboardCheck, RefreshCw, LayoutDashboard, ShoppingCart, History, HelpCircle } from "lucide-react";
-import PopPneus from "../pneus/PopPneus";
+import { Package, MapPin, ClipboardCheck, RefreshCw, LayoutDashboard, ShoppingCart, History } from "lucide-react";
 import { STATUS_PNEU } from "../pneus/esquemas";
 import AbaEstoque from "../pneus/AbaEstoque";
 import AbaFrota from "../pneus/AbaFrota";
@@ -58,7 +57,6 @@ export default function Pneus() {
   const [searchParams] = useSearchParams();
   const abaUrl = searchParams.get("aba");
   const [aba, setAba] = useState(abaUrl && ABAS.some(a => a.id === abaUrl) ? abaUrl : "estoque");
-  const [popAberto, setPopAberto] = useState(false);
 
   const [pneus, setPneus] = useState([]);
   const [fornecedores, setFornecedores] = useState([]); // catálogo (reusa itens_manutencao tipo=fornecedor)
@@ -143,17 +141,9 @@ export default function Pneus() {
           </div>
         </div>
         <div style={s.headerRight} className="pg-header-actions">
-          <button
-            style={{ ...s.backBtn, background: "#f0f9ff", borderColor: "#7dd3fc", color: "#0369a1", display: "inline-flex", alignItems: "center", gap: 6 }}
-            onClick={() => setPopAberto(true)}
-            title="Procedimento Operacional Padrão — como usar cada aba"
-          >
-            <HelpCircle size={14} /> Como usar
-          </button>
           <button style={s.backBtn} onClick={() => navigate("/dashboard")}>← Dashboard</button>
         </div>
       </header>
-      {popAberto && <PopPneus onClose={() => setPopAberto(false)} />}
 
       {/* Navbar de abas */}
       <div style={s.navGroups} className="pneus-nav tabs-scroll">
