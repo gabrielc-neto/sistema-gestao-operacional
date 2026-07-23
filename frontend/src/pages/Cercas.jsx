@@ -5,6 +5,7 @@ import { Trash2, X, Check, Search, Undo2, Locate, Hexagon, Circle as CircleIcon,
 import "leaflet/dist/leaflet.css";
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
 import { insert as dsInsert, patch as dsPatch, remove as dsRemove } from "../services/genericDataSource";
+import { usuarioPontual } from "../utils/format";
 import { db } from "../firebase/config";
 import { useCercas } from "../hooks/useCercas";
 import { useAuth } from "../contexts/AuthContext";
@@ -204,14 +205,14 @@ export default function Cercas() {
           centro: { lat: editCentro.lat, lng: editCentro.lng },
           raio: Math.round(editRaio),
           atualizadoEm: new Date().toISOString(),
-          atualizadoPor: user?.email || "—",
+          atualizadoPor: usuarioPontual(user),
         });
       } else {
         if (!editPontos || editPontos.length < 3) return;
         await dsPatch("cercas_eletronicas", editingId, {
           pontos: editPontos,
           atualizadoEm: new Date().toISOString(),
-          atualizadoPor: user?.email || "—",
+          atualizadoPor: usuarioPontual(user),
         });
       }
       cancelarEdicao();
@@ -382,7 +383,7 @@ export default function Cercas() {
         nome: nome.trim(),
         tipo, cor, formato,
         criadoEm: serverTimestamp(),
-        criadoPor: user?.email || "—",
+        criadoPor: usuarioPontual(user),
       };
       if (formato === "circulo") {
         payload.centro = { lat: centro.lat, lng: centro.lng };

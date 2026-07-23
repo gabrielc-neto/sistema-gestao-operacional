@@ -227,7 +227,7 @@ export default function ChecklistMensalPanel({ veiculos, profile }) {
         await dsPatch("checklists_mensais", editId, payload);
       } else {
         payload.criadoEm  = agora;
-        payload.criadoPor = profile?.email || profile?.nome || "—";
+        payload.criadoPor = usuarioPontual(profile);
         await dsInsert("checklists_mensais", payload);
       }
       resetForm();

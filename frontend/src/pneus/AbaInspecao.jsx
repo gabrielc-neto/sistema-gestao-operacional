@@ -4,6 +4,7 @@ import { db } from "../firebase/config";
 import { ESQUEMAS, sugerirEsquema } from "./esquemas";
 import { Check, X, Save, Pen, FileDown, Eye } from "lucide-react";
 import { baixarPdfInspecao, visualizarPdfInspecao } from "../utils/pdfInspecao";
+import { usuarioPontual } from "../utils/format";
 
 const CHECKLIST_ITENS = [
   "Alinhamento",
@@ -536,7 +537,7 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
   const quemSou = () => ({
     uid:   profile?.uid || "",
     email: profile?.email || "",
-    nome:  profile?.nome || profile?.email || "—",
+    nome:  usuarioPontual(profile),
   });
 
   function montarPayload() {
@@ -624,7 +625,7 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
         respostaOrdem: ordemOK,
         status: "concluida",
         criadoEm: agora.toISOString(),
-        criadoPor: supervisor.email || supervisor.nome,
+        criadoPor: supervisor.nome,
       };
 
       const ref = await addDoc(collection(db, "pneu_inspecoes"), payload);

@@ -7,6 +7,7 @@ import { db } from "../firebase/config";
 import { ESQUEMAS, sugerirEsquema, VIDAS, MOTIVOS_REMOCAO } from "./esquemas";
 import { instalarPneu, removerPneu, rodizioPneu, pneusDoVeiculo } from "./movimentacoes";
 import { Truck, Package, X, ArrowLeftRight, Trash2, Plus, AlertCircle } from "lucide-react";
+import { usuarioPontual } from "../utils/format";
 
 const normPlaca = (p) => String(p || "").trim().toUpperCase().replace(/[-\s]\d+$/, "").replace(/[^A-Z0-9]/g, "");
 
@@ -356,7 +357,7 @@ export default function AbaFrota({ pneus, setPneus, profile }) {
 
   const pneusEstoque = useMemo(() => pneus.filter(p => p.status === "estoque"), [pneus]);
 
-  const autor = () => ({ uid: profile?.uid || "", nome: profile?.nome || profile?.email || "—", email: profile?.email || "" });
+  const autor = () => ({ uid: profile?.uid || "", nome: usuarioPontual(profile), email: profile?.email || "" });
 
   // Handler central: refresha pneus após ação
   const refreshPneu = (pneuId, patch) => {
