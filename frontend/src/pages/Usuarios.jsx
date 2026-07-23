@@ -14,6 +14,7 @@ import {
   collection, getDocs, setDoc, updateDoc,
   doc, query, orderBy, serverTimestamp,
 } from "firebase/firestore";
+import { list as dsList, save as dsSave, patch as dsPatch } from "../services/genericDataSource";
 import {
   createUserWithEmailAndPassword,
   getAuth,
@@ -66,14 +67,14 @@ export default function Usuarios() {
   async function carregar() {
     setLoading(true);
     try {
-      const [usuariosSnap, setoresSnap, cargosSnap] = await Promise.all([
-        getDocs(query(collection(db, "usuarios"), orderBy("nome"))),
-        getDocs(query(collection(db, "setores"),  orderBy("nome"))),
-        getDocs(query(collection(db, "cargos"),   orderBy("nome"))),
+      const [usuariosRows, setoresRows, cargosRows] = await Promise.all([
+        dsList("usuarios", { orderBy: "nome" }),
+        dsList("setores",  { orderBy: "nome" }),
+        dsList("cargos",   { orderBy: "nome" }),
       ]);
-      setUsuarios(usuariosSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setSetores(setoresSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setCargos(cargosSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setUsuarios(usuariosRows);
+      setSetores(setoresRows);
+      setCargos(cargosRows);
     } catch (e) {
       console.error(e);
     } finally {
@@ -127,24 +128,24 @@ export default function Usuarios() {
     setSalvando(true); setErro("");
     try {
       if (editId) {
-        await updateDoc(doc(db, "usuarios", editId), {
+        await dsPatch("usuarios", editId, {
           nome:           form.nome.trim(),
           setor_id:       form.setor_id || null,
           cargo_id:       form.cargo_id || null,
           is_super_admin: !!form.is_super_admin,
-          updated_at:     serverTimestamp(),
+          updated_at:     new Date().toISOString(),
         });
       } else {
         const uid = await criarUsuarioFirebase(form.email.trim(), form.senha);
-        await setDoc(doc(db, "usuarios", uid), {
+        await dsSave("usuarios", uid, {
           nome:           form.nome.trim(),
           email:          form.email.trim().toLowerCase(),
           setor_id:       form.setor_id || null,
           cargo_id:       form.cargo_id || null,
           is_super_admin: !!form.is_super_admin,
           ativo:          true,
-          role:           "",  // legacy vazio — o RBAC novo usa cargo_id
-          created_at:     serverTimestamp(),
+          role:           "",
+          created_at:     new Date().toISOString(),
         });
       }
       await carregar();
@@ -160,7 +161,7 @@ export default function Usuarios() {
 
   async function alternarAtivo(u) {
     try {
-      await updateDoc(doc(db, "usuarios", u.id), { ativo: !u.ativo });
+      await dsPatch("usuarios", u.id, { ativo: !u.ativo });
       carregar();
     } catch (e) {
       alert("Erro ao atualizar: " + e.message);
@@ -170,7 +171,7 @@ export default function Usuarios() {
   async function desativar(u) {
     if (!window.confirm(`Desativar "${u.nome}"?\n\nO acesso será bloqueado imediatamente.\nO registro é mantido para histórico.`)) return;
     try {
-      await updateDoc(doc(db, "usuarios", u.id), { ativo: false });
+      await dsPatch("usuarios", u.id, { ativo: false });
       carregar();
     } catch (e) {
       alert("Erro ao desativar: " + e.message);

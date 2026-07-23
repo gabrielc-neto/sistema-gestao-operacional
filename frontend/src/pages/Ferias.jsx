@@ -5,6 +5,7 @@ import {
   doc, query, orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { list as dsList, insert as dsInsert, patch as dsPatch, remove as dsRemove } from "../services/genericDataSource";
 import { useAuth } from "../contexts/AuthContext";
 import ModuleHeader from "../components/ModuleHeader";
 import ExportBar from "../components/ExportBar";
@@ -54,12 +55,12 @@ export default function Ferias() {
 
   async function carregar() {
     setLoading(true);
-    const [fSnap, mSnap] = await Promise.all([
-      getDocs(query(collection(db, "ferias"), orderBy("inicio"))),
-      getDocs(query(collection(db, "motoristas"), orderBy("nome"))),
+    const [fRows, mRows] = await Promise.all([
+      dsList("ferias", { orderBy: "inicio" }),
+      dsList("motoristas", { orderBy: "nome" }),
     ]);
-    setFerias(fSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-    setMotoristas(mSnap.docs.map(d => d.data().nome).filter(Boolean));
+    setFerias(fRows);
+    setMotoristas(mRows.map(m => m.nome).filter(Boolean));
     setLoading(false);
   }
 
@@ -95,9 +96,9 @@ export default function Ferias() {
     try {
       const data = { ...form, updatedAt: new Date().toISOString() };
       if (editId) {
-        await updateDoc(doc(db, "ferias", editId), data);
+        await dsPatch("ferias", editId, data);
       } else {
-        await addDoc(collection(db, "ferias"), { ...data, createdAt: new Date().toISOString() });
+        await dsInsert("ferias", { ...data, createdAt: new Date().toISOString() });
       }
       fecharModal();
       carregar();
@@ -111,7 +112,7 @@ export default function Ferias() {
   async function excluir(id) {
     if (!window.confirm("Excluir registro de férias?")) return;
     try {
-      await deleteDoc(doc(db, "ferias", id));
+      await dsRemove("ferias", id);
       carregar();
     } catch(e) {
       alert("Erro ao excluir: " + e.message);
@@ -120,7 +121,7 @@ export default function Ferias() {
 
   async function marcarEsocial(f) {
     try {
-      await updateDoc(doc(db, "ferias", f.id), { esocial: !f.esocial });
+      await dsPatch("ferias", f.id, { esocial: !f.esocial });
       carregar();
     } catch(e) {
       alert("Erro ao atualizar: " + e.message);
