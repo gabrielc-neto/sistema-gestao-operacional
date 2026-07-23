@@ -7,6 +7,7 @@ import {
   collection, onSnapshot, addDoc, query, orderBy
 } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { watch as dsWatch, insert as dsInsert } from "../services/genericDataSource";
 import {
   ShoppingCart, Plus, X, Trash2, ChevronDown, ChevronRight,
   Search, Package, TrendingUp, Building2, FileText, Calendar
@@ -307,11 +308,11 @@ export default function AbaCompras({ pneus, setPneus, fornecedores, garantirForn
   const [expandidas, setExpandidas] = useState(new Set());
 
   useEffect(() => {
-    const un = onSnapshot(
-      query(collection(db, "pneu_compras"), orderBy("criadoEm", "desc")),
-      snap => setCompras(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      err => console.warn("pneu_compras onSnapshot:", err)
-    );
+    const un = dsWatch("pneu_compras", snap => {
+      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      rows.sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""));
+      setCompras(rows);
+    }, { orderBy: "criadoEm", order: "desc" });
     return () => un();
   }, []);
 
@@ -365,7 +366,7 @@ export default function AbaCompras({ pneus, setPneus, fornecedores, garantirForn
           criadoEm: new Date().toISOString(),
           criadoPor: quemSou?.() || "—",
         };
-        const ref = await addDoc(collection(db, "pneus"), pneu);
+        const ref = await dsInsert("pneus", pneu);
         criados.push({ id: ref.id, ...pneu });
       }
     }
@@ -376,7 +377,7 @@ export default function AbaCompras({ pneus, setPneus, fornecedores, garantirForn
     }
 
     // 3. Registra a compra
-    await addDoc(collection(db, "pneu_compras"), {
+    await dsInsert("pneu_compras", {
       ...payload,
       pneusIds: criados.map(p => p.id),
       qtdTotal: criados.length,

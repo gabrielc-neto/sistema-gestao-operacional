@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { list as dsList } from "../services/genericDataSource";
 
-// Retorna Map<placaNormalizada, oc> com a OC mais recente de cada caminhão
-// nas últimas 48h. Sem campo de status no modelo, usamos "mais recente" como proxy.
+// Map<placaNormalizada, oc> — OC mais recente por caminhão nas últimas 48h.
 export function useOcsAtivas() {
   const [ocsPorPlaca, setOcs] = useState(new Map());
   const [loading, setLoading] = useState(true);
@@ -13,23 +11,18 @@ export function useOcsAtivas() {
     async function load() {
       try {
         const desde = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
-        const q = query(
-          collection(db, "ordens_carregamento"),
-          where("criadoEm", ">=", desde),
-          orderBy("criadoEm", "desc"),
-        );
-        const snap = await getDocs(q);
+        const rows = await dsList("ordens_carregamento", { orderBy: "criadoEm", order: "desc", limit: 500 });
         const map = new Map();
-        snap.forEach(doc => {
-          const oc = { id: doc.id, ...doc.data() };
-          const placa = (oc.cavaloPlaca || "").trim().toUpperCase();
-          if (!placa) return;
-          // já está ordenado desc — primeira que aparece é a mais recente
-          if (!map.has(placa)) map.set(placa, oc);
-        });
+        rows
+          .filter(oc => (oc.criadoEm || "") >= desde)
+          .forEach(oc => {
+            const placa = (oc.cavaloPlaca || "").trim().toUpperCase();
+            if (!placa) return;
+            if (!map.has(placa)) map.set(placa, oc);
+          });
         if (!cancelado) setOcs(map);
       } catch (e) {
-        console.warn("[useOcsAtivas] falha:", e.message);
+        console.warn("[useOcsAtivas]", e.message);
       } finally {
         if (!cancelado) setLoading(false);
       }

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { addDoc, updateDoc, deleteDoc, doc, collection } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { insert as dsInsert, patch as dsPatch, remove as dsRemove } from "../services/genericDataSource";
 import { useNavigate } from "react-router-dom";
 import { Plus, Search, Package, Edit3, Trash2, X, ExternalLink } from "lucide-react";
 import { VIDAS } from "./esquemas";
@@ -158,14 +159,14 @@ export default function AbaEstoque({ pneus, setPneus, fornecedores, garantirForn
         payload.status    = "estoque";
         payload.criadoEm  = new Date().toISOString();
         payload.criadoPor = quemSou();
-        const ref = await addDoc(collection(db, "pneus"), payload);
+        const ref = await dsInsert("pneus", payload);
         setPneus(prev => [{ id: ref.id, ...payload }, ...prev]);
       } else {
         payload.editadoEm  = new Date().toISOString();
         payload.editadoPor = quemSou();
         // Preserva status e vínculo se estava em uso
         delete payload.sulcoAtual; // não sobrescreve sulco atual na edição
-        await updateDoc(doc(db, "pneus", modal.pneu.id), payload);
+        await dsPatch("pneus", modal.pneu.id, payload);
         setPneus(prev => prev.map(p => p.id === modal.pneu.id ? { ...p, ...payload } : p));
       }
       fechar();
@@ -184,7 +185,7 @@ export default function AbaEstoque({ pneus, setPneus, fornecedores, garantirForn
     }
     if (!confirm(`Excluir permanentemente o pneu ${modal.pneu.fogo}? Essa ação não pode ser desfeita.`)) return;
     try {
-      await deleteDoc(doc(db, "pneus", modal.pneu.id));
+      await dsRemove("pneus", modal.pneu.id);
       setPneus(prev => prev.filter(p => p.id !== modal.pneu.id));
       fechar();
     } catch (e) {

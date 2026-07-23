@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { watch as dsWatch } from "../services/genericDataSource";
 import { History, Download, Filter } from "lucide-react";
 
 const COL = "pneu_movimentacoes";
@@ -84,14 +85,12 @@ export default function AbaHistorico({ pneus }) {
   const [ate, setAte]             = useState("");
 
   useEffect(() => {
-    const q = query(collection(db, COL), orderBy("data", "desc"));
-    const unsub = onSnapshot(q, snap => {
-      setMovs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    const unsub = dsWatch(COL, snap => {
+      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      rows.sort((a, b) => (b.data || "").localeCompare(a.data || ""));
+      setMovs(rows);
       setLoading(false);
-    }, err => {
-      console.warn("pneu_movimentacoes onSnapshot:", err);
-      setLoading(false);
-    });
+    }, { orderBy: "data", order: "desc" });
     return () => unsub();
   }, []);
 

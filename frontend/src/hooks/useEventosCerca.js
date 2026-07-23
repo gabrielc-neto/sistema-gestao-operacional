@@ -1,33 +1,27 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, orderBy, query, limit, where } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { watch as dsWatch } from "../services/genericDataSource";
 
-// Snapshot dos eventos de cerca (ENTRADA/SAIDA) das últimas N horas.
-// timestamp é serverTimestamp; criadoEmMs é número (fallback se timestamp ainda null).
+// Eventos de cerca (ENTRADA/SAIDA) das últimas N horas.
+// timestamp é ISO (backend VPS) ou serverTimestamp (Firestore legado).
+// criadoEmMs é número em milis.
 export function useEventosCerca({ horasAtras = 12, limite = 100 } = {}) {
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const desdeMs = Date.now() - horasAtras * 3600_000;
-    const q = query(
-      collection(db, "cercas_eventos"),
-      where("criadoEmMs", ">=", desdeMs),
-      orderBy("criadoEmMs", "desc"),
-      limit(limite)
-    );
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        const lista = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setEventos(lista);
-        setLoading(false);
-      },
-      (err) => {
-        console.warn("[useEventosCerca]", err.message);
-        setLoading(false);
-      }
-    );
+    const unsub = dsWatch("cercas_eventos", snap => {
+      const lista = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(e => {
+          const ms = Number(e.criadoEmMs) || (e.criadoEm ? Date.parse(e.criadoEm) : 0);
+          return ms >= desdeMs;
+        })
+        .sort((a, b) => (Number(b.criadoEmMs) || Date.parse(b.criadoEm || 0)) - (Number(a.criadoEmMs) || Date.parse(a.criadoEm || 0)))
+        .slice(0, limite);
+      setEventos(lista);
+      setLoading(false);
+    });
     return () => unsub();
   }, [horasAtras, limite]);
 
