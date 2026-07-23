@@ -8,6 +8,7 @@ import {
   collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../firebase/config";
+import { list as dsList, insert as dsInsert, patch as dsPatch, remove as dsRemove } from "../../services/genericDataSource";
 import ProtegerPor from "../../rbac/ProtegerPor";
 import ModuleHeader from "../../components/ModuleHeader";
 import ExportBar from "../../components/ExportBar";
@@ -29,8 +30,8 @@ export default function Setores() {
   async function carregar() {
     setLoading(true);
     try {
-      const snap = await getDocs(query(collection(db, "setores"), orderBy("nome")));
-      setSetores(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const rows = await dsList("setores", { orderBy: "nome" });
+      setSetores(rows);
     } catch (e) {
       console.error(e);
     } finally {
@@ -71,9 +72,9 @@ export default function Setores() {
         updated_at: serverTimestamp(),
       };
       if (editId) {
-        await updateDoc(doc(db, "setores", editId), payload);
+        await dsPatch("setores", editId, payload);
       } else {
-        await addDoc(collection(db, "setores"), { ...payload, created_at: serverTimestamp() });
+        await dsInsert("setores", { ...payload, created_at: new Date().toISOString() });
       }
       await carregar();
       fechar();
@@ -87,7 +88,7 @@ export default function Setores() {
   async function excluir(s) {
     if (!window.confirm(`Excluir setor "${s.nome}"?\n\nCargos vinculados perderão a referência ao setor.`)) return;
     try {
-      await deleteDoc(doc(db, "setores", s.id));
+      await dsRemove("setores", s.id);
       carregar();
     } catch (e) {
       alert("Erro ao excluir: " + e.message);

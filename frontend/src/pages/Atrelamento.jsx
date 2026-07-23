@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs, addDoc, updateDoc, query, where, orderBy, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { list as dsList, insert as dsInsert } from "../services/genericDataSource";
+import { listVeiculos, patchVeiculo } from "../services/frotaDataSource";
 import ModuleHeader from "../components/ModuleHeader";
 import ExportBar from "../components/ExportBar";
 
@@ -97,20 +99,16 @@ export default function Atrelamento() {
   const carregar = async () => {
     setLoading(true);
     try {
-      const [snapReg, snapVeic, snapMot, snapManut] = await Promise.all([
-        getDocs(query(collection(db, "atrelamentos"), orderBy("data", "desc"))),
-        getDocs(query(collection(db, "veiculos"), orderBy("placa"))),
-        getDocs(query(collection(db, "motoristas"), where("status", "==", "ativo"))),
-        getDocs(collection(db, "manutencoes")),
+      const [regRows, veicRows, motRows, manutSnap] = await Promise.all([
+        dsList("atrelamentos", { orderBy: "data", order: "desc" }),
+        listVeiculos(),
+        dsList("motoristas", { where: { status: "ativo" } }),
+        getDocs(collection(db, "manutencoes")).catch(() => ({ docs: [] })),
       ]);
-      setRegistros(snapReg.docs.map(d => ({ id: d.id, ...d.data() })));
-      setVeiculos(
-        snapVeic.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(v => v.tipo !== "carreta" && v.status !== "inativo")
-      );
-      setMotoristas(snapMot.docs.map(d => ({ id: d.id, ...d.data() })));
-      setManutencoes(snapManut.docs.map(d => d.data()));
+      setRegistros(regRows);
+      setVeiculos(veicRows.filter(v => v.tipo !== "carreta" && v.status !== "inativo"));
+      setMotoristas(motRows);
+      setManutencoes(manutSnap.docs.map(d => d.data()));
     } catch (e) {
       console.error(e);
     }
@@ -148,18 +146,17 @@ export default function Atrelamento() {
     }
     setSaving(true);
     try {
-      await addDoc(collection(db, "atrelamentos"), {
+      await dsInsert("atrelamentos", {
         ...form,
         km: Number(form.km) || 0,
         criadoEm: new Date().toISOString(),
       });
 
       if (form.status === "CONCLUÍDO") {
-        // Localiza doc do cavalo pelo placa normalizado
         const cavaloDoc = veiculos.find(v => normPlaca(v.placa) === normPlaca(form.cavalo));
         if (cavaloDoc) {
           if (form.op === "ATRELAMENTO" || form.op === "SUBSTITUIÇÃO") {
-            await updateDoc(doc(db, "veiculos", cavaloDoc.id), {
+            await patchVeiculo(cavaloDoc.id, {
               c1: normPlaca(form.c1) || null,
               t1: form.t1 || "LS",
               c2: normPlaca(form.c2) || null,
@@ -168,7 +165,7 @@ export default function Atrelamento() {
               updatedAt: new Date().toISOString(),
             });
           } else if (form.op === "DESATRELAMENTO") {
-            await updateDoc(doc(db, "veiculos", cavaloDoc.id), {
+            await patchVeiculo(cavaloDoc.id, {
               c1: null, t1: null,
               c2: null, t2: null,
               motorista: null,

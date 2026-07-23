@@ -10,6 +10,7 @@ import { useState, useEffect, useMemo } from "react";
 import {
   collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp,
 } from "firebase/firestore";
+import { list as dsList, insert as dsInsert, patch as dsPatch, remove as dsRemove } from "../../services/genericDataSource";
 import { db } from "../../firebase/config";
 import { useRBAC } from "../../rbac/RBACContext";
 import ProtegerPor from "../../rbac/ProtegerPor";
@@ -49,12 +50,12 @@ export default function Cargos() {
   async function carregar() {
     setLoading(true);
     try {
-      const [setoresSnap, cargosSnap] = await Promise.all([
-        getDocs(query(collection(db, "setores"), orderBy("nome"))),
-        getDocs(query(collection(db, "cargos"),  orderBy("nivel", "desc"))),
+      const [setoresRows, cargosRows] = await Promise.all([
+        dsList("setores", { orderBy: "nome" }),
+        dsList("cargos",  { orderBy: "nivel", order: "desc" }),
       ]);
-      setSetores(setoresSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setCargos(cargosSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setSetores(setoresRows);
+      setCargos(cargosRows);
     } catch (e) {
       console.error(e);
     } finally {
@@ -111,9 +112,9 @@ export default function Cargos() {
         updated_at: serverTimestamp(),
       };
       if (editId) {
-        await updateDoc(doc(db, "cargos", editId), payload);
+        await dsPatch("cargos", editId, payload);
       } else {
-        await addDoc(collection(db, "cargos"), { ...payload, created_at: serverTimestamp() });
+        await dsInsert("cargos", { ...payload, created_at: new Date().toISOString() });
       }
       await carregar();
       fechar();
@@ -127,7 +128,7 @@ export default function Cargos() {
   async function excluir(c) {
     if (!window.confirm(`Excluir cargo "${c.nome}"?\n\nUsuários vinculados perderão suas permissões.`)) return;
     try {
-      await deleteDoc(doc(db, "cargos", c.id));
+      await dsRemove("cargos", c.id);
       if (permCargo?.id === c.id) setPermCargo(null);
       carregar();
     } catch (e) {
@@ -144,12 +145,12 @@ export default function Cargos() {
     if (!setorForm.nome.trim()) return setErroSetor("Nome é obrigatório.");
     setSalvandoSetor(true); setErroSetor("");
     try {
-      await addDoc(collection(db, "setores"), {
+      await dsInsert("setores", {
         nome: setorForm.nome.trim(),
         descricao: setorForm.descricao.trim(),
         status: setorForm.status,
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
       await carregar();
       fecharSetor();
@@ -186,9 +187,9 @@ export default function Cargos() {
     if (!permCargo) return;
     setSalvandoPerms(true);
     try {
-      await updateDoc(doc(db, "cargos", permCargo.id), {
+      await dsPatch("cargos", permCargo.id, {
         permissoes: permsLocal,
-        updated_at: serverTimestamp(),
+        updated_at: new Date().toISOString(),
       });
       await carregar();
       fecharPerms();
