@@ -28,6 +28,7 @@ const REST_MAP = {
   ordens_servico:          "ordens-servico",
   lancamentos_os:          "lancamentos-os",
   tipos_manutencao_custom: "tipos-manutencao",
+  veiculos:                "veiculos",
 };
 
 function restResource(colecao) {

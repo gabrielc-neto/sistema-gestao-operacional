@@ -9,6 +9,7 @@ import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
 import VeiculoQR from "../components/VeiculoQR";
 import { QrCode, Rows3, LayoutGrid, Columns2, Lock as LockIco, Unlock as UnlockIco, Edit3 } from "lucide-react";
+import { usuarioPontual } from "../utils/format";
 
 const MOTIVOS_BLOQUEIO = ["CIV", "CIPP", "Manutenção", "Documentos vencidos", "Revisão", "Outro"];
 
@@ -351,7 +352,7 @@ export default function Frota() {
             ativo: true,
             motivo: bmMotivo,
             descricao: bmDesc,
-            bloqueadoPor: profile?.nome || profile?.email || role,
+            bloqueadoPor: usuarioPontual(profile),
             bloqueadoEm: agora,
           }
         });
@@ -361,7 +362,7 @@ export default function Frota() {
           bloqueio: {
             ativo: false,
             novaVigencia: bmVigencia,
-            desbloqueadoPor: profile?.nome || profile?.email || role,
+            desbloqueadoPor: usuarioPontual(profile),
             desbloqueadoEm: agora,
           }
         });

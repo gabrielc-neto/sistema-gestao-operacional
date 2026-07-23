@@ -1,6 +1,17 @@
 // Helpers de formatação compartilhados entre páginas.
 // Antes duplicados em Jornada, Rastreamento, MapaFrota e exportJornadaPdf.
 
+// Formato padrão pra registrar QUEM fez uma ação: NOME.PONTUAL
+// Ex: THIAGO.PONTUAL, ROSILDA.PONTUAL, WESLEY.PONTUAL
+// Usar em criadoPor/atualizadoPor/finalizadoPor/bloqueadoPor/etc
+// Regra permanente Rosilda 2026-07-23.
+export function usuarioPontual(profile) {
+  const nome = profile?.nome || profile?.displayName || profile?.email || "";
+  const primeira = String(nome).trim().split(/[\s@.]+/)[0];
+  if (!primeira) return "USUARIO.PONTUAL";
+  return `${primeira.toUpperCase()}.PONTUAL`;
+}
+
 export function capitalizarNome(nome) {
   if (!nome) return "";
   return nome.trim().toLowerCase()

@@ -4,6 +4,7 @@ import { watch as dsWatch, insert as dsInsert, patch as dsPatch, remove as dsRem
 import { db } from "../firebase/config";
 import { uploadArquivo } from "../services/cloudinary";
 import { exportChecklistMensalPdf } from "../utils/pdfChecklistMensal";
+import { usuarioPontual } from "../utils/format";
 
 // ────────────────────────────────────────────────────────────────
 // Itens do checklist (fiel ao PDF Checklist_Mensal_Caminhao_Tanque)
@@ -220,7 +221,7 @@ export default function ChecklistMensalPanel({ veiculos, profile }) {
         assinaturaMecanico: form.assinaturaMecanico.trim(),
         assinaturaGestor:   form.assinaturaGestor.trim(),
         editadoEm:          agora,
-        editadoPor:         profile?.email || profile?.nome || "—",
+        editadoPor:         usuarioPontual(profile),
       };
       if (editId) {
         await dsPatch("checklists_mensais", editId, payload);
