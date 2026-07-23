@@ -6,7 +6,7 @@ import { basename } from "node:path";
 
 const HOST = "72.60.8.135";
 const USER = "root";
-const PASS = process.env.VPS_PASS || "mn+X4OH5U-nBB1lE";
+const PASS = process.env.VPS_PASS || "Pontual@pontual01";
 
 const [, , local, remoto] = process.argv;
 if (!local || !remoto) { console.error("uso: node vps-scp.mjs <local> <remoto>"); process.exit(1); }

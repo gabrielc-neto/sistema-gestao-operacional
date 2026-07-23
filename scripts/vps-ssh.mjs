@@ -4,7 +4,7 @@ import { Client } from "ssh2";
 
 const HOST = "72.60.8.135";
 const USER = "root";
-const PASS = process.env.VPS_PASS || "mn+X4OH5U-nBB1lE";
+const PASS = process.env.VPS_PASS || "Pontual@pontual01";
 
 const cmd = process.argv.slice(2).join(" ");
 if (!cmd) { console.error("uso: node vps-ssh.mjs '<comando>'"); process.exit(1); }
