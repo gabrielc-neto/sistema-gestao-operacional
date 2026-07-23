@@ -23,6 +23,7 @@
 - [project-sascar-api-paginacao-antigo-primeiro](project-sascar-api-paginacao-antigo-primeiro.md) — "SASCAR SasIntegra API `obterPacotePosicoesMotorista` é fila — cada chamada retorna 3000 pacotes dos MAIS ANTIGOS primeiro. Precisa loop pra chegar em dados frescos. Mesmo padrão do CTA API."
 - [project-sessao-2026-07-20-skills-e-fixes](project-sessao-2026-07-20-skills-e-fixes.md) — "Sessão 20/07 — instalação 8 skills externas, fix Firestore rules Compras, aumento fontes mobile, auditoria Playwright completa"
 - [project-ui-ux-melhorias-2026-07-20](project-ui-ux-melhorias-2026-07-20.md) — "4 melhorias UI/UX aplicadas via consulta à skill ui-ux-pro-max — cor laranja tracking, fonte Fira Sans/Code, bullet charts nos KPIs, mobile keyboards"
+- [project-vps-http-puro-sem-ssl](project-vps-http-puro-sem-ssl.md) — "Sistema Pontual no VPS Hostinger roda em HTTP puro (sem SSL/HTTPS) por decisão da Rosilda 2026-07-23. Uso interno da empresa, sem exposição pública crítica. HTTPS pode ser ativado depois se DNS logistica.pontualpetroleo.com.br for criado."
 - [feedback_arquivo_explicito_obrigatorio](feedback_arquivo_explicito_obrigatorio.md) — name: arquivo-explicito-obrigatorio
 - [feedback_arquivos_downloads](feedback_arquivos_downloads.md) — name: Arquivos sempre em Downloads
 - [feedback_auditoria_estatica_nao_basta](feedback_auditoria_estatica_nao_basta.md) — name: feedback-auditoria-estatica-nao-basta
