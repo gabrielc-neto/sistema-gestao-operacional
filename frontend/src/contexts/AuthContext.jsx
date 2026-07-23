@@ -1,7 +1,18 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../firebase/config";
+import { getAuth as getFirebaseAuth } from "firebase/auth";
+import app, { db } from "../firebase/config";
+import {
+  login as vpsLogin,
+  logout as vpsLogout,
+  onAuthChange as vpsOnChange,
+  refreshUser as vpsRefresh,
+  getCurrentUser as vpsCurrent,
+} from "../services/authVPS";
+import { get as dsGet } from "../services/genericDataSource";
+
+const USE_VPS_AUTH = String(import.meta.env?.VITE_USE_VPS_AUTH || "").toLowerCase() === "true";
 
 const AuthContext = createContext();
 
@@ -11,15 +22,38 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+    if (USE_VPS_AUTH) {
+      // Modo VPS Auth JWT
+      const unsub = vpsOnChange(async (u) => {
+        if (u) {
+          setUser(u);
+          // Perfil vem do próprio JWT + tabela documents.usuarios se existir
+          try {
+            const perfilExtra = await dsGet("usuarios", u.uid || u.id);
+            setProfile({ ...u, ...(perfilExtra || {}) });
+          } catch {
+            setProfile(u);
+          }
+        } else {
+          setUser(null);
+          setProfile(null);
+        }
+        setLoading(false);
+      });
+      // Ao montar, tenta refresh do token (se ainda válido)
+      vpsRefresh().catch(() => {});
+      return unsub;
+    }
+
+    // Modo Firebase Auth (legado)
+    const firebaseAuth = getFirebaseAuth(app);
+    const unsub = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Define o usuário assim que autentica (não espera o perfil).
         setUser(firebaseUser);
         try {
           const snap = await getDoc(doc(db, "usuarios", firebaseUser.uid));
           setProfile(snap.exists() ? snap.data() : {});
         } catch {
-          // Falha ao ler o perfil NÃO deve deslogar o usuário.
           setProfile({});
         }
       } else {
@@ -31,8 +65,17 @@ export function AuthProvider({ children }) {
     return unsub;
   }, []);
 
-  const login  = (email, senha) => signInWithEmailAndPassword(auth, email, senha);
-  const logout = () => signOut(auth);
+  const login = async (email, senha) => {
+    if (USE_VPS_AUTH) return await vpsLogin(email, senha);
+    const firebaseAuth = getFirebaseAuth(app);
+    return await signInWithEmailAndPassword(firebaseAuth, email, senha);
+  };
+
+  const logout = async () => {
+    if (USE_VPS_AUTH) return await vpsLogout();
+    const firebaseAuth = getFirebaseAuth(app);
+    return await signOut(firebaseAuth);
+  };
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, login, logout }}>

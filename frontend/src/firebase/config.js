@@ -1,8 +1,12 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth as getFirebaseAuth } from "firebase/auth";
 import { initializeFirestore, memoryLocalCache } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+import { auth as vpsAuth } from "../services/authVPS";
+
+// Flag: se VITE_USE_VPS_AUTH=true, usa Auth JWT próprio (VPS). Senão Firebase.
+const USE_VPS_AUTH = String(import.meta.env?.VITE_USE_VPS_AUTH || "").toLowerCase() === "true";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBUZdqVSvcoHhnSYNK1edtpbJ1_xfQ-DTU",
@@ -16,7 +20,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
+// Auth: JWT próprio (VPS) OU Firebase Auth conforme flag.
+// vpsAuth expõe `auth.currentUser` com `getIdToken()` — compat com resto do código.
+export const auth = USE_VPS_AUTH ? vpsAuth : getFirebaseAuth(app);
 // Cache em memória (sem IndexedDB persistente) — evita OSs "fantasma" no browser do usuário
 // quando conexão cai. Cada nova sessão vê o estado real do servidor.
 export const db = initializeFirestore(app, {

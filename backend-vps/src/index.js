@@ -18,6 +18,7 @@ import collectionsRoutes from "./routes/collections.js";
 import sascarRoutes from "./routes/sascar.js";
 import jornadaRoutes from "./routes/jornada.js";
 import ctaRoutes from "./routes/cta.js";
+import authRoutes from "./routes/auth.js";
 import { iniciarCronjobs } from "./cron.js";
 
 const app = express();
@@ -48,6 +49,7 @@ app.use("/api/collections",      collectionsRoutes);
 app.use("/api/sascar",           sascarRoutes);
 app.use("/api/jornada",          jornadaRoutes);
 app.use("/api/cta",              ctaRoutes);
+app.use("/api/auth",             authRoutes);
 
 // 404 catch-all
 app.use((req, res) => res.status(404).json({ error: "not_found", path: req.originalUrl }));
