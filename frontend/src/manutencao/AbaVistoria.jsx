@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { collection, onSnapshot, addDoc, deleteDoc, doc, query, orderBy, limit } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "../firebase/config";
+import { watch as dsWatch, insert as dsInsert, remove as dsRemove } from "../services/genericDataSource";
 import { ClipboardCheck, Plus, X, Trash2, CheckCircle2, AlertTriangle, Circle, Camera, Truck } from "lucide-react";
 import PadAssinatura from "../components/PadAssinatura";
 
@@ -52,9 +53,8 @@ export default function AbaVistoria({ veiculos = [], motoristas = [], quemSou })
   }
 
   useEffect(() => {
-    const un = onSnapshot(query(collection(db, "vistorias"), orderBy("criadoEm", "desc"), limit(200)),
-      snap => setVistorias(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      e => console.warn("vistorias onSnapshot:", e));
+    const un = dsWatch("vistorias", snap => setVistorias(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      { orderBy: "criadoEm", order: "desc", limit: 200 });
     return () => un();
   }, []);
 
@@ -136,7 +136,7 @@ export default function AbaVistoria({ veiculos = [], motoristas = [], quemSou })
         criadoEm: new Date().toISOString(),
         criadoPor: quemSou?.() || "—",
       };
-      await addDoc(collection(db, "vistorias"), dados);
+      await dsInsert("vistorias", dados);
       fechar();
     } catch (e) { setErro("Salvar: " + (e?.message || e)); }
     finally { setSalvando(false); }
@@ -147,7 +147,7 @@ export default function AbaVistoria({ veiculos = [], motoristas = [], quemSou })
     for (const it of (v.itens || [])) {
       if (it.foto?.path) { try { await deleteObject(storageRef(storage, it.foto.path)); } catch {} }
     }
-    await deleteDoc(doc(db, "vistorias", v.id));
+    await dsRemove("vistorias", v.id);
   }
 
   const S = {
