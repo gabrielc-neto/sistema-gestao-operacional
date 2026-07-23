@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { addDoc, updateDoc, doc, collection } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { insert as dsInsert, patch as dsPatch } from "../services/genericDataSource";
 import { useNavigate } from "react-router-dom";
 import { Send, PackageCheck, X, RefreshCw, ExternalLink } from "lucide-react";
 import { VIDAS } from "./esquemas";
@@ -200,13 +201,13 @@ function ModalEnviar({ pneuInicial, pneus, setPneus, fornecedores, garantirForne
         obs: obs.trim(),
         registradoPor: quemSou(),
       };
-      await updateDoc(doc(db, "pneus", pneuId), {
+      await dsPatch("pneus", pneuId, {
         status: "recapagem",
         recapagemAtual: recapagem,
         posicaoAtual: null,
       });
       // Log em pneu_recapagens
-      await addDoc(collection(db, "pneu_recapagens"), {
+      await dsInsert("pneu_recapagens", {
         pneuId, fogo: pneu.fogo,
         tipo: "envio",
         ...recapagem,
@@ -321,8 +322,8 @@ function ModalReceber({ pneu, setPneus, quemSou, onClose }) {
         historicoRecapagens: [...historicoAnterior, recapCompleta],
         ultimaRecapagemEm: agora.toISOString(),
       };
-      await updateDoc(doc(db, "pneus", pneu.id), patch);
-      await addDoc(collection(db, "pneu_recapagens"), {
+      await dsPatch("pneus", pneu.id, patch);
+      await dsInsert("pneu_recapagens", {
         pneuId: pneu.id, fogo: pneu.fogo,
         tipo: "retorno",
         ...recapCompleta,

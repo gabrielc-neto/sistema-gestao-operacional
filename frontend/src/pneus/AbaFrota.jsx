@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { listVeiculos } from "../services/frotaDataSource";
 import { ESQUEMAS, sugerirEsquema, VIDAS, MOTIVOS_REMOCAO } from "./esquemas";
 import { instalarPneu, removerPneu, rodizioPneu, pneusDoVeiculo } from "./movimentacoes";
 import { Truck, Package, X, ArrowLeftRight, Trash2, Plus, AlertCircle } from "lucide-react";
@@ -323,8 +324,8 @@ export default function AbaFrota({ pneus, setPneus, profile }) {
   const [msg, setMsg] = useState({ tipo: "", txt: "" });
 
   useEffect(() => {
-    getDocs(collection(db, "veiculos"))
-      .then(snap => setVeiculos(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+    listVeiculos()
+      .then(rows => setVeiculos(rows))
       .catch(() => setVeiculos([]));
   }, []);
 

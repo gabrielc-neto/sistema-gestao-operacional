@@ -29,7 +29,7 @@ const COLECOES = new Set([
   "multas",
   "ordens_carregamento",
   "atrelamentos",
-  "pneus", "pneu_compras", "pneu_inspecoes", "pneu_recapagens",
+  "pneus", "pneu_compras", "pneu_inspecoes", "pneu_recapagens", "pneu_movimentacoes",
   "sascar_posicoes",
   "cta_abastecimentos", "abastecimentos_cta",
   "vistorias",

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { collection, getDocs, doc, getDoc, query, where } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { get as dsGet, list as dsList } from "../services/genericDataSource";
 import LogoPontual from "../components/LogoPontual";
 import { ArrowLeft, Package, MapPin, RefreshCw, ClipboardCheck, Plus, Calendar } from "lucide-react";
 import { VIDAS, STATUS_PNEU } from "../pneus/esquemas";
@@ -78,15 +79,14 @@ export default function FichaPneu() {
   useEffect(() => {
     async function carregar() {
       try {
-        const [snapPneu, snapInsp, snapRecap] = await Promise.all([
-          getDoc(doc(db, "pneus", id)),
-          getDocs(collection(db, "pneu_inspecoes")),
-          getDocs(query(collection(db, "pneu_recapagens"), where("pneuId", "==", id))),
+        const [pneuData, inspRows, recapRows] = await Promise.all([
+          dsGet("pneus", id),
+          dsList("pneu_inspecoes"),
+          dsList("pneu_recapagens", { where: { pneuId: id } }),
         ]);
-        if (snapPneu.exists()) setPneu({ id: snapPneu.id, ...snapPneu.data() });
-        // Filtra inspecoes que tenham o fogo desse pneu em algum veic/posicao
-        setInspecoes(snapInsp.docs.map(d => ({ id: d.id, ...d.data() })));
-        setRecapagens(snapRecap.docs.map(d => ({ id: d.id, ...d.data() })));
+        if (pneuData) setPneu(pneuData);
+        setInspecoes(inspRows);
+        setRecapagens(recapRows);
       } catch (e) {
         console.warn("[ficha-pneu] falha:", e);
       } finally { setLoading(false); }

@@ -5,6 +5,8 @@ import { ESQUEMAS, sugerirEsquema } from "./esquemas";
 import { Check, X, Save, Pen, FileDown, Eye } from "lucide-react";
 import { baixarPdfInspecao, visualizarPdfInspecao } from "../utils/pdfInspecao";
 import { usuarioPontual } from "../utils/format";
+import { list as dsList, insert as dsInsert, patch as dsPatch } from "../services/genericDataSource";
+import { listVeiculos } from "../services/frotaDataSource";
 
 const CHECKLIST_ITENS = [
   "Alinhamento",
@@ -477,19 +479,15 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
 
   useEffect(() => {
     Promise.all([
-      getDocs(query(collection(db, "veiculos"), orderBy("placa"))).catch(() => null),
-      getDocs(collection(db, "motoristas")).catch(() => null),
-      getDocs(query(collection(db, "pneu_inspecoes"), orderBy("numero", "desc"))).catch(() => null),
+      listVeiculos().catch(() => null),
+      dsList("motoristas", { orderBy: "nome" }).catch(() => null),
+      dsList("pneu_inspecoes", { orderBy: "numero", order: "desc", limit: 1 }).catch(() => null),
     ]).then(([vs, ms, ins]) => {
-      if (vs) setVeiculos(vs.docs.map(d => ({ id: d.id, ...d.data() })));
-      if (ms) {
-        const lista = ms.docs.map(d => ({ id: d.id, ...d.data() }));
-        lista.sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
-        setMotoristas(lista);
-      }
+      if (vs) setVeiculos(vs);
+      if (ms) setMotoristas(ms);
       // próximo número = último + 1 (default 1)
-      if (ins && ins.docs.length > 0) {
-        const ultimo = ins.docs[0].data();
+      if (ins && ins.length > 0) {
+        const ultimo = ins[0];
         setNumero(Number(ultimo.numero) + 1 || 1);
       } else {
         setNumero(1);
@@ -628,7 +626,7 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
         criadoPor: supervisor.nome,
       };
 
-      const ref = await addDoc(collection(db, "pneu_inspecoes"), payload);
+      const ref = await dsInsert("pneu_inspecoes", payload);
 
       // Efeito: atualiza sulcoAtual de cada pneu (matching por fogo)
       let atualizados = 0;
@@ -646,7 +644,7 @@ export default function AbaInspecao({ pneus, setPneus, profile }) {
           const sulcoNovo = Number(p.sulco);
           if (!Number.isFinite(sulcoNovo)) continue;
           try {
-            await updateDoc(doc(db, "pneus", alvo.id), {
+            await dsPatch("pneus", alvo.id, {
               sulcoAtual: sulcoNovo,
               status: "em_uso",
               posicaoAtual: {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { collection, getDocs, query, orderBy, addDoc, updateDoc, doc, onSnapshot } from "firebase/firestore";
+import { watch as dsWatch, insert as dsInsert, patch as dsPatch } from "../services/genericDataSource";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import { usuarioPontual } from "../utils/format";
@@ -68,26 +69,18 @@ export default function Pneus() {
     // atualiza automaticamente essa tela.
     let carregouPneus = false, carregouForn = false;
     const marcaOk = () => { if (carregouPneus && carregouForn) setLoading(false); };
-    const unsubPneus = onSnapshot(
-      query(collection(db, "pneus"), orderBy("criadoEm", "desc")),
-      snap => {
-        setPneus(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-        carregouPneus = true; marcaOk();
-      },
-      err => { console.warn("pneus onSnapshot:", err); carregouPneus = true; marcaOk(); }
-    );
-    const unsubItens = onSnapshot(
-      collection(db, "itens_manutencao"),
-      snap => {
-        const forn = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(i => i.tipo === "fornecedor")
-          .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
-        setFornecedores(forn);
-        carregouForn = true; marcaOk();
-      },
-      err => { console.warn("itens_manutencao onSnapshot:", err); carregouForn = true; marcaOk(); }
-    );
+    const unsubPneus = dsWatch("pneus", snap => {
+      setPneus(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      carregouPneus = true; marcaOk();
+    }, { orderBy: "criadoEm", order: "desc" });
+    const unsubItens = dsWatch("itens_manutencao", snap => {
+      const forn = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(i => i.tipo === "fornecedor")
+        .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+      setFornecedores(forn);
+      carregouForn = true; marcaOk();
+    });
     return () => {
       try { unsubPneus(); } catch {}
       try { unsubItens(); } catch {}
@@ -102,7 +95,7 @@ export default function Pneus() {
     if (existente) {
       if (cnpj && !existente.cnpj) {
         try {
-          await updateDoc(doc(db, "itens_manutencao", existente.id), { cnpj });
+          await dsPatch("itens_manutencao", existente.id, { cnpj });
           setFornecedores(prev => prev.map(f => f.id === existente.id ? { ...f, cnpj } : f));
         } catch (e) { console.warn("[fornecedores] falha update cnpj:", e); }
       }
@@ -111,7 +104,7 @@ export default function Pneus() {
     try {
       const payload = { tipo: "fornecedor", nome: nm, criadoEm: new Date().toISOString(), criadoPor: quemSou() };
       if (cnpj) payload.cnpj = cnpj;
-      const ref = await addDoc(collection(db, "itens_manutencao"), payload);
+      const ref = await dsInsert("itens_manutencao", payload);
       setFornecedores(prev => [...prev, { id: ref.id, ...payload }].sort((a, b) => (a.nome || "").localeCompare(b.nome || "")));
     } catch (e) { console.warn("[fornecedores] falha cadastro:", e); }
   }, [fornecedores]); // eslint-disable-line react-hooks/exhaustive-deps
