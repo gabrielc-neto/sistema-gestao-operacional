@@ -15,6 +15,10 @@ import tiposManutRoutes from "./routes/tipos-manutencao.js";
 import uploadsRoutes, { attachFileServer } from "./routes/uploads.js";
 import veiculosRoutes from "./routes/veiculos.js";
 import collectionsRoutes from "./routes/collections.js";
+import sascarRoutes from "./routes/sascar.js";
+import jornadaRoutes from "./routes/jornada.js";
+import ctaRoutes from "./routes/cta.js";
+import { iniciarCronjobs } from "./cron.js";
 
 const app = express();
 
@@ -41,6 +45,9 @@ app.use("/api/tipos-manutencao", tiposManutRoutes);
 app.use("/api/uploads",          uploadsRoutes);
 app.use("/api/veiculos",         veiculosRoutes);
 app.use("/api/collections",      collectionsRoutes);
+app.use("/api/sascar",           sascarRoutes);
+app.use("/api/jornada",          jornadaRoutes);
+app.use("/api/cta",              ctaRoutes);
 
 // 404 catch-all
 app.use((req, res) => res.status(404).json({ error: "not_found", path: req.originalUrl }));
@@ -52,4 +59,5 @@ app.listen(config.port, () => {
   console.log(`[pontual] backend rodando em porta ${config.port} (${config.nodeEnv})`);
   console.log(`[pontual] uploads em: ${config.uploadsDir}`);
   console.log(`[pontual] CORS origins: ${config.cors.origins.join(", ")}`);
+  iniciarCronjobs();
 });

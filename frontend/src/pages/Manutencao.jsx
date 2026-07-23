@@ -7,6 +7,7 @@ import {
 import { db } from "../firebase/config";
 import { uploadArquivo as uploadCloudinary } from "../services/cloudinary";
 import { uploadArquivoVPS } from "../services/pontualApi";
+import { usuarioPontual } from "../utils/format";
 import {
   listAll as dsListAll,
   watch as dsWatch,
@@ -1926,7 +1927,7 @@ export default function Manutencao() {
     return `OS-${String(maior + 1).padStart(5, "0")}`;
   }
 
-  const quemSou = () => profile?.nome || profile?.email || profile?.role || "—";
+  const quemSou = () => usuarioPontual(profile);
 
   // atualiza o bloqueio de um veículo no estado local (sem refazer fetch)
   function patchVeiculoLocal(veiculoId, bloqueio) {
@@ -2014,7 +2015,7 @@ export default function Manutencao() {
         fornecedor:    fornecedorNome,
         fornecedorCnpj,
         status:        "aberta",
-        criadoPor:     profile?.email || profile?.nome || "—",
+        criadoPor:     usuarioPontual(profile),
         criadoEm:      agora.toISOString(),
       };
       const ref = await dsInsert("ordens_servico", payload);
@@ -2112,7 +2113,7 @@ export default function Manutencao() {
           url: meta.url, path: meta.publicId,
           tamanho: blob.size,
           criadoEm: new Date().toISOString(),
-          criadoPor: profile?.email || profile?.nome || "—",
+          criadoPor: usuarioPontual(profile),
         });
       }
       await dsPatch("ordens_servico", os.id, { fotos: novasFotos, updatedAt: new Date().toISOString() });
@@ -2495,7 +2496,7 @@ export default function Manutencao() {
         itens,
         valorTotal,
         servicoFeito:   (formLanc.servicoFeito || "").trim(),
-        criadoPor:      profile?.email || profile?.nome || "—",
+        criadoPor:      usuarioPontual(profile),
         criadoEm:       agora.toISOString(),
       };
       const ref = await dsInsert("lancamentos_os", payload);
@@ -3077,7 +3078,7 @@ export default function Manutencao() {
         <main style={s.main} className="pg-body">
           <AbaEstoque
             veiculos={veiculos}
-            quemSou={() => profile?.email || profile?.nome || "—"}
+            quemSou={() => usuarioPontual(profile)}
           />
         </main>
       )}
