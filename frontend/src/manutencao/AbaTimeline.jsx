@@ -5,6 +5,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { watch as dsWatch } from "../services/genericDataSource";
 import { Wrench, AlertOctagon, Fuel, FileText, Calendar, Truck, Filter } from "lucide-react";
 
 const TIPO_META = {
@@ -35,12 +36,10 @@ export default function AbaTimeline({ veiculos = [], ordensServico = [], registr
   const [abast, setAbast] = useState([]);
 
   useEffect(() => {
-    const un1 = onSnapshot(collection(db, "multas"), snap => setMultas(snap.docs.map(d => ({ id: d.id, ...d.data() }))), () => {});
-    // Abastecimentos podem estar em várias coleções (cta_abastecimentos, abastecimentos, etc)
-    const un2 = onSnapshot(query(collection(db, "cta_abastecimentos"), orderBy("dataAbastecimento", "desc"), limit(500)),
-      snap => setAbast(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      () => {} // silenciar erro se coleção não existir
-    );
+    const un1 = dsWatch("multas", snap => setMultas(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    // Abastecimentos: dsList com limit + ordering na coleção genérica
+    const un2 = dsWatch("cta_abastecimentos", snap => setAbast(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      { orderBy: "dataAbastecimento", order: "desc", limit: 500 });
     return () => { un1(); un2(); };
   }, []);
 

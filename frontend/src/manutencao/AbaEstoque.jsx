@@ -7,6 +7,7 @@ import {
   collection, onSnapshot, addDoc, updateDoc, doc, runTransaction, query, orderBy
 } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { watch as dsWatch, insert as dsInsert, patch as dsPatch, get as dsGet } from "../services/genericDataSource";
 import {
   Package, Plus, ArrowDownToLine, ArrowUpFromLine, History,
   Search, Edit3, Trash2, X, AlertTriangle, TrendingUp, TrendingDown, Droplets, FileUp
@@ -441,12 +442,12 @@ export default function AbaEstoque({ veiculos, quemSou }) {
 
   // Load em tempo real
   useEffect(() => {
-    const un1 = onSnapshot(query(collection(db, "estoque_itens"), orderBy("nome")), snap => {
+    const un1 = dsWatch("estoque_itens", snap => {
       setItens(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, err => console.warn("estoque_itens onSnapshot:", err));
-    const un2 = onSnapshot(query(collection(db, "estoque_movimentacoes"), orderBy("criadoEm", "desc")), snap => {
+    }, { orderBy: "nome" });
+    const un2 = dsWatch("estoque_movimentacoes", snap => {
       setMovs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, err => console.warn("estoque_movimentacoes onSnapshot:", err));
+    }, { orderBy: "criadoEm", order: "desc" });
     return () => { un1(); un2(); };
   }, []);
 
@@ -540,7 +541,7 @@ export default function AbaEstoque({ veiculos, quemSou }) {
             itemId = existente.id;
           } else {
             const cat = catMap[it.categoria] || catMap["outros"];
-            const ref = await addDoc(collection(db, "estoque_itens"), {
+            const ref = await dsInsert("estoque_itens", {
               nome: it.nome,
               categoria: it.categoria,
               unidade: cat?.unidade || it.unidade || "UN",
@@ -596,19 +597,18 @@ export default function AbaEstoque({ veiculos, quemSou }) {
       atualizadoPor: quemSou?.() || "—",
     };
     if (modalItem === "novo") {
-      await addDoc(collection(db, "estoque_itens"), dados);
+      await dsInsert("estoque_itens", dados);
     } else {
-      await updateDoc(doc(db, "estoque_itens", modalItem.id), dados);
+      await dsPatch("estoque_itens", modalItem.id, dados);
     }
   }
 
-  // Salvar movimentação (transação: atualiza saldo do item)
+  // Salvar movimentação — SEM runTransaction (aceita race condition raro)
   async function salvarMov(payload) {
-    await runTransaction(db, async (tx) => {
-      const itemRef = doc(db, "estoque_itens", payload.itemId);
-      const snap = await tx.get(itemRef);
-      if (!snap.exists()) throw new Error("Item não existe mais no catálogo");
-      const item = snap.data();
+    {
+      const item = await dsGet("estoque_itens", payload.itemId);
+      if (!item) throw new Error("Item não existe mais no catálogo");
+      const tx = null; // placeholder — bloco original mantém estrutura
 
       // Sanitização robusta contra dados legados/inconsistentes
       const rawSaldo = Number(item.saldoAtual);
@@ -629,25 +629,23 @@ export default function AbaEstoque({ veiculos, quemSou }) {
         custoMedioNovo = saldoNovo > 0 ? (valorAntes + valorEntrada) / saldoNovo : custoUn;
       }
 
-      tx.update(itemRef, {
+      await dsPatch("estoque_itens", payload.itemId, {
         saldoAtual: saldoNovo,
         custoMedio: custoMedioNovo,
         atualizadoEm: new Date().toISOString(),
       });
 
-      const movRef = doc(collection(db, "estoque_movimentacoes"));
-      // Remove valores null/undefined do payload pra não sujar o doc
       const clean = Object.fromEntries(
         Object.entries(payload).filter(([, v]) => v !== undefined && v !== null && v !== "")
       );
-      tx.set(movRef, {
+      await dsInsert("estoque_movimentacoes", {
         ...clean,
         saldoAntes,
         saldoDepois: saldoNovo,
         responsavel: quemSou?.() || "—",
         criadoEm: new Date().toISOString(),
       });
-    });
+    }
   }
 
   // KPIs

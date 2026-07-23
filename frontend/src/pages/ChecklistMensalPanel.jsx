@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore";
+import { watch as dsWatch, insert as dsInsert, patch as dsPatch, remove as dsRemove } from "../services/genericDataSource";
 import { db } from "../firebase/config";
 import { uploadArquivo } from "../services/cloudinary";
 import { exportChecklistMensalPdf } from "../utils/pdfChecklistMensal";
@@ -99,11 +100,11 @@ export default function ChecklistMensalPanel({ veiculos, profile }) {
 
   // ── Firestore live sync ────────────────────────────
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "checklists_mensais"), snap => {
+    const unsub = dsWatch("checklists_mensais", snap => {
       const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       arr.sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""));
       setChecklists(arr);
-    }, e => console.warn("checklists_mensais onSnapshot:", e));
+    });
     return () => unsub();
   }, []);
 
@@ -186,7 +187,7 @@ export default function ChecklistMensalPanel({ veiculos, profile }) {
     if (!window.confirm(`Excluir o checklist de ${ck.placaCavalo || "—"} (${ck.mesRef || "—"})?`)) return;
     try {
       // Fotos ficam órfãs no Cloudinary (sem API secret no browser não dá pra deletar)
-      await deleteDoc(doc(db, "checklists_mensais", ck.id));
+      await dsRemove("checklists_mensais", ck.id);
     } catch (e) {
       alert("Erro ao excluir: " + e.message);
     }
@@ -222,11 +223,11 @@ export default function ChecklistMensalPanel({ veiculos, profile }) {
         editadoPor:         profile?.email || profile?.nome || "—",
       };
       if (editId) {
-        await updateDoc(doc(db, "checklists_mensais", editId), payload);
+        await dsPatch("checklists_mensais", editId, payload);
       } else {
         payload.criadoEm  = agora;
         payload.criadoPor = profile?.email || profile?.nome || "—";
-        await addDoc(collection(db, "checklists_mensais"), payload);
+        await dsInsert("checklists_mensais", payload);
       }
       resetForm();
     } catch (err) {
