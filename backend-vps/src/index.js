@@ -13,6 +13,8 @@ import ordensServicoRoutes from "./routes/ordens-servico.js";
 import lancamentosOsRoutes from "./routes/lancamentos-os.js";
 import tiposManutRoutes from "./routes/tipos-manutencao.js";
 import uploadsRoutes, { attachFileServer } from "./routes/uploads.js";
+import veiculosRoutes from "./routes/veiculos.js";
+import collectionsRoutes from "./routes/collections.js";
 
 const app = express();
 
@@ -37,6 +39,8 @@ app.use("/api/ordens-servico",   ordensServicoRoutes);
 app.use("/api/lancamentos-os",   lancamentosOsRoutes);
 app.use("/api/tipos-manutencao", tiposManutRoutes);
 app.use("/api/uploads",          uploadsRoutes);
+app.use("/api/veiculos",         veiculosRoutes);
+app.use("/api/collections",      collectionsRoutes);
 
 // 404 catch-all
 app.use((req, res) => res.status(404).json({ error: "not_found", path: req.originalUrl }));

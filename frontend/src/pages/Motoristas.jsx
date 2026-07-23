@@ -6,6 +6,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { uploadArquivo, cloudinaryConfigured } from "../services/cloudinary";
+import { list as dsList, save as dsSave, remove as dsRemove } from "../services/genericDataSource";
 import { useAuth } from "../contexts/AuthContext";
 import ModuleHeader from "../components/ModuleHeader";
 import ExportBar from "../components/ExportBar";
@@ -130,10 +131,8 @@ export default function Motoristas() {
   async function carregar() {
     setLoading(true);
     try {
-      const snap = await getDocs(
-        query(collection(db, "motoristas"), orderBy("nome"))
-      );
-      setMotoristas(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const rows = await dsList("motoristas", { orderBy: "nome" });
+      setMotoristas(rows);
     } catch (e) {
       console.error(e);
     } finally {
@@ -267,7 +266,7 @@ export default function Motoristas() {
       };
       if (!editando) data.createdAt = new Date().toISOString();
 
-      await setDoc(doc(db, "motoristas", id), data, { merge: true });
+      await dsSave("motoristas", id, data);
       await carregar();
       fecharModal();
     } catch (e) {
@@ -282,7 +281,7 @@ export default function Motoristas() {
   async function excluir(id, nome) {
     if (!window.confirm(`Excluir motorista "${nome}"?`)) return;
     try {
-      await deleteDoc(doc(db, "motoristas", id));
+      await dsRemove("motoristas", id);
       setMotoristas((prev) => prev.filter((m) => m.id !== id));
     } catch {
       alert("Erro ao excluir.");

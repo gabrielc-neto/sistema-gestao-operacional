@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy, setDoc, deleteDoc, doc, updateDoc, where, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase/config";
+import {
+  watchVeiculos, saveVeiculo, patchVeiculo, removeVeiculo, listVeiculos,
+} from "../services/frotaDataSource";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
@@ -204,8 +207,7 @@ export default function Frota() {
   function carregar() { return Promise.resolve(); }
 
   useEffect(() => {
-    const unsubVeic = onSnapshot(
-      query(collection(db, "veiculos"), orderBy("placa")),
+    const unsubVeic = watchVeiculos(
       snap => {
         const seen = new Set();
         setVeiculos(snap.docs
@@ -219,8 +221,7 @@ export default function Frota() {
           })
         );
         setLoading(false);
-      },
-      err => { console.warn("veiculos onSnapshot:", err); setLoading(false); }
+      }
     );
     const unsubMot = onSnapshot(
       query(collection(db, "motoristas"), orderBy("nome")),
@@ -256,9 +257,9 @@ export default function Frota() {
       if (base[`c${n}_chassi`]) continue;
       // normaliza placa antes de buscar (ex: "AKC-4906" → "AKC4906")
       const placaNorm = placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
-      const snap = await getDocs(query(collection(db,"veiculos"), where("placa","==", placaNorm)));
-      if (!snap.empty) {
-        const d = snap.docs[0].data();
+      const todos = await listVeiculos();
+      const d = todos.find(v => (v.placa || "").toUpperCase() === placaNorm);
+      if (d) {
         base[`c${n}_chassi`]  = d.chassi  || "";
         base[`c${n}_renavam`] = d.renavam || "";
         base[`c${n}_tara`]    = d.tara    || "";
@@ -277,9 +278,9 @@ export default function Frota() {
   async function buscarCarreta(n, placa) {
     const p = placa.trim().toUpperCase();
     if (!p || p.length < 5) return;
-    const snap = await getDocs(query(collection(db,"veiculos"), where("placa","==", p)));
-    if (!snap.empty) {
-      const d = snap.docs[0].data();
+    const todos = await listVeiculos();
+    const d = todos.find(v => (v.placa || "").toUpperCase() === p);
+    if (d) {
       setForm(f => ({
         ...f,
         [`c${n}_chassi`]:  d.chassi  || f[`c${n}_chassi`]  || "",
@@ -296,11 +297,11 @@ export default function Frota() {
     if (!placa) return alert("Informe a placa!");
     setSalvando(true);
     try {
-      await setDoc(doc(db, "veiculos", placa), { ...form, placa, empresa: "PONTUAL" }, { merge: true });
+      await saveVeiculo(placa, { ...form, placa, empresa: "PONTUAL" });
       for (const n of ["1","2"]) {
         const cPlaca = form[`c${n}`]?.trim().toUpperCase().replace(/[^A-Z0-9]/g,"");
         if (!cPlaca) continue;
-        await setDoc(doc(db,"veiculos", cPlaca), {
+        await saveVeiculo(cPlaca, {
           placa: cPlaca, empresa:"PONTUAL",
           chassi:   form[`c${n}_chassi`]  || null,
           renavam:  form[`c${n}_renavam`] || null,
@@ -308,7 +309,7 @@ export default function Frota() {
           ano_fab:  form[`c${n}_ano_fab`] || null,
           ano_mod:  form[`c${n}_ano_mod`] || null,
           updatedAt: new Date().toISOString(),
-        }, { merge: true });
+        });
       }
       fecharModal();
       carregar();
@@ -322,7 +323,7 @@ export default function Frota() {
   async function excluir(id) {
     if (!window.confirm("Excluir este veículo?")) return;
     try {
-      await deleteDoc(doc(db, "veiculos", id));
+      await removeVeiculo(id);
       carregar();
     } catch(e) {
       alert("Erro ao excluir: " + e.message);
@@ -345,7 +346,7 @@ export default function Frota() {
     const agora = new Date().toISOString();
     try {
       if (modo === "bloquear") {
-        await updateDoc(doc(db, "veiculos", veiculo.id), {
+        await patchVeiculo(veiculo.id, {
           bloqueio: {
             ativo: true,
             motivo: bmMotivo,
@@ -356,7 +357,7 @@ export default function Frota() {
         });
       } else {
         if (!bmVigencia) { alert("Informe a nova vigência dos documentos."); setBmSalvando(false); return; }
-        await updateDoc(doc(db, "veiculos", veiculo.id), {
+        await patchVeiculo(veiculo.id, {
           bloqueio: {
             ativo: false,
             novaVigencia: bmVigencia,
