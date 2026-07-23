@@ -8,6 +8,9 @@ import GraficoEvolucaoCustos from "../components/GraficoEvolucaoCustos";
 import { useSascarPosicoes } from "../hooks/useSascarPosicoes";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { list as dsList } from "../services/genericDataSource";
+import { listVeiculos } from "../services/frotaDataSource";
+import { listAll as dsListManut } from "../services/manutencaoDataSource";
 import { ClipboardList, Wrench, MapPin, Navigation, AlertTriangle, Activity, Truck, CheckCircle2, Lock, WifiOff } from "lucide-react";
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
@@ -120,8 +123,7 @@ export default function Dashboard() {
       const falhas = { v:false, oc:false, os:false };
       const marcarErro = () => setErro(falhas.oc && falhas.os);
 
-      getDocs(collection(db, "veiculos")).then(snap => {
-        const veiculos = snap.docs.map(d => d.data());
+      listVeiculos().then(veiculos => {
         setFrota({
           frotaAtiva: veiculos.filter(v => ["ativo","disponivel"].includes(v.status) && v.tipo !== "carreta").length,
           totalFrota: veiculos.filter(v => v.tipo !== "carreta").length,
@@ -129,12 +131,12 @@ export default function Dashboard() {
         });
       }).catch(() => { falhas.v = true; });
 
-      getDocs(query(collection(db, "ordens_carregamento"), orderBy("data", "desc"), limit(5)))
-        .then(snap => setRecentOCs(snap.docs.map(d => ({ id: d.id, ...d.data() })).slice(0, 5)))
+      dsList("ordens_carregamento", { orderBy: "data", order: "desc", limit: 5 })
+        .then(rows => setRecentOCs(rows.slice(0, 5)))
         .catch(() => { falhas.oc = true; marcarErro(); });
 
-      getDocs(query(collection(db, "ordens_servico"), orderBy("criadoEm", "desc"), limit(5)))
-        .then(snap => setRecentOS(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+      dsListManut("ordens_servico")
+        .then(rows => setRecentOS(rows.sort((a,b) => (b.criadoEm||b.created_at||"").localeCompare(a.criadoEm||a.created_at||"")).slice(0, 5)))
         .catch(() => { falhas.os = true; marcarErro(); });
     }
 

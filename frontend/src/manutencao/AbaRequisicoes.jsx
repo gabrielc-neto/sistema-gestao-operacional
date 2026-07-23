@@ -5,6 +5,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, query, orderBy, runTransaction } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { watch as dsWatch, insert as dsInsert, patch as dsPatch, remove as dsRemove } from "../services/genericDataSource";
 import { ShoppingCart, Plus, X, Trash2, Check, XCircle, Package, Clock } from "lucide-react";
 
 const STATUS_OPTS = [
@@ -29,9 +30,9 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
   const [filtroStatus, setFiltroStatus] = useState("todos");
 
   useEffect(() => {
-    const un = onSnapshot(query(collection(db, "requisicoes_compra"), orderBy("criadoEm", "desc")), snap => {
+    const un = dsWatch("requisicoes_compra", snap => {
       setReqs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, e => console.warn("requisicoes_compra onSnapshot:", e));
+    }, { orderBy: "criadoEm", order: "desc" });
     return () => un();
   }, []);
 
@@ -67,7 +68,7 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
         solicitante: quemSou?.() || "—",
         criadoEm: new Date().toISOString(),
       };
-      await addDoc(collection(db, "requisicoes_compra"), dados);
+      await dsInsert("requisicoes_compra", dados);
       fechar();
     } catch (e) { setErro("Salvar: " + (e?.message || e)); }
     finally { setSalvando(false); }
@@ -88,7 +89,7 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
       patch.recebidoEm = new Date().toISOString();
       patch.recebidoPor = quemSou?.() || "—";
     }
-    await updateDoc(doc(db, "requisicoes_compra", r.id), patch);
+    await dsPatch("requisicoes_compra", r.id, patch);
   }
 
   async function aprovar(r) {
@@ -110,7 +111,7 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
 
   async function apagar(r) {
     if (!window.confirm(`Excluir requisição de "${r.item}"?`)) return;
-    await deleteDoc(doc(db, "requisicoes_compra", r.id));
+    await dsRemove("requisicoes_compra", r.id);
   }
 
   const S = {
