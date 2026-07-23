@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { collection, getDocs, query, orderBy, addDoc, updateDoc, doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
+import { usuarioPontual } from "../utils/format";
 import LogoPontual from "../components/LogoPontual";
 import { Package, MapPin, ClipboardCheck, RefreshCw, LayoutDashboard, ShoppingCart, History } from "lucide-react";
 import { STATUS_PNEU } from "../pneus/esquemas";
@@ -115,7 +116,7 @@ export default function Pneus() {
     } catch (e) { console.warn("[fornecedores] falha cadastro:", e); }
   }, [fornecedores]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const quemSou = () => profile?.email || profile?.nome || "—";
+  const quemSou = () => usuarioPontual(profile);
 
   const contadores = useMemo(() => ({
     total:      pneus.length,

@@ -16,6 +16,7 @@ import {
   query, where, orderBy, serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { usuarioPontual } from "../utils/format";
 import { useAuth } from "../contexts/AuthContext";
 import { useRBAC } from "../rbac/RBACContext";
 import ModuleHeader from "../components/ModuleHeader";
@@ -44,7 +45,7 @@ export default function Compras() {
   const podeRegistrar = temPermissao("compras.registrar");
   const podeDashboard = temPermissao("compras.dashboard");
 
-  const quemSou = profile?.nome || profile?.email || "—";
+  const quemSou = usuarioPontual(profile);
   const meuSetorId = setor?.id || profile?.setor_id || null;
   const meuSetorNome = setor?.nome || "";
 
