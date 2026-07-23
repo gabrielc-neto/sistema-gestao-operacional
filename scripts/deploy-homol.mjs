@@ -9,6 +9,7 @@ const env = {
   ...process.env,
   VITE_BASE: "/homol/",
   VITE_PONTUAL_API_URL: "/homol",   // endpoints ficam em /homol/api/*
+  VITE_USE_VPS_AUTH: "true",         // HOMOL testa Auth JWT próprio
 };
 
 console.log("▶ [homol] build (base=/homol/)");
