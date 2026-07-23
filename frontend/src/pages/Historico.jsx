@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { list as dsList } from "../services/genericDataSource";
+import { listAll as dsListManut } from "../services/manutencaoDataSource";
 import ModuleHeader from "../components/ModuleHeader";
 import ExportBar from "../components/ExportBar";
 
@@ -43,17 +45,18 @@ const extrairData = (r) => {
   return String(raw).slice(0, 10);
 };
 
-const normalizarRegistros = (docs, tipo, descrFn) =>
-  docs.map(d => {
-    const r = { id: d.id, ...d.data() };
+const normalizarRegistros = (rows, tipo, descrFn) =>
+  rows.map(r => {
+    // Aceita tanto Firestore docs (com .id/.data()) quanto array plano [{id, ...}]
+    const doc = typeof r.data === "function" ? { id: r.id, ...r.data() } : r;
     return {
-      _id: d.id,
+      _id: doc.id,
       _tipo: tipo,
-      _data: extrairData(r),
-      _hora: r.hora || r.criadoEm?.slice(11, 16) || "",
-      _descricao: descrFn(r),
-      _usuario: r.usuario || r.motorista || "",
-      _raw: r,
+      _data: extrairData(doc),
+      _hora: doc.hora || doc.criadoEm?.slice(11, 16) || "",
+      _descricao: descrFn(doc),
+      _usuario: doc.usuario || doc.motorista || "",
+      _raw: doc,
     };
   });
 
@@ -88,19 +91,15 @@ export default function Historico() {
     setLoading(true);
     setErro("");
     try {
-      const [snapAtr, snapOC, snapMan] = await Promise.all([
-        getDocs(query(collection(db, "atrelamentos"), orderBy("data", "desc"))),
-        getDocs(query(collection(db, "ordens_carregamento"), orderBy("data", "desc"))).catch(() =>
-          getDocs(collection(db, "ordens_carregamento"))
-        ),
-        getDocs(query(collection(db, "manutencoes"), orderBy("data", "desc"))).catch(() =>
-          getDocs(collection(db, "manutencoes"))
-        ),
+      const [atrRows, ocRows, manRows] = await Promise.all([
+        dsList("atrelamentos",        { orderBy: "data", order: "desc" }).catch(() => []),
+        dsList("ordens_carregamento", { orderBy: "data", order: "desc" }).catch(() => []),
+        dsListManut("manutencoes").catch(() => []),
       ]);
 
-      const atrs = normalizarRegistros(snapAtr.docs, "ATRELAMENTO", descricaoAtrelamento);
-      const ocs  = normalizarRegistros(snapOC.docs,  "OC",           descricaoOC);
-      const mans = normalizarRegistros(snapMan.docs,  "MANUTENÇÃO",   descricaoManutencao);
+      const atrs = normalizarRegistros(atrRows, "ATRELAMENTO", descricaoAtrelamento);
+      const ocs  = normalizarRegistros(ocRows,  "OC",           descricaoOC);
+      const mans = normalizarRegistros(manRows,  "MANUTENÇÃO",   descricaoManutencao);
 
       const unidos = [...atrs, ...ocs, ...mans].sort((a, b) => {
         const da = (a._data + " " + a._hora) || "";

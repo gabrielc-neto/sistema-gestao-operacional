@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { collection, onSnapshot, doc, getDoc, getDocs } from "firebase/firestore";
+import { list as dsList } from "../services/genericDataSource";
+import { listVeiculos } from "../services/frotaDataSource";
 import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import { ArrowLeft, Fuel, Truck, MapPin, Download, TrendingUp, AlertTriangle, DollarSign, BarChart3, Building2 } from "lucide-react";
@@ -74,16 +76,16 @@ export default function Abastecimento() {
   useEffect(() => {
     let cancelado = false;
     Promise.all([
-      getDocs(collection(db, "abastecimentos_cta")).catch(e => { console.warn("abastecimentos_cta:", e); return { docs: [] }; }),
-      getDocs(collection(db, "veiculos")).catch(e => { console.warn("veiculos:", e); return { docs: [] }; }),
-      getDocs(collection(db, "sascar_posicoes")).catch(e => { console.warn("sascar_posicoes:", e); return { docs: [] }; }),
-    ]).then(([snapAb, snapV, snapS]) => {
+      dsList("abastecimentos_cta").catch(e => { console.warn("abastecimentos_cta:", e); return []; }),
+      listVeiculos().catch(e => { console.warn("veiculos:", e); return []; }),
+      dsList("sascar_posicoes", { limit: 5000 }).catch(e => { console.warn("sascar_posicoes:", e); return []; }),
+    ]).then(([abRows, vRows, sRows]) => {
       if (cancelado) return;
-      const ab = snapAb.docs.map(d => ({ id: d.id, ...d.data() }));
+      const ab = [...abRows];
       ab.sort((a, b) => (b.dataInicio || "").localeCompare(a.dataInicio || ""));
       setAbasts(ab);
-      setVeiculosFrota(snapV.docs.map(d => ({ id: d.id, ...d.data() })));
-      setSascarPos(snapS.docs.map(d => ({ id: d.id, ...d.data() })));
+      setVeiculosFrota(vRows);
+      setSascarPos(sRows);
       setLoading(false);
     });
     return () => { cancelado = true; };
