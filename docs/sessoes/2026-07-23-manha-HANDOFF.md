@@ -3,16 +3,83 @@
 Documento pra Rosilda ler ao chegar 8h da manhã.
 Trabalho autônomo realizado 22/07 17h → 23/07 8h (Sprint 1 migração Hostinger).
 
-## Resumo executivo
+## ⚠️ AÇÃO OBRIGATÓRIA — Rodar migração ANTES de testar
 
-**Manutenção 100% no VPS Hostinger: código pronto e testado. Dados aguardando migração final.**
+Fiz 5 tentativas automáticas ao longo da noite (17h, 18h, 19h, 20h, 22h)
+e a **quota Firestore continuou estourada em TODAS**. Isso é o mesmo problema
+que você enfrenta pela manhã — Spark Plan free tem limite diário e reseta
+provavelmente à **meia-noite PST** (~4h Brasília) ou até depois.
 
-Ao chegar, você precisa:
-1. Trocar 1 variável no `.env.local` (`VITE_USE_VPS_MANUTENCAO=false` → `true`)
-2. Reiniciar Vite
-3. Testar `/manutencao` (deve funcionar 100% via VPS)
+**Você precisa rodar a migração de dados manualmente pela manhã** (deve
+funcionar porque quota terá resetado durante a madrugada).
 
-Se algo quebrar, `git checkout <hash>` volta em 5s.
+### Comando exato (copiar e colar num terminal Git Bash ou PowerShell):
+
+```bash
+cd C:/Users/Logistica01/projetos/logistica-ia/scripts
+MSYS_NO_PATHCONV=1 node vps-ssh.mjs "cd /var/pontual/backend && node migrate.mjs"
+```
+
+### O que deve aparecer se der certo:
+
+```
+[fs] conectado no projeto pontual-logistica
+[pg] conectado no banco pontual
+
+=== manutencoes ===
+[fs] X docs
+[pg] X inseridos, 0 erros
+
+=== ordens_servico ===
+[fs] X docs
+[pg] X inseridos, 0 erros
+
+=== lancamentos_os ===
+[fs] X docs
+[pg] X inseridos, 0 erros
+
+=== tipos_manutencao_custom ===
+[fs] X docs
+[pg] X inseridos, 0 erros
+
+=== RESUMO ===
+┌─────────────────────────┬──────────┬─────┬─────┐
+│ (index)                 │ total    │ ok  │ err │
+├─────────────────────────┼──────────┼─────┼─────┤
+│ manutencoes             │  ...     │ ... │  0  │
+│ ordens_servico          │  ...     │ ... │  0  │
+│ lancamentos_os          │  ...     │ ... │  0  │
+│ tipos_manutencao_custom │  ...     │ ... │  0  │
+└─────────────────────────┴──────────┴─────┴─────┘
+```
+
+### Se ainda der `Quota exceeded`:
+
+Espera mais 1-2h e tenta de novo. Quota SEMPRE reseta — máximo é 24h.
+
+**Alternativa rápida:** eu posso tentar de novo assim que você chegar
+(só me avisar). Ou você deixa o comando acima rodando num terminal e ele
+vai completar quando quota voltar.
+
+## Depois da migração — Ativar VPS pro módulo manutenção
+
+**1.** Abrir `frontend/.env.local`
+**2.** Trocar:
+```
+VITE_USE_VPS_MANUTENCAO=false
+```
+por:
+```
+VITE_USE_VPS_MANUTENCAO=true
+```
+**3.** No terminal do Vite, apertar `Ctrl+C` e rodar `npm run dev` de novo
+**4.** Abrir http://localhost:5175/manutencao e testar
+
+## Rollback rápido se algo quebrar
+
+**Opção A (rápida — 30 seg):** volta a flag pra `false`, restart Vite. Sistema volta ao Firestore.
+
+**Opção B (git — 5 seg):** `git checkout f4ddcbb -- frontend/src/pages/Manutencao.jsx frontend/src/services/manutencaoDataSource.js`
 
 ## O que está pronto (7 de 8 tasks)
 
