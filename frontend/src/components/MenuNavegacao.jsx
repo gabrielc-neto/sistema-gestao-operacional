@@ -7,7 +7,7 @@ import { useRBAC } from "../rbac/RBACContext";
 import {
   Menu, X, LayoutDashboard, Truck, Link2, ClipboardList, Users, Wrench,
   History, Palmtree, MapPin, UserCog, ShieldCheck, Building2, Briefcase,
-  Clock, LogOut, Sun, Moon, ChevronRight, ShoppingCart, Network,
+  Clock, LogOut, Sun, Moon, ChevronRight, ShoppingCart,
   CircleDot, Fuel, FileUp,
 } from "lucide-react";
 
