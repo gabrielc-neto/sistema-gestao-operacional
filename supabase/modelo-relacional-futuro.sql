@@ -268,3 +268,19 @@ create table historico (
   criado_em   timestamptz not null default now()
 );
 create index ix_hist_empresa_data on historico (empresa_id, criado_em desc);
+
+-- =====================================================================
+-- APOSENTADO COMO MIGRAÇÃO EM 2026-07-27 — mantido como DESENHO.
+--
+-- Este arquivo saiu de supabase/migrations/ porque nunca foi aplicado em lugar
+-- nenhum e colidia com o schema real: ele define veiculos/manutencoes/
+-- ordens_servico de forma RELACIONAL, enquanto o app (30+ telas) fala com o
+-- contrato documents(collection, id, data jsonb) herdado do Firestore.
+--
+-- Aplicar os dois ao mesmo tempo criava tabelas com o mesmo nome e formatos
+-- diferentes. Quem vale hoje é 20260727150000_sgo_schema.sql, cópia fiel do
+-- banco que roda na VPS.
+--
+-- Este desenho continua sendo o DESTINO: normalizar coleção por coleção, com o
+-- sistema de pé, em vez de trocar tudo de uma vez.
+-- =====================================================================

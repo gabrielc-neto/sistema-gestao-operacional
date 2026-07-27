@@ -10,6 +10,8 @@
 //   await api.create("manutencoes", { placa, tipo, ... });
 
 import { auth } from "../firebase/config";
+import { usandoSupabase } from "./supabase";
+import * as sb from "./supabaseData";
 
 const BASE = import.meta.env.VITE_PONTUAL_API_URL || "http://srv1464919.hstgr.cloud";
 
@@ -39,8 +41,22 @@ async function request(path, opts = {}) {
 
 // ─── API genérica ─────────────────────────────────────────────
 // Recurso pode ser: manutencoes, ordens-servico, lancamentos-os, tipos-manutencao
+// e collections/<nome> (as coleções herdadas do Firestore).
+//
+// ESTE OBJETO É O PONTO ÚNICO DE TROCA DE BACKEND. Todas as fontes de dados
+// (genericDataSource, frotaDataSource, manutencaoDataSource) passam por aqui, e
+// as 30+ telas passam por elas. Por isso o Supabase entra AQUI, e não tela a
+// tela: com a chave virada, o app inteiro muda de banco sem que nenhuma página
+// saiba da diferença.
+//
+// O contrato preservado, em detalhe, é o da API da VPS:
+//   list   → [{ id, ...data }]      (documento achatado, não { id, data })
+//   get    → { id, ...data } ou erro 404 com .status
+//   create → upsert com MERGE do JSON já existente
+//   update → merge parcial (nunca substitui o documento inteiro)
 export const api = {
   async list(recurso, query = {}) {
+    if (usandoSupabase()) return await sb.list(recurso, query);
     const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v != null && v !== ""));
     const suffix = qs.toString() ? `?${qs}` : "";
     const r = await request(`/api/${recurso}${suffix}`);
@@ -48,10 +64,12 @@ export const api = {
   },
 
   async get(recurso, id) {
+    if (usandoSupabase()) return await sb.get(recurso, id);
     return await request(`/api/${recurso}/${encodeURIComponent(id)}`);
   },
 
   async create(recurso, payload) {
+    if (usandoSupabase()) return await sb.create(recurso, payload);
     return await request(`/api/${recurso}`, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -59,6 +77,7 @@ export const api = {
   },
 
   async update(recurso, id, patch) {
+    if (usandoSupabase()) return await sb.update(recurso, id, patch);
     return await request(`/api/${recurso}/${encodeURIComponent(id)}`, {
       method: "PATCH",
       body: JSON.stringify(patch),
@@ -66,6 +85,7 @@ export const api = {
   },
 
   async remove(recurso, id) {
+    if (usandoSupabase()) return await sb.remove(recurso, id);
     return await request(`/api/${recurso}/${encodeURIComponent(id)}`, { method: "DELETE" });
   },
 };
