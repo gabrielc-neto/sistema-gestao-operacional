@@ -13,17 +13,13 @@ import {
 import { db } from "../firebase/config";
 import { api } from "./pontualApi";
 
-const USE_TUDO = String(import.meta.env.VITE_USE_VPS_TUDO || "").toLowerCase() === "true";
-
-function shouldUseVps(colecao) {
-  if (USE_TUDO) return true;
-  const key = `VITE_USE_VPS_${colecao.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`;
-  return String(import.meta.env[key] || "").toLowerCase() === "true";
-}
+// Migração 2026-07-23: VPS 100% (sem fallback Firestore). Flag mantida por segurança
+// mas não é mais consultada — usar branch VPS sempre.
+function shouldUseVps() { return true; }
 
 // list(colecao, {where: {campo:valor}, orderBy: 'campo', order: 'asc', limit: 100})
 export async function list(colecao, opts = {}) {
-  if (shouldUseVps(colecao)) {
+  if (shouldUseVps()) {
     const params = { orderBy: opts.orderBy, order: opts.order, limit: opts.limit };
     if (opts.where) for (const [k, v] of Object.entries(opts.where)) params[`where.${k}`] = v;
     const rows = await api.list(`collections/${colecao}`, params);
@@ -40,7 +36,7 @@ export async function list(colecao, opts = {}) {
 
 // get(colecao, id)
 export async function get(colecao, id) {
-  if (shouldUseVps(colecao)) {
+  if (shouldUseVps()) {
     try { return await api.get(`collections/${colecao}`, id); }
     catch (e) { if (e.status === 404) return null; throw e; }
   }
@@ -50,7 +46,7 @@ export async function get(colecao, id) {
 
 // watch(colecao, callback) — real-time no Firestore, polling 20s no VPS
 export function watch(colecao, callback, opts = {}) {
-  if (shouldUseVps(colecao)) {
+  if (shouldUseVps()) {
     let ativo = true;
     const carregar = async () => {
       if (!ativo) return;
@@ -70,7 +66,7 @@ export function watch(colecao, callback, opts = {}) {
 
 // save(colecao, id, dados) — setDoc merge
 export async function save(colecao, id, dados) {
-  if (shouldUseVps(colecao)) {
+  if (shouldUseVps()) {
     return await api.create(`collections/${colecao}`, { id, ...dados });
   }
   return await setDoc(doc(db, colecao, id), dados, { merge: true });
@@ -78,7 +74,7 @@ export async function save(colecao, id, dados) {
 
 // insert(colecao, dados) — addDoc (id auto)
 export async function insert(colecao, dados) {
-  if (shouldUseVps(colecao)) {
+  if (shouldUseVps()) {
     const r = await api.create(`collections/${colecao}`, dados);
     return { id: r.id };
   }
@@ -88,7 +84,7 @@ export async function insert(colecao, dados) {
 
 // patch(colecao, id, campos)
 export async function patch(colecao, id, campos) {
-  if (shouldUseVps(colecao)) {
+  if (shouldUseVps()) {
     return await api.update(`collections/${colecao}`, id, campos);
   }
   return await updateDoc(doc(db, colecao, id), campos);
@@ -96,7 +92,7 @@ export async function patch(colecao, id, campos) {
 
 // remove(colecao, id)
 export async function remove(colecao, id) {
-  if (shouldUseVps(colecao)) {
+  if (shouldUseVps()) {
     return await api.remove(`collections/${colecao}`, id);
   }
   return await deleteDoc(doc(db, colecao, id));

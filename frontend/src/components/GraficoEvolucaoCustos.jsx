@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { list as dsList } from "../services/genericDataSource";
 import { TrendingUp } from "lucide-react";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -55,8 +54,8 @@ export default function GraficoEvolucaoCustos({ style }) {
   const [ano, setAno] = useState(() => new Date().getFullYear());
 
   useEffect(() => {
-    getDocs(collection(db, "lancamentos_os"))
-      .then(snap => setLancamentos(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+    dsList("lancamentos_os")
+      .then(rows => setLancamentos(rows))
       .catch(() => {});
   }, []);
 

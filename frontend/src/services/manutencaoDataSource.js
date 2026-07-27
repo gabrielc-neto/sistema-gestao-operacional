@@ -20,7 +20,8 @@ import {
 import { db } from "../firebase/config";
 import { api } from "./pontualApi";
 
-const USE_VPS = String(import.meta.env.VITE_USE_VPS_MANUTENCAO || "").toLowerCase() === "true";
+// Migração 2026-07-23: VPS 100% (sem fallback Firestore).
+const USE_VPS = true;
 
 // Nomes de coleção Firestore → nome de recurso REST do backend
 const REST_MAP = {

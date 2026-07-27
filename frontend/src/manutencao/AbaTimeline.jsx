@@ -38,7 +38,7 @@ export default function AbaTimeline({ veiculos = [], ordensServico = [], registr
   useEffect(() => {
     const un1 = dsWatch("multas", snap => setMultas(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     // Abastecimentos: dsList com limit + ordering na coleção genérica
-    const un2 = dsWatch("cta_abastecimentos", snap => setAbast(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+    const un2 = dsWatch("abastecimentos_cta", snap => setAbast(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
       { orderBy: "dataAbastecimento", order: "desc", limit: 500 });
     return () => { un1(); un2(); };
   }, []);

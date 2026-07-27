@@ -1,9 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, onSnapshot, doc, getDoc, getDocs } from "firebase/firestore";
-import { list as dsList } from "../services/genericDataSource";
+import { list as dsList, get as dsGet } from "../services/genericDataSource";
 import { listVeiculos } from "../services/frotaDataSource";
-import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import { ArrowLeft, Fuel, Truck, MapPin, Download, TrendingUp, AlertTriangle, DollarSign, BarChart3, Building2 } from "lucide-react";
 import { COLORS, SPACING, TYPO, RADIUS } from "../theme/tokens";
@@ -92,7 +90,7 @@ export default function Abastecimento() {
   }, []);
 
   useEffect(() => {
-    getDoc(doc(db, "config/cta_meta")).then(d => { if (d.exists()) setMeta(d.data()); });
+    dsGet("config", "cta_meta").then(d => { if (d) setMeta(d); }).catch(() => {});
   }, [abasts]);
 
   const placas     = useMemo(() => [...new Set(abasts.map(a => a.veiculo?.placa).filter(Boolean))].sort(), [abasts]);

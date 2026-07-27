@@ -10,18 +10,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  collection, getDocs, setDoc, updateDoc,
-  doc, query, orderBy, serverTimestamp,
-} from "firebase/firestore";
-import { list as dsList, save as dsSave, patch as dsPatch } from "../services/genericDataSource";
-import {
-  createUserWithEmailAndPassword,
-  getAuth,
-} from "firebase/auth";
-import { initializeApp, deleteApp } from "firebase/app";
-import { db } from "../firebase/config";
-import app from "../firebase/config";
+import { list as dsList } from "../services/genericDataSource";
+import { authApi } from "../services/pontualApi";
 import { useRBAC } from "../rbac/RBACContext";
 import ProtegerPor from "../rbac/ProtegerPor";
 import ModuleHeader from "../components/ModuleHeader";
@@ -35,18 +25,6 @@ const VAZIO = {
   cargo_id: "",
   is_super_admin: false,
 };
-
-// Cria novo usuário no Firebase Auth sem trocar a sessão atual (instância aux).
-async function criarUsuarioFirebase(email, senha) {
-  const appAux = initializeApp(app.options, "aux_" + Date.now());
-  try {
-    const authAux = getAuth(appAux);
-    const cred = await createUserWithEmailAndPassword(authAux, email, senha);
-    return cred.user.uid;
-  } finally {
-    await deleteApp(appAux);
-  }
-}
 
 export default function Usuarios() {
   const navigate = useNavigate();
@@ -68,7 +46,7 @@ export default function Usuarios() {
     setLoading(true);
     try {
       const [usuariosRows, setoresRows, cargosRows] = await Promise.all([
-        dsList("usuarios", { orderBy: "nome" }),
+        authApi.listUsers(),
         dsList("setores",  { orderBy: "nome" }),
         dsList("cargos",   { orderBy: "nome" }),
       ]);
@@ -128,32 +106,29 @@ export default function Usuarios() {
     setSalvando(true); setErro("");
     try {
       if (editId) {
-        await dsPatch("usuarios", editId, {
+        await authApi.updateUser(editId, {
           nome:           form.nome.trim(),
           setor_id:       form.setor_id || null,
           cargo_id:       form.cargo_id || null,
           is_super_admin: !!form.is_super_admin,
-          updated_at:     new Date().toISOString(),
         });
       } else {
-        const uid = await criarUsuarioFirebase(form.email.trim(), form.senha);
-        await dsSave("usuarios", uid, {
+        await authApi.createUser({
           nome:           form.nome.trim(),
           email:          form.email.trim().toLowerCase(),
+          senha:          form.senha,
           setor_id:       form.setor_id || null,
           cargo_id:       form.cargo_id || null,
           is_super_admin: !!form.is_super_admin,
-          ativo:          true,
-          role:           "",
-          created_at:     new Date().toISOString(),
         });
       }
       await carregar();
       fechar();
     } catch (err) {
-      if (err.code === "auth/email-already-in-use")   setErro("Este e-mail já está cadastrado.");
-      else if (err.code === "auth/invalid-email")     setErro("E-mail inválido.");
-      else                                            setErro("Erro ao salvar: " + err.message);
+      const code = err.body?.error || err.message;
+      if (code === "email_ja_cadastrado")   setErro("Este e-mail já está cadastrado.");
+      else if (code === "senha_minimo_6")   setErro("Senha mínimo 6 caracteres.");
+      else                                  setErro("Erro ao salvar: " + (err.message || code));
     } finally {
       setSalvando(false);
     }
@@ -161,20 +136,22 @@ export default function Usuarios() {
 
   async function alternarAtivo(u) {
     try {
-      await dsPatch("usuarios", u.id, { ativo: !u.ativo });
+      await authApi.updateUser(u.id, { ativo: !u.ativo });
       carregar();
     } catch (e) {
       alert("Erro ao atualizar: " + e.message);
     }
   }
 
-  async function desativar(u) {
-    if (!window.confirm(`Desativar "${u.nome}"?\n\nO acesso será bloqueado imediatamente.\nO registro é mantido para histórico.`)) return;
+  async function excluir(u) {
+    if (!window.confirm(`Excluir PERMANENTEMENTE "${u.nome || u.email}"?\n\nEssa ação não pode ser desfeita.\nSe quiser só bloquear o acesso, use "Inativar".`)) return;
     try {
-      await dsPatch("usuarios", u.id, { ativo: false });
+      await authApi.deleteUser(u.id);
       carregar();
     } catch (e) {
-      alert("Erro ao desativar: " + e.message);
+      const code = e.body?.error || e.message;
+      if (code === "nao_pode_excluir_a_si_mesmo") alert("Você não pode excluir seu próprio usuário.");
+      else alert("Erro ao excluir: " + (e.message || code));
     }
   }
 
@@ -287,7 +264,7 @@ export default function Usuarios() {
                         </ProtegerPor>
                         <ProtegerPor permissao="usuarios.excluir">
                           <button style={{ ...s.btnEdit, background: "var(--danger-bg)", color: "var(--danger)" }}
-                            onClick={() => desativar(u)}>Excluir</button>
+                            onClick={() => excluir(u)}>Excluir</button>
                         </ProtegerPor>
                       </div>
                     </td>

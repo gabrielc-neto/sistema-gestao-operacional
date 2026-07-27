@@ -12,7 +12,8 @@ import {
 } from "../services/authVPS";
 import { get as dsGet } from "../services/genericDataSource";
 
-const USE_VPS_AUTH = String(import.meta.env?.VITE_USE_VPS_AUTH || "").toLowerCase() === "true";
+// Migração 2026-07-23: Firebase Auth eliminado. JWT próprio (VPS) sempre.
+const USE_VPS_AUTH = true;
 
 const AuthContext = createContext();
 

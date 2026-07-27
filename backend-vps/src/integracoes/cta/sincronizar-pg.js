@@ -5,7 +5,25 @@ import { XMLParser } from "fast-xml-parser";
 import { q, q1 } from "../../db.js";
 
 const CTA_ENDPOINT = "https://ctasmart.com.br:8443/SvWebSincronizaAbastecimentos";
+const CTA_INFORMA_ENDPOINT = "https://ctasmart.com.br:8443/SvWebInformaSincronismoAbastecimentos";
 const COL = "abastecimentos_cta";
+
+// Avança a fila da API CTA marcando registros como processados.
+// Deve ser chamado após consumir SvWebSincronizaAbastecimentos com sucesso.
+// Sem isso, a fila NUNCA avança e sempre recebemos os mesmos 100 registros antigos.
+async function informarSincronismo({ token, ids, status = "SUCESSO" }) {
+  if (!ids || ids.length === 0) return { ok: true, informados: 0 };
+  const url = `${CTA_INFORMA_ENDPOINT}?token=${encodeURIComponent(token)}&formato=json`;
+  const body = { abastecimentos: ids.map(id => ({ id: String(id), status, motivo_erro: "" })) };
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const txtResp = await res.text();
+  if (!res.ok) return { ok: false, erro: `HTTP ${res.status}: ${txtResp.slice(0, 200)}` };
+  return { ok: true, informados: ids.length, response: txtResp.slice(0, 300) };
+}
 
 function parseDataBR(dataStr, horaStr) {
   if (!dataStr) return null;
@@ -53,7 +71,7 @@ function extrairAbastecimento(a) {
   };
 }
 
-export async function sincronizarCtaAgora({ token, dryRun = false, confirmar = true, dataInicio = null, dataFim = null } = {}) {
+export async function sincronizarCtaAgora({ token, dryRun = false, avancarFila = true, dataInicio = null, dataFim = null } = {}) {
   if (!token) throw new Error("token obrigatório");
   const inicioMs = Date.now();
 
@@ -61,9 +79,10 @@ export async function sincronizarCtaAgora({ token, dryRun = false, confirmar = t
     const d = new Date(Date.now() - 7 * 24 * 3600 * 1000);
     dataInicio = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
   }
+  // NOTA: parâmetro `confirmar` NÃO existe na API CTA (era bug antigo). Pra avançar
+  // a fila, chamar SvWebInformaSincronismoAbastecimentos depois de processar.
   const params = [`token=${encodeURIComponent(token)}`, `data_inicio=${encodeURIComponent(dataInicio)}`];
   if (dataFim) params.push(`data_fim=${encodeURIComponent(dataFim)}`);
-  if (confirmar) params.push("confirmar=true");
   const url = `${CTA_ENDPOINT}?${params.join("&")}`;
 
   let xml, lastErr;
@@ -96,7 +115,8 @@ export async function sincronizarCtaAgora({ token, dryRun = false, confirmar = t
   }
 
   const lista = arr(root.ABASTECIMENTOS?.ABASTECIMENTO);
-  const stats = { recebidos: lista.length, novos: 0, atualizados: 0, iguais: 0, invalidos: 0, terceiros: 0 };
+  const stats = { recebidos: lista.length, novos: 0, atualizados: 0, iguais: 0, invalidos: 0, terceiros: 0, avancados: 0 };
+  const idsParaAvancar = []; // IDs a informar como SUCESSO (avança fila)
 
   // Placas da frota (só sincroniza abastecimento de placa cadastrada)
   const frotaPlacas = new Set();
@@ -108,7 +128,12 @@ export async function sincronizarCtaAgora({ token, dryRun = false, confirmar = t
   for (const raw of lista) {
     const abast = extrairAbastecimento(raw);
     if (!abast) { stats.invalidos++; continue; }
-    if (frotaPlacas.size > 0 && !frotaPlacas.has(abast.veiculo.placaNorm)) { stats.terceiros++; continue; }
+    // Terceiros também precisam avançar na fila (pra não travar) — marca SUCESSO mesmo sem gravar
+    if (frotaPlacas.size > 0 && !frotaPlacas.has(abast.veiculo.placaNorm)) {
+      stats.terceiros++;
+      idsParaAvancar.push(abast.ctaId);
+      continue;
+    }
 
     // Detecta existente
     let existente = null;
@@ -122,7 +147,12 @@ export async function sincronizarCtaAgora({ token, dryRun = false, confirmar = t
       && existente.custoTotal === abast.custoTotal
       && existente.veiculo?.placa === abast.veiculo.placa
       && existente.dataInicio === abast.dataInicio;
-    if (igual) { stats.iguais++; continue; }
+
+    if (igual) {
+      stats.iguais++;
+      idsParaAvancar.push(abast.ctaId); // já processado, pode remover da fila
+      continue;
+    }
 
     if (existente) stats.atualizados++; else stats.novos++;
 
@@ -132,7 +162,19 @@ export async function sincronizarCtaAgora({ token, dryRun = false, confirmar = t
          ON CONFLICT (collection, id) DO UPDATE SET data = documents.data || EXCLUDED.data`,
         [COL, abast.ctaId, JSON.stringify({ ...abast, sincronizadoEm: new Date().toISOString() })]
       );
+      idsParaAvancar.push(abast.ctaId);
     }
   }
-  return { ok: true, codigo, mensagem, stats, duracaoMs: Date.now() - inicioMs };
+
+  // AVANÇA A FILA — sem isso, próximo request pega os mesmos 100 registros de novo
+  let infoResult = null;
+  if (avancarFila && !dryRun && idsParaAvancar.length > 0) {
+    // Aguarda 62s pra respeitar rate limit (1 req/60s por endpoint por token)
+    await new Promise(r => setTimeout(r, 62000));
+    infoResult = await informarSincronismo({ token, ids: idsParaAvancar, status: "SUCESSO" });
+    if (infoResult.ok) stats.avancados = infoResult.informados;
+    else console.warn("[cta] falha ao avançar fila:", infoResult.erro);
+  }
+
+  return { ok: true, codigo, mensagem, stats, avancoFila: infoResult, duracaoMs: Date.now() - inicioMs };
 }

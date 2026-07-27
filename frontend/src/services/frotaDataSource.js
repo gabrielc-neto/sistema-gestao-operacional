@@ -9,7 +9,8 @@ import {
 import { db } from "../firebase/config";
 import { api } from "./pontualApi";
 
-const USE_VPS = String(import.meta.env.VITE_USE_VPS_FROTA || "").toLowerCase() === "true";
+// Migração 2026-07-23: VPS 100% (sem fallback Firestore).
+const USE_VPS = true;
 
 export async function listVeiculos() {
   if (USE_VPS) {

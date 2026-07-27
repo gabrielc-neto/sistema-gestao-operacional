@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy, setDoc, deleteDoc, doc, updateDoc, where, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase/config";
 import {
   watchVeiculos, saveVeiculo, patchVeiculo, removeVeiculo, listVeiculos,
 } from "../services/frotaDataSource";
+import { list as dsList, watch as dsWatch } from "../services/genericDataSource";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
@@ -224,13 +223,11 @@ export default function Frota() {
         setLoading(false);
       }
     );
-    const unsubMot = onSnapshot(
-      query(collection(db, "motoristas"), orderBy("nome")),
-      snap => setListaMotoristas(snap.docs.map(d => d.data().nome).filter(Boolean)),
-      err => console.warn("motoristas onSnapshot:", err)
-    );
+    const unsubMot = dsWatch("motoristas", snap => {
+      setListaMotoristas(snap.docs.map(d => d.data().nome).filter(Boolean));
+    }, { orderBy: "nome" });
     // Férias em tempo real também
-    const unsubFerias = onSnapshot(collection(db, "ferias"), snap => {
+    const unsubFerias = dsWatch("ferias", snap => {
       const hoje = new Date();
       const ativos = new Set();
       snap.docs.forEach(d => {
@@ -241,7 +238,7 @@ export default function Frota() {
         if (hoje >= ini && hoje <= end) ativos.add(motorista);
       });
       setFeriasAtivas(ativos);
-    }, err => console.warn("ferias onSnapshot:", err));
+    });
     return () => {
       try { unsubVeic(); }   catch {}
       try { unsubMot(); }    catch {}

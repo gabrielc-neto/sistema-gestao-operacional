@@ -11,8 +11,7 @@
 // migrada para o novo CRUD de Cargos, este arquivo pode ser removido.
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { get as dsGet, save as dsSave } from "../services/genericDataSource";
 import { useAuth } from "./AuthContext";
 import { useRBAC } from "../rbac/RBACContext";
 
@@ -47,8 +46,8 @@ export function PermissionsProvider({ children }) {
 
   useEffect(() => {
     setLoading(true);
-    getDoc(doc(db, "config", "permissions"))
-      .then(snap => setPerms(snap.exists() ? snap.data() : {}))
+    dsGet("config", "permissions")
+      .then(data => setPerms(data || {}))
       .catch(e => console.warn("[PermissionsContext] falha ao ler config/permissions:", e.message))
       .finally(() => setLoading(false));
   }, [profile?.role]);
@@ -70,7 +69,7 @@ export function PermissionsProvider({ children }) {
   }
 
   async function savePerms(newPerms) {
-    await setDoc(doc(db, "config", "permissions"), newPerms);
+    await dsSave("config", "permissions", newPerms);
     setPerms(newPerms);
   }
 
