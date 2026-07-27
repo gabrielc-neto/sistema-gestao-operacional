@@ -111,6 +111,7 @@ export default function Dashboard() {
   const [recentOCs, setRecentOCs] = useState([]);
   const [recentOS,  setRecentOS]  = useState([]);
   const [erro,      setErro]      = useState(false);
+  const [alertasDoc, setAlertasDoc] = useState({ vencidos: [], alerta30: [] });
   const [buscaMapa, setBuscaMapa] = useState(""); // busca no widget do mapa
   const [filtroStatus, setFiltroStatus] = useState(null); // null | 'EM_MOVIMENTO' | 'SEM_DADOS' | 'PARADO_LIGADO' | 'ESTACIONADO' — filtro clicando nos KPIs
   // Toggle: clicar de novo remove o filtro
@@ -138,6 +139,33 @@ export default function Dashboard() {
       dsListManut("ordens_servico")
         .then(rows => setRecentOS(rows.sort((a,b) => (b.criadoEm||b.created_at||"").localeCompare(a.criadoEm||a.created_at||"")).slice(0, 5)))
         .catch(() => { falhas.os = true; marcarErro(); });
+
+      // Alertas — SÓ documentos do grupo "Documentação" (CIV, CIPP, CRLV, etc)
+      dsListManut("manutencoes").then((manuts) => {
+        const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+        const em30 = new Date(hoje); em30.setDate(em30.getDate() + 30);
+        const vencidos = [], alerta30 = [];
+
+        for (const m of manuts) {
+          if (m.grupo !== "Documentação") continue;
+          const vencStr = (m.venc || "").slice(0, 10);
+          if (!vencStr) continue;
+          const venc = new Date(vencStr + "T00:00:00");
+          if (isNaN(venc)) continue;
+          const item = {
+            id: m.id,
+            tipo: m.label || m.tipo || "Documento",
+            alvo: m.placa || m.motorista || "—",
+            venc: vencStr,
+          };
+          if (venc < hoje) vencidos.push(item);
+          else if (venc <= em30) alerta30.push(item);
+        }
+
+        vencidos.sort((a, b) => a.venc.localeCompare(b.venc));
+        alerta30.sort((a, b) => a.venc.localeCompare(b.venc));
+        setAlertasDoc({ vencidos, alerta30 });
+      }).catch(() => {});
     }
 
     let interval = null;
@@ -227,6 +255,66 @@ export default function Dashboard() {
             Olá, {profile?.nome?.split(" ")[0] || "usuário"} — rastreamento e histórico operacional em tempo real.
           </p>
         </div>
+
+        {/* Banner de alertas — documentos vencidos e a vencer em 30 dias */}
+        {(alertasDoc.vencidos.length > 0 || alertasDoc.alerta30.length > 0) && (
+          <div style={{
+            marginBottom: 16,
+            border: `1px solid ${alertasDoc.vencidos.length > 0 ? "var(--danger-border, #fecaca)" : "var(--warning-border, #fde68a)"}`,
+            background: alertasDoc.vencidos.length > 0 ? "var(--danger-bg, #fef2f2)" : "var(--warning-bg, #fffbeb)",
+            borderRadius: 10,
+            padding: "12px 16px",
+          }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <AlertTriangle size={20} color={alertasDoc.vencidos.length > 0 ? "var(--danger)" : "var(--warning)"} />
+                <strong style={{ color: alertasDoc.vencidos.length > 0 ? "var(--danger)" : "var(--warning)", fontSize:".95rem" }}>
+                  Documentos exigem atenção
+                </strong>
+                <span style={{ fontSize:".85rem", color:"var(--text-muted)" }}>
+                  {alertasDoc.vencidos.length > 0 && (
+                    <><strong style={{ color:"var(--danger)" }}>{alertasDoc.vencidos.length} vencido{alertasDoc.vencidos.length > 1 ? "s" : ""}</strong>{alertasDoc.alerta30.length > 0 && " · "}</>
+                  )}
+                  {alertasDoc.alerta30.length > 0 && (
+                    <strong style={{ color:"var(--warning)" }}>{alertasDoc.alerta30.length} vence{alertasDoc.alerta30.length > 1 ? "m" : ""} em ≤30 dias</strong>
+                  )}
+                </span>
+              </div>
+              <button
+                onClick={() => navigate("/manutencao?aba=alertas")}
+                style={{
+                  padding:"6px 14px",
+                  background: alertasDoc.vencidos.length > 0 ? "var(--danger)" : "var(--warning)",
+                  color:"#fff", border:"none", borderRadius:6, fontSize:".82rem", fontWeight:700, cursor:"pointer", fontFamily:"inherit"
+                }}>
+                Ver todos →
+              </button>
+            </div>
+            {/* Preview: até 5 mais críticos (vencidos primeiro, depois alerta30) */}
+            <div style={{ marginTop:10, display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(240px, 1fr))", gap:8 }}>
+              {[...alertasDoc.vencidos, ...alertasDoc.alerta30].slice(0, 5).map(item => {
+                const isVencido = alertasDoc.vencidos.includes(item);
+                return (
+                  <div key={item.id} style={{
+                    padding:"6px 10px",
+                    background:"#fff",
+                    border:`1px solid ${isVencido ? "var(--danger-border, #fecaca)" : "var(--warning-border, #fde68a)"}`,
+                    borderRadius:6,
+                    fontSize:".78rem",
+                    display:"flex", justifyContent:"space-between", alignItems:"center", gap:8,
+                  }}>
+                    <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      <strong style={{ color:"#1a3a5c" }}>{item.tipo}</strong> · {item.alvo}
+                    </span>
+                    <span style={{ color: isVencido ? "var(--danger)" : "var(--warning)", fontWeight:700, flexShrink:0 }}>
+                      {fmtData(item.venc)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* KPIs de topo — resumo da frota + rastreamento em tempo real */}
         <div className="dash-kpi" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(170px, 1fr))", gap:14, marginBottom:20 }}>
@@ -318,7 +406,7 @@ export default function Dashboard() {
                   const t = buscaMapa.trim().toUpperCase();
                   filtradas = filtradas.filter(p =>
                     (p.placa || "").toUpperCase().includes(t)
-                    || (p.motorista || "").toUpperCase().includes(t)
+                    || (p.motoristaLogado || p.motorista || p.nomeMotorista || "").toUpperCase().includes(t)
                     || (p.cidade || "").toUpperCase().includes(t)
                   );
                 }

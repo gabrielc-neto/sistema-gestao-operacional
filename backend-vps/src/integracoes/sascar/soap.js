@@ -108,6 +108,11 @@ function parsePosicao(b) {
     pontoReferencia: fieldString(b, 'pontoReferencia'),
     idMotorista: fieldNumber(b, 'idMotorista'),
     nomeMotorista: fieldString(b, 'nomeMotorista'),
+    // Macros — código enviado pelo teclado TD40/TD50/TMCD do veículo
+    codigoMacro: fieldNumber(b, 'codigoMacro'),
+    conteudoMensagem: fieldString(b, 'conteudoMensagem'),
+    idMacroLayout: fieldNumber(b, 'idMacroLayout'),
+    idMacro: fieldNumber(b, 'idMacro'),
   };
 }
 

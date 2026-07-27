@@ -1711,24 +1711,30 @@ export default function Manutencao() {
     try {
       // usa o ID original do registro se existir (evita duplicar doc no Firestore)
       const docId = modal.record?.id || `${modal.placa}__${modal.tipo.id}`;
+      const agoraIso = new Date().toISOString();
+      const usuario  = usuarioPontual(profile);
       const payload = {
-        placa:       modal.placa,
-        tipo:        modal.tipo.id,
-        label:       modal.tipo.label,
-        grupo:       modal.tipo.grupo,
-        venc:        form.venc,
-        data_realiz: form.data_realiz || null,
-        agendamento: form.agendamento || null,
-        local:       form.local.trim()       || null,
-        numero_doc:  form.numero_doc.trim()  || null,
-        km_atual:    form.km_atual.trim()    || null,
-        km_prox:     form.km_prox.trim()     || null,
-        resp:        form.resp.trim()        || null,
-        obs:         form.obs.trim()         || null,
-        anexos:      Array.isArray(anexos) ? anexos : [],
-        updatedAt:   new Date().toISOString(),
+        placa:         modal.placa,
+        tipo:          modal.tipo.id,
+        label:         modal.tipo.label,
+        grupo:         modal.tipo.grupo,
+        venc:          form.venc,
+        data_realiz:   form.data_realiz || null,
+        agendamento:   form.agendamento || null,
+        local:         form.local.trim()       || null,
+        numero_doc:    form.numero_doc.trim()  || null,
+        km_atual:      form.km_atual.trim()    || null,
+        km_prox:       form.km_prox.trim()     || null,
+        resp:          form.resp.trim()        || null,
+        obs:           form.obs.trim()         || null,
+        anexos:        Array.isArray(anexos) ? anexos : [],
+        updatedAt:     agoraIso,
+        atualizadoPor: usuario,
       };
-      if (!modal.record) payload.createdAt = new Date().toISOString();
+      if (!modal.record) {
+        payload.createdAt = agoraIso;
+        payload.criadoPor = usuario;
+      }
       await dsSave("manutencoes", docId, payload);
       await carregarTudo();
       fecharModal();
@@ -1787,7 +1793,7 @@ export default function Manutencao() {
         setAnexos(atualizado);
         // Persiste imediato: se modal.record existe, atualiza Firestore agora; senão fica pendente até user clicar Salvar
         if (modal.record?.id) {
-          await dsPatch("manutencoes", modal.record.id, { anexos: atualizado, updatedAt: new Date().toISOString() });
+          await dsPatch("manutencoes", modal.record.id, { anexos: atualizado, updatedAt: new Date().toISOString(), atualizadoPor: usuarioPontual(profile) });
           // atualiza registros local sem refazer fetch completo
           setRegistros(prev => {
             const key = `${modal.placa}__${modal.tipo.id}`;
@@ -2876,6 +2882,28 @@ export default function Manutencao() {
                           </div>
                         ) : (
                           <p style={{ ...s.info, marginTop:30 }}>Sem registro para este documento. Clique em "Preencher" acima.</p>
+                        )}
+
+                        {/* Auditoria — quem criou/editou (visível pra super admins) */}
+                        {sel.record && isSuperAdmin && (sel.record.criadoPor || sel.record.atualizadoPor || sel.record.createdAt || sel.record.updatedAt) && (
+                          <div style={{ marginTop:20, paddingTop:14, borderTop:"1px dashed var(--border)", display:"flex", gap:24, flexWrap:"wrap", fontSize:".75rem", color:"var(--text-subtle)" }}>
+                            {sel.record.criadoPor || sel.record.createdAt ? (
+                              <div>
+                                <span style={{ fontWeight:700, textTransform:"uppercase", letterSpacing:".03em" }}>Criado</span>
+                                {" · "}
+                                {sel.record.criadoPor && <><strong style={{ color:"#1a3a5c" }}>{sel.record.criadoPor}</strong>{" · "}</>}
+                                {sel.record.createdAt && new Date(sel.record.createdAt).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })}
+                              </div>
+                            ) : null}
+                            {sel.record.atualizadoPor || sel.record.updatedAt ? (
+                              <div>
+                                <span style={{ fontWeight:700, textTransform:"uppercase", letterSpacing:".03em" }}>Última alteração</span>
+                                {" · "}
+                                {sel.record.atualizadoPor && <><strong style={{ color:"#1a3a5c" }}>{sel.record.atualizadoPor}</strong>{" · "}</>}
+                                {sel.record.updatedAt && new Date(sel.record.updatedAt).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })}
+                              </div>
+                            ) : null}
+                          </div>
                         )}
 
                         {/* ANEXOS — visualização inline no split (grande, ocupa toda largura) */}

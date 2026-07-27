@@ -50,6 +50,39 @@ export async function atualizarPosicoesSascar() {
   }
   console.log(`[sascar] consumidos ${pacotes.length} pacotes da fila SASCAR`);
 
+  // 1.1) Macros — persiste todo pacote que veio com codigoMacro > 0.
+  // Cada macro vira 1 doc em `documents.sascar_macros` com id único = idPacote.
+  let macrosGravadas = 0;
+  for (const p of pacotes) {
+    if (!Number(p.codigoMacro) || Number(p.codigoMacro) <= 0) continue;
+    const docId = String(p.idPacote);
+    try {
+      const r = await q1(
+        `INSERT INTO documents (collection, id, data) VALUES ('sascar_macros', $1, $2)
+         ON CONFLICT (collection, id) DO NOTHING RETURNING id`,
+        [docId, JSON.stringify({
+          idPacote:         p.idPacote,
+          idVeiculo:        p.idVeiculo,
+          codigoMacro:      p.codigoMacro,
+          conteudoMensagem: p.conteudoMensagem || "",
+          idMacro:          p.idMacro,
+          idMacroLayout:    p.idMacroLayout,
+          idMotorista:      p.idMotorista,
+          nomeMotorista:    p.nomeMotorista || "",
+          dataPosicao:      p.dataPosicao,
+          latitude:         p.latitude,
+          longitude:        p.longitude,
+          uf:               p.uf,
+          cidade:           p.cidade,
+          rua:              p.rua,
+          criadoEm:         new Date().toISOString(),
+        })]
+      );
+      if (r) macrosGravadas++;
+    } catch (e) { console.warn(`[sascar-macro] falha: ${e.message}`); }
+  }
+  if (macrosGravadas > 0) console.log(`[sascar] macros gravadas: ${macrosGravadas}`);
+
   // 2) Lista de veículos + cercas cadastradas
   const veiculos = await obterVeiculos({ usuario: USUARIO, senha: SENHA, quantidade: 1000, idVeiculo: 0 });
   const cercasRows = await q(`SELECT id, data FROM documents WHERE collection = 'cercas_eletronicas'`);

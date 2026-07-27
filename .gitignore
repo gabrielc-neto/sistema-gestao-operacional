@@ -73,3 +73,7 @@ scripts/.env.vps
 # Gabriel (colaborador do repo) NÃO deve ter acesso a esse conteúdo
 CLAUDE CODE + OBSIDIAN/
 Sem título*.canvas
+
+# Memórias privadas do Claude Code — vão pro repo pessoal r4xsamp/CLAUDE-CODE-OBSIDIAN
+# NÃO commitar mais no repo compartilhado
+docs/memoria/
