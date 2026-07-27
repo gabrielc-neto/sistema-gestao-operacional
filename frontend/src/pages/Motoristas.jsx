@@ -84,14 +84,8 @@ export default function Motoristas() {
   const [loading, setLoading]         = useState(true);
   const [busca, setBusca]             = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
-  const [modoView, setModoView] = useState(() => {
-    // migração v1: força split como default (2026-07-22); depois disso respeita escolha do user
-    if (localStorage.getItem("motoristas_view_v") !== "1") {
-      localStorage.setItem("motoristas_view", "split");
-      localStorage.setItem("motoristas_view_v", "1");
-    }
-    return localStorage.getItem("motoristas_view") || "split";
-  });
+  // 2026-07-24: user decidiu ficar SÓ com split (cards/tabela removidos do toggle)
+  const [modoView] = useState("split");
   const [splitSel, setSplitSel] = useState(null);
   useEffect(() => { localStorage.setItem("motoristas_view", modoView); }, [modoView]);
   const [modalOpen, setModalOpen]     = useState(false);
@@ -304,7 +298,7 @@ export default function Motoristas() {
           onChange={(e) => setBusca(e.target.value)}
         />
         <div style={s.filtros}>
-          {["todos", "ativo", "inativo", "desligado"].map((f) => (
+          {["todos", "ativo", "desligado"].map((f) => (
             <button
               key={f}
               style={{
@@ -314,25 +308,6 @@ export default function Motoristas() {
               onClick={() => setFiltroStatus(f)}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
-        </div>
-        <div style={{ display:"inline-flex", gap:2, background:"#f1f5f9", padding:3, borderRadius:8 }}>
-          {[
-            { id:"cards",  icon:LayoutGrid, label:"Cards"  },
-            { id:"tabela", icon:Rows3,      label:"Tabela" },
-            { id:"split",  icon:Columns2,   label:"Split"  },
-          ].map(({ id, icon:Ic, label }) => (
-            <button key={id} onClick={() => setModoView(id)} title={`Visualização: ${label}`}
-              style={{
-                padding:"6px 10px", borderRadius:6, border:"none",
-                background: modoView === id ? "#fff" : "transparent",
-                color: modoView === id ? "#1a3a5c" : "#64748b",
-                boxShadow: modoView === id ? "0 1px 3px rgba(15,23,42,.1)" : "none",
-                cursor:"pointer", fontWeight:700, fontSize:".78rem",
-                display:"inline-flex", alignItems:"center", gap:5, fontFamily:"inherit",
-              }}>
-              <Ic size={14} /> {label}
             </button>
           ))}
         </div>

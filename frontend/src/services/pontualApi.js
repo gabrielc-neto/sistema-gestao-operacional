@@ -87,6 +87,17 @@ export async function uploadArquivoVPS(file, { folder = "manutencao" } = {}) {
   return data;
 }
 
+// ─── Helpers de Auth JWT (admin de usuários) ──────────────────
+export const authApi = {
+  listUsers: async () => (await request("/api/auth/users")).rows || [],
+  createUser: (payload) => request("/api/auth/register", { method: "POST", body: JSON.stringify(payload) }),
+  updateUser: (id, patch) => request(`/api/auth/users/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(patch) }),
+  deleteUser: (id) => request(`/api/auth/users/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  resetSenha: (id, novaSenha) => request(`/api/auth/users/${encodeURIComponent(id)}/reset-senha`, {
+    method: "POST", body: JSON.stringify({ novaSenha }),
+  }),
+};
+
 // ─── Helpers específicos do módulo manutenção ─────────────────
 export const manutApi = {
   listar:  (filtros) => api.list("manutencoes", filtros),

@@ -10,78 +10,14 @@ const ic = { width: 26, height: 26, viewBox: "0 0 24 24", fill: "none", stroke: 
 //   interno: true  → segue para o portão "Entrar no sistema" (este próprio app)
 //   url: "..."     → abre o sistema externo em nova aba
 //   url: ""        → ainda sem endereço (mostra "em breve" até informarem a URL)
+// 2026-07-24: no NOSSO login (srv1464919.hstgr.cloud) mostrar SÓ Gestão Operacional.
+// Demais sistemas (Integridade, Service Desk, POPs, etc) ficam no portal PHP do Gabriel.
 const SISTEMAS = [
-  {
-    id: "intranet",
-    nome: "Gerenciamento de Sistemas",
-    cor: "#334155", bg: "#f1f5f9", intranet: true,
-    icon: (<svg {...ic} aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>),
-  },
-  {
-    id: "integridade",
-    nome: "Canal de Integridade e Relacionamento",
-    cor: "#15803d", bg: "#f0fdf4", url: "https://web-homol.pontualpetroleo.com.br/integridade/",
-    icon: (<svg {...ic} aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>),
-  },
   {
     id: "sgo",
     nome: "Gestão Operacional",
     cor: "#18216e", bg: "#eef1fb", interno: true,
     icon: (<svg {...ic} aria-hidden="true"><path d="M10 17h4V5H2v12h3" /><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1" /><circle cx="7.5" cy="17.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" /></svg>),
-  },
-  {
-    id: "servicedesk",
-    nome: "Service Desk",
-    cor: "#0c7f98", bg: "#ecfbff", url: "https://web-homol.pontualpetroleo.com.br/servicedesk",
-    icon: (<svg {...ic} aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 4.24 4.24" /><path d="m14.83 9.17 4.24-4.24" /><path d="m14.83 14.83 4.24 4.24" /><path d="m9.17 14.83-4.24 4.24" /><circle cx="12" cy="12" r="4" /></svg>),
-  },
-  {
-    id: "pops",
-    nome: "Procedimentos (POPs)",
-    cor: "#7c3aed", bg: "#f5f3ff", url: "",
-    icon: (<svg {...ic} aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><rect x="8" y="2" width="8" height="4" rx="1" /><path d="m9 14 2 2 4-4" /></svg>),
-  },
-  {
-    id: "projetos",
-    nome: "Gerenciamento de Projetos",
-    cor: "#be123c", bg: "#fff1f2", url: "",
-    icon: (<svg {...ic} aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="M9 9h6" /><path d="M9 15h6" /></svg>),
-  },
-  {
-    id: "apresentacoes",
-    nome: "Apresentações Corporativas",
-    cor: "#4f46e5", bg: "#eef2ff", url: "",
-    icon: (<svg {...ic} aria-hidden="true"><path d="M2 3h20" /><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" /><path d="m7 21 5-5 5 5" /></svg>),
-  },
-  {
-    id: "espaco",
-    nome: "Gestão de Espaço",
-    cor: "#0d9488", bg: "#f0fdfa", url: "https://web-homol.pontualpetroleo.com.br/gestao-espaco/",
-    icon: (<svg {...ic} aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>),
-  },
-  {
-    id: "compras",
-    nome: "Gestão de Compras",
-    cor: "#ea580c", bg: "#fff7ed", url: "https://web-homol.pontualpetroleo.com.br/gestao-compras/",
-    icon: (<svg {...ic} aria-hidden="true"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>),
-  },
-  {
-    id: "externos",
-    nome: "Sistemas Externos",
-    cor: "#0369a1", bg: "#f0f9ff", url: "https://web-homol.pontualpetroleo.com.br/sistemas-externos/",
-    icon: (<svg {...ic} aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>),
-  },
-  {
-    id: "instrucoes",
-    nome: "Instruções de Acesso",
-    cor: "#4d7c0f", bg: "#f7fee7", instrucoes: true,
-    icon: (<svg {...ic} aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>),
-  },
-  {
-    id: "site",
-    nome: "Site Institucional",
-    cor: "#b45309", bg: "#fffbeb", url: "https://www.pontualpetroleo.com.br",
-    icon: (<svg {...ic} aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>),
   },
 ];
 
@@ -172,7 +108,7 @@ export default function Login() {
     setErro("");
     setLoading(true);
     try {
-      await login(email, senha);
+      await login(email.trim().toLowerCase(), senha);
       // Não navegamos aqui: ao autenticar, o AuthContext atualiza o usuário e a
       // PublicRoute ("/") redireciona sozinha para /dashboard. Isso evita a
       // corrida com o guard da rota, que antes jogava de volta para a principal.
@@ -378,6 +314,11 @@ export default function Login() {
               id="login-email"
               className="login-input login-input-fill"
               type="email"
+              inputMode="email"
+              autoComplete="email"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="Digite seu e-mail"
@@ -393,6 +334,10 @@ export default function Login() {
                 id="login-senha"
                 className="login-input"
                 type={verSenha ? "text" : "password"}
+                autoComplete="current-password"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
                 value={senha}
                 onChange={e => setSenha(e.target.value)}
                 placeholder="Digite sua senha"

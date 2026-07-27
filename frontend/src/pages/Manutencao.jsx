@@ -1,12 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  collection, getDocs, setDoc, deleteDoc, addDoc, updateDoc,
-  doc, query, orderBy, onSnapshot,
-} from "firebase/firestore";
-import { db } from "../firebase/config";
-import { uploadArquivo as uploadCloudinary } from "../services/cloudinary";
-import { uploadArquivoVPS } from "../services/pontualApi";
+import { uploadArquivo } from "../services/cloudinary"; // cloudinary.js agora bate no VPS
 import { usuarioPontual } from "../utils/format";
 import {
   listAll as dsListAll,
@@ -16,11 +10,14 @@ import {
   patch as dsPatch,
   remove as dsRemove,
 } from "../services/manutencaoDataSource";
-
-// Se VITE_USE_VPS_MANUTENCAO=true, uploads vão pra VPS local. Senão Cloudinary.
-const uploadArquivo = String(import.meta.env.VITE_USE_VPS_MANUTENCAO || "").toLowerCase() === "true"
-  ? uploadArquivoVPS
-  : uploadCloudinary;
+import {
+  list as gdsList,
+  watch as gdsWatch,
+  patch as gdsPatch,
+  insert as gdsInsert,
+  remove as gdsRemove,
+} from "../services/genericDataSource";
+import { patchVeiculo, listVeiculos, watchVeiculos } from "../services/frotaDataSource";
 import { useAuth } from "../contexts/AuthContext";
 import { useRBAC } from "../rbac/RBACContext";
 import { useOdometrosSascar } from "../hooks/useOdometrosSascar";
@@ -231,7 +228,10 @@ const STATUS_META = {
 
 function fmtDate(str) {
   if (!str) return "—";
-  const [y,m,d] = str.split("-");
+  // Aceita "YYYY-MM-DD" (frontend antigo) ou ISO "YYYY-MM-DDTHH:mm:ss.sssZ" (PostgreSQL/JSONB).
+  const s = String(str).slice(0, 10); // pega só YYYY-MM-DD
+  const [y, m, d] = s.split("-");
+  if (!y || !m || !d) return "—";
   return `${d}/${m}/${y}`;
 }
 
@@ -1058,6 +1058,8 @@ export default function Manutencao() {
   const [todosRegistros, setTodosRegistros] = useState([]);
   const [legacy,         setLegacy]         = useState([]);
   const [veiculos,       setVeiculos]       = useState([]);
+  // Doc selecionado no split view da aba "Por Veículo" — chave: `${placa}__${tipoId}`
+  const [docSelKey, setDocSelKey]           = useState(null);
   const [loading,        setLoading]        = useState(true);
   // Default de aba: URL (?aba=X) tem prioridade se for válida + tiver permissão
   const ABAS_VALIDAS = ["dashboard","veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","requisicoes","fornecedores","cpk","preditiva","indicadores","os","os_lanc","lancamento","cadastros"];
@@ -1265,13 +1267,13 @@ export default function Manutencao() {
       // queries em paralelo, cada uma com try local pra não derrubar as outras
       // Coleções migradas pra VPS usam dsListAll (retorna array já formatado)
       // Coleções ainda no Firestore usam getDocs
-      const [listaM, snapV, snapMot, listaOS, listaLanc, snapCat, listaTC] = await Promise.all([
+      const [listaM, listaV, listaMot, listaOS, listaLanc, listaCat, listaTC] = await Promise.all([
         dsListAll("manutencoes").catch(e => { console.warn("manutencoes:", e); return null; }),
-        getDocs(query(collection(db, "veiculos"), orderBy("placa"))).catch(e => { console.warn("veiculos:", e); return null; }),
-        getDocs(collection(db, "motoristas")).catch(e => { console.warn("motoristas:", e); return null; }),
+        listVeiculos().catch(e => { console.warn("veiculos:", e); return null; }),
+        gdsList("motoristas").catch(e => { console.warn("motoristas:", e); return null; }),
         dsListAll("ordens_servico").catch(e => { console.warn("ordens_servico:", e); return null; }),
         dsListAll("lancamentos_os").catch(e => { console.warn("lancamentos_os:", e); return null; }),
-        getDocs(collection(db, "itens_manutencao")).catch(e => { console.warn("itens_manutencao:", e); return null; }),
+        gdsList("itens_manutencao").catch(e => { console.warn("itens_manutencao:", e); return null; }),
         dsListAll("tipos_manutencao_custom").catch(e => { console.warn("tipos_manutencao_custom:", e); return null; }),
       ]);
 
@@ -1281,7 +1283,7 @@ export default function Manutencao() {
       setTiposCustom(tcs);
 
       // motoristas: filtra ativos e ordena por nome localmente
-      const mots = snapMot ? snapMot.docs.map(d => ({ id: d.id, ...d.data() })) : [];
+      const mots = listaMot || [];
       const motsAtivos = mots
         .filter(m => {
           const st = (m.status || "").toString().toLowerCase().trim();
@@ -1301,11 +1303,11 @@ export default function Manutencao() {
       setLancamentos(lancs);
 
       // catálogo de serviços/peças: ordena por nome
-      const cat = snapCat ? snapCat.docs.map(d => ({ id: d.id, ...d.data() })) : [];
+      const cat = listaCat || [];
       cat.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
       setItensCatalogo(cat);
 
-      if (!listaM || !snapV) return;
+      if (!listaM || !listaV) return;
       const normP = (p) => (p || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
       const map = {};
       const leg = [];
@@ -1321,8 +1323,7 @@ export default function Manutencao() {
       setRegistros(map);
       setTodosRegistros(todos);
       setLegacy(leg);
-      const vs = snapV.docs
-        .map(d => ({ id: d.id, ...d.data() }))
+      const vs = (listaV || [])
         .filter(v => v.status !== "inativo")
         .sort((a,b) => (a.placa||"").localeCompare(b.placa||""));
       setVeiculos(vs);
@@ -1366,7 +1367,7 @@ export default function Manutencao() {
       }),
 
       // veículos → veiculos (só ativos, ordenado por placa)
-      onSnapshot(query(collection(db, "veiculos"), orderBy("placa")), snap => {
+      watchVeiculos(snap => {
         const vs = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(v => v.status !== "inativo")
@@ -1375,10 +1376,10 @@ export default function Manutencao() {
         // fixa primeira placa se ainda não estava selecionada
         setPlaca(prev => (vs.length > 0 && (!prev || !vs.find(v => v.placa === prev))) ? vs[0].placa : prev);
         marcaCarregado("v");
-      }, e => { console.warn("veiculos onSnapshot:", e); marcaCarregado("v"); }),
+      }),
 
       // motoristas → só ativos
-      onSnapshot(collection(db, "motoristas"), snap => {
+      gdsWatch("motoristas", snap => {
         const mots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         const motsAtivos = mots
           .filter(m => {
@@ -1388,7 +1389,7 @@ export default function Manutencao() {
           .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
         setMotoristas(motsAtivos);
         marcaCarregado("mot");
-      }, e => { console.warn("motoristas onSnapshot:", e); marcaCarregado("mot"); }),
+      }),
 
       // ordens_servico
       dsWatch("ordens_servico", snap => {
@@ -1406,18 +1407,18 @@ export default function Manutencao() {
         marcaCarregado("lanc");
       }),
 
-      // cta_abastecimentos — usado no CPK Combustível
-      onSnapshot(collection(db, "cta_abastecimentos"), snap => {
+      // abastecimentos_cta — usado no CPK Combustível
+      gdsWatch("abastecimentos_cta", snap => {
         setAbastecimentos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      }, e => { console.warn("cta_abastecimentos onSnapshot:", e); }),
+      }),
 
       // itens_manutencao (catálogo)
-      onSnapshot(collection(db, "itens_manutencao"), snap => {
+      gdsWatch("itens_manutencao", snap => {
         const cat = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         cat.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
         setItensCatalogo(cat);
         marcaCarregado("cat");
-      }, e => { console.warn("itens_manutencao onSnapshot:", e); marcaCarregado("cat"); }),
+      }),
 
       // tipos_manutencao_custom
       dsWatch("tipos_manutencao_custom", snap => {
@@ -1688,11 +1689,10 @@ export default function Manutencao() {
     if (!modalDocs?.veiculo?.id) return;
     setSalvandoDocs(true);
     try {
-      const ref = doc(db, "veiculos", modalDocs.veiculo.id);
       if (modalDocs.restaurar) {
-        await updateDoc(ref, { documentosAplicaveis: null });
+        await patchVeiculo(modalDocs.veiculo.id, { documentosAplicaveis: null });
       } else {
-        await updateDoc(ref, { documentosAplicaveis: Array.from(modalDocs.selecionados) });
+        await patchVeiculo(modalDocs.veiculo.id, { documentosAplicaveis: Array.from(modalDocs.selecionados) });
       }
       await carregarTudo();
       setModalDocs(null);
@@ -1955,7 +1955,7 @@ export default function Manutencao() {
       bloqueadoPor: quemSou(),
       bloqueadoEm: new Date().toISOString(),
     };
-    await updateDoc(doc(db, "veiculos", veiculo.id), { bloqueio });
+    await patchVeiculo(veiculo.id, { bloqueio });
     patchVeiculoLocal(veiculo.id, bloqueio);
   }
 
@@ -1976,7 +1976,7 @@ export default function Manutencao() {
       desbloqueadoPor: quemSou(),
       desbloqueadoEm: new Date().toISOString(),
     };
-    await updateDoc(doc(db, "veiculos", veiculo.id), { bloqueio });
+    await patchVeiculo(veiculo.id, { bloqueio });
     patchVeiculoLocal(veiculo.id, bloqueio);
   }
 
@@ -2369,7 +2369,7 @@ export default function Manutencao() {
       // Atualiza CNPJ se antes vazio e agora veio preenchido
       if (cnpj && !existente.cnpj) {
         try {
-          await updateDoc(doc(db, "itens_manutencao", existente.id), { cnpj });
+          await gdsPatch("itens_manutencao", existente.id, { cnpj });
           setItensCatalogo(prev => prev.map(i => i.id === existente.id ? { ...i, cnpj } : i));
         } catch (e) { console.warn("Falha ao atualizar CNPJ do fornecedor:", e); }
       }
@@ -2378,7 +2378,7 @@ export default function Manutencao() {
     try {
       const payload = { tipo: tipoItem, nome: nm, criadoEm: new Date().toISOString(), criadoPor: quemSou() };
       if (cnpj) payload.cnpj = cnpj;
-      const ref = await addDoc(collection(db, "itens_manutencao"), payload);
+      const ref = await gdsInsert("itens_manutencao", payload);
       setItensCatalogo(prev => [...prev, { id: ref.id, ...payload }].sort((a, b) => (a.nome || "").localeCompare(b.nome || "")));
     } catch (e) {
       console.warn("Falha ao cadastrar item no catálogo:", e);
@@ -2414,7 +2414,7 @@ export default function Manutencao() {
     try {
       const payload = { tipo, nome: nm, criadoEm: new Date().toISOString(), criadoPor: quemSou() };
       if (tipo === "fornecedor" && novoCatCnpj.trim()) payload.cnpj = novoCatCnpj.trim();
-      const ref = await addDoc(collection(db, "itens_manutencao"), payload);
+      const ref = await gdsInsert("itens_manutencao", payload);
       setItensCatalogo(prev => [...prev, { id: ref.id, ...payload }].sort((a, b) => (a.nome || "").localeCompare(b.nome || "")));
       setNovoCat(prev => ({ ...prev, [tipo]: "" }));
       if (tipo === "fornecedor") setNovoCatCnpj("");
@@ -2431,7 +2431,7 @@ export default function Manutencao() {
     try {
       const patch = { nome: nm, editadoEm: new Date().toISOString(), editadoPor: quemSou() };
       if (cnpj !== undefined) patch.cnpj = cnpj;
-      await updateDoc(doc(db, "itens_manutencao", editItemCat.id), patch);
+      await gdsPatch("itens_manutencao", editItemCat.id, patch);
       setItensCatalogo(prev => prev.map(i => (i.id === editItemCat.id ? { ...i, nome: nm, cnpj } : i)).sort((a, b) => (a.nome || "").localeCompare(b.nome || "")));
       setEditItemCat(null);
     } catch (e) {
@@ -2443,7 +2443,7 @@ export default function Manutencao() {
     if (!canDelete) return;
     if (!window.confirm(`Excluir "${item.nome}" do catálogo?`)) return;
     try {
-      await deleteDoc(doc(db, "itens_manutencao", item.id));
+      await gdsRemove("itens_manutencao", item.id);
       setItensCatalogo(prev => prev.filter(i => i.id !== item.id));
     } catch (e) {
       alert("Erro ao excluir: " + e.message);
@@ -2730,7 +2730,7 @@ export default function Manutencao() {
 
       {/* ── ABA: POR VEÍCULO ──────────────────────────────────────────── */}
       {aba === "veiculo" && podeVerAba("por_veiculo") && (
-        <main style={s.main} className="pg-body">
+        <main style={{ ...s.main, maxWidth: "none", margin: 0, padding: "16px 20px" }} className="pg-body">
           <div style={s.veiculoRow}>
             <label style={s.veiculoLabel}>Veículo</label>
             <select style={s.veiculoSelect} value={placa} onChange={e => setPlaca(e.target.value)}>
@@ -2775,53 +2775,154 @@ export default function Manutencao() {
           {loading ? (
             <p style={s.info}>Carregando...</p>
           ) : (
-            conjuntoComStatus.map(secao => (
-              <div key={secao.placa} style={{ marginBottom: 28 }}>
-                <div style={{ fontWeight:700, fontSize:".95rem", color:"#1a3a5c", padding:"10px 0 8px", borderBottom:"2px solid #1a3a5c33", marginBottom:12 }}>
-                  {secao.label}
-                </div>
-                {Object.entries(secao.grupos).map(([grupo, tipos]) => {
-              const gc = GRUPO_COLOR[grupo] || { bg:"#f1f5f9", color:"#475569", border:"#cbd5e1" };
+            (() => {
+              // Split: lista de docs (esquerda) + detalhe do doc selecionado (direita)
+              const allItens = conjuntoComStatus.flatMap(secao =>
+                Object.entries(secao.grupos).flatMap(([grupo, tipos]) =>
+                  tipos.map(t => ({ ...t, secaoPlaca: secao.placa, secaoLabel: secao.label, grupo }))
+                )
+              );
+              const key = (it) => `${it.secaoPlaca}__${it.id}`;
+              const selected = allItens.find(it => key(it) === docSelKey) || allItens[0];
+              const sel = selected;
+
               return (
-                <div key={grupo} style={s.grupoSection}>
-                  <div style={{ ...s.grupoHeader, background: gc.bg, color: gc.color, borderColor: gc.border }}>
-                    {grupo}
-                  </div>
-                  <div style={s.tipoGrid}>
-                    {tipos.map(t => {
-                      const sm = STATUS_META[t.status];
-                      const temDado = !!t.record;
-                      return (
-                        <div
-                          key={t.id}
-                          style={{ ...s.tipoCard, borderColor: temDado ? sm.color+"55" : "var(--border)", background: temDado ? sm.rowBg : "var(--card-bg)" }}
-                          onClick={() => abrirModal(secao.placa, t)}
-                        >
-                          <div style={s.tipoCardTop}>
-                            <span style={s.tipoNome}>{t.label}</span>
-                            <span style={{ ...s.sPill, background: sm.bg, color: sm.color }}>{sm.label}</span>
-                          </div>
-                          <div style={s.tipoDesc}>{t.desc}</div>
-                          {temDado && (
-                            <div style={s.tipoMeta}>
-                              {t.record.venc        && <span>Vence: <strong>{fmtDate(t.record.venc)}</strong></span>}
-                              {t.record.data_realiz && <span>Realizado: {fmtDate(t.record.data_realiz)}</span>}
-                              {t.record.local       && <span>Local: {t.record.local}</span>}
-                              {t.record.numero_doc  && <span>Doc: {t.record.numero_doc}</span>}
-                            </div>
-                          )}
-                          {!temDado && (
-                            <div style={s.tipoVazio}>Clique para preencher</div>
-                          )}
+                <div style={{ display:"flex", gap:12, alignItems:"stretch", minHeight:400 }}>
+                  {/* LISTA ESQUERDA */}
+                  <div style={{ width:280, flexShrink:0, background:"var(--card-bg)", border:"1px solid var(--border)", borderRadius:10, overflow:"auto", maxHeight:"70vh" }}>
+                    {conjuntoComStatus.map(secao => (
+                      <div key={secao.placa}>
+                        <div style={{ padding:"8px 12px", fontWeight:700, fontSize:".78rem", color:"#1a3a5c", background:"#f8fafc", borderBottom:"1px solid var(--border)", position:"sticky", top:0 }}>
+                          {secao.label}
                         </div>
-                      );
-                    })}
+                        {Object.entries(secao.grupos).map(([grupo, tipos]) => (
+                          <div key={grupo}>
+                            {tipos.map(t => {
+                              const sm = STATUS_META[t.status];
+                              const it = { ...t, secaoPlaca: secao.placa };
+                              const ativo = key(it) === (sel ? key(sel) : null);
+                              return (
+                                <div
+                                  key={key(it)}
+                                  onClick={() => setDocSelKey(key(it))}
+                                  style={{
+                                    padding:"10px 12px", borderBottom:"1px solid var(--border)",
+                                    cursor:"pointer",
+                                    background: ativo ? "#eef4ff" : "transparent",
+                                    borderLeft: ativo ? "3px solid #1a3a5c" : "3px solid transparent",
+                                    display:"flex", justifyContent:"space-between", alignItems:"center", gap:8,
+                                  }}
+                                >
+                                  <span style={{ fontSize:".85rem", fontWeight: ativo ? 700 : 500, color:"#1a3a5c" }}>{t.label}</span>
+                                  <span style={{ ...s.sPill, background: sm.bg, color: sm.color, fontSize:".68rem" }}>{sm.label}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* DETALHE DIREITA */}
+                  <div style={{ flex:1, background:"var(--card-bg)", border:"1px solid var(--border)", borderRadius:10, padding:20, minHeight:"70vh" }}>
+                    {!sel ? (
+                      <p style={s.info}>Selecione um documento à esquerda.</p>
+                    ) : (
+                      <>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start", marginBottom:14, paddingBottom:14, borderBottom:"1px solid var(--border)" }}>
+                          <div>
+                            <div style={{ fontSize:".75rem", color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>
+                              {sel.secaoLabel} · {sel.grupo}
+                            </div>
+                            <div style={{ fontSize:"1.3rem", fontWeight:800, color:"#1a3a5c" }}>{sel.label}</div>
+                            <div style={{ fontSize:".85rem", color:"#64748b", marginTop:4 }}>{sel.desc}</div>
+                          </div>
+                          <div style={{ display:"flex", flexDirection:"column", alignItems:"end", gap:8 }}>
+                            <span style={{ ...s.sPill, background: STATUS_META[sel.status].bg, color: STATUS_META[sel.status].color, fontSize:".8rem", padding:"5px 12px" }}>
+                              {STATUS_META[sel.status].label}
+                            </span>
+                            <button
+                              style={{ padding:"8px 16px", background:"#1a3a5c", color:"#fff", border:"none", borderRadius:8, fontSize:".85rem", fontWeight:700, cursor:"pointer" }}
+                              onClick={() => abrirModal(sel.secaoPlaca, sel)}
+                            >
+                              {sel.record ? "Editar" : "Preencher"}
+                            </button>
+                          </div>
+                        </div>
+                        {sel.record ? (
+                          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))", gap:14 }}>
+                            {sel.record.data_realiz && (
+                              <div><div style={s.fieldLbl}>Realização</div><div style={s.fieldVal}>{fmtDate(sel.record.data_realiz)}</div></div>
+                            )}
+                            {sel.record.venc && (
+                              <div><div style={s.fieldLbl}>Vencimento</div><div style={{ ...s.fieldVal, fontWeight:700 }}>{fmtDate(sel.record.venc)}</div></div>
+                            )}
+                            {sel.record.local && (
+                              <div><div style={s.fieldLbl}>Local</div><div style={s.fieldVal}>{sel.record.local}</div></div>
+                            )}
+                            {sel.record.numero_doc && (
+                              <div><div style={s.fieldLbl}>Nº do Documento</div><div style={s.fieldVal}>{sel.record.numero_doc}</div></div>
+                            )}
+                            {sel.record.resp && (
+                              <div><div style={s.fieldLbl}>Responsável</div><div style={s.fieldVal}>{sel.record.resp}</div></div>
+                            )}
+                            {sel.record.agendamento && (
+                              <div><div style={s.fieldLbl}>Agendamento</div><div style={s.fieldVal}>{fmtDate(sel.record.agendamento)}</div></div>
+                            )}
+                            {sel.record.obs && (
+                              <div style={{ gridColumn:"1/-1" }}><div style={s.fieldLbl}>Observações</div><div style={s.fieldVal}>{sel.record.obs}</div></div>
+                            )}
+                          </div>
+                        ) : (
+                          <p style={{ ...s.info, marginTop:30 }}>Sem registro para este documento. Clique em "Preencher" acima.</p>
+                        )}
+
+                        {/* ANEXOS — visualização inline no split (grande, ocupa toda largura) */}
+                        {sel.record && Array.isArray(sel.record.anexos) && sel.record.anexos.length > 0 && (
+                          <div style={{ marginTop:24, paddingTop:20, borderTop:"1px solid var(--border)" }}>
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                              <div style={s.fieldLbl}>Anexos ({sel.record.anexos.length})</div>
+                              <span style={{ fontSize:".72rem", color:"#64748b" }}>Clique no anexo para abrir em tela cheia</span>
+                            </div>
+                            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+                              {sel.record.anexos.map((a, i) => {
+                                const isImg = /^image\//.test(a.tipo || "") || /\.(jpg|jpeg|png|webp|gif)$/i.test(a.nome || "");
+                                const isPdf = /pdf/i.test(a.tipo || "") || /\.pdf$/i.test(a.nome || "");
+                                return (
+                                  <div key={i} style={{ border:"1px solid var(--border)", borderRadius:10, overflow:"hidden", background:"#f8fafc" }}>
+                                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", background:"#fff", borderBottom:"1px solid var(--border)" }}>
+                                      <span style={{ fontSize:".9rem", color:"#1a3a5c", fontWeight:700, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }} title={a.nome}>
+                                        {a.nome || "arquivo"}
+                                      </span>
+                                      <a href={a.url} target="_blank" rel="noreferrer"
+                                         style={{ padding:"6px 12px", background:"#1a3a5c", color:"#fff", borderRadius:6, fontSize:".78rem", fontWeight:700, textDecoration:"none", flexShrink:0, marginLeft:12 }}>
+                                        Abrir em tela cheia
+                                      </a>
+                                    </div>
+                                    {isImg ? (
+                                      <a href={a.url} target="_blank" rel="noreferrer" style={{ display:"block" }}>
+                                        <img src={a.url} alt={a.nome} style={{ width:"100%", maxHeight:800, objectFit:"contain", display:"block", background:"#fff" }} />
+                                      </a>
+                                    ) : isPdf ? (
+                                      <iframe src={a.url} title={a.nome} style={{ width:"100%", height:700, border:"none", display:"block", background:"#fff" }} />
+                                    ) : (
+                                      <div style={{ padding:40, textAlign:"center", color:"#64748b", fontSize:".9rem" }}>
+                                        Arquivo não visualizável — clique em "Abrir em tela cheia"
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               );
-            })}
-              </div>
-            ))
+            })()
           )}
         </main>
       )}
@@ -5532,6 +5633,10 @@ const s = {
   tipoDesc:    { fontSize:".75rem", color:"var(--text-muted)", lineHeight:1.4 },
   tipoMeta:    { display:"flex", flexDirection:"column", gap:3, marginTop:4, fontSize:".75rem", color:"var(--text-muted)" },
   tipoVazio:   { fontSize:".72rem", color:"#94a3b8", fontStyle:"italic", marginTop:2 },
+
+  // split view (aba Por Veículo)
+  fieldLbl:    { fontSize:".72rem", color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4, letterSpacing:".03em" },
+  fieldVal:    { fontSize:".92rem", color:"#1a3a5c" },
 
   // toolbar alertas
   toolbar:     { display:"flex", alignItems:"center", gap:12, padding:"14px 24px", background:"transparent", flexWrap:"wrap" },

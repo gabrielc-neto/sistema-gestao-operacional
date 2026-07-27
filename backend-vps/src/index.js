@@ -19,6 +19,7 @@ import sascarRoutes from "./routes/sascar.js";
 import jornadaRoutes from "./routes/jornada.js";
 import ctaRoutes from "./routes/cta.js";
 import authRoutes from "./routes/auth.js";
+import intranetGateRoutes from "./routes/intranet-gate.js";
 import { iniciarCronjobs } from "./cron.js";
 
 const app = express();
@@ -50,6 +51,7 @@ app.use("/api/sascar",           sascarRoutes);
 app.use("/api/jornada",          jornadaRoutes);
 app.use("/api/cta",              ctaRoutes);
 app.use("/api/auth",             authRoutes);
+app.use("/api/intranet-gate",    intranetGateRoutes);
 
 // 404 catch-all
 app.use((req, res) => res.status(404).json({ error: "not_found", path: req.originalUrl }));

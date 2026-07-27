@@ -15,8 +15,7 @@
 //   if (temPermissao("cargos.editar")) { ... }
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { get as dsGet } from "../services/genericDataSource";
 import { useAuth } from "../contexts/AuthContext";
 
 const RBACContext = createContext({
@@ -58,16 +57,14 @@ export function RBACProvider({ children }) {
         const setorId = profile.setor_id;
         const cargoId = profile.cargo_id;
 
-        const [setorSnap, cargoSnap] = await Promise.all([
-          setorId ? getDoc(doc(db, "setores", setorId)) : Promise.resolve(null),
-          cargoId ? getDoc(doc(db, "cargos",  cargoId)) : Promise.resolve(null),
+        const [setorData, cargoData] = await Promise.all([
+          setorId ? dsGet("setores", setorId).catch(() => null) : Promise.resolve(null),
+          cargoId ? dsGet("cargos",  cargoId).catch(() => null) : Promise.resolve(null),
         ]);
 
         if (cancelado) return;
 
-        const setorData = setorSnap?.exists() ? { id: setorSnap.id, ...setorSnap.data() } : null;
-        const cargoData = cargoSnap?.exists() ? { id: cargoSnap.id, ...cargoSnap.data() } : null;
-        const perms     = Array.isArray(cargoData?.permissoes) ? cargoData.permissoes : [];
+        const perms = Array.isArray(cargoData?.permissoes) ? cargoData.permissoes : [];
 
         setSetor(setorData);
         setCargo(cargoData);

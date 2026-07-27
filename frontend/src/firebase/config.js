@@ -5,8 +5,8 @@ import { getStorage } from "firebase/storage";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 import { auth as vpsAuth } from "../services/authVPS";
 
-// Flag: se VITE_USE_VPS_AUTH=true, usa Auth JWT próprio (VPS). Senão Firebase.
-const USE_VPS_AUTH = String(import.meta.env?.VITE_USE_VPS_AUTH || "").toLowerCase() === "true";
+// Migração 2026-07-23: Firebase Auth eliminado. JWT próprio (VPS) sempre.
+const USE_VPS_AUTH = true;
 
 const firebaseConfig = {
   apiKey: "AIzaSyBUZdqVSvcoHhnSYNK1edtpbJ1_xfQ-DTU",

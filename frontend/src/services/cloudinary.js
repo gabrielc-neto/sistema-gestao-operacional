@@ -1,50 +1,48 @@
-// Upload de anexos via Cloudinary (grátis 25GB).
-// Usado como storage temporário até migração pra Hostinger (VPS 400GB SSD).
-// Ver [[project-firebase-storage-requer-blaze]] pro contexto.
+// Migração 2026-07-23: Cloudinary substituído por upload local no VPS.
+// Interface mantida (cloudinaryConfigured, uploadArquivo) pra não quebrar callers.
+// Backend: POST /api/uploads (multipart) → salva em /var/pontual/uploads/, retorna URL.
 
-const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "";
-const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "motoristas_docs";
+import { auth } from "../firebase/config";
+
+const VPS_BASE = import.meta.env?.VITE_PONTUAL_API_URL || "";
 
 export function cloudinaryConfigured() {
-  return !!CLOUD_NAME;
+  return true; // Sempre disponível (backend local)
 }
 
-// Sobe arquivo direto do browser via unsigned upload preset.
-// Retorna { url, publicId, tipo, tamanho, nome } ou lança Error.
-export async function uploadArquivo(file, { folder = "motoristas" } = {}) {
-  if (!CLOUD_NAME) {
-    throw new Error("Cloudinary não configurado. Defina VITE_CLOUDINARY_CLOUD_NAME no .env.");
-  }
+export async function uploadArquivo(file, { folder = "geral" } = {}) {
   if (!file) throw new Error("Nenhum arquivo selecionado.");
+
+  const token = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+  if (!token) throw new Error("Não autenticado.");
 
   const fd = new FormData();
   fd.append("file", file);
-  fd.append("upload_preset", UPLOAD_PRESET);
   fd.append("folder", folder);
 
-  // PDF/ZIP vai como "raw" pra contornar bloqueio padrão de PDF delivery
-  // no plano gratuito do Cloudinary. Imagem continua como "auto".
-  const isPdfOuZip = file.type === "application/pdf" || file.type === "application/zip" || /\.(pdf|zip)$/i.test(file.name);
-  const resourceType = isPdfOuZip ? "raw" : "auto";
-  const endpoint = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`;
-
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45000);
+  const timeout = setTimeout(() => controller.abort(), 60_000);
 
   try {
-    const resp = await fetch(endpoint, { method: "POST", body: fd, signal: controller.signal });
+    const resp = await fetch(`${VPS_BASE}/api/uploads?folder=${encodeURIComponent(folder)}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+      signal: controller.signal,
+    });
     clearTimeout(timeout);
     const data = await resp.json();
     if (!resp.ok) {
-      throw new Error(data?.error?.message || `Upload falhou (HTTP ${resp.status})`);
+      throw new Error(data?.error || `Upload falhou (HTTP ${resp.status})`);
     }
+    // Interface idêntica ao antigo Cloudinary
     return {
-      url: data.secure_url,
-      publicId: data.public_id,
-      tipo: data.resource_type + (data.format ? `/${data.format}` : ""),
-      tamanho: data.bytes,
-      nome: file.name,
-      uploadedAt: new Date().toISOString(),
+      url: data.url,
+      publicId: data.publicId,
+      tipo: data.tipo,
+      tamanho: data.tamanho,
+      nome: data.nome,
+      uploadedAt: data.uploadedAt,
     };
   } catch (e) {
     clearTimeout(timeout);

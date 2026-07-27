@@ -12,6 +12,13 @@ const CAMPOS = ["placa","empresa","tipo","marca","modelo","cor","ano_fab","ano_m
                 "odometro_km","odometro_data","crlv_vencimento","civ_vencimento","cipp_vencimento"];
 const JSON_CAMPOS = ["bloqueio","extras"];
 
+// Spread do JSONB `extras` no topo do objeto — permite frontend ler v.documentosAplicaveis diretamente
+function enriquecer(row) {
+  if (!row) return row;
+  const { extras, ...rest } = row;
+  return { ...(extras || {}), ...rest };
+}
+
 // GET /api/veiculos?status=ativo
 r.get("/", asyncH(async (req, res) => {
   const { status, tipo, placa } = req.query;
@@ -21,14 +28,14 @@ r.get("/", asyncH(async (req, res) => {
   if (placa)  { params.push(placa);  wh.push(`placa = $${params.length}`); }
   const where = wh.length ? `WHERE ${wh.join(" AND ")}` : "";
   const rows = await q(`SELECT * FROM veiculos ${where} ORDER BY placa`, params);
-  res.json({ rows, count: rows.length });
+  res.json({ rows: rows.map(enriquecer), count: rows.length });
 }));
 
 // GET /api/veiculos/:id (id pode ser UUID, legacy_id ou placa)
 r.get("/:id", asyncH(async (req, res) => {
   const row = await q1(`SELECT * FROM veiculos WHERE id::text = $1 OR legacy_id = $1 OR placa = $1`, [req.params.id]);
   if (!row) return res.status(404).json({ error: "not_found" });
-  res.json(row);
+  res.json(enriquecer(row));
 }));
 
 // POST /api/veiculos — upsert por placa (compatível com setDoc merge Firestore)
@@ -52,7 +59,7 @@ r.post("/", asyncH(async (req, res) => {
      RETURNING *`,
     vals
   );
-  res.status(201).json(row);
+  res.status(201).json(enriquecer(row));
 }));
 
 // PATCH /api/veiculos/:id
@@ -61,6 +68,18 @@ r.patch("/:id", asyncH(async (req, res) => {
   const sets = [], params = [];
   for (const c of CAMPOS) if (c in b) { params.push(b[c]); sets.push(`${c}=$${params.length}`); }
   for (const c of JSON_CAMPOS) if (c in b) { params.push(JSON.stringify(b[c])); sets.push(`${c}=$${params.length}`); }
+
+  // Campos legado que ficam guardados dentro de JSONB `extras` (evita migração de schema).
+  // Ex: documentosAplicaveis, ipem, aet, licenca_paranas etc — qualquer coisa não mapeada.
+  const EXTRAS_KEYS = ["documentosAplicaveis"];
+  const extrasPatch = {};
+  for (const k of EXTRAS_KEYS) if (k in b) extrasPatch[k] = b[k];
+  if (Object.keys(extrasPatch).length) {
+    // Merge no jsonb: `extras = COALESCE(extras,'{}') || $N`
+    params.push(JSON.stringify(extrasPatch));
+    sets.push(`extras = COALESCE(extras,'{}'::jsonb) || $${params.length}::jsonb`);
+  }
+
   if (!sets.length) return res.status(400).json({ error: "sem_campos_pra_atualizar" });
   params.push(req.params.id);
   const row = await q1(
@@ -70,7 +89,7 @@ r.patch("/:id", asyncH(async (req, res) => {
     params
   );
   if (!row) return res.status(404).json({ error: "not_found" });
-  res.json(row);
+  res.json(enriquecer(row));
 }));
 
 r.delete("/:id", asyncH(async (req, res) => {

@@ -3,8 +3,9 @@
 
 import { atualizarPosicoesSascar } from "./routes/sascar.js";
 import { sincronizarCta } from "./routes/cta.js";
+import { setCache } from "./integracoes/cache.js";
 
-const INTERVALO_SASCAR_MS = 5 * 60_000;     // 5 min
+const INTERVALO_SASCAR_MS = 2 * 60_000;     // 2 min (user quer tempo real, respeitando rate limit SASCAR 1req/60s)
 const INTERVALO_CTA_MS    = 15 * 60_000;    // 15 min (rate limit CTA é 1req/60s, mas 15min sobra)
 
 let sascarBusy = false, ctaBusy = false;
@@ -15,7 +16,11 @@ async function loopSascar() {
   try {
     const r = await atualizarPosicoesSascar();
     if (r.erro) console.warn("[cron][sascar]", r.erro);
-    else console.log(`[cron][sascar] posicoes=${r.total} writes=${r.gravadosNoBanco} eventos=${r.eventosCerca}`);
+    else {
+      // Alimenta cache que o endpoint /api/sascar/posicoes vai servir
+      setCache("sascar-posicoes", r);
+      console.log(`[cron][sascar] posicoes=${r.total} writes=${r.gravadosNoBanco} eventos=${r.eventosCerca}`);
+    }
   } catch (e) { console.error("[cron][sascar] erro:", e.message); }
   finally { sascarBusy = false; }
 }

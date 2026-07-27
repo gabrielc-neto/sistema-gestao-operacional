@@ -6,7 +6,7 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 import { q, q1 } from "../db.js";
-import { cached } from "../integracoes/cache.js";
+import { cached, getCache, setCache } from "../integracoes/cache.js";
 import {
   obterVeiculos,
   obterPacotePosicoesMotorista,
@@ -20,13 +20,13 @@ const USUARIO = process.env.SASCAR_USUARIO || "";
 const SENHA   = process.env.SASCAR_SENHA   || "";
 
 function statusFromPacote(p) {
+  // Nomes compatíveis com Firebase Function original (frontend depende disso)
   if (!p) return "SEM_DADOS";
   const ig = Number(p.ignicao);
   const vel = Number(p.velocidade);
-  if (ig === 1 && vel > 0) return "MOVIMENTO";
-  if (ig === 1) return "PARADO_IGN_LIGADA";
-  if (ig === 0) return "PARADO";
-  return "DESCONHECIDO";
+  if (ig === 1 && vel > 0) return "EM_MOVIMENTO";
+  if (ig === 1)            return "PARADO_LIGADO";
+  return "ESTACIONADO";
 }
 
 // Núcleo — consulta SASCAR + persiste no PG. Reutilizado pela rota HTTP e pelo cron.
@@ -145,19 +145,28 @@ export async function atualizarPosicoesSascar() {
   }
 
   // 5) Resultado final: 1 por veículo
+  // Recalcula statusTexto sempre (evita servir valores velhos de banco antigo)
   const resultado = veiculos.map(v => {
     const p = persistidas.get(v.idVeiculo);
-    if (p) return p;
+    if (p) return { ...p, statusTexto: statusFromPacote(p) };
     return { idVeiculo: v.idVeiculo, placa: v.placa, statusTexto: "SEM_DADOS", motoristaLogado: null, latitude: null, longitude: null, dataPosicao: null };
   });
   console.log(`[sascar] writes=${writes} eventos=${eventos}`);
   return { posicoes: resultado, total: resultado.length, gravadosNoBanco: writes, eventosCerca: eventos };
 }
 
-// POST /api/sascar/posicoes — cache 5min
+// POST /api/sascar/posicoes — SEMPRE serve cache do cron. Nunca chama SOAP daqui.
+// SOAP roda só no cron (src/cron.js) pra respeitar rate limit SASCAR (1req/60s).
+// Se cache vazio (primeiro boot), força 1 chamada e popula.
 r.post("/posicoes", requireAuth, asyncH(async (req, res) => {
-  const { data, age, fresh } = await cached("sascar-posicoes", 300_000, atualizarPosicoesSascar);
-  res.json({ ...data, cache: { age, fresh } });
+  const hit = getCache("sascar-posicoes");
+  if (hit) {
+    return res.json({ ...hit.data, cache: { age: hit.age, fresh: false, source: "cron" } });
+  }
+  // Sem cache (primeiro boot). Popula 1 vez.
+  const data = await atualizarPosicoesSascar();
+  setCache("sascar-posicoes", data);
+  res.json({ ...data, cache: { age: 0, fresh: true, source: "bootstrap" } });
 }));
 
 // GET /api/sascar/veiculos — só lista (sem persistir)

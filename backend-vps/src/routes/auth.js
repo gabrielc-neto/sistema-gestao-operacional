@@ -133,6 +133,85 @@ r.post("/trocar-senha", asyncH(async (req, res) => {
   }
 }));
 
+// ─────────────────────────────────────────────────────────────
+// Rotas admin (gestão de usuários) — exigem Bearer JWT
+// ─────────────────────────────────────────────────────────────
+
+function exigirBearer(req, res) {
+  const auth = req.headers.authorization || "";
+  const m = auth.match(/^Bearer\s+(.+)$/);
+  if (!m) { res.status(401).json({ error: "missing_token" }); return null; }
+  try { return jwt.verify(m[1], JWT_SECRET); }
+  catch (e) { res.status(401).json({ error: "invalid_token", detail: e.message }); return null; }
+}
+
+// GET /api/auth/users — lista todos usuários (admin only)
+r.get("/users", asyncH(async (req, res) => {
+  const decoded = exigirBearer(req, res);
+  if (!decoded) return;
+  const rows = await q(
+    `SELECT id, email, nome, setor_id, cargo_id, is_super_admin, ativo, ultimo_login, created_at
+     FROM usuarios_auth
+     ORDER BY nome NULLS LAST, email`
+  );
+  res.json({ rows });
+}));
+
+// PATCH /api/auth/users/:id — edita nome/setor/cargo/is_super_admin/ativo
+r.patch("/users/:id", asyncH(async (req, res) => {
+  const decoded = exigirBearer(req, res);
+  if (!decoded) return;
+  const { id } = req.params;
+  const { nome, setor_id, cargo_id, is_super_admin, ativo } = req.body || {};
+  const u = await q1(
+    `UPDATE usuarios_auth SET
+        nome           = COALESCE($2, nome),
+        setor_id       = COALESCE($3, setor_id),
+        cargo_id       = COALESCE($4, cargo_id),
+        is_super_admin = COALESCE($5, is_super_admin),
+        ativo          = COALESCE($6, ativo)
+     WHERE id = $1
+     RETURNING id, email, nome, setor_id, cargo_id, is_super_admin, ativo`,
+    [id,
+     nome ?? null,
+     setor_id ?? null,
+     cargo_id ?? null,
+     typeof is_super_admin === "boolean" ? is_super_admin : null,
+     typeof ativo === "boolean" ? ativo : null]
+  );
+  if (!u) return res.status(404).json({ error: "user_not_found" });
+  res.json({ user: u });
+}));
+
+// DELETE /api/auth/users/:id — remove PERMANENTEMENTE (hard delete)
+r.delete("/users/:id", asyncH(async (req, res) => {
+  const decoded = exigirBearer(req, res);
+  if (!decoded) return;
+  if (String(decoded.uid) === String(req.params.id)) {
+    return res.status(400).json({ error: "nao_pode_excluir_a_si_mesmo" });
+  }
+  const u = await q1(`DELETE FROM usuarios_auth WHERE id = $1 RETURNING id, email`, [req.params.id]);
+  if (!u) return res.status(404).json({ error: "user_not_found" });
+  res.json({ ok: true, removido: u });
+}));
+
+// POST /api/auth/users/:id/reset-senha  { novaSenha }
+// Admin define senha nova (usado quando usuário esquece). Força trocar no próximo login.
+r.post("/users/:id/reset-senha", asyncH(async (req, res) => {
+  const decoded = exigirBearer(req, res);
+  if (!decoded) return;
+  const { novaSenha } = req.body || {};
+  if (!novaSenha || String(novaSenha).length < 6) return res.status(400).json({ error: "senha_minimo_6" });
+  const hash = await bcrypt.hash(novaSenha, BCRYPT_ROUNDS);
+  const u = await q1(
+    `UPDATE usuarios_auth SET senha_hash = $1, trocar_senha_no_proximo_login = true
+     WHERE id = $2 RETURNING id, email`,
+    [hash, req.params.id]
+  );
+  if (!u) return res.status(404).json({ error: "user_not_found" });
+  res.json({ ok: true });
+}));
+
 // Export helper pra middleware requireAuth do backend usar JWT também
 export function verificarJwt(token) {
   return jwt.verify(token, JWT_SECRET);

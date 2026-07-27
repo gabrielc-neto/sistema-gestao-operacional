@@ -10,8 +10,8 @@
 // sai desta tela nem é armazenado.
 
 import { useState, useEffect } from "react";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db, auth } from "../../firebase/config";
+import { auth } from "../../firebase/config";
+import { get as dsGet, save as dsSave } from "../../services/genericDataSource";
 import ProtegerPor from "../../rbac/ProtegerPor";
 import ModuleHeader from "../../components/ModuleHeader";
 
@@ -33,8 +33,6 @@ function ipValido(v) {
   return true;
 }
 
-const CONFIG_REF = () => doc(db, "intranet", "config");
-
 export default function ConfiguracoesIntranet() {
   const [loading, setLoading]   = useState(true);
   const [ips, setIps]           = useState([]);
@@ -50,8 +48,7 @@ export default function ConfiguracoesIntranet() {
   async function carregar() {
     setLoading(true);
     try {
-      const snap = await getDoc(CONFIG_REF());
-      const cfg = snap.exists() ? snap.data() : {};
+      const cfg = (await dsGet("intranet", "config")) || {};
       setIps(Array.isArray(cfg.ips) ? cfg.ips : []);
       setTemChave(!!cfg.keywordHash);
     } catch (e) {
@@ -78,11 +75,11 @@ export default function ConfiguracoesIntranet() {
   }
 
   async function gravar(patch) {
-    await setDoc(
-      CONFIG_REF(),
-      { ...patch, updatedAt: serverTimestamp(), updatedBy: auth.currentUser?.uid || null },
-      { merge: true }
-    );
+    await dsSave("intranet", "config", {
+      ...patch,
+      updatedAt: new Date().toISOString(),
+      updatedBy: auth.currentUser?.uid || null,
+    });
   }
 
   async function adicionarIp(valor) {

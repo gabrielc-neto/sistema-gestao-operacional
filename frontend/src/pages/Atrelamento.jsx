@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, addDoc, updateDoc, query, where, orderBy, doc } from "firebase/firestore";
-import { db } from "../firebase/config";
 import { list as dsList, insert as dsInsert } from "../services/genericDataSource";
 import { listVeiculos, patchVeiculo } from "../services/frotaDataSource";
 import ModuleHeader from "../components/ModuleHeader";
@@ -99,16 +97,16 @@ export default function Atrelamento() {
   const carregar = async () => {
     setLoading(true);
     try {
-      const [regRows, veicRows, motRows, manutSnap] = await Promise.all([
+      const [regRows, veicRows, motRows, manutRows] = await Promise.all([
         dsList("atrelamentos", { orderBy: "data", order: "desc" }),
         listVeiculos(),
         dsList("motoristas", { where: { status: "ativo" } }),
-        getDocs(collection(db, "manutencoes")).catch(() => ({ docs: [] })),
+        dsList("manutencoes").catch(() => []),
       ]);
       setRegistros(regRows);
       setVeiculos(veicRows.filter(v => v.tipo !== "carreta" && v.status !== "inativo"));
       setMotoristas(motRows);
-      setManutencoes(manutSnap.docs.map(d => d.data()));
+      setManutencoes(manutRows);
     } catch (e) {
       console.error(e);
     }
@@ -180,13 +178,12 @@ export default function Atrelamento() {
           if (form.c2) placas.push(normPlaca(form.c2));
 
           const TIPOS_MOTORISTA_IDS = ["cnh_venc", "mopp", "nr20", "nr35"];
-          const snapManut = await getDocs(collection(db, "manutencoes"));
+          const manutRows = await dsList("manutencoes").catch(() => []);
           const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
           const em30 = new Date(hoje); em30.setDate(em30.getDate() + 30);
 
           const alertasEncontrados = [];
-          snapManut.docs.forEach(d => {
-            const rec = d.data();
+          manutRows.forEach(rec => {
             if (!placas.includes(normPlaca(rec.placa))) return;
             if (!rec.venc) return;
             if (TIPOS_MOTORISTA_IDS.includes(rec.tipo)) return;
