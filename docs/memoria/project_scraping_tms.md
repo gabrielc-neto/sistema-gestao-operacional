@@ -30,3 +30,12 @@ Análise feita 2026-05-22: o que web scraping (Scrapling) pode ou não fazer pel
 - Preço de frete de concorrente — não é público
 
 Skill disponível: `scrapling-skill` (CLI extrai HTML/Markdown/texto). PoC oferecida e não iniciada: puxar tabela de pedágio de uma rota OU preço ANP do diesel pra validar antes de virar módulo.
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]
+- **roteirizacao**: [[feedback-svg-logo-iteration-cost]] · [[feedback_falar_inviavel_cedo]] · [[feedback_nodejs_only]]

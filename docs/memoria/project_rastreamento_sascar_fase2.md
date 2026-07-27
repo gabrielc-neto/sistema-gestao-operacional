@@ -130,3 +130,12 @@ A doc `WebService_SasIntegra_v2.05` é SÓ leitura. Comandos (bloqueio, etc) usa
 - Persistência em Firestore (scheduled function 1min → vehicles/{id}/positions/{ts}) — vai liberar histórico real-time via onSnapshot sem mais hit no SASCAR
 - Integração com OC: vincular OC ativa ao veículo no popup do mapa
 - Notificação push de evento (parada não programada, desvio rota)
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **cta**: [[feedback-windows-file-watcher]] · [[project_estado_atual]] · [[project_levantamento_logistica]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **rbac**: [[feedback_sem_permissao]] · [[project-logistica-ia-frontend]] · [[project_apresentacao_mensal]]

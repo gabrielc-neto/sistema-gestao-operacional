@@ -25,3 +25,12 @@ Pontos-chave:
 **Nota fiscal/escopo (2026-05-22):** Pontual é base de petróleo, carga própria, frota própria → **só MDF-e, sem CT-e e sem faturamento de frete** (não cobra frete de terceiro). Na fase 5 "TMS comercial" (frete/faturamento/CT-e), isso é pro **PRODUTO/outras transportadoras**, não pra Pontual. Pra Pontual a fase 5 vira **custo por viagem + margem interna** (combustível CTA Smart + pedágio), não receita de frete. Ver [[project_tms_mapa_completo]].
 
 Relacionado: [[project_logistica_ia]], [[project_logistica_rastreamento_levantamento]], [[project_producao_deploy_pausado]] (deploy Blaze do sistema atual fica em standby — o futuro é Supabase).
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **cta**: [[feedback-windows-file-watcher]] · [[project_estado_atual]] · [[project_levantamento_logistica]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]

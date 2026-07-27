@@ -4,6 +4,18 @@
 .env.*.local
 *.local
 
+# Projetos experimentais / arquivados (não versionados)
+experimentos/
+arquivo/
+.obsidian/
+
+# Conversas Claude Code (podem conter dados operacionais/tokens)
+docs/conversas-claude/
+
+# Túnel Cloudflare — muda a cada boot
+TUNNEL-URL.md
+tunnel.log
+
 # Logs
 *.log
 logs
@@ -46,3 +58,13 @@ docs/_jornada-seg.html
 # Python
 __pycache__/
 *.pyc
+
+# Tooling local (Claude Flow / orquestração — metadata de sessão, regenerado)
+.claude-flow/
+**/.claude-flow/
+
+
+# Email config (contém app password Gmail)
+functions/scripts/email-config.json
+
+scripts/.env.vps

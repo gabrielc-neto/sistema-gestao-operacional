@@ -4,6 +4,8 @@ import { divIcon } from "leaflet";
 import { Trash2, X, Check, Search, Undo2, Locate, Hexagon, Circle as CircleIcon, Pencil, Save } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
+import { insert as dsInsert, patch as dsPatch, remove as dsRemove } from "../services/genericDataSource";
+import { usuarioPontual } from "../utils/format";
 import { db } from "../firebase/config";
 import { useCercas } from "../hooks/useCercas";
 import { useAuth } from "../contexts/AuthContext";
@@ -197,21 +199,20 @@ export default function Cercas() {
     if (!editingId) return;
     setSalvandoEdit(true);
     try {
-      const ref = doc(db, "cercas_eletronicas", editingId);
       if (editFormato === "circulo") {
         if (!editCentro || !(editRaio > 0)) return;
-        await updateDoc(ref, {
+        await dsPatch("cercas_eletronicas", editingId, {
           centro: { lat: editCentro.lat, lng: editCentro.lng },
           raio: Math.round(editRaio),
-          atualizadoEm: serverTimestamp(),
-          atualizadoPor: user?.email || "—",
+          atualizadoEm: new Date().toISOString(),
+          atualizadoPor: usuarioPontual(user),
         });
       } else {
         if (!editPontos || editPontos.length < 3) return;
-        await updateDoc(ref, {
+        await dsPatch("cercas_eletronicas", editingId, {
           pontos: editPontos,
-          atualizadoEm: serverTimestamp(),
-          atualizadoPor: user?.email || "—",
+          atualizadoEm: new Date().toISOString(),
+          atualizadoPor: usuarioPontual(user),
         });
       }
       cancelarEdicao();
@@ -382,7 +383,7 @@ export default function Cercas() {
         nome: nome.trim(),
         tipo, cor, formato,
         criadoEm: serverTimestamp(),
-        criadoPor: user?.email || "—",
+        criadoPor: usuarioPontual(user),
       };
       if (formato === "circulo") {
         payload.centro = { lat: centro.lat, lng: centro.lng };
@@ -390,7 +391,7 @@ export default function Cercas() {
       } else {
         payload.pontos = pontos;
       }
-      await addDoc(collection(db, "cercas_eletronicas"), payload);
+      await dsInsert("cercas_eletronicas", payload);
       cancelarDesenho();
     } catch (e) {
       alert("Erro ao salvar cerca: " + e.message);
@@ -402,7 +403,7 @@ export default function Cercas() {
   async function excluir(c) {
     if (!confirm(`Excluir cerca "${c.nome}"?`)) return;
     try {
-      await deleteDoc(doc(db, "cercas_eletronicas", c.id));
+      await dsRemove("cercas_eletronicas", c.id);
     } catch (e) {
       alert("Erro ao excluir: " + e.message);
     }

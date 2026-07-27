@@ -34,3 +34,11 @@ Status: **Fase 0 (descoberta)** — aguardando Wesley ligar pra SASCAR comercial
 Wesley diz "vamos pra fase X de câmeras SASCAR" → seguir daqui. Doc oficial em `projetos/logistica-ia/docs/sascar/`.
 
 Relacionado: [[reference_sascar_api]], [[project_rastreamento_sascar_fase2]]
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **firebase**: [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]] · [[feedback_colocar_no_ar_completo]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

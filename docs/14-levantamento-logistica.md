@@ -179,3 +179,13 @@ Pergunta recorrente: "pra cadastrar cliente no sistema, precisa estar homologado
 - Pontual **NÃO emite CT-e** (não cobra frete — é frota própria entregando combustível próprio). O cliente final nem aparece em CT-e da Pontual; aparece no CT-e da REPLAN ou da terceira (STANYTCHYL/LODI).
 
 **Fluxo prático pro cadastro:** input do CNPJ → BrasilAPI valida e preenche → grava no Firestore/Postgres → OC passa a usar dropdown de cliente. Quando emitir MDF-e que envolva esse cliente, Focus NFe consome o mesmo cadastro.
+
+---
+
+## Relacionado
+
+- Anterior: [[13-modulo-terceiros]]
+- Próximo: [[15-roteirizacao]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

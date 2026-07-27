@@ -7,7 +7,8 @@ import { useRBAC } from "../rbac/RBACContext";
 import {
   Menu, X, LayoutDashboard, Truck, Link2, ClipboardList, Users, Wrench,
   History, Palmtree, MapPin, UserCog, ShieldCheck, Building2, Briefcase,
-  Clock, LogOut, Sun, Moon, ChevronRight, ShoppingCart, LayoutGrid,
+  Clock, LogOut, Sun, Moon, ChevronRight, ShoppingCart, Network,
+  CircleDot, Fuel, FileUp,
 } from "lucide-react";
 
 /* ─── Catálogo de módulos, agrupado (mesma lógica de permissão do Dashboard) ── */
@@ -19,34 +20,37 @@ const GRUPOS = [
     ],
   },
   {
-    titulo: "Operação",
+    titulo: "OPERAÇÃO",
     itens: [
       { Icon: Truck,         label: "Frota",                  link: "/frota",        module: "frota" },
       { Icon: Link2,         label: "Atrelamento",            link: "/atrelamento",  module: "atrelamento" },
       { Icon: ClipboardList, label: "Ordens de Carregamento", link: "/oc",           module: "oc" },
       { Icon: Users,         label: "Motoristas",             link: "/motoristas",   module: "motoristas" },
       { Icon: Wrench,        label: "Manutenção",             link: "/manutencao",   module: "manutencao" },
+      { Icon: CircleDot,     label: "Gestão de Pneus",        link: "/pneus",        module: "pneus" },
+      { Icon: Fuel,          label: "Abastecimento",          link: "/abastecimento", sempre: true },
       { Icon: ShoppingCart,  label: "Compras",                link: "/compras",      perm: "compras.ver" },
       { Icon: History,       label: "Histórico",              link: "/historico",    module: "historico" },
       { Icon: Palmtree,      label: "Férias",                 link: "/ferias",       module: "ferias" },
     ],
   },
   {
-    titulo: "Monitoramento",
+    titulo: "MONITORAMENTO",
     itens: [
       { Icon: MapPin, label: "Rastreamento",     link: "/rastreamento", sempre: true },
       { Icon: Clock,  label: "Jornada & Extras", link: "/jornada",      sempre: true },
     ],
   },
   {
-    titulo: "Administração",
+    titulo: "ADMINISTRAÇÃO",
     itens: [
       { Icon: Building2,   label: "Setores",             link: "/admin/setores", perm: "setores.ver" },
       { Icon: Briefcase,   label: "Cargos & Permissões", link: "/admin/cargos",  perm: "cargos.ver" },
       { Icon: UserCog,     label: "Usuários",            link: "/usuarios",      perm: "usuarios.ver" },
       // "Configurações - Gerenciamento de Sistemas" saiu daqui: configurar o portal
-      // da intranet não é assunto do Gestão Operacional. Virou o painel em /intranet,
-      // dentro do próprio portal, com acesso por palavra-chave.
+      // da intranet deixou de ser assunto do Gestão Operacional. Virou o painel em
+      // /intranet, dentro do próprio portal, com login de administrador próprio.
+      { Icon: FileUp,      label: "Importar Dados",      link: "/import",        sempre: true },
       { Icon: ShieldCheck, label: "Permissões (legado)", link: "/permissoes",    perm: "permissoes.ver" },
     ],
   },
@@ -73,15 +77,25 @@ export default function MenuNavegacao({ variante = "escuro" }) {
   const { canView, isAdmin } = usePermissions();
   const { temPermissao } = useRBAC();
 
-  // Trava scroll do body enquanto aberto + fecha no Escape
+  // Trava scroll do body + fecha no Escape + esconde controles do Leaflet + a legenda custom "Status"
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // Esconde controles do Leaflet + legenda "Status" (têm stacking context próprio, vazariam sobre o drawer).
+    const ctrls = document.querySelectorAll(".leaflet-control-container, .mapa-legenda");
+    const antes = [];
+    ctrls.forEach((el) => { antes.push([el, el.style.visibility]); el.style.visibility = "hidden"; });
+    // Desfoca o mapa e o resto do dashboard atrás do menu (backdrop-filter CSS não é suportado em InPrivate/alguns browsers).
+    const mapas = document.querySelectorAll(".leaflet-container");
+    const antesMap = [];
+    mapas.forEach((el) => { antesMap.push([el, el.style.filter]); el.style.filter = "blur(4px) grayscale(0.4)"; el.style.transition = "filter .2s ease"; });
     const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
+      antes.forEach(([el, v]) => { el.style.visibility = v; });
+      antesMap.forEach(([el, v]) => { el.style.filter = v; });
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
@@ -166,14 +180,8 @@ export default function MenuNavegacao({ variante = "escuro" }) {
             ))}
           </nav>
 
-          {/* Rodapé — portal + tema + sair */}
+          {/* Rodapé — tema + sair */}
           <div className="nav-footer">
-            {/* Volta para a grade de sistemas da intranet sem encerrar a sessão.
-                Antes disto, a única saída daqui era "Sair", que desloga. */}
-            <button className="nav-foot-btn" onClick={() => ir("/sistemas")}>
-              <LayoutGrid size={17} />
-              <span>Voltar ao portal</span>
-            </button>
             <button className="nav-foot-btn" onClick={toggleTheme}>
               {isDark ? <Sun size={17} /> : <Moon size={17} />}
               <span>{isDark ? "Tema claro" : "Tema escuro"}</span>
@@ -208,7 +216,7 @@ export default function MenuNavegacao({ variante = "escuro" }) {
 
         /* ── Overlay ───────────────────────────────────────────── */
         .nav-overlay {
-          position: fixed; inset: 0; z-index: 3000;
+          position: fixed; inset: 0; z-index: 99999;   /* alto o suficiente pra ficar acima de qualquer controle Leaflet */
           background: rgba(15,23,42,0);
           backdrop-filter: blur(0px);
           visibility: hidden; opacity: 0;
@@ -217,8 +225,9 @@ export default function MenuNavegacao({ variante = "escuro" }) {
         }
         .nav-overlay.is-open {
           visibility: visible; opacity: 1;
-          background: rgba(10,15,30,.5);
-          backdrop-filter: blur(3px);
+          background: rgba(8,12,26,.78);                  /* era .5 — muito claro sobre mapa Leaflet colorido */
+          -webkit-backdrop-filter: blur(8px) saturate(0.7);
+          backdrop-filter: blur(8px) saturate(0.7);       /* era 3px — aumenta pra cortar visual do fundo */
           transition: opacity var(--t) var(--ease), backdrop-filter var(--t) var(--ease);
         }
 
@@ -277,8 +286,18 @@ export default function MenuNavegacao({ variante = "escuro" }) {
         .nav-group { margin-bottom: 6px; }
         .nav-group + .nav-group { margin-top: 8px; }
         .nav-group-title {
-          font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
-          color: var(--text-subtle); padding: 10px 12px 6px;
+          font-size: .68rem; font-weight: 700;
+          text-transform: none;
+          letter-spacing: normal;
+          color: var(--text-muted);
+          padding: 10px 12px 6px 40px;   /* padding-left DE 40px pra empurrar bem pra direita — teste diagnóstico */
+          text-align: left;
+          direction: ltr;
+          overflow: visible;
+          white-space: nowrap;
+          display: block;
+          margin: 0;
+          font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;  /* forçar fonte segura pra descartar kerning bug de fonte custom */
         }
 
         .nav-item {

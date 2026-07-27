@@ -4,6 +4,8 @@ import {
   doc, query, orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { list as dsList, insert as dsInsert, remove as dsRemove } from "../services/genericDataSource";
+import { listVeiculos } from "../services/frotaDataSource";
 import { useAuth } from "../contexts/AuthContext";
 import { Lock, Calendar, Clock } from "lucide-react";
 import LogoPontual from "../components/LogoPontual";
@@ -76,19 +78,15 @@ export default function OC() {
   useEffect(() => {
     async function carregarDados() {
       try {
-        const [snapV, snapM, snapO] = await Promise.all([
-          getDocs(query(collection(db, "veiculos"),   orderBy("placa"))),
-          getDocs(query(collection(db, "motoristas"), orderBy("nome"))),
-          getDocs(query(collection(db, "ordens_carregamento"), orderBy("data", "desc"))),
+        const [veicRows, motRows, ocRows] = await Promise.all([
+          listVeiculos(),
+          dsList("motoristas", { orderBy: "nome" }),
+          dsList("ordens_carregamento", { orderBy: "data", order: "desc" }),
         ]);
 
-        const vs = snapV.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(v => v.tipo !== "carreta" && v.status !== "inativo");
-        const ms = snapM.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(m => m.status === "ativo");
-        const os = snapO.docs.map(d => ({ id: d.id, ...d.data() }));
+        const vs = veicRows.filter(v => v.tipo !== "carreta" && v.status !== "inativo");
+        const ms = motRows.filter(m => m.status === "ativo");
+        const os = ocRows;
 
         setVeiculos(vs);
         setMotoristas(ms);
@@ -173,7 +171,7 @@ export default function OC() {
         totalLitros: totalLitros(entregas),
         criadoEm: new Date().toISOString(),
       };
-      const docRef = await addDoc(collection(db, "ordens_carregamento"), payload);
+      const docRef = await dsInsert("ordens_carregamento", payload);
       const novaOC = { id: docRef.id, ...payload };
       setOrdens(prev => [novaOC, ...prev]);
 
@@ -202,7 +200,7 @@ export default function OC() {
   async function excluir(id) {
     if (!window.confirm("Excluir esta OC?")) return;
     try {
-      await deleteDoc(doc(db, "ordens_carregamento", id));
+      await dsRemove("ordens_carregamento", id);
       setOrdens(prev => prev.filter(o => o.id !== id));
     } catch (e) {
       alert("Erro ao excluir: " + e.message);

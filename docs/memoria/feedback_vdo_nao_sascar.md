@@ -23,3 +23,12 @@ VDO e SASCAR são empresas/fornecedores diferentes da Pontual. Não confundir.
 - Custo, contrato e suporte do VDO são separados do SASCAR — não misturar negociações.
 
 Relacionado: [[project_jornada_3fontes_plano]], [[reference_sascar_api]]
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[project_apresentacao_mensal]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

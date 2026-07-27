@@ -5,8 +5,10 @@ import { PermissionsProvider } from "./contexts/PermissionsContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { RBACProvider } from "./rbac/RBACContext";
 import RotaProtegida from "./rbac/RotaProtegida";
-// Telas públicas da intranet: eager, como a antiga Login. São a porta de entrada,
-// e o lazy inseriria o fallback do Suspense no meio da animação de saída de /acesso.
+import InstallPWA from "./components/InstallPWA";
+// Telas públicas da intranet: eager, como era a antiga Login. São a porta de
+// entrada, e o lazy inseriria o fallback do Suspense no meio da animação de
+// saída de /acesso.
 import Acesso from "./pages/Acesso";
 import Sistemas from "./pages/Sistemas";
 
@@ -18,6 +20,8 @@ const OC          = lazy(() => import("./pages/OC"));
 const Manutencao  = lazy(() => import("./pages/Manutencao"));
 const Compras     = lazy(() => import("./pages/Compras"));
 const PropostaConvite = lazy(() => import("./pages/PropostaConvite"));
+const Pneus       = lazy(() => import("./pages/Pneus"));
+const FichaPneu   = lazy(() => import("./pages/FichaPneu"));
 const Historico   = lazy(() => import("./pages/Historico"));
 const Permissoes  = lazy(() => import("./pages/Permissoes"));
 const Ferias      = lazy(() => import("./pages/Ferias"));
@@ -25,14 +29,15 @@ const Rastreamento= lazy(() => import("./pages/Rastreamento"));
 const Cercas      = lazy(() => import("./pages/Cercas"));
 const Jornada     = lazy(() => import("./pages/Jornada"));
 const Usuarios    = lazy(() => import("./pages/Usuarios"));
+const Abastecimento = lazy(() => import("./pages/Abastecimento"));
 const ImportAdmin = lazy(() => import("./pages/ImportAdmin"));
 const Setores     = lazy(() => import("./pages/admin/Setores"));
 const Cargos      = lazy(() => import("./pages/admin/Cargos"));
 // Configurar a intranet deixou de ser assunto do Gestão Operacional: virou o
-// painel em /intranet, dentro do próprio portal, com acesso por palavra-chave.
+// painel em /intranet, dentro do próprio portal, com login de administrador.
 const IntranetArea= lazy(() => import("./pages/IntranetArea"));
-// Validação pública de certificados. Sem login e sem palavra-chave: quem confere
-// está fora da empresa (ver o cabeçalho da página).
+// Certificados: validação aberta na frente, emissão atrás de login (a própria
+// página cuida das duas portas).
 const Certificado = lazy(() => import("./pages/Certificado"));
 
 const Loading = () => (
@@ -75,12 +80,13 @@ export default function App() {
                       (splash + anel de ícones) e /sistemas lista os sistemas e trata o
                       que vem depois deles. A raiz só encaminha para a porta de entrada.
 
-                      Estas rotas NÃO usam PublicRoute de propósito. O portal é o hub de 12
-                      sistemas, a maioria sem relação com o SGO — estar logado no SGO não pode
-                      impedir de voltar aqui para abrir o Service Desk ou o Canal de Integridade.
-                      Envolvê-las em PublicRoute prendia o usuário logado num laço: voltar ao
-                      portal era interceptado e devolvido ao /dashboard. Quem redireciona para o
-                      /dashboard depois de autenticar é a própria Sistemas.jsx, na tela de login. */}
+                      Estas rotas NÃO usam PublicRoute de propósito. O portal é o hub de
+                      13 sistemas, a maioria sem relação com o SGO — estar logado no SGO
+                      não pode impedir de voltar aqui para abrir o Service Desk ou o Canal
+                      de Integridade. Envolvê-las em PublicRoute prendia o usuário logado
+                      num laço: voltar ao portal era interceptado e devolvido ao
+                      /dashboard. Quem redireciona para o /dashboard depois de autenticar
+                      é a própria Sistemas.jsx, na tela de login. */}
                   <Route path="/"            element={<Navigate to="/acesso" replace />} />
                   <Route path="/acesso"      element={<Acesso />} />
                   <Route path="/sistemas"    element={<Sistemas />} />
@@ -88,14 +94,16 @@ export default function App() {
                   {/* Convite público a UMA proposta (sem login, via token no link) */}
                   <Route path="/proposta-convite/:id" element={<PropostaConvite />} />
 
-                  {/* Validação de certificado — aberta a qualquer um, de fora da
-                      empresa inclusive. Duas formas: a tela com o campo de código,
-                      e o link direto (QR impresso no documento), que já consulta. */}
+                  {/* Certificados — a tela de validação é aberta a qualquer um, de
+                      fora da empresa inclusive; a emissão fica atrás do login de
+                      administrador, dentro da própria página. O link direto (QR
+                      impresso no documento) já consulta ao abrir. */}
                   <Route path="/certificado"         element={<Certificado />} />
                   <Route path="/certificado/:codigo" element={<Certificado />} />
 
-                  {/* Área interna da Intranet — acesso liberado pelo portão (rede + palavra-chave),
-                      sem login Firebase. A própria página valida a flag de sessão do portão. */}
+                  {/* Painel de Configurações da intranet — entra com usuário e senha de
+                      administrador, sem login Firebase. A própria página valida o token
+                      contra a API a cada carga. */}
                   <Route path="/intranet" element={<IntranetArea />} />
 
                   {/* Dashboard sempre acessível para usuário logado */}
@@ -108,6 +116,9 @@ export default function App() {
                   <Route path="/oc"          element={<Privada permissao="oc.ver"><OC /></Privada>} />
                   <Route path="/manutencao"  element={<Privada permissao="manutencao.ver"><Manutencao /></Privada>} />
                   <Route path="/compras"     element={<Privada permissao="compras.ver"><Compras /></Privada>} />
+                  <Route path="/abastecimento" element={<PrivateRoute><Abastecimento /></PrivateRoute>} />
+                  <Route path="/pneus"       element={<Privada permissao="pneus.ver"><Pneus /></Privada>} />
+                  <Route path="/pneus/:id"   element={<Privada permissao="pneus.ver"><FichaPneu /></Privada>} />
                   <Route path="/historico"   element={<Privada permissao="historico.ver"><Historico /></Privada>} />
                   <Route path="/ferias"      element={<Privada permissao="ferias.ver"><Ferias /></Privada>} />
                   <Route path="/rastreamento" element={<PrivateRoute><Rastreamento /></PrivateRoute>} />
@@ -122,6 +133,7 @@ export default function App() {
                   <Route path="/import"          element={<PrivateRoute><ImportAdmin /></PrivateRoute>} />
                 </Routes>
               </Suspense>
+              <InstallPWA />
             </BrowserRouter>
           </PermissionsProvider>
         </RBACProvider>

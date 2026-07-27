@@ -1,4 +1,15 @@
+/* Fontes — pairing "Dashboard Data" (ui-ux-pro-max): Fira Sans (labels) + Fira Code (números/placas/IDs) */
+@import url("https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap");
+
+/* Números tabulares: placas, KMs, R$, IDs SASCAR, CPK — alinha em coluna */
+.font-mono, [data-mono], code, kbd, samp,
+.placa, .cpk, .valor, .odometro, .id-sascar,
+th.numero, td.numero, .kpi-value, .numero-tabular {
+  font-family: 'Fira Code', 'Cascadia Code', ui-monospace, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -76,8 +87,9 @@
   --input-border:  var(--n-300);
 
   /* ── Tipografia ───────────────────────────────────────────── */
-  --font: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-display: 'Montserrat', system-ui, sans-serif;
+  --font: 'Fira Sans', 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-display: 'Fira Sans', 'Montserrat', system-ui, sans-serif;
+  --font-mono: 'Fira Code', 'Cascadia Code', ui-monospace, Consolas, monospace;
 
   /* ── Raios ────────────────────────────────────────────────── */
   --r-xs:6px; --r-sm:8px; --r-md:10px; --r-lg:14px; --r-xl:18px; --r-2xl:24px; --r-full:9999px;
@@ -636,4 +648,227 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); width
   .leaflet-popup-content .popup-row-extra { display: none !important; }
   .leaflet-popup-content > div { min-width: 0 !important; max-width: 78vw; }
   .leaflet-popup-content-wrapper { max-width: 80vw; }
+}
+
+
+/* Responsivo mobile/iOS restaurado do backup em 2026-07-17 — cobre Pneus, Conjunto, Estepe, Cadastros. Ver docs/memoria/feedback-responsivo-classes-helper.md */
+@media (max-width: 480px) {
+  .cadastro-item {
+    align-items: flex-start !important;
+    padding: 10px 12px !important;
+  }
+  .cadastro-item > button {
+    flex: 1;
+    font-size: .78rem !important;
+    padding: 6px 10px !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .cadastro-item > div:first-child { flex: 1 1 60%; }
+}
+
+@media (max-width: 900px) {
+  .pneus-nav {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding: 8px 12px !important;
+  }
+  .pneus-nav > button { flex-shrink: 0; }
+}
+
+@media (max-width: 768px) {
+  .conjunto-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .conjunto-toolbar select { min-width: 0 !important; width: 100% !important; }
+  .conjunto-toolbar > div { flex-wrap: wrap !important; }
+  .conjunto-toolbar button { margin-left: 0 !important; }
+}
+
+@media (max-width: 900px) {
+  .conjunto-wrap table { min-width: 480px; }
+  .conjunto-wrap > div > div:has(table) { overflow-x: auto; }
+}
+
+@media (max-width: 900px) {
+  .pneus-inspecao-actions {
+    flex-wrap: wrap !important;
+    justify-content: stretch !important;
+    gap: 8px !important;
+  }
+  .pneus-inspecao-actions .pneus-btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    padding: 12px 14px !important;
+    font-size: .88rem !important;
+    justify-content: center !important;
+  }
+  /* Botão de salvar (primário) ocupa linha inteira em cima pra destaque */
+  .pneus-inspecao-actions .pneus-btn-primary {
+    flex: 1 1 100% !important;
+    order: -1 !important;
+    padding: 14px 16px !important;
+    font-size: .95rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .pneus-inspecao-actions .pneus-btn {
+    flex: 1 1 100% !important;
+    padding: 12px 14px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .estepe-box {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin: 0 0 8px !important;
+    padding: 6px 12px !important;
+    align-self: flex-end !important;
+    max-width: 180px !important;
+  }
+  .estepe-box .estepe-lbl { font-size: .72rem !important; }
+  .estepe-box .estepe-card {
+    width: 40px !important;
+    height: 62px !important;
+    font-size: .62rem !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .estepe-box {
+    align-self: stretch !important;
+    max-width: 100% !important;
+    justify-content: space-between !important;
+  }
+  .estepe-box .estepe-card {
+    width: 46px !important;
+    height: 70px !important;
+    font-size: .68rem !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .pneus-ficha { overflow-x: auto; }
+}
+
+@media (max-width: 900px) {
+  /* Header: label + input viram coluna */
+  .pneus-ficha [style*="grid-template-columns"][style*="180px 1fr"],
+  .pneus-ficha [style*="gridTemplateColumns"][style*="180px 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 4px !important;
+  }
+  /* Header 4-col vira 2-col */
+  .pneus-ficha [style*="180px 1fr 110px 130px"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  /* Checklist + Observações lado a lado vira empilhado */
+  .pneus-rowmid { grid-template-columns: 1fr !important; }
+  /* 2 quadros lado a lado viram 1 embaixo do outro */
+  .pneus-gridveic { grid-template-columns: 1fr !important; }
+  /* Footer: assinatura no meio, empilha */
+  .pneus-footer {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  /* Grid de inspeção fallback (se className usado em outro lugar) */
+  .pneus-inspecao-grid { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 640px) {
+  .pneus-ficha [style*="180px 1fr 110px 130px"] {
+    grid-template-columns: 1fr !important;
+  }
+  /* Cabeçalho da ficha: layout de header 1fr 180px vira 1 col */
+  .pneus-ficha [style*="1fr 180px"] {
+    grid-template-columns: 1fr !important;
+  }
+  /* Tabelas do checklist ganham scroll horizontal */
+  .pneus-ficha table { min-width: 480px; }
+  .pneus-ficha [style*="checklist"], .pneus-ficha > div > div { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+@media (max-width: 640px) {
+  .pneus-modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin-top: auto !important;
+  }
+  .pneus-modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+}
+
+@media (max-width: 900px) {
+  main table, .pg-body table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  /* mas só se a tabela não estiver dentro de um checklist que precisa colapsar */
+  main table.no-wrap-collapse { white-space: normal; }
+}
+
+
+/* ============ Dashboard mobile (iPhone) — cards não vazam mais horizontal ============ */
+@media (max-width: 640px) {
+  /* Painel do Rastreamento e outros com header lotado: título 1 linha, chip+busca+link quebram pra 2ª linha */
+  [style*="panelHeader"] { flex-wrap: wrap !important; }
+  .dash-busca-mapa {
+    flex: 1 1 100% !important;    /* input ocupa linha inteira em telas pequenas */
+    order: 10;                     /* joga o input pro final do wrap */
+  }
+  /* input do busca com altura de toque iOS-friendly */
+  .dash-busca-mapa input {
+    font-size: 16px !important;    /* iOS não faz zoom se >=16px */
+    padding: 4px 0;
+  }
+  /* Títulos dos cards não devem quebrar em 3 linhas — compacta e usa reticências */
+  [style*="panelTitle"], .panel-title {
+    font-size: .82rem !important;
+    line-height: 1.15 !important;
+  }
+  /* "Ver todas" fica cortado — permite quebra */
+  .panel-link, [class*="panelLink"] { flex-shrink: 0 !important; }
+}
+
+
+/* ============ Legibilidade mobile: fontes < 12px sobem pra 12px ============ */
+/* Motoristas/Frota/Jornada tinham 150-267 elementos com fonte muito pequena
+ * (badges MOPP/NR, sub-labels, "última pos" tempo relativo, chips de status).
+ * Aumentar a rem base em mobile propaga pra tudo que usa .66rem/.68rem/.7rem/.72rem. */
+@media (max-width: 640px) {
+  html { font-size: 17px; }   /* era 16px — 6% maior em tudo */
+}
+
+/* Ajuste fino específico pros elementos que ficariam abaixo de 12px mesmo com o boost.
+ * Foco: badges de status, labels, tempos relativos em cards de motorista/frota. */
+@media (max-width: 640px) {
+  [style*="fontSize:.66rem"], [style*="fontSize: .66rem"], [style*="fontSize: '.66rem'"],
+  [style*="fontSize:.65rem"], [style*="fontSize: .65rem"],
+  [style*="fontSize:.68rem"], [style*="fontSize: .68rem"],
+  [style*="fontSize:.7rem"],  [style*="fontSize: .7rem"] {
+    font-size: 12px !important;
+    line-height: 1.35;
+  }
+  [style*="fontSize:.72rem"], [style*="fontSize: .72rem"],
+  [style*="fontSize:.74rem"], [style*="fontSize: .74rem"],
+  [style*="fontSize:.75rem"], [style*="fontSize: .75rem"] {
+    font-size: 12.5px !important;
+  }
 }

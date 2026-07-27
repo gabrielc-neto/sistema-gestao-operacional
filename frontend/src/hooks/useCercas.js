@@ -1,20 +1,17 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { watch as dsWatch } from "../services/genericDataSource";
 
-// Live snapshot da collection cercas_eletronicas
+// Live snapshot da coleção cercas_eletronicas (Firestore ou VPS via wrapper)
 export function useCercas() {
   const [cercas, setCercas] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, "cercas_eletronicas"), orderBy("nome"));
-    const unsub = onSnapshot(q, snap => {
-      const lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const unsub = dsWatch("cercas_eletronicas", snap => {
+      const lista = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
       setCercas(lista);
-      setLoading(false);
-    }, err => {
-      console.warn("[useCercas]", err.message);
       setLoading(false);
     });
     return () => unsub();

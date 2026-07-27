@@ -1,36 +1,152 @@
-# Memory Index
+# 🧠 Índice de Memórias
 
-- [🔄 Estado atual + como retomar](project_estado_atual.md) — LER PRIMEIRO. Comandos pra subir Vite+Functions+Tunnel, tasks abertas. Última sessão (2026-05-23): perf (cache offline Firestore + render parcial dashboard) + fixes mobile (scroll horizontal global, tabela ciclos Jornada, popup enxuto Rastreamento). Commits 56aa8a2, cd63464.
-- [⏸ Deploy produção pausado](project_producao_deploy_pausado.md) — Aguardando Wesley decidir cartão pro Blaze. Auditoria OK, secrets untracked (commit 9f58a44), rotação pendente. Sequência exata pra retomar deploy.
-- [🐘 Migração PostgreSQL + TMS SaaS](project_migracao_postgresql_tms.md) — PLANO (2026-05-21): virar produto multi-tenant no Supabase pra vender a transportadoras. Doc 12. Reaproveita SASCAR+jornada+usuários. Pontual = empresa nº 1 no cutover. Nada implementado; Firebase atual segue até fase 6.
-- [💵 Valorização & monetização](project_valorizacao_monetizacao.md) — Wesley quer ganhar mais pelo sistema. Plano 3 passos: (1) formalizar IP/sociedade [pendente], (2) one-page de valor ✅ no Desktop, (3) SaaS como renda recorrente. Maior lever = estrutura do IP, não aumento.
-- [🕸 Scraping no TMS](project_scraping_tms.md) — Scraping é plano B (só sem API). 3 nichos reais: pedágio, restrição de caminhão, piso ANTT + diesel ANP — enriquece precificação de frete (fase 5). CNPJ/CEP/NF-e = API oficial. SASCAR nunca scrapear.
-- [🗺 Mapa completo do TMS (Desktop)](project_tms_mapa_completo.md) — Doc-mestre em `Desktop\TMS-estrutura-e-ferramentas.md`: arquitetura 4 camadas, 15 módulos, integrações API, capacidades, roadmap, cotação, performance. Fiscal Pontual = só MDF-e (Focus NFe ~R$90), nunca CT-e/CIOT. Combustível = CTA Smart (não cartão). Dependência: hodômetro na API SASCAR.
-- [🚚 Módulo Transportadoras Terceiras](project_modulo_terceiros.md) — DESENHO (doc 13). Pontual usa frota própria + terceiros (E C STANYTCHYL, LODI E SCHUSARZ — CNPJ). Cadastro auto-CNPJ, tipo transporte na OC, frete contratado, CT-e recebido. Terceiro não tem GPS SASCAR (status manual). MVP→fases.
-- [Wesley é o usuário desta estação](user_wesley.md) — Sócio/diretor Pontual, decisor de orçamento e deploy. Não precisa pitch escrito, decide direto.
-
-- [Análise esportiva — checklist pré-pick](feedback_analise_esportiva_checklist.md) — Verificar SEMPRE antes de qualquer análise: mata-mata europeu, escalação, título garantido, clássicos nacionais
-- [Consultar NotebookLM nas respostas](feedback_notebooklm_consulta.md) — Sempre usar `notebooklm ask` ao responder perguntas sobre IA, agentes, RAG, cloud e temas do notebook (ID: f16c2ae5)
-- [Projeto Logística IA](project_logistica_ia.md) — React+Firebase Pontual: 9 módulos, Hosting em pontual-logistica.web.app, deploy.bat na raiz, Storage pendente
-- [Frota Pontual — HTML App](project_frota_pontual_html.md) — App HTML single-file frota PONTUAL LOGÍSTICA: 38 caminhões, 4 abas (Frota/Atrelamento/OC/Histórico), localStorage, Desktop\frota_pontual.html
-- [Gestão Financeira — Prévia aprovada](project_gestao_financeira_preview.md) — Layout aprovado: KPIs, gráfico receita×custo, composição custos, ranking motoristas/veículos, tabela OCs com margem
-- [Levantamento Logística & Rastreamento](project_logistica_rastreamento_levantamento.md) — TMS completo 4 fases: Firebase agora, SASCAR fase 2, VDO fase 3 (Sólides removido — é só ADM), integrações comerciais fase 4
-- [API SASCAR SasIntegra](reference_sascar_api.md) — SOAP/TLS1.2 em sasintegra.sascar.com.br, auth via usuario+senha em cada método, doc PDF salva em projetos/logistica-ia/docs/sascar/
-- [⚡ Firestore cache offline + pegadinha Vite](reference_firestore_cache_offline.md) — `db` em config.js usa persistentLocalCache multi-tab desde 2026-05-23. Páginas abrem instantâneo na 2ª carga. Se tela branca + "Failed to fetch dynamically imported module", limpar `frontend/node_modules/.vite` e reiniciar.
-- [⚠ SASCAR retenção curta eventos](project_sascar_retencao_eventos.md) — obterEventosTempoDirecao só retorna últimos ~3-4 dias. Período longo na /jornada vai retornar vazio pra dias antigos. Solução: snapshot diário no Firestore (exige Blaze).
-- [📦 Jornada histórico — plano arquivamento](project_jornada_historico_plano.md) — PLANEJADO. Snapshot diário no Firestore pra habilitar relatório mensal/folha. Jornada hoje é efêmera. Bloqueado por Blaze (cron). Tem plano B manual.
-- [Rastreamento SASCAR — Fase 2 entregue](project_rastreamento_sascar_fase2.md) — Firebase Functions + página /rastreamento com mapa Leaflet, motorista logado via iButton, polling 30s, acesso celular via 192.168.20.131:5173
-- [Câmeras SASCAR — plano 4 fases](project_sascar_cameras_plano.md) — Em estudo. Fase 0 = ligar SASCAR pra descobrir o que está liberado (URL vídeo? streaming ao vivo?). API atual só dá metadata de eventos.
-- [✅ Jornada do Motorista — Fase A+B entregues](project_jornada_motorista_plano.md) — Rota /jornada funcional. Usa SASCAR obterEventosTempoDirecao (tablet SasMDT). Regras Pontual: 9h30 sem-sex / 4h sáb / 100% dom / **4h direção contínua** (mais restritiva que Lei 13.103). Export CSV+PDF.
-- [🗺 Jornada 3 fontes — plano integrado + visão operacional](project_jornada_3fontes_plano.md) — Arquitetura cruzando Tablet+GPS+VDO. Inclui hardware no caminhão, 5 telas por persona, cenários reais (sumiu do mapa / esqueceu refeição / auditoria HE / cliente reclama), regras de ouro (qual fonte ganha quando), ganho antes×depois. Fase 1 entregue, Fase 2 (VDO) bloqueada por 5 perguntas.
-- [Sólides é só ADM — motorista é SASCAR](feedback_solides_so_adm.md) — Controle de ponto/jornada/HE de motorista usa SASCAR (tablet+GPS+VDO). Sólides cobre só pessoal administrativo. Não cruzar motorista com Sólides.
-- [VDO ≠ SASCAR](feedback_vdo_nao_sascar.md) — VDO (tacógrafo) e SASCAR (GPS+tablet) são fornecedores DIFERENTES. Contratos e APIs separadas. Integração VDO não passa pela API SasIntegra.
-- [📨 Pedido API VDO Fleet — pendente Wesley](project_vdo_api_solicitacao.md) — Portal https://fleet.vdo-web.com/#!/filestorage. Texto pronto pro suporte Continental com 10 perguntas técnicas + 3 caminhos de integração + estratégia (Caminho 1 manual codado já, API substitui depois).
-- [Motorista ↔ caminhão (regra Pontual)](project_motorista_caminhao_pontual.md) — Motorista tem caminhão habitual mas migra quando o normal vai pra serviço. iButton segue o motorista. NÃO vincular fixo no cadastro.
-- [⏸ iButton SASCAR — diagnóstico + perguntas suporte](project_sascar_ibutton_diagnostico.md) — Hardware 100% (LMU4230/MSC830), mas só 6 dos 66 motoristas usam. 7 perguntas pré-formatadas pra Wesley levar pro suporte SASCAR.
-- [⛔ Cercas via API SASCAR bloqueada](project_sascar_cercas_api_bloqueada.md) — Wesley quer cerca via SASCAR (não nosso editor). obterPontosReferencia retorna "acesso não permitido" pro user PONTUALPONTUAL. Pedido de liberação pendente pro suporte. Cerca volta como retângulo (2 cantos), só pontos "embarcável".
-- [📊 Apresentação mensal do sistema](project_apresentacao_mensal.md) — Curator não instalado → gerar .pptx (python-pptx) no Desktop. QA via PowerPoint/win32com. Paleta navy+âmbar. Não inventar métricas.
-- [Responsivo mobile — convenções](project_responsivo_mobile.md) — Utility classes em index.css (`grid-form-2/3/4`, `modal-mobile-sheet`, `layout-sidebar`, `table-wrap`) sobrescrevem inline styles via !important nos breakpoints. Em 2026-05-23 ganhou também `overflow-x:hidden` global (html/body/#root) e regra `.leaflet-popup-content .popup-row-extra { display:none }` em ≤640px (popup do Rastreamento enxuto)
-- [Bash tool come barra invertida](feedback_bash_forward_slashes.md) — Path Windows no Bash tool: usar `C:/Users/...` (barra normal + aspas), nunca `C:\Users\...` senão "No such file or directory"
-- [🚫 Disco F: intocável](feedback_disco_f_intocavel.md) — Nunca apagar/mover/organizar nada em F:\. Wesley vetou em 2026-05-23. Qualquer limpeza de PC só pode operar no C:.
-- [🧹 Estado do lint frontend](project_frontend_lint_estado.md) — Projeto em projetos/logistica-ia/frontend (atalho Desktop aponta errado). 21 unused-vars + 5 hooks baixo-risco corrigidos, react-refresh desligado. Restam 20 avisos de hook (mapa/SASCAR/login) deixados de propósito. NÃO re-corrigir sem pedido. Dashboard.jsx 100% limpo.
+- [feedback-autorizacoes-migracao-hostinger](feedback-autorizacoes-migracao-hostinger.md) — "Autorizações permanentes da Rosilda pra trabalho autônomo durante migração Hostinger 2026-07-22. Vale enquanto durar o Sprint 1 (até 28/07) e Sprint 2 (até 05/08). Depois disso reavaliar."
+- [feedback-formato-usuario-pontual](feedback-formato-usuario-pontual.md) — "Sempre que sistema mostrar 'quem fez' uma ação (criadoPor, atualizadoPor, salvoPor, editadoPor, responsavel etc), usar formato NOME.PONTUAL — ex: THIAGO.PONTUAL, ROSILDA.PONTUAL. Não usar email nem nome completo. Regra permanente da Rosilda 2026-07-23."
+- [feedback-jamais-emoji-sempre-icones](feedback-jamais-emoji-sempre-icones.md) — "REGRA PERMANENTE: nunca usar emoji em UI (nem em labels, badges, botões, modals, alertas). Sempre usar ícones da biblioteca Lucide-React (já instalada). Emojis são inconsistentes visualmente e não escalam com design system."
+- [feedback-ppt-padrao-visual-pontual](feedback-ppt-padrao-visual-pontual.md) — Identidade visual oficial da Pontual para PowerPoint — sempre usar em apresentações internas
+- [feedback-primeira-msg-confirmar-skills](feedback-primeira-msg-confirmar-skills.md) — "Ao receber \"oi\" (ou saudação equivalente) na PRIMEIRA MENSAGEM de uma nova sessão, confirmar automaticamente quais das 7 skills instaladas em 2026-07-20 estão ATIVAS. User quer certeza que carregaram."
+- [feedback-rosilda-nao-ativar-firebase-blaze](feedback-rosilda-nao-ativar-firebase-blaze.md) — "REGRA PERMANENTE: user (Rosilda) NÃO quer ativar Firebase Blaze (plano pago pay-as-you-go). NÃO sugerir esse caminho novamente. Toda migração/backup Firestore deve trabalhar dentro do free tier (50k reads/dia + 20k writes/dia) OU esperar reset diário às 21h Brasília."
+- [feedback-smoke-test-antes-de-commit](feedback-smoke-test-antes-de-commit.md) — "Ao editar código React com useMemo/useEffect/useCallback e helpers `const` no mesmo escopo, SEMPRE rodar smoke test (Playwright headless OU pedir F5 no browser) antes de commitar. Erros TDZ são silenciosos em compilação — só quebram em runtime como tela branca."
+- [feedback-so-mudar-o-que-user-pediu](feedback-so-mudar-o-que-user-pediu.md) — "REGRA ABSOLUTA: mudar SOMENTE o que a user pediu, nada além. Zero refactor por conta própria, zero melhorias silenciosas, zero limpezas colaterais mesmo se o código próximo estiver 'ruim'. User (Rosilda) explicitou 2026-07-21 após várias mudanças extras não pedidas."
+- [feedback-ui-perguntar-largura-altura](feedback_ui_perguntar_largura_altura.md) — "Quando Wesley pede ajuste de tamanho em UI (gráfico/card/modal), perguntar de cara largura/altura/ambos com opções concretas em vez de chutar uma dimensão e ir testando."
+- [project-abas-timeline-multas-desativadas](project-abas-timeline-multas-desativadas.md) — Abas Timeline, Multas e Vistoria/DVIR do módulo /manutencao foram DESATIVADAS por decisão da user 2026-07-21. Arquivos AbaTimeline.jsx, AbaMultas.jsx e AbaVistoria.jsx mantidos em /manutencao/ pra reativar futuramente sem redoar.
+- [project-bonificacao-motorista-qtd-viagens](project-bonificacao-motorista-qtd-viagens.md) — "Bônus de produtividade do motorista Pontual = QUANTIDADE DE VIAGENS realizadas no período. Não é por km, entrega ou meta financeira — é literalmente número de viagens contadas."
+- [project-cta-api-paginacao-antigo-primeiro](project-cta-api-paginacao-antigo-primeiro.md) — "CRÍTICO — API CTA retorna 100 abastecimentos por chamada ORDENADOS DO MAIS ANTIGO. Se pedir 30 dias, sempre volta os 100 antigos já sincronizados. Fix aplicado em functions/src/cta/sincronizar.js linha 139 (30d → 7d)"
+- [project-fechamento-motorista-so-bonificacao](project-fechamento-motorista-so-bonificacao.md) — "Módulo de fechamento de motorista da Pontual cobre APENAS bonificação/prêmio — NÃO calcula salário, HE, encargos, INSS ou holerite. Salário é responsabilidade do RH (fora do sistema)."
+- [project-firebase-storage-requer-blaze](project-firebase-storage-requer-blaze.md) — "Firebase Storage no projeto pontual-logistica NÃO está ativado e ativar exige plano Blaze (pago). Descoberto 2026-07-22 quando tentando fazer upload de foto do motorista. Reativar upload de foto/anexos SÓ quando migrar pra Hostinger — VPS KVM 8 tem 400GB SSD grátis."
+- [project-frota-3-modos-visualizacao-mantidos](project-frota-3-modos-visualizacao-mantidos.md) — "Página /frota tem 3 modos de visualização (Cards/Tabela/Split) — decisão user 2026-07-22: manter os 3, cada usuário escolhe. NÃO remover nenhum dos 3 modos sem pedido explícito."
+- [project-gabriel-parceiro-sistemas-coexistem](project-gabriel-parceiro-sistemas-coexistem.md) — "Rosilda e Gabriel são PARCEIROS de trabalho na Pontual. Ambos têm sistemas rodando no mesmo VPS (srv1464919). Gabriel tem sistema PHP+PostgreSQL (gestão de compras, glpi, intranet, etc). Rosilda tem sistema React+Firebase de LOGÍSTICA. Os sistemas COEXISTEM, não se substituem. Rosilda + Claude só mexem na parte de LOGÍSTICA."
+- [project-hostinger-vps-setup-decisoes](project-hostinger-vps-setup-decisoes.md) — Decisões da user Rosilda na contratação do VPS Hostinger (2026-07-22) e roadmap de setup pós-provisionamento. Backup automático pago foi RECUSADO — user optou por backup grátis custom implementado depois.
+- [project-log-sessoes-detalhado-instrucoes](project-log-sessoes-detalhado-instrucoes.md) — Como funciona o log de sessões DETALHADO — cada bloco tem prompt do user + resposta claude + arquivos + tools. Hook auto-sessao-log.mjs foi reescrito em 20/07 pra gerar isso automaticamente
+- [project-migracao-hostinger-completa](project-migracao-hostinger-completa.md) — Sistema Pontual 100% na VPS Hostinger (frontend+backend+auth+uploads+SASCAR+CTA). Firebase desconectado mas intacto.
+- [project-migracao-hostinger-plano-05-08](project-migracao-hostinger-plano-05-08.md) — "Plano de migração completa Firebase→VPS Hostinger em 2 sprints. Sprint 1 até 27/07 (fachada Hostinger pra reunião de sócios 28/07). Sprint 2 até 05/08 (100% independente do Firebase — PostgreSQL + JWT + Storage local)."
+- [project-pontual-nao-desconta-multa-motorista](project-pontual-nao-desconta-multa-motorista.md) — "Pontual Logística NÃO desconta multa de trânsito do motorista. Multas ficam por conta da empresa. Módulo de multas registra e paga, mas NUNCA gera débito no fechamento/holerite do motorista."
+- [project-roadmap-macros-sascar-tempo-real](project-roadmap-macros-sascar-tempo-real.md) — "ROADMAP FUTURO — quando Pontual instalar macros SASCAR (botões no tablet do motorista), o sistema deve mostrar em tempo real o status operacional de cada veículo: Em manutenção · Chegada cliente carregado · Viagem vazio · etc. NÃO implementar antes da user pedir."
+- [project-rosilda-eh-dona-do-sistema-vps-pontual](project-rosilda-eh-dona-do-sistema-vps-pontual.md) — "CORREÇÃO IMPORTANTE (2026-07-22): Rosilda Lima é a DONA do sistema Pontual, não Gabriel. Gabriel foi/é colaborador de código (repo no GitHub dele, mas sistema é dela). VPS compartilhado (KVM 8, srv1464919.hstgr.cloud, IP 72.60.8.135) é da Pontual — ela tem autoridade total pra usar."
+- [project-sascar-api-paginacao-antigo-primeiro](project-sascar-api-paginacao-antigo-primeiro.md) — "SASCAR SasIntegra API `obterPacotePosicoesMotorista` é fila — cada chamada retorna 3000 pacotes dos MAIS ANTIGOS primeiro. Precisa loop pra chegar em dados frescos. Mesmo padrão do CTA API."
+- [project-sessao-2026-07-20-skills-e-fixes](project-sessao-2026-07-20-skills-e-fixes.md) — "Sessão 20/07 — instalação 8 skills externas, fix Firestore rules Compras, aumento fontes mobile, auditoria Playwright completa"
+- [project-ui-ux-melhorias-2026-07-20](project-ui-ux-melhorias-2026-07-20.md) — "4 melhorias UI/UX aplicadas via consulta à skill ui-ux-pro-max — cor laranja tracking, fonte Fira Sans/Code, bullet charts nos KPIs, mobile keyboards"
+- [project-vps-http-puro-sem-ssl](project-vps-http-puro-sem-ssl.md) — "Sistema Pontual no VPS Hostinger roda em HTTP puro (sem SSL/HTTPS) por decisão da Rosilda 2026-07-23. Uso interno da empresa, sem exposição pública crítica. HTTPS pode ser ativado depois se DNS logistica.pontualpetroleo.com.br for criado."
+- [reference-vps-acesso-http-forcar-url-completa](reference-vps-acesso-http-forcar-url-completa.md) — PC de novo usuário não abre srv1464919.hstgr.cloud — solução é digitar http:// completo ou limpar HSTS
+- [feedback_arquivo_explicito_obrigatorio](feedback_arquivo_explicito_obrigatorio.md) — name: arquivo-explicito-obrigatorio
+- [feedback_arquivos_downloads](feedback_arquivos_downloads.md) — name: Arquivos sempre em Downloads
+- [feedback_auditoria_estatica_nao_basta](feedback_auditoria_estatica_nao_basta.md) — name: feedback-auditoria-estatica-nao-basta
+- [feedback_auto_skills](feedback_auto_skills.md) — name: Auto-ativar skills proativamente
+- [feedback_bash_forward_slashes](feedback_bash_forward_slashes.md) — name: feedback-bash-forward-slashes
+- [feedback_colocar_no_ar_completo](feedback_colocar_no_ar_completo.md) — name: feedback-colocar-no-ar-completo
+- [feedback_dados_reais](feedback_dados_reais.md) — name: Sempre usar dados reais, nunca fictícios
+- [feedback_disco_f_intocavel](feedback_disco_f_intocavel.md) — name: feedback-disco-f-intocavel
+- [feedback_falar_inviavel_cedo](feedback_falar_inviavel_cedo.md) — name: falar-inviavel-cedo
+- [feedback_nao_expor_custos_wesley](feedback_nao_expor_custos_wesley.md) — name: nao-expor-custos-wesley
+- [feedback_nao_inventar_colunas](feedback_nao_inventar_colunas.md) — name: feedback-nao-inventar-colunas
+- [feedback_nao_subir_sem_aprovacao](feedback_nao_subir_sem_aprovacao.md) — name: ""
+- [feedback_nodejs_only](feedback_nodejs_only.md) — name: Tooling — Node.js only, no Python
+- [feedback_notebooklm_consulta](feedback_notebooklm_consulta.md) — name: Consultar NotebookLM nas respostas
+- [feedback_projeto](feedback_projeto.md) — name: feedback-projeto
+- [feedback_salvar_contexto](feedback_salvar_contexto.md) — name: Salvar tudo em memória
+- [feedback_sem_permissao](feedback_sem_permissao.md) — name: Executar sem pedir permissão
+- [feedback_solides_so_adm](feedback_solides_so_adm.md) — name: feedback-solides-so-adm
+- [feedback_vdo_nao_sascar](feedback_vdo_nao_sascar.md) — name: feedback-vdo-nao-sascar
+- [feedback_web_search_obrigatorio](feedback_web_search_obrigatorio.md) — name: Web search obrigatório em análises esportivas
+- [feedback-abertura-sessao-consultar-contexto](feedback-abertura-sessao-consultar-contexto.md) — name: feedback-abertura-sessao-consultar-contexto
+- [feedback-auto-commit-quando-pedido](feedback-auto-commit-quando-pedido.md) — name: feedback-auto-commit-quando-pedido
+- [feedback-branch-supabase-nao-merge-tudo](feedback-branch-supabase-nao-merge-tudo.md) — name: feedback-branch-supabase-nao-merge-tudo
+- [feedback-conversa-realtime-multi-claude](feedback-conversa-realtime-multi-claude.md) — name: feedback-conversa-realtime-multi-claude
+- [feedback-downloads-nao-entra-obsidian](feedback-downloads-nao-entra-obsidian.md) — name: feedback-downloads-nao-entra-obsidian
+- [feedback-faturamento-nao-eh-lucro](feedback-faturamento-nao-eh-lucro.md) — name: feedback-faturamento-nao-eh-lucro
+- [feedback-firestore-emulator-quebra-filtros](feedback-firestore-emulator-quebra-filtros.md) — name: firestore-emulator-quebra-filtros
+- [feedback-fluxo-bidirecional-multi-ia](feedback-fluxo-bidirecional-multi-ia.md) — name: feedback-fluxo-bidirecional-multi-ia
+- [feedback-hook-auto-memory-placeholder](feedback-hook-auto-memory-placeholder.md) — name: feedback-hook-auto-memory-placeholder
+- [feedback-log-sessao-obsidian](feedback-log-sessao-obsidian.md) — name: feedback-log-sessao-obsidian
+- [feedback-login-fullbleed-cta-pattern](feedback-login-fullbleed-cta-pattern.md) — name: feedback-login-fullbleed-cta-pattern
+- [feedback-login-split-pattern](feedback-login-split-pattern.md) — name: feedback-login-split-pattern
+- [feedback-menu-blur-mapa-fix](feedback-menu-blur-mapa-fix.md) — name: feedback-menu-blur-mapa-fix
+- [feedback-nao-aplicar-moduleheader-telas-antigas](feedback-nao-aplicar-moduleheader-telas-antigas.md) — name: feedback-nao-aplicar-moduleheader-telas-antigas
+- [feedback-nao-resetar-senha-sem-pedir](feedback-nao-resetar-senha-sem-pedir.md) — name: feedback-nao-resetar-senha-sem-pedir
+- [feedback-pneus-esquematico-aprovado](feedback-pneus-esquematico-aprovado.md) — name: feedback-pneus-esquematico-aprovado
+- [feedback-pneus-sem-sascar](feedback-pneus-sem-sascar.md) — name: feedback-pneus-sem-sascar
+- [feedback-responsivo-classes-helper](feedback-responsivo-classes-helper.md) — name: responsivo-classes-helper-pontual
+- [feedback-salvar-tudo-user-diz](feedback-salvar-tudo-user-diz.md) — name: feedback-salvar-tudo-user-diz
+- [feedback-sugerir-direto-quando-opiniao-formada](feedback-sugerir-direto-quando-opiniao-formada.md) — name: feedback-sugerir-direto-quando-opiniao-formada
+- [feedback-svg-logo-iteration-cost](feedback-svg-logo-iteration-cost.md) — name: feedback-svg-logo-iteration-cost
+- [feedback-trocar-imagem-em-slide-flatten](feedback-trocar-imagem-em-slide-flatten.md) — name: feedback-trocar-imagem-em-slide-flatten
+- [feedback-windows-file-watcher](feedback-windows-file-watcher.md) — name: feedback-windows-file-watcher
+- [project_apresentacao_mensal](project_apresentacao_mensal.md) — name: apresentacao-mensal
+- [project_banco_aws_decidido](project_banco_aws_decidido.md) — name: project-banco-aws-decidido
+- [project_carga_perigosa](project_carga_perigosa.md) — name: project-carga-perigosa
+- [project_estado_atual](project_estado_atual.md) — name: project-estado-atual
+- [project_excel_vencimentos_frota](project_excel_vencimentos_frota.md) — name: project-excel-vencimentos-frota
+- [project_firestore_emulator_off](project_firestore_emulator_off.md) — name: project-firestore-emulator-off
+- [project_frontend_lint_estado](project_frontend_lint_estado.md) — name: project_frontend_lint_estado
+- [project_frota_pontual_html](project_frota_pontual_html.md) — name: Frota Pontual — HTML App de Controle de Frota
+- [project_gestao_financeira_preview](project_gestao_financeira_preview.md) — name: Gestão Financeira — Prévia aprovada
+- [project_github](project_github.md) — name: GitHub do usuário
+- [project_ibutton_descontinuado](project_ibutton_descontinuado.md) — name: project-ibutton-descontinuado
+- [project_jornada_3fontes_plano](project_jornada_3fontes_plano.md) — name: project-jornada-3fontes-plano
+- [project_jornada_historico_plano](project_jornada_historico_plano.md) — name: project-jornada-historico-plano
+- [project_jornada_motorista_plano](project_jornada_motorista_plano.md) — name: project-jornada-motorista-plano
+- [project_levantamento_logistica](project_levantamento_logistica.md) — name: project-levantamento-logistica
+- [project_logistica_ia](project_logistica_ia.md) — name: Projeto Logística IA — Pontual Logística
+- [project_logistica_rastreamento_levantamento](project_logistica_rastreamento_levantamento.md) — name: Levantamento Logística & Rastreamento — Pontual
+- [project_manutencao_3abas](project_manutencao_3abas.md) — name: manutencao-3abas
+- [project_manutencao_arquivo_zerado_incidente](project_manutencao_arquivo_zerado_incidente.md) — name: manutencao-arquivo-zerado-incidente
+- [project_manutencao_os_wip](project_manutencao_os_wip.md) — name: project-manutencao-os-wip
+- [project_mcp_config](project_mcp_config.md) — name: Configuração MCPs Claude Code
+- [project_mempalace](project_mempalace.md) — name: MemPalace — Configuração e Automação
+- [project_migracao_postgresql_tms](project_migracao_postgresql_tms.md) — name: project-migracao-postgresql-tms
+- [project_modulo_terceiros](project_modulo_terceiros.md) — name: project-modulo-terceiros
+- [project_motorista_caminhao_pontual](project_motorista_caminhao_pontual.md) — name: project-motorista-caminhao-pontual
+- [project_operacao_pontual_tamanho](project_operacao_pontual_tamanho.md) — name: project-operacao-pontual-tamanho
+- [project_padrao_apresentacoes](project_padrao_apresentacoes.md) — name: Padrão visual das apresentações Pontual
+- [project_pedagio_veloe](project_pedagio_veloe.md) — name: project-pedagio-veloe
+- [project_pontual](project_pontual.md) — name: project-pontual
+- [project_producao_deploy_pausado](project_producao_deploy_pausado.md) — name: project-producao-deploy-pausado
+- [project_proposta_valor_tms](project_proposta_valor_tms.md) — name: proposta-valor-tms
+- [project_rastreamento_eta_destino](project_rastreamento_eta_destino.md) — name: rastreamento-eta-destino
+- [project_rastreamento_precisao_2026-06-08](project_rastreamento_precisao_2026-06-08.md) — name: project-rastreamento-precisao-2026-06-08
+- [project_rastreamento_sascar_fase2](project_rastreamento_sascar_fase2.md) — name: project-rastreamento-sascar-fase2
+- [project_relatorio_px](project_relatorio_px.md) — name: Relatório PX — Scripts e Próximo Passo
+- [project_relatorio_terceiro](project_relatorio_terceiro.md) — name: Relatório Transportadores Terceiros — Erlei e João
+- [project_relatorio_vdo](project_relatorio_vdo.md) — name: Relatórios VDO — Picos de Velocidade
+- [project_responsivo_mobile](project_responsivo_mobile.md) — name: project-responsivo-mobile
+- [project_roteirizacao_plano](project_roteirizacao_plano.md) — name: project-roteirizacao-plano
+- [project_roteirizacao_teste](project_roteirizacao_teste.md) — name: project-roteirizacao-teste
+- [project_sascar_cameras_plano](project_sascar_cameras_plano.md) — name: project-sascar-cameras-plano
+- [project_sascar_cercas_api_bloqueada](project_sascar_cercas_api_bloqueada.md) — name: project-sascar-cercas-api-bloqueada
+- [project_sascar_ibutton_diagnostico](project_sascar_ibutton_diagnostico.md) — name: project-sascar-ibutton-diagnostico
+- [project_sascar_retencao_eventos](project_sascar_retencao_eventos.md) — name: project-sascar-retencao-eventos
+- [project_scraping_tms](project_scraping_tms.md) — name: project-scraping-tms
+- [project_sessao_2026-06-03](project_sessao_2026-06-03.md) — name: sessao-2026-06-03
+- [project_tms_mapa_completo](project_tms_mapa_completo.md) — name: project-tms-mapa-completo
+- [project_tms_saas_decisao](project_tms_saas_decisao.md) — name: project-tms-saas-decisao
+- [project_valorizacao_monetizacao](project_valorizacao_monetizacao.md) — name: project-valorizacao-monetizacao
+- [project_vdo_api_solicitacao](project_vdo_api_solicitacao.md) — name: project-vdo-api-solicitacao
+- [project-branches-github-multiplas](project-branches-github-multiplas.md) — name: project-branches-github-multiplas
+- [project-conjuntos-akd5988-bbe9588](project-conjuntos-akd5988-bbe9588.md) — name: project-conjuntos-akd5988-bbe9588
+- [project-contas-claude-user](project-contas-claude-user.md) — name: project-contas-claude-user
+- [project-cta-externo-lancamento-manual](project-cta-externo-lancamento-manual.md) — name: project-cta-externo-lancamento-manual
+- [project-cta-nfe-so-externo](project-cta-nfe-so-externo.md) — name: project-cta-nfe-so-externo
+- [project-cta-smart-integracao](project-cta-smart-integracao.md) — name: cta-smart-integracao-pontual
+- [project-custo-motorista-pontual](project-custo-motorista-pontual.md) — name: project-custo-motorista-pontual
+- [project-frota-pontual-eixos](project-frota-pontual-eixos.md) — name: project-frota-pontual-eixos
+- [project-jdk21-user-install](project-jdk21-user-install.md) — name: project-jdk21-user-install
+- [project-logistica-ia-frontend](project-logistica-ia-frontend.md) — name: project-logistica-ia-frontend
+- [project-migracao-hostinger](project-migracao-hostinger.md) — name: project-migracao-hostinger
+- [project-migracao-laravel-hostinger](project-migracao-laravel-hostinger.md) — name: project-migracao-laravel-hostinger
+- [project-modelo-custo-viagem-pontual](project-modelo-custo-viagem-pontual.md) — name: project-modelo-custo-viagem-pontual
+- [project-modulo-compras-branch-supabase](project-modulo-compras-branch-supabase.md) — name: project-modulo-compras-branch-supabase
+- [project-modulo-vencimentos-existente](project-modulo-vencimentos-existente.md) — name: project-modulo-vencimentos-existente
+- [project-nf-nordica-substitui-civ](project-nf-nordica-substitui-civ.md) — name: project-nf-nordica-substitui-civ
+- [project-outras-ias-e-backups](project-outras-ias-e-backups.md) — name: project-outras-ias-e-backups
+- [project-pendrive-backup](project-pendrive-backup.md) — name: project-pendrive-backup
+- [project-pontual-devolucao-pattern](project-pontual-devolucao-pattern.md) — name: project-pontual-devolucao-pattern
+- [project-pontual-eixos-ls-6-corrigido](project-pontual-eixos-ls-6-corrigido.md) — name: project-pontual-eixos-ls-6-corrigido
+- [project-pontual-logo-white-aprovada](project-pontual-logo-white-aprovada.md) — name: project-pontual-logo-white-aprovada
+- [project-sessao-2026-07-17-mudancas](project-sessao-2026-07-17-mudancas.md) — name: project-sessao-2026-07-17-mudancas
+- [project-xadm-fiscal](project-xadm-fiscal.md) — name: xadm-fiscal-mdfe
+- [reference_firestore_cache_offline](reference_firestore_cache_offline.md) — name: reference-firestore-cache-offline
+- [reference_padrao_visual_pontual_xlsx](reference_padrao_visual_pontual_xlsx.md) — name: reference-padrao-visual-pontual-xlsx
+- [reference_sascar_api](reference_sascar_api.md) — name: reference-sascar-api
+- [reference-cta-smart-api](reference-cta-smart-api.md) — name: reference-cta-smart-api
+- [reference-firebase-service-account-pendrive](reference-firebase-service-account-pendrive.md) — name: reference-firebase-service-account-pendrive
+- [user_wesley](user_wesley.md) — name: user-wesley

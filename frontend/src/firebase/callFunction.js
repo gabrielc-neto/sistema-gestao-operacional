@@ -1,37 +1,38 @@
-import { httpsCallable } from "firebase/functions";
-import { functions } from "./config";
+// Migração 2026-07-23: sempre bate no VPS. Firebase Functions foi eliminada.
+// Mantém interface `callFunction(name, params)` compatível com Firebase Callable
+// (retorna { data: ... }) pra não quebrar o código existente.
 
-const isDev =
-  import.meta.env?.DEV && import.meta.env?.VITE_USE_FUNCTIONS_EMULATOR === "true";
+import { auth } from "./config";
 
-const REGION = "southamerica-east1";
-const PROJECT_ID = "pontual-logistica";
+const VPS_BASE = import.meta.env?.VITE_PONTUAL_API_URL || "";
 
-/**
- * Chama uma Firebase Callable Function.
- * Em dev: fetch direto pelo proxy do Vite (evita incompatibilidade do SDK v12 com firebase-functions v6).
- * Em prod: httpsCallable normal.
- */
+// Mapa: nome da função → { method, path } no backend VPS
+const VPS_MAP = {
+  sascarPosicoes:      { method: "POST", path: "/api/sascar/posicoes" },
+  sascarVeiculos:      { method: "GET",  path: "/api/sascar/veiculos" },
+  jornadaDia:          { method: "POST", path: "/api/jornada/dia" },
+  jornadaPeriodo:      { method: "POST", path: "/api/jornada/periodo" },
+  intranetGate:        { method: "POST", path: "/api/intranet-gate" },
+};
+
 export async function callFunction(name, params) {
-  if (isDev) {
-    // Chama emulator direto em 127.0.0.1:5001 — bypassa proxy Vite (que dá 502 em requests > ~1s).
-    // 127.0.0.1 = loopback da máquina local; funciona quando browser e emulator estão na mesma máquina.
-    const url = `http://127.0.0.1:5001/${PROJECT_ID}/${REGION}/${name}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-dev-bypass": "true",
-      },
-      body: JSON.stringify({ data: params ?? null }),
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(json?.error?.message || `HTTP ${res.status}`);
-    }
-    // firebase-functions v6 retorna { result: ... }; versões antigas retornam { data: ... }
-    return { data: json.result ?? json.data };
+  const map = VPS_MAP[name];
+  if (!map) {
+    throw new Error(`Função não mapeada no VPS: ${name}. Adicione em src/firebase/callFunction.js`);
   }
 
-  return httpsCallable(functions, name)(params);
+  const token = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const url = `${VPS_BASE}${map.path}`;
+  const opts = { method: map.method, headers };
+  if (map.method !== "GET") opts.body = JSON.stringify(params ?? {});
+
+  const res = await fetch(url, opts);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body?.error || body?.message || `HTTP ${res.status}`);
+  }
+  return { data: body };
 }

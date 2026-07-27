@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Rows3, LayoutGrid, Columns2, Edit3, Trash2, Lock as LockIco, Paperclip, ExternalLink, FileText, AlertCircle, Camera } from "lucide-react";
 import {
   collection, getDocs, setDoc, deleteDoc,
   doc, query, orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { uploadArquivo, cloudinaryConfigured } from "../services/cloudinary";
+import { list as dsList, save as dsSave, remove as dsRemove } from "../services/genericDataSource";
 import { useAuth } from "../contexts/AuthContext";
 import ModuleHeader from "../components/ModuleHeader";
 import ExportBar from "../components/ExportBar";
@@ -53,7 +55,25 @@ const EMPTY_FORM = {
   nome: "", cnh: "", cat: "", tel: "", status: "ativo", obs: "",
   cnh_venc: "", mopp_venc: "", nr20_venc: "", nr35_venc: "",
   tipoContrato: "interno", // "interno" (CLT/frota Pontual) | "px" (PJ/agregado)
+  foto: null,
+  documentos: {}, // { cnh: {url, publicId, nome, ...}, mopp: {...}, nr20: {...}, nr35: {...} }
 };
+
+// Componente reutilizável — avatar redondo do motorista (foto ou iniciais)
+function Avatar({ motorista, size = 40, style = {} }) {
+  const foto = motorista?.foto?.url;
+  const iniciais = String(motorista?.nome || "").trim().split(/\s+/).slice(0, 2).map(x => x[0] || "").join("").toUpperCase() || "?";
+  if (foto) {
+    return <img src={foto} alt={motorista.nome} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: "1px solid #e2e8f0", flexShrink: 0, ...style }} />;
+  }
+  const bg = ["#dbeafe","#dcfce7","#fef3c7","#fee2e2","#f3e8ff","#cffafe","#fed7aa","#e0e7ff"][Math.abs(iniciais.charCodeAt(0)) % 8];
+  const cor = ["#1d4ed8","#15803d","#b45309","#b91c1c","#7c3aed","#0891b2","#c2410c","#4338ca"][Math.abs(iniciais.charCodeAt(0)) % 8];
+  return (
+    <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color: cor, display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: size * 0.36, flexShrink: 0, border: "1px solid #e2e8f0", ...style }}>
+      {iniciais}
+    </div>
+  );
+}
 
 // ── componente ──────────────────────────────────────────────────────────────
 export default function Motoristas() {
@@ -64,20 +84,49 @@ export default function Motoristas() {
   const [loading, setLoading]         = useState(true);
   const [busca, setBusca]             = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
+  // 2026-07-24: user decidiu ficar SÓ com split (cards/tabela removidos do toggle)
+  const [modoView] = useState("split");
+  const [splitSel, setSplitSel] = useState(null);
+  useEffect(() => { localStorage.setItem("motoristas_view", modoView); }, [modoView]);
   const [modalOpen, setModalOpen]     = useState(false);
   const [editando, setEditando]       = useState(null); // id do doc em edição
   const [form, setForm]               = useState(EMPTY_FORM);
   const [salvando, setSalvando]       = useState(false);
   const [erro, setErro]               = useState("");
+  const [uploadingDoc, setUploadingDoc] = useState(""); // "cnh"|"mopp"|"nr20"|"nr35"|""
+
+  async function uploadDocMotorista(tipo, file) {
+    if (!file) return;
+    if (!cloudinaryConfigured()) {
+      alert("Cloudinary não configurado. Adicione VITE_CLOUDINARY_CLOUD_NAME no .env.local e reinicie o dev server.");
+      return;
+    }
+    setUploadingDoc(tipo);
+    try {
+      const meta = await uploadArquivo(file, { folder: `motoristas/docs/${tipo}` });
+      setForm(f => ({ ...f, documentos: { ...(f.documentos || {}), [tipo]: meta } }));
+    } catch (e) {
+      alert("Erro no upload: " + (e?.message || e));
+    } finally {
+      setUploadingDoc("");
+    }
+  }
+
+  function removerDocMotorista(tipo) {
+    if (!window.confirm("Remover este documento?")) return;
+    setForm(f => {
+      const docs = { ...(f.documentos || {}) };
+      delete docs[tipo];
+      return { ...f, documentos: docs };
+    });
+  }
 
   // ── load ──────────────────────────────────────────────────────────────────
   async function carregar() {
     setLoading(true);
     try {
-      const snap = await getDocs(
-        query(collection(db, "motoristas"), orderBy("nome"))
-      );
-      setMotoristas(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const rows = await dsList("motoristas", { orderBy: "nome" });
+      setMotoristas(rows);
     } catch (e) {
       console.error(e);
     } finally {
@@ -131,6 +180,8 @@ export default function Motoristas() {
       nr20_venc: m.nr20_venc || "",
       nr35_venc: m.nr35_venc || "",
       tipoContrato: m.tipoContrato || "interno",
+      foto: m.foto || null,
+      documentos: m.documentos || {},
     });
     setErro("");
     setModalOpen(true);
@@ -141,6 +192,44 @@ export default function Motoristas() {
     setEditando(null);
     setForm(EMPTY_FORM);
     setErro("");
+  }
+
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+
+  async function uploadFotoMotorista(file) {
+    if (!file) return;
+    if (!cloudinaryConfigured()) {
+      alert("Cloudinary não configurado.");
+      return;
+    }
+    setUploadingFoto(true);
+    try {
+      // Compressão local: 400px lado maior, JPEG 82% (poupa quota Cloudinary)
+      const img = new Image();
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file);
+      });
+      img.src = dataUrl;
+      await new Promise(res => { img.onload = res; });
+      const esc = Math.min(1, 400 / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width * esc; canvas.height = img.height * esc;
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.82));
+      const arquivoComprimido = new File([blob], "foto.jpg", { type: "image/jpeg" });
+      const meta = await uploadArquivo(arquivoComprimido, { folder: "motoristas/fotos" });
+      setForm(f => ({ ...f, foto: meta }));
+    } catch (e) {
+      alert("Erro no upload: " + (e?.message || e));
+    } finally {
+      setUploadingFoto(false);
+    }
+  }
+
+  function removerFotoMotorista() {
+    if (!window.confirm("Remover foto?")) return;
+    setForm(f => ({ ...f, foto: null }));
   }
 
   // ── salvar ────────────────────────────────────────────────────────────────
@@ -165,11 +254,13 @@ export default function Motoristas() {
         nr20_venc: form.nr20_venc || null,
         nr35_venc: form.nr35_venc || null,
         tipoContrato: form.tipoContrato || "interno",
+        foto: form.foto || null,
+        documentos: form.documentos || {},
         updatedAt: new Date().toISOString(),
       };
       if (!editando) data.createdAt = new Date().toISOString();
 
-      await setDoc(doc(db, "motoristas", id), data, { merge: true });
+      await dsSave("motoristas", id, data);
       await carregar();
       fecharModal();
     } catch (e) {
@@ -184,7 +275,7 @@ export default function Motoristas() {
   async function excluir(id, nome) {
     if (!window.confirm(`Excluir motorista "${nome}"?`)) return;
     try {
-      await deleteDoc(doc(db, "motoristas", id));
+      await dsRemove("motoristas", id);
       setMotoristas((prev) => prev.filter((m) => m.id !== id));
     } catch {
       alert("Erro ao excluir.");
@@ -207,7 +298,7 @@ export default function Motoristas() {
           onChange={(e) => setBusca(e.target.value)}
         />
         <div style={s.filtros}>
-          {["todos", "ativo", "inativo", "desligado"].map((f) => (
+          {["todos", "ativo", "desligado"].map((f) => (
             <button
               key={f}
               style={{
@@ -248,7 +339,7 @@ export default function Motoristas() {
       )}
 
       {/* CONTEÚDO */}
-      <main style={s.main} className="pg-body">
+      <main style={modoView === "split" ? { ...s.main, maxWidth: "none", padding: "16px 20px" } : s.main} className="pg-body">
         <ExportBar
           titulo="Motoristas"
           arquivo="motoristas"
@@ -274,15 +365,18 @@ export default function Motoristas() {
           <p style={s.info}>Carregando...</p>
         ) : lista.length === 0 ? (
           <p style={s.info}>Nenhum motorista encontrado.</p>
-        ) : (
+        ) : modoView === "cards" ? (
           <div style={s.grid}>
             {lista.map((m) => {
               const sc = STATUS_COLORS[m.status] || STATUS_COLORS.inativo;
               return (
                 <div key={m.id} style={s.card}>
-                  <div style={s.cardHeader}>
-                    <span style={s.cardNome}>{m.nome}</span>
-                    <span style={{ ...s.badge, background: sc.bg, color: sc.color }}>
+                  <div style={{ ...s.cardHeader, display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <Avatar motorista={m} size={44} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={s.cardNome}>{m.nome}</span>
+                    </div>
+                    <span style={{ ...s.badge, background: sc.bg, color: sc.color, flexShrink: 0 }}>
                       {sc.label}
                     </span>
                   </div>
@@ -344,6 +438,186 @@ export default function Motoristas() {
               );
             })}
           </div>
+        ) : modoView === "tabela" ? (
+          // ═══ MODO TABELA ═══
+          <div style={{ background:"#fff", borderRadius:10, overflow:"hidden", border:"1px solid #e2e8f0" }}>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".85rem", fontVariantNumeric:"tabular-nums" }}>
+                <thead>
+                  <tr style={{ background:"#f8fafc", borderBottom:"2px solid #e2e8f0" }}>
+                    {["Nome","Contrato","CNH","Cat.","Telefone","Status","Documentos","Ações"].map(h => (
+                      <th key={h} style={{ padding:"10px 12px", textAlign: h === "Ações" ? "right" : "left", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:".04em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.map((m, i) => {
+                    const sc = STATUS_COLORS[m.status] || STATUS_COLORS.inativo;
+                    const docsAlerta = DOCS_MOTORISTA.filter(d => ["vencido","alerta"].includes(calcStatus(m[d.campo]))).length;
+                    return (
+                      <tr key={m.id} style={{ borderBottom:"1px solid #f1f5f9", background: i % 2 ? "#fafcff" : "#fff" }}>
+                        <td style={{ padding:"7px 12px", fontWeight:600, color:"#1a3a5c" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <Avatar motorista={m} size={28} />
+                            <span>{m.nome}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding:"9px 12px", color:"#475569", fontSize:".78rem" }}>{m.tipoContrato === "px" ? "PX (PJ)" : "Interno (CLT)"}</td>
+                        <td style={{ padding:"9px 12px", color:"#475569" }}>{m.cnh || "—"}</td>
+                        <td style={{ padding:"9px 12px", color:"#475569" }}>{m.cat || "—"}</td>
+                        <td style={{ padding:"9px 12px", color:"#475569" }}>{m.tel || "—"}</td>
+                        <td style={{ padding:"9px 12px" }}>
+                          <span style={{ background: sc.bg, color: sc.color, padding:"2px 8px", borderRadius:999, fontSize:".72rem", fontWeight:700 }}>{sc.label}</span>
+                        </td>
+                        <td style={{ padding:"9px 12px" }}>
+                          {docsAlerta > 0
+                            ? <span style={{ background:"var(--danger-bg)", color:"var(--danger)", padding:"2px 8px", borderRadius:4, fontSize:".72rem", fontWeight:700 }}>{docsAlerta} pendente(s)</span>
+                            : <span style={{ color:"var(--success)", fontSize:".78rem", fontWeight:600 }}>Em dia</span>}
+                        </td>
+                        <td style={{ padding:"9px 12px", textAlign:"right" }}>
+                          <div style={{ display:"inline-flex", gap:4 }}>
+                            <button onClick={() => abrirEditar(m)} title="Editar"
+                              style={{ background:"#dbeafe", color:"#1d4ed8", border:"none", padding:"5px 7px", borderRadius:5, cursor:"pointer", display:"inline-flex" }}>
+                              <Edit3 size={13} />
+                            </button>
+                            {canDelete && (
+                              <button onClick={() => excluir(m.id, m.nome)} title="Excluir"
+                                style={{ background:"#fee2e2", color:"#dc2626", border:"none", padding:"5px 7px", borderRadius:5, cursor:"pointer", display:"inline-flex" }}>
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ padding:"8px 14px", background:"#f8fafc", borderTop:"1px solid #e2e8f0", fontSize:".75rem", color:"#64748b" }}>
+              {lista.length} motorista{lista.length === 1 ? "" : "s"}
+            </div>
+          </div>
+        ) : (
+          // ═══ MODO SPLIT ═══
+          <div style={{ display:"grid", gridTemplateColumns:"420px 1fr", gap:14, minHeight:500 }}>
+            <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e2e8f0", overflow:"hidden", maxHeight:"75vh", overflowY:"auto" }}>
+              <div style={{ padding:"10px 14px", background:"#f8fafc", borderBottom:"1px solid #e2e8f0", fontSize:".72rem", fontWeight:700, color:"#64748b", textTransform:"uppercase" }}>
+                {lista.length} motorista{lista.length === 1 ? "" : "s"}
+              </div>
+              {lista.map(m => {
+                const sel = splitSel?.id === m.id;
+                const sc = STATUS_COLORS[m.status] || STATUS_COLORS.inativo;
+                const docsAlerta = DOCS_MOTORISTA.filter(d => ["vencido","alerta"].includes(calcStatus(m[d.campo]))).length;
+                return (
+                  <button key={m.id} onClick={() => setSplitSel(m)} style={{
+                    display:"flex", width:"100%", textAlign:"left", padding:"10px 14px", gap:10, alignItems:"center",
+                    background: sel ? "#eff6ff" : "transparent",
+                    borderLeft: sel ? "3px solid #1d4ed8" : "3px solid transparent",
+                    border:"none", borderBottom:"1px solid #f1f5f9", cursor:"pointer", fontFamily:"inherit",
+                  }}>
+                    <Avatar motorista={m} size={36} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <span style={{ width:8, height:8, borderRadius:"50%", background: sc.color, flexShrink:0 }} />
+                        <span style={{ fontWeight:700, color:"#1a3a5c", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.nome}</span>
+                        {docsAlerta > 0 && <span style={{ marginLeft:"auto", background:"var(--danger-bg)", color:"var(--danger)", fontSize:".68rem", padding:"1px 6px", borderRadius:4, fontWeight:700, flexShrink:0 }}>{docsAlerta}</span>}
+                      </div>
+                      <div style={{ fontSize:".76rem", color:"#64748b", marginTop:2 }}>{m.cnh || "sem CNH"} · {m.cat || "—"}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ background:"#fff", borderRadius:10, border:"1px solid #e2e8f0", padding: splitSel ? 20 : 0, minHeight:400 }}>
+              {!splitSel ? (
+                <div style={{ padding:60, textAlign:"center", color:"#94a3b8" }}>Selecione um motorista à esquerda pra ver detalhes</div>
+              ) : (
+                <>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14, gap:14 }}>
+                    <div style={{ display:"flex", gap:14, alignItems:"center", flex:1, minWidth:0 }}>
+                      <Avatar motorista={splitSel} size={72} />
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ fontSize:"1.4rem", fontWeight:800, color:"#1a3a5c", overflow:"hidden", textOverflow:"ellipsis" }}>{splitSel.nome}</div>
+                        <div style={{ fontSize:".85rem", color:"#475569", marginTop:2 }}>
+                          {splitSel.tipoContrato === "px" ? "PX · agregado (PJ)" : "Interno · frota (CLT)"}
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ background:(STATUS_COLORS[splitSel.status]||STATUS_COLORS.inativo).bg, color:(STATUS_COLORS[splitSel.status]||STATUS_COLORS.inativo).color, padding:"4px 12px", borderRadius:999, fontSize:".78rem", fontWeight:700, flexShrink:0 }}>
+                      {(STATUS_COLORS[splitSel.status]||STATUS_COLORS.inativo).label}
+                    </span>
+                  </div>
+
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:14, marginTop:12 }}>
+                    {[
+                      ["CNH",       splitSel.cnh || "—"],
+                      ["Categoria", splitSel.cat || "—"],
+                      ["Telefone",  splitSel.tel || "—"],
+                      ["CPF",       splitSel.cpf || "—"],
+                      ["Admissão",  splitSel.admissao ? fmtDate(splitSel.admissao) : "—"],
+                    ].map(([k,val]) => (
+                      <div key={k}>
+                        <div style={{ fontSize:".7rem", color:"#94a3b8", textTransform:"uppercase", letterSpacing:".04em", fontWeight:700 }}>{k}</div>
+                        <div style={{ fontSize:".95rem", color:"#1a3a5c", fontWeight:600, marginTop:2 }}>{val}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop:20, paddingTop:16, borderTop:"1px solid #e2e8f0" }}>
+                    <div style={{ fontSize:".7rem", color:"#94a3b8", textTransform:"uppercase", letterSpacing:".04em", fontWeight:700, marginBottom:8 }}>Documentos</div>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                      {DOCS_MOTORISTA.map(({ campo, label }) => {
+                        const st = calcStatus(splitSel[campo]);
+                        const sty = STATUS_STYLE[st];
+                        return (
+                          <span key={campo} style={{ fontSize:12, fontWeight:700, background:sty.bg, color:sty.color, borderRadius:4, padding:"3px 10px" }}>
+                            {label}{splitSel[campo] ? ` · ${fmtDate(splitSel[campo])}` : " · sem data"}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {splitSel.documentos && Object.keys(splitSel.documentos).length > 0 && (
+                    <div style={{ marginTop:16, paddingTop:14, borderTop:"1px solid #e2e8f0" }}>
+                      <div style={{ fontSize:".7rem", color:"#94a3b8", textTransform:"uppercase", letterSpacing:".04em", fontWeight:700, marginBottom:8 }}>Anexos</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                        {Object.entries(splitSel.documentos).map(([tipo, d]) => (
+                          <a key={tipo} href={d.url} target="_blank" rel="noopener noreferrer"
+                            style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 10px", background:"#f8fafc", borderRadius:6, textDecoration:"none", color:"#1a3a5c", fontSize:".8rem", border:"1px solid #e2e8f0" }}>
+                            <FileText size={13} />
+                            <span style={{ fontWeight:700, minWidth:55, textTransform:"uppercase" }}>{tipo}</span>
+                            <span style={{ flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", color:"#475569" }}>{d.nome}</span>
+                            <span style={{ color:"#94a3b8", fontSize:".72rem" }}>{(d.tamanho/1024).toFixed(0)} KB</span>
+                            <ExternalLink size={12} style={{ color:"#1d4ed8" }} />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {splitSel.obs && (
+                    <div style={{ marginTop:16, padding:"10px 14px", background:"#f8fafc", borderRadius:6, fontSize:".85rem", color:"#475569" }}>
+                      <strong>Obs:</strong> {splitSel.obs}
+                    </div>
+                  )}
+
+                  <div style={{ display:"flex", gap:8, marginTop:24, paddingTop:16, borderTop:"1px solid #e2e8f0" }}>
+                    <button onClick={() => abrirEditar(splitSel)} style={{ background:"#1a3a5c", color:"#fff", border:"none", padding:"8px 16px", borderRadius:6, cursor:"pointer", fontWeight:600, display:"inline-flex", alignItems:"center", gap:6 }}>
+                      <Edit3 size={14} /> Editar
+                    </button>
+                    {canDelete && (
+                      <button onClick={() => excluir(splitSel.id, splitSel.nome)} style={{ background:"#fee2e2", color:"#dc2626", border:"none", padding:"8px 16px", borderRadius:6, cursor:"pointer", fontWeight:600, display:"inline-flex", alignItems:"center", gap:6 }}>
+                        <Trash2 size={14} /> Excluir
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         )}
       </main>
 
@@ -359,6 +633,26 @@ export default function Motoristas() {
             </div>
 
             <form onSubmit={salvar} style={s.form}>
+              {/* Avatar + Upload de foto */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 12px", background: "#f8fafc", borderRadius: 8, marginBottom: 12 }}>
+                <Avatar motorista={form} size={64} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: ".8rem", fontWeight: 700, color: "#1a3a5c", marginBottom: 4 }}>Foto do motorista</div>
+                  <div style={{ fontSize: ".72rem", color: "#64748b", marginBottom: 6 }}>Comprimida para 400px · JPEG</div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <label style={{ background: "#dbeafe", color: "#1d4ed8", padding: "5px 12px", borderRadius: 6, cursor: uploadingFoto ? "wait" : "pointer", fontSize: ".78rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                      <Camera size={13} /> {uploadingFoto ? "Enviando..." : form.foto ? "Trocar" : "Escolher"}
+                      <input type="file" accept="image/*" capture="user" style={{ display: "none" }} disabled={uploadingFoto} onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; uploadFotoMotorista(f); }} />
+                    </label>
+                    {form.foto && (
+                      <button type="button" onClick={removerFotoMotorista} style={{ background: "#fee2e2", color: "#b91c1c", padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: ".78rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                        <Trash2 size={12} /> Remover
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Nome */}
               <label style={s.label}>
                 Nome
@@ -369,6 +663,8 @@ export default function Motoristas() {
                     setForm({ ...form, nome: e.target.value.toUpperCase() })
                   }
                   placeholder="NOME COMPLETO"
+                  autoCapitalize="characters"
+                  autoComplete="name"
                   required
                 />
               </label>
@@ -379,8 +675,12 @@ export default function Motoristas() {
                 <input
                   style={s.fieldInput}
                   value={form.cnh}
-                  onChange={(e) => setForm({ ...form, cnh: e.target.value })}
+                  onChange={(e) => setForm({ ...form, cnh: e.target.value.replace(/\D/g, "") })}
                   placeholder="00000000000"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={11}
+                  autoComplete="off"
                 />
               </label>
 
@@ -394,6 +694,8 @@ export default function Motoristas() {
                     onChange={(e) => setForm({ ...form, cat: e.target.value.toUpperCase() })}
                     placeholder="Ex: E, AE, D..."
                     maxLength={5}
+                    autoCapitalize="characters"
+                    autoComplete="off"
                   />
                 </label>
                 <label style={{ ...s.label, flex: 1 }}>
@@ -452,6 +754,58 @@ export default function Motoristas() {
                 </label>
               </div>
 
+              {/* Anexos de Documentos */}
+              <div style={{ fontSize: ".82rem", fontWeight: 700, color: "var(--text-muted)", borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 2 }}>
+                Anexos (PDF ou foto)
+              </div>
+              {!cloudinaryConfigured() && (
+                <div style={{ background:"#fef3c7", color:"#92400e", padding:"8px 12px", borderRadius:6, fontSize:".78rem", display:"flex", alignItems:"center", gap:6 }}>
+                  <AlertCircle size={14} /> Anexos não configurados. Peça pro admin adicionar <code style={{background:"#fde68a",padding:"1px 5px",borderRadius:3}}>VITE_CLOUDINARY_CLOUD_NAME</code> no .env.local.
+                </div>
+              )}
+              {[
+                { tipo: "cnh",  label: "CNH" },
+                { tipo: "mopp", label: "MOPP" },
+                { tipo: "nr20", label: "NR-20" },
+                { tipo: "nr35", label: "NR-35" },
+                { tipo: "aso",  label: "ASO" },
+                { tipo: "outro", label: "Outro" },
+              ].map(({ tipo, label }) => {
+                const doc = form.documentos?.[tipo];
+                const subindo = uploadingDoc === tipo;
+                return (
+                  <div key={tipo} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 10px", background:"#f8fafc", borderRadius:6, border:"1px solid #e2e8f0" }}>
+                    <div style={{ minWidth:60, fontSize:".78rem", fontWeight:700, color:"#1a3a5c" }}>{label}</div>
+                    <div style={{ flex:1, fontSize:".76rem", color:"#64748b", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {doc ? (
+                        <span title={doc.nome} style={{ display:"inline-flex", alignItems:"center", gap:5 }}>
+                          <FileText size={12} /> {doc.nome} <span style={{ color:"#94a3b8" }}>· {(doc.tamanho/1024).toFixed(0)} KB</span>
+                        </span>
+                      ) : (
+                        <span style={{ color:"#94a3b8", fontStyle:"italic" }}>Nenhum arquivo anexado</span>
+                      )}
+                    </div>
+                    <label style={{ background:"#dbeafe", color:"#1d4ed8", padding:"4px 10px", borderRadius:5, cursor: subindo ? "wait" : "pointer", fontSize:".72rem", fontWeight:600, display:"inline-flex", alignItems:"center", gap:4 }}>
+                      <Paperclip size={11} /> {subindo ? "Enviando..." : doc ? "Trocar" : "Anexar"}
+                      <input type="file" accept="image/*,.pdf" style={{ display:"none" }} disabled={subindo || !cloudinaryConfigured()}
+                        onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; uploadDocMotorista(tipo, f); }} />
+                    </label>
+                    {doc && (
+                      <>
+                        <a href={doc.url} target="_blank" rel="noopener noreferrer" title="Abrir em nova aba"
+                          style={{ background:"#dcfce7", color:"#166534", padding:"4px 8px", borderRadius:5, textDecoration:"none", display:"inline-flex", alignItems:"center" }}>
+                          <ExternalLink size={11} />
+                        </a>
+                        <button type="button" onClick={() => removerDocMotorista(tipo)} title="Remover"
+                          style={{ background:"#fee2e2", color:"#b91c1c", border:"none", padding:"4px 8px", borderRadius:5, cursor:"pointer", display:"inline-flex" }}>
+                          <Trash2 size={11} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+
               {/* Telefone */}
               <label style={s.label}>
                 Telefone
@@ -460,6 +814,9 @@ export default function Motoristas() {
                   value={form.tel}
                   onChange={(e) => setForm({ ...form, tel: e.target.value })}
                   placeholder="(00) 90000-0000"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
                 />
               </label>
 

@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { Clock, RefreshCw, AlertTriangle, CheckCircle2, Search, Truck, X, Calendar, TrendingUp, UserX, Copy, UserMinus, MapPin, ArrowLeftRight, Check, Map as MapIcon } from "lucide-react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { save as dsSave } from "../services/genericDataSource";
 import { useJornada } from "../hooks/useJornada";
 import { capitalizarNome } from "../utils/format";
 import ModuleHeader from "../components/ModuleHeader";
@@ -248,7 +249,7 @@ export default function Jornada() {
     const novo = j.tipoContrato === "px" ? "interno" : "px";
     setSalvandoTipo(j.idMotorista);
     try {
-      await setDoc(doc(db, "motoristas_classificacao", String(j.idMotorista)), {
+      await dsSave("motoristas_classificacao", String(j.idMotorista), {
         nome: j.nomeMotorista,
         tipoContrato: novo,
         atualizadoEm: new Date().toISOString(),
@@ -267,7 +268,7 @@ export default function Jornada() {
     if (!window.confirm(`Marcar ${capitalizarNome(m.nome)} como DESLIGADO?\n\nEle some da lista "não iniciaram". Reversível depois.`)) return;
     setMarcandoDesligado(m.idMotorista);
     try {
-      await setDoc(doc(db, "motoristas_desligados", String(m.idMotorista)), {
+      await dsSave("motoristas_desligados", String(m.idMotorista), {
         nome: m.nome,
         desligadoEm: new Date().toISOString(),
       });

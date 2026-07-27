@@ -34,3 +34,14 @@ Páginas com responsivo próprio (não usam essas utilities):
 - `Dashboard.jsx` — usa `.dash-kpi`/`.dash-modules` que têm mq dedicadas em index.css
 
 Login.jsx, Permissoes.jsx, Setores.jsx, Rastreamento.jsx já tinham responsivo razoável.
+
+---
+*Ver também: [[MEMORY|Índice de memórias]] · [[INDICE|Dashboard]] · [[CLAUDE|Contexto Pontual]]*
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **rbac**: [[feedback_sem_permissao]] · [[project-logistica-ia-frontend]] · [[project_apresentacao_mensal]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

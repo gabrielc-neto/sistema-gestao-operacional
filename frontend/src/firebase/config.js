@@ -1,8 +1,12 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { getAuth as getFirebaseAuth } from "firebase/auth";
+import { initializeFirestore, memoryLocalCache } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+import { auth as vpsAuth } from "../services/authVPS";
+
+// Migração 2026-07-23: Firebase Auth eliminado. JWT próprio (VPS) sempre.
+const USE_VPS_AUTH = true;
 
 const firebaseConfig = {
   apiKey: "AIzaSyBUZdqVSvcoHhnSYNK1edtpbJ1_xfQ-DTU",
@@ -16,11 +20,13 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
-// Persistência offline multi-tab: 2ª carga em diante vem do IndexedDB local (instantâneo),
-// sincroniza em background. Funciona em todas as páginas que leem do `db`.
+// Auth: JWT próprio (VPS) OU Firebase Auth conforme flag.
+// vpsAuth expõe `auth.currentUser` com `getIdToken()` — compat com resto do código.
+export const auth = USE_VPS_AUTH ? vpsAuth : getFirebaseAuth(app);
+// Cache em memória (sem IndexedDB persistente) — evita OSs "fantasma" no browser do usuário
+// quando conexão cai. Cada nova sessão vê o estado real do servidor.
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  localCache: memoryLocalCache(),
 });
 export const storage = getStorage(app);
 export const functions = getFunctions(app, "southamerica-east1");

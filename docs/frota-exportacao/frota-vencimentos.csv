@@ -1,0 +1,478 @@
+categoria;dono;tipo;arquivo;emissao;vencimento;status;dias_ate_vencer;caminho;ocr
+motoristas;ADAM MOREIRA;CNH;ADAM - CNH.pdf;;2027-04-27;ok;285;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ADAM MOREIRA\ADAM - CNH.pdf;S
+motoristas;ADAM MOREIRA;MOPP;ADAN MOPP.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ADAM MOREIRA\sem-data\ADAN MOPP.pdf;S
+motoristas;ADAM MOREIRA;NR35;NR 35 ADAM.pdf;;2025-09-11;vencido;-308;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ADAM MOREIRA\vencidos\NR 35 ADAM.pdf;S
+motoristas;ADAM MOREIRA;NR20;NR20 ADAM.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ADAM MOREIRA\sem-data\NR20 ADAM.pdf;S
+motoristas;AGADIR MACHADO;CNH;CNH AGADIR MACHADO.pdf;;2032-12-07;ok;2336;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\AGADIR MACHADO\CNH AGADIR MACHADO.pdf;S
+motoristas;AGADIR MACHADO;MOPP;MOPP AGADIR.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\AGADIR MACHADO\sem-data\MOPP AGADIR.pdf;S
+motoristas;AGADIR MACHADO;NR20;NR 20 AGADIR.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\AGADIR MACHADO\sem-data\NR 20 AGADIR.pdf;S
+motoristas;ANGELO MARCHINI NETO;CNH;CNH angelo.pdf;;2030-10-17;ok;1554;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ANGELO MARCHINI NETO\CNH angelo.pdf;S
+motoristas;ANGELO MARCHINI NETO;MOPP;mopp angelo.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ANGELO MARCHINI NETO\sem-data\mopp angelo.pdf;S
+motoristas;ANGELO MARCHINI NETO;NR20;NR 20 ANGELO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ANGELO MARCHINI NETO\sem-data\NR 20 ANGELO.pdf;S
+motoristas;ANGELO MARCHINI NETO;NR35;NR 35 ANGELO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ANGELO MARCHINI NETO\sem-data\NR 35 ANGELO.pdf;S
+motoristas;CELSO LUIZ PONTAROLO;CNH;CNH digital CELSO .pdf;;2031-08-30;ok;1871;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\CELSO LUIZ PONTAROLO\CNH digital CELSO .pdf;S
+motoristas;CELSO LUIZ PONTAROLO;MOPP;Mopp CELSO .pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\CELSO LUIZ PONTAROLO\sem-data\Mopp CELSO .pdf;S
+motoristas;CELSO LUIZ PONTAROLO;NR20;NR 20 CELSO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\CELSO LUIZ PONTAROLO\sem-data\NR 20 CELSO.pdf;S
+motoristas;CELSO LUIZ PONTAROLO;NR35;NR 35 CELSO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\CELSO LUIZ PONTAROLO\sem-data\NR 35 CELSO.pdf;S
+motoristas;CLAUDINOR DE SOUZA;CNH;CNH CLAUDINOR D SOUZA.pdf;;2034-10-24;ok;3022;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\CLAUDINOR DE SOUZA\CNH CLAUDINOR D SOUZA.pdf;S
+motoristas;CLAUDINOR DE SOUZA;MOPP;MOPP CLAUDINOR DE SOUZA.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\CLAUDINOR DE SOUZA\sem-data\MOPP CLAUDINOR DE SOUZA.pdf;S
+motoristas;CLAUDINOR DE SOUZA;MOPP;MOPP CLAUDINOR.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\CLAUDINOR DE SOUZA\sem-data\MOPP CLAUDINOR.pdf;S
+motoristas;CLAUDINOR DE SOUZA;NR20;NR20 CLAUDINOR.pdf;;2026-02-06;vencido;-160;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\CLAUDINOR DE SOUZA\vencidos\NR20 CLAUDINOR.pdf;S
+motoristas;CLAUDINOR DE SOUZA;NR35;NR35 CLAUDINOR.pdf;;2025-02-12;vencido;-519;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\CLAUDINOR DE SOUZA\vencidos\NR35 CLAUDINOR.pdf;S
+motoristas;COSME DA SILVA;CNH;CNH-e.pdf;;2034-01-17;ok;2742;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\COSME DA SILVA\CNH-e.pdf;S
+motoristas;COSME DA SILVA;MOPP;MOPP COSME.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\COSME DA SILVA\sem-data\MOPP COSME.pdf;S
+motoristas;COSME DA SILVA;NR20;NR20 COSME.pdf;;2025-09-29;vencido;-290;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\COSME DA SILVA\vencidos\NR20 COSME.pdf;S
+motoristas;COSME DA SILVA;NR35;NR35 COSME_001.pdf;;2025-09-30;vencido;-289;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\COSME DA SILVA\vencidos\NR35 COSME_001.pdf;S
+motoristas;EDINEY ERNESTO;CNH;CNH- EDINEY.pdf;;2033-05-17;ok;2497;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EDINEY ERNESTO\CNH- EDINEY.pdf;S
+motoristas;EDINEY ERNESTO;MOPP;MOPP EDINEY.pdf;;2026-02-01;vencido;-164;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EDINEY ERNESTO\vencidos\MOPP EDINEY.pdf;N
+motoristas;EDINEY ERNESTO;NR20;NR20 EDINEY.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EDINEY ERNESTO\sem-data\NR20 EDINEY.pdf;S
+motoristas;EDINEY ERNESTO;NR35;NR35 EDINEY.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EDINEY ERNESTO\sem-data\NR35 EDINEY.pdf;S
+motoristas;EDSON ROBERTO;CNH;CNH EDSON FLAVIO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EDSON ROBERTO\sem-data\CNH EDSON FLAVIO.pdf;S
+motoristas;EDSON ROBERTO;MOPP;MOPP EDSON (2).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EDSON ROBERTO\sem-data\MOPP EDSON (2).pdf;S
+motoristas;EDSON ROBERTO;MOPP;MOPP EDSON.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EDSON ROBERTO\sem-data\MOPP EDSON.pdf;S
+motoristas;ELIAZER DE OLIVEIRA;CNH;CNH Elizaer  De Oliveira.pdf;;2030-07-26;ok;1471;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELIAZER DE OLIVEIRA\CNH Elizaer  De Oliveira.pdf;S
+motoristas;ELIAZER DE OLIVEIRA;MOPP;eliazer mopp.pdf;;2029-10-29;ok;1202;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELIAZER DE OLIVEIRA\eliazer mopp.pdf;N
+motoristas;ELIAZER DE OLIVEIRA;NR20;NR20 ELIAZER.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELIAZER DE OLIVEIRA\sem-data\NR20 ELIAZER.pdf;S
+motoristas;ELIAZER DE OLIVEIRA;NR35;NR35 ELIAZER.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELIAZER DE OLIVEIRA\sem-data\NR35 ELIAZER.pdf;S
+motoristas;ELIZANDRO OLIVEIRA;OUTROS;CNH_ELIZANDRO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELIZANDRO OLIVEIRA\sem-data\CNH_ELIZANDRO.pdf;N
+motoristas;ELIZANDRO OLIVEIRA;OUTROS;MOPP_ELIZANDRO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELIZANDRO OLIVEIRA\sem-data\MOPP_ELIZANDRO.pdf;N
+motoristas;ELIZANDRO OLIVEIRA;NR20;NR20 ELISANDRO.pdf;;2025-11-24;vencido;-234;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELIZANDRO OLIVEIRA\vencidos\NR20 ELISANDRO.pdf;S
+motoristas;ELIZANDRO OLIVEIRA;NR35;NR35 ELISANDRO.pdf;;2025-11-25;vencido;-233;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELIZANDRO OLIVEIRA\vencidos\NR35 ELISANDRO.pdf;S
+motoristas;ELTON FRANKLIN DA SILVA;CNH;CNH ELTON FRANKLIN DA SILVA.pdf;;2035-06-17;ok;3258;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELTON FRANKLIN DA SILVA\CNH ELTON FRANKLIN DA SILVA.pdf;S
+motoristas;ELTON FRANKLIN DA SILVA;CNH;CNH ENTON .pdf;;2035-06-17;ok;3258;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELTON FRANKLIN DA SILVA\CNH ENTON .pdf;S
+motoristas;ELTON FRANKLIN DA SILVA;MOPP;MOPP ELTON .pdf;;2030-10-17;ok;1554;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELTON FRANKLIN DA SILVA\MOPP ELTON .pdf;S
+motoristas;ELTON FRANKLIN DA SILVA;MOPP;MOPP Elton franklin Da Silva.pdf;;2030-10-17;ok;1554;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ELTON FRANKLIN DA SILVA\MOPP Elton franklin Da Silva.pdf;S
+motoristas;EVERSON MUNIS GADONSKI;CNH;CNH EVERSON MUNIS GADONSKI.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EVERSON MUNIS GADONSKI\sem-data\CNH EVERSON MUNIS GADONSKI.pdf;S
+motoristas;EVERSON MUNIS GADONSKI;MOPP;MOPP EVERSON NUMIS.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EVERSON MUNIS GADONSKI\sem-data\MOPP EVERSON NUMIS.pdf;S
+motoristas;EVERSON MUNIS GADONSKI;NR20;NR20 EVERSON.pdf;;2025-02-10;vencido;-521;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EVERSON MUNIS GADONSKI\vencidos\NR20 EVERSON.pdf;S
+motoristas;EVERSON MUNIS GADONSKI;NR35;NR35 EVERSON.pdf;;2025-02-11;vencido;-520;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EVERSON MUNIS GADONSKI\vencidos\NR35 EVERSON.pdf;S
+motoristas;EZEQUIEL RIBEIRO;CNH;CNH-e EZEQUIEL.pdf;;2034-11-11;ok;3040;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EZEQUIEL RIBEIRO\CNH-e EZEQUIEL.pdf;S
+motoristas;EZEQUIEL RIBEIRO;MOPP;MOPP EZEQUIEL.pdf;;2023-09-08;vencido;-1042;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EZEQUIEL RIBEIRO\vencidos\MOPP EZEQUIEL.pdf;S
+motoristas;EZEQUIEL RIBEIRO;NR20;NR 20 EZEQUIEL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EZEQUIEL RIBEIRO\sem-data\NR 20 EZEQUIEL.pdf;S
+motoristas;EZEQUIEL RIBEIRO;NR35;NR 35 EZEQUIEL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\EZEQUIEL RIBEIRO\sem-data\NR 35 EZEQUIEL.pdf;S
+motoristas;FABIO MALACOSKI;CNH;CNH FABIO.pdf;;2035-10-29;ok;3392;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\FABIO MALACOSKI\CNH FABIO.pdf;S
+motoristas;FARLEY DANIEL MENDES ROCHA;CNH;CNH-e.pdf;;2034-07-31;ok;2937;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\FARLEY DANIEL MENDES ROCHA\CNH-e.pdf;S
+motoristas;HELIO GALDINO;CNH;CNH helio.pdf;;2029-11-27;ok;1230;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\HELIO GALDINO\CNH helio.pdf;S
+motoristas;HELIO GALDINO;MOPP;MOPP HELIO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\HELIO GALDINO\sem-data\MOPP HELIO.pdf;S
+motoristas;HELIO GALDINO;NR20;NR 20 HELIO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\HELIO GALDINO\sem-data\NR 20 HELIO.pdf;S
+motoristas;HELIO GALDINO;NR35;NR 35 HELIO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\HELIO GALDINO\sem-data\NR 35 HELIO.pdf;S
+motoristas;IDINEI FRANCA DE SOUZA;CNH;CNH IDINEI.pdf;;2030-08-09;ok;1485;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\IDINEI FRANCA DE SOUZA\CNH IDINEI.pdf;S
+motoristas;IDINEI FRANCA DE SOUZA;MOPP;MOPP IDINEI FRANÇA.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\IDINEI FRANCA DE SOUZA\sem-data\MOPP IDINEI FRANÇA.pdf;S
+motoristas;IDINEI FRANCA DE SOUZA;MOPP;MOPP IDINEI.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\IDINEI FRANCA DE SOUZA\sem-data\MOPP IDINEI.pdf;S
+motoristas;IDINEI FRANCA DE SOUZA;NR35;NR 35 IDINEI.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\IDINEI FRANCA DE SOUZA\sem-data\NR 35 IDINEI.pdf;S
+motoristas;IDINEI FRANCA DE SOUZA;NR20;NR20 IDINEI.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\IDINEI FRANCA DE SOUZA\sem-data\NR20 IDINEI.pdf;S
+motoristas;ISMAXON GERALDO;MOPP;CERTIFICADO MOPP ISMAXON .pdf;;2029-02-01;ok;932;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ISMAXON GERALDO\CERTIFICADO MOPP ISMAXON .pdf;N
+motoristas;ISMAXON GERALDO;CNH;CNH-e ATUALIZADA.pdf;;2033-10-10;ok;2643;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ISMAXON GERALDO\CNH-e ATUALIZADA.pdf;S
+motoristas;ISMAXON GERALDO;CNH;ISMAXON - CNH (002).pdf;;2033-10-10;ok;2643;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ISMAXON GERALDO\ISMAXON - CNH (002).pdf;S
+motoristas;JULIO ALCIONE GONÇALVES;CNH;CNH JULIO ALCIONEI.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\JULIO ALCIONE GONÇALVES\sem-data\CNH JULIO ALCIONEI.pdf;S
+motoristas;JULIO ALCIONE GONÇALVES;MOPP;MOPP JULIO ALCIONEI (2).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\JULIO ALCIONE GONÇALVES\sem-data\MOPP JULIO ALCIONEI (2).pdf;S
+motoristas;JULIO ALCIONE GONÇALVES;NR35;NR 35 JULIO.pdf;;2026-02-10;vencido;-156;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\JULIO ALCIONE GONÇALVES\vencidos\NR 35 JULIO.pdf;S
+motoristas;JULIO ALCIONE GONÇALVES;NR20;NR20 JULIO.pdf;;2026-02-09;vencido;-157;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\JULIO ALCIONE GONÇALVES\vencidos\NR20 JULIO.pdf;S
+motoristas;LAURECI FERREIRA SOARES;CNH;CNH LAURECI SOARES.pdf;;2024-07-10;vencido;-736;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LAURECI FERREIRA SOARES\vencidos\CNH LAURECI SOARES.pdf;S
+motoristas;LAURECI FERREIRA SOARES;NR20;NR20 LAURECI.pdf;;2025-02-10;vencido;-521;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LAURECI FERREIRA SOARES\vencidos\NR20 LAURECI.pdf;S
+motoristas;LAURECI FERREIRA SOARES;NR35;NR35 LAURECI.pdf;;2025-02-11;vencido;-520;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LAURECI FERREIRA SOARES\vencidos\NR35 LAURECI.pdf;S
+motoristas;LEONARDO DE OLIVEIRA LIMA;CNH;CNH   LEONARDO DE OLIVEIRA LIMA.pdf;;2021-03-30;vencido;-1934;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LEONARDO DE OLIVEIRA LIMA\vencidos\CNH   LEONARDO DE OLIVEIRA LIMA.pdf;S
+motoristas;LEONARDO DE OLIVEIRA LIMA;CNH;CNH-e.pdf leonardo .pdf;;2021-03-30;vencido;-1934;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LEONARDO DE OLIVEIRA LIMA\vencidos\CNH-e.pdf leonardo .pdf;S
+motoristas;LEONARDO DE OLIVEIRA LIMA;MOPP;MOPP - LEONARDO DE OLIVEIRA LIMA.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LEONARDO DE OLIVEIRA LIMA\sem-data\MOPP - LEONARDO DE OLIVEIRA LIMA.pdf;S
+motoristas;LORINALDO SILVA;CNH;CNH LORINALDO.pdf;;2035-04-25;ok;3205;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LORINALDO SILVA\CNH LORINALDO.pdf;S
+motoristas;LORINALDO SILVA;CNH;CNH.pdf;;2035-04-25;ok;3205;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LORINALDO SILVA\CNH.pdf;S
+motoristas;LORINALDO SILVA;MOPP;MOPP.pdf;;2025-05-07;vencido;-434;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LORINALDO SILVA\vencidos\MOPP.pdf;N
+motoristas;LUCIO SCHUARTZ;CNH;CNH LÚCIO.pdf;;2028-09-12;ok;789;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LUCIO SCHUARTZ\CNH LÚCIO.pdf;S
+motoristas;LUCIO SCHUARTZ;MOPP;MOPP LUCIO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LUCIO SCHUARTZ\sem-data\MOPP LUCIO.pdf;S
+motoristas;LUIS FERNANDO R. DE LIMA;CNH;CNH -  LUIS FERNANDO RAMALHO DE LIMA .pdf;;2035-06-12;ok;3253;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LUIS FERNANDO R. DE LIMA\CNH -  LUIS FERNANDO RAMALHO DE LIMA .pdf;S
+motoristas;LUIS FERNANDO R. DE LIMA;MOPP;mopp luis .pdf;;2025-11-02;vencido;-255;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LUIS FERNANDO R. DE LIMA\vencidos\mopp luis .pdf;N
+motoristas;LUIS FERNANDO R. DE LIMA;NR20;NR20 LUIS.pdf;;2025-05-19;vencido;-423;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LUIS FERNANDO R. DE LIMA\vencidos\NR20 LUIS.pdf;S
+motoristas;LUIS FERNANDO R. DE LIMA;NR35;NR35 LUIS.pdf;;2025-05-20;vencido;-422;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\LUIS FERNANDO R. DE LIMA\vencidos\NR35 LUIS.pdf;S
+motoristas;MAIGER LOURENÇO COSTA;CNH;Cnh maiger  .pdf;;2035-01-22;ok;3112;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MAIGER LOURENÇO COSTA\Cnh maiger  .pdf;S
+motoristas;MAIGER LOURENÇO COSTA;CNH;CNH MAIGER.pdf;;2035-01-22;ok;3112;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MAIGER LOURENÇO COSTA\CNH MAIGER.pdf;S
+motoristas;MAIGER LOURENÇO COSTA;CNH;CNH-e.pdf;;2024-11-29;vencido;-594;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MAIGER LOURENÇO COSTA\vencidos\CNH-e.pdf;S
+motoristas;MAIGER LOURENÇO COSTA;MOPP;MOPP MAIGER.pdf;;2022-04-29;vencido;-1539;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MAIGER LOURENÇO COSTA\vencidos\MOPP MAIGER.pdf;S
+motoristas;MARCIO ALBERTO MACHADO;CNH;CNH-e MARCIO.pdf;;2030-07-21;ok;1466;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MARCIO ALBERTO MACHADO\CNH-e MARCIO.pdf;S
+motoristas;MARCIO ALBERTO MACHADO;MOPP;MOPP MARCIO MACHADO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MARCIO ALBERTO MACHADO\sem-data\MOPP MARCIO MACHADO.pdf;S
+motoristas;MARCIO ALBERTO MACHADO;MOPP;mopp.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MARCIO ALBERTO MACHADO\sem-data\mopp.pdf;S
+motoristas;MARCIO ALBERTO MACHADO;NR20;NR20 MARCIO ALBERTO.pdf;;2025-02-10;vencido;-521;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MARCIO ALBERTO MACHADO\vencidos\NR20 MARCIO ALBERTO.pdf;S
+motoristas;MARCIO ALBERTO MACHADO;NR35;NR35 MARCIO ALBERTO.pdf;;2025-02-11;vencido;-520;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MARCIO ALBERTO MACHADO\vencidos\NR35 MARCIO ALBERTO.pdf;S
+motoristas;MAURO SANTOS;CNH;CNH MAURO SANTOS .pdf;;2030-08-27;ok;1503;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MAURO SANTOS\CNH MAURO SANTOS .pdf;S
+motoristas;MAURO SANTOS;CNH;CNH MAURO SANTOS.pdf;;2025-10-11;vencido;-278;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MAURO SANTOS\vencidos\CNH MAURO SANTOS.pdf;S
+motoristas;MAURO SANTOS;MOPP;MOPP MAURO SANTOS.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\MAURO SANTOS\sem-data\MOPP MAURO SANTOS.pdf;S
+motoristas;ODAIR VIEIRA;CNH;CNH ODAIR JOSE VIEIRA.pdf;;2033-03-20;ok;2439;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ODAIR VIEIRA\CNH ODAIR JOSE VIEIRA.pdf;S
+motoristas;ODAIR VIEIRA;MOPP;MOPP ODAIR JOSE VIEIRA.pdf;;2030-01-23;ok;1288;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ODAIR VIEIRA\MOPP ODAIR JOSE VIEIRA.pdf;N
+motoristas;ODAIR VIEIRA;NR20;NR20 ODAIR.pdf;;2025-01-06;vencido;-556;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ODAIR VIEIRA\vencidos\NR20 ODAIR.pdf;S
+motoristas;ODAIR VIEIRA;NR35;NR35 ODAIR.pdf;;2024-07-03;vencido;-743;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ODAIR VIEIRA\vencidos\NR35 ODAIR.pdf;S
+motoristas;REGINALDO AQUINO;CNH;CNH REGINALDO.pdf;;2031-05-25;ok;1774;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\REGINALDO AQUINO\CNH REGINALDO.pdf;S
+motoristas;REGINALDO AQUINO;MOPP;MOPP REGINALDO AQUINO.pdf;;2022-02-10;vencido;-1617;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\REGINALDO AQUINO\vencidos\MOPP REGINALDO AQUINO.pdf;S
+motoristas;REGINALDO AQUINO;NR20;NR20 REGINALDO.pdf;;2025-06-18;vencido;-393;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\REGINALDO AQUINO\vencidos\NR20 REGINALDO.pdf;S
+motoristas;REGINALDO AQUINO;NR35;NR35 REGINALDO_001.pdf;;2025-06-20;vencido;-391;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\REGINALDO AQUINO\vencidos\NR35 REGINALDO_001.pdf;S
+motoristas;ROGERIO SILVA;CNH;CNH ROGERIO SILVA.pdf;;2030-09-24;ok;1531;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ROGERIO SILVA\CNH ROGERIO SILVA.pdf;S
+motoristas;ROGERIO SILVA;CNH;CNH-e.pdf.pdf;;2030-09-24;ok;1531;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ROGERIO SILVA\CNH-e.pdf.pdf;S
+motoristas;ROGERIO SILVA;MOPP;MOPP ROGERIO.pdf;;2024-10-21;vencido;-633;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\ROGERIO SILVA\vencidos\MOPP ROGERIO.pdf;S
+motoristas;RONALDO SANTOS;CNH;CNH RONALDO SANTOS.pdf;;2032-07-25;ok;2201;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\RONALDO SANTOS\CNH RONALDO SANTOS.pdf;S
+motoristas;RONALDO SANTOS;MOPP;MOPP RONALDO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\RONALDO SANTOS\sem-data\MOPP RONALDO.pdf;S
+motoristas;VALDECIR ZORECK;CNH;CNH VALDECIR.pdf;;2031-10-21;ok;1923;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VALDECIR ZORECK\CNH VALDECIR.pdf;S
+motoristas;VALDECIR ZORECK;MOPP;MOPP VALDECIR.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VALDECIR ZORECK\sem-data\MOPP VALDECIR.pdf;S
+motoristas;VALDEREI ALELUIA;CNH;CNH - VALDEREI .pdf;;2026-04-07;vencido;-100;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VALDEREI ALELUIA\vencidos\CNH - VALDEREI .pdf;S
+motoristas;VALDEREI ALELUIA;MOPP;MOPP VALDEREI.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VALDEREI ALELUIA\sem-data\MOPP VALDEREI.pdf;S
+motoristas;VALDINEI DO CARMO ANDRADE;CNH;CNH VALDINEI DO CARMO DE ANDRADE.pdf;;2022-08-03;vencido;-1443;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VALDINEI DO CARMO ANDRADE\vencidos\CNH VALDINEI DO CARMO DE ANDRADE.pdf;S
+motoristas;VALDINEI DO CARMO ANDRADE;MOPP;MOPP VALDINEI DO CARMO DE ANDRADE.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VALDINEI DO CARMO ANDRADE\sem-data\MOPP VALDINEI DO CARMO DE ANDRADE.pdf;S
+motoristas;VALDINEI DO CARMO ANDRADE;NR20;NR20 VALDINEI.pdf;;2024-08-15;vencido;-700;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VALDINEI DO CARMO ANDRADE\vencidos\NR20 VALDINEI.pdf;S
+motoristas;VALDINEI DO CARMO ANDRADE;NR35;NR35 VALDINEI.pdf;;2024-08-16;vencido;-699;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VALDINEI DO CARMO ANDRADE\vencidos\NR35 VALDINEI.pdf;S
+motoristas;VANDERLEI TEIXEIRA;CNH;CNH VANDERLEI TEIXEIRA.pdf;;2032-12-21;ok;2350;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VANDERLEI TEIXEIRA\CNH VANDERLEI TEIXEIRA.pdf;S
+motoristas;VANDERLEI TEIXEIRA;MOPP;MOPP VANDERLEI TEIXEIRA.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VANDERLEI TEIXEIRA\sem-data\MOPP VANDERLEI TEIXEIRA.pdf;S
+motoristas;VANDERLEI TEIXEIRA;NR20;NR20 VANDERLEI.pdf;;2025-02-10;vencido;-521;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VANDERLEI TEIXEIRA\vencidos\NR20 VANDERLEI.pdf;S
+motoristas;VANDERLEI TEIXEIRA;NR35;NR35 VANDERLEI.pdf;;2025-02-11;vencido;-520;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VANDERLEI TEIXEIRA\vencidos\NR35 VANDERLEI.pdf;S
+motoristas;VANDERSON LUIZ SOARES;MOPP;MOPP VANDERSON.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VANDERSON LUIZ SOARES\sem-data\MOPP VANDERSON.pdf;S
+motoristas;VANDERSON LUIZ SOARES;NR20;NR20 VANDERSON (1).pdf;;2025-02-12;vencido;-519;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\VANDERSON LUIZ SOARES\vencidos\NR20 VANDERSON (1).pdf;S
+motoristas;WEBERSON PELIGRINI;CNH;CNH WEBERSON.pdf;;2028-06-25;ok;710;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\WEBERSON PELIGRINI\CNH WEBERSON.pdf;S
+motoristas;WEBERSON PELIGRINI;MOPP;MOPP WEBERSON (2).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Motoristas\WEBERSON PELIGRINI\sem-data\MOPP WEBERSON (2).pdf;S
+veiculos;AES9364;CRLV;CRLV AES9364.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AES9364\sem-data\CRLV AES9364.pdf;S
+veiculos;AKC4899;IPEM;AFERIÇÃO AKC4899 (2).pdf;;2026-08-06;vencendo_30d;21;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKC4899\AFERIÇÃO AKC4899 (2).pdf;S
+veiculos;AKC4899;CIPP;CIPP AKC-4899.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKC4899\sem-data\CIPP AKC-4899.pdf;S
+veiculos;AKC4899;CIPP;CIPP AKC-4899_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKC4899\sem-data\CIPP AKC-4899_PONTUAL.pdf;S
+veiculos;AKC4899;CIV;CIV AKC-4899.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKC4899\sem-data\CIV AKC-4899.pdf;S
+veiculos;AKC4899;CIV;CIV AKC-4899_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKC4899\sem-data\CIV AKC-4899_PONTUAL.pdf;S
+veiculos;AKC4899;CRLV;CRLV_akc4899 2025.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKC4899\sem-data\CRLV_akc4899 2025.pdf;S
+veiculos;AKC4899;CRLV;CRLV_akc4899.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKC4899\sem-data\CRLV_akc4899.pdf;S
+veiculos;AKD5988;IPEM;AFERIÇÃO AKC4906.pdf;;2026-06-14;vencido;-32;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5988\vencidos\AFERIÇÃO AKC4906.pdf;S
+veiculos;AKD5988;CIPP;CIPP AKC-4906.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5988\sem-data\CIPP AKC-4906.pdf;S
+veiculos;AKD5988;CIV;CIV AKD5988 (4).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5988\sem-data\CIV AKD5988 (4).pdf;S
+veiculos;AKD5988;CIV;CIV-AKC-4906-PONTUAL.pdf;;2020-03-17;vencido;-2312;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5988\vencidos\CIV-AKC-4906-PONTUAL.pdf;S
+veiculos;AKD5988;CRLV;CRLV AKD5988.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5988\sem-data\CRLV AKD5988.pdf;S
+veiculos;AKD5988;CRLV;CRLV_AKC4906.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5988\sem-data\CRLV_AKC4906.pdf;S
+veiculos;AKD5A88;IPEM;AFERIÇÃO AKC-4911.pdf;;2027-02-24;ok;223;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5A88\AFERIÇÃO AKC-4911.pdf;S
+veiculos;AKD5A88;CIPP;CIPP AKC4911.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5A88\sem-data\CIPP AKC4911.pdf;S
+veiculos;AKD5A88;CIV;CIV AKC-4911.pdf;;2026-03-02;vencido;-136;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5A88\vencidos\CIV AKC-4911.pdf;S
+veiculos;AKD5A88;CIV;CIV AKD5A88.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5A88\sem-data\CIV AKD5A88.pdf;S
+veiculos;AKD5A88;CRLV;CRLV AKC4911.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5A88\sem-data\CRLV AKC4911.pdf;S
+veiculos;AKD5A88;CRLV;CRLV AKD5A88.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\AKD5A88\sem-data\CRLV AKD5A88.pdf;S
+veiculos;BBE9588;IPEM;AFERIÇÃO AQR-9374.pdf;;2026-12-03;ok;140;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\AFERIÇÃO AQR-9374.pdf;S
+veiculos;BBE9588;IPEM;AFERIÇÃO AQR-9787.pdf;;2026-12-03;ok;140;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\AFERIÇÃO AQR-9787.pdf;S
+veiculos;BBE9588;CIPP;CIPP AQR-9374.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\sem-data\CIPP AQR-9374.pdf;S
+veiculos;BBE9588;CIPP;CIPP AQR-9387.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\sem-data\CIPP AQR-9387.pdf;S
+veiculos;BBE9588;CIV;CIV AQR-9374.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\sem-data\CIV AQR-9374.pdf;S
+veiculos;BBE9588;CIV;CIV AQR-9387.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\sem-data\CIV AQR-9387.pdf;S
+veiculos;BBE9588;CIV;CIV-BBE-9588-vec-25-03-2027 .pdf;;2026-03-25;vencido;-113;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\vencidos\CIV-BBE-9588-vec-25-03-2027 .pdf;S
+veiculos;BBE9588;CRLV;CLRV AQR-9374.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\sem-data\CLRV AQR-9374.pdf;S
+veiculos;BBE9588;CRLV;CLRV AQR-9387.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\sem-data\CLRV AQR-9387.pdf;S
+veiculos;BBE9588;OUTROS;comprovante endereco COSME.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\sem-data\comprovante endereco COSME.pdf;N
+veiculos;BBE9588;CRLV;CRLV_BBE-9588.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\sem-data\CRLV_BBE-9588.pdf;S
+veiculos;BBE9588;OUTROS;PONTUAL BBE9588_FEDERAL.pdf;;2025-12-11;vencido;-216;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\vencidos\PONTUAL BBE9588_FEDERAL.pdf;N
+veiculos;BBE9588;OUTROS;PONTUAL BRASIL BBE-9588  licença SP .pdf;;2024-07-12;vencido;-733;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\vencidos\PONTUAL BRASIL BBE-9588  licença SP .pdf;N
+veiculos;BBE9588;OUTROS;PONTUAL BRASIL BBE9588_FEDERAL.pdf;;2027-01-18;ok;187;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\PONTUAL BRASIL BBE9588_FEDERAL.pdf;N
+veiculos;BBE9588;OUTROS;PONTUAL BRASIL BBE9588_PARANA.pdf;;2025-07-14;vencido;-366;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9588\vencidos\PONTUAL BRASIL BBE9588_PARANA.pdf;N
+veiculos;BBE9593;IPEM;aferição AMX5187 (3).pdf;;2027-07-04;ok;353;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\aferição AMX5187 (3).pdf;S
+veiculos;BBE9593;IPEM;aferição AMX5192 (3).pdf;;2027-07-04;ok;353;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\aferição AMX5192 (3).pdf;S
+veiculos;BBE9593;CIPP;CIPP-A655291-AMX-5192-PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\sem-data\CIPP-A655291-AMX-5192-PONTUAL.pdf;S
+veiculos;BBE9593;CIPP;CIPP-A655292-AMX5187-PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\sem-data\CIPP-A655292-AMX5187-PONTUAL.pdf;S
+veiculos;BBE9593;CIV;CIV BBE-9593.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\sem-data\CIV BBE-9593.pdf;S
+veiculos;BBE9593;CIV;CIV-AMX-5187-PONTUAL.pdf;;2026-03-09;vencido;-129;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\vencidos\CIV-AMX-5187-PONTUAL.pdf;S
+veiculos;BBE9593;CIV;CIV-AMX-5192-PONTUAL.pdf;;2026-03-09;vencido;-129;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\vencidos\CIV-AMX-5192-PONTUAL.pdf;S
+veiculos;BBE9593;OUTROS;COMPROVANTE ENDEREÇO REGINALDO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\sem-data\COMPROVANTE ENDEREÇO REGINALDO.pdf;N
+veiculos;BBE9593;CRLV;CRLV AMX5187.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\sem-data\CRLV AMX5187.pdf;S
+veiculos;BBE9593;CRLV;CRLV AMX5192.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\sem-data\CRLV AMX5192.pdf;S
+veiculos;BBE9593;CRLV;CRLV_BBE-9593.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\sem-data\CRLV_BBE-9593.pdf;S
+veiculos;BBE9593;OUTROS;PONTUAL BBE9593_PARANA.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\sem-data\PONTUAL BBE9593_PARANA.pdf;N
+veiculos;BBE9593;LICENCA_DER;PONTUAL BRASIL BBE-9593 LICENÇA DER SÃO PAULO .pdf;;2024-07-04;vencido;-741;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\vencidos\PONTUAL BRASIL BBE-9593 LICENÇA DER SÃO PAULO .pdf;N
+veiculos;BBE9593;OUTROS;PONTUAL BRASIL BBE-9593 LICENÇA DNIT PARANA.pdf;;2025-10-06;vencido;-282;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\vencidos\PONTUAL BRASIL BBE-9593 LICENÇA DNIT PARANA.pdf;N
+veiculos;BBE9593;CIPP;PONTUAL CIPP AMX5187_2026.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\sem-data\PONTUAL CIPP AMX5187_2026.pdf;S
+veiculos;BBE9593;CIPP;PONTUAL CIPP AMX5192_2026.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9593\sem-data\PONTUAL CIPP AMX5192_2026.pdf;S
+veiculos;BBE9594;CIV;CIV BBE9594 (2).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9594\sem-data\CIV BBE9594 (2).pdf;S
+veiculos;BBE9594;CRLV;CRLV CPI3A61 PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9594\sem-data\CRLV CPI3A61 PONTUAL.pdf;S
+veiculos;BBE9594;CRLV;CRLV CPI3A61 RECIBO DIGITAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9594\sem-data\CRLV CPI3A61 RECIBO DIGITAL.pdf;S
+veiculos;BBE9594;CRLV;CRLV CPI3A62 PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9594\sem-data\CRLV CPI3A62 PONTUAL.pdf;S
+veiculos;BBE9594;CRLV;CRLV_BBE-9594.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9594\sem-data\CRLV_BBE-9594.pdf;S
+veiculos;BBE9594;OUTROS;PONTUAL BBE9588_FEDERAL.pdf;;2025-12-11;vencido;-216;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9594\vencidos\PONTUAL BBE9588_FEDERAL.pdf;N
+veiculos;BBE9594;OUTROS;PONTUAL BRASIL BBE-9588  licença SP .pdf;;2024-07-12;vencido;-733;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9594\vencidos\PONTUAL BRASIL BBE-9588  licença SP .pdf;N
+veiculos;BBE9594;OUTROS;PONTUAL_BBE9588_PARANA[2].pdf;;2025-12-16;vencido;-211;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\BBE9594\vencidos\PONTUAL_BBE9588_PARANA[2].pdf;N
+veiculos;SEF1H24;CIV;CIV SEF-1H24.pdf;;2026-01-20;vencido;-177;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H24\vencidos\CIV SEF-1H24.pdf;S
+veiculos;SEF1H24;CRLV;CRLV SEF-1H24.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H24\sem-data\CRLV SEF-1H24.pdf;S
+veiculos;SEF1H24;CRLV;CRLV_AXG6112.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H24\sem-data\CRLV_AXG6112.pdf;S
+veiculos;SEF1H25;CIV;CIV SEF1H25 (2).pdf;;2026-02-02;vencido;-164;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H25\vencidos\CIV SEF1H25 (2).pdf;S
+veiculos;SEF1H25;CRLV;CRLV_BBF2246.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H25\sem-data\CRLV_BBF2246.pdf;S
+veiculos;SEF1H25;CRLV;CRLV_SEF1H25.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H25\sem-data\CRLV_SEF1H25.pdf;S
+veiculos;SEF1H25;OUTROS;ENDERECO EZEQUIEL .pdf;;2026-03-11;vencido;-126;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H25\vencidos\ENDERECO EZEQUIEL .pdf;N
+veiculos;SEF1H27;IPEM;AFERIÇÃO AYC4942.pdf;2026-03-13;2028-03-12;ok;606;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H27\AFERIÇÃO AYC4942.pdf;N
+veiculos;SEF1H27;CIPP;CIPP AYC-4942.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H27\sem-data\CIPP AYC-4942.pdf;S
+veiculos;SEF1H27;CIV;CIV AYC-4942.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H27\sem-data\CIV AYC-4942.pdf;S
+veiculos;SEF1H27;CIV;CIV SEF-1H27.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H27\sem-data\CIV SEF-1H27.pdf;S
+veiculos;SEF1H27;OUTROS;COMPROVANTE RESIDENCIA MAURO SANTODS.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H27\sem-data\COMPROVANTE RESIDENCIA MAURO SANTODS.pdf;N
+veiculos;SEF1H27;CRLV;CRLV AYC-4942.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H27\sem-data\CRLV AYC-4942.pdf;S
+veiculos;SEF1H27;CRLV;CRLV_SEF1H27.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H27\sem-data\CRLV_SEF1H27.pdf;S
+veiculos;SEF1H28;IPEM;AFERIÇÃO ATR6572.pdf;2025-09-09;2027-07-16;ok;366;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H28\AFERIÇÃO ATR6572.pdf;N
+veiculos;SEF1H28;CIPP;CIPP ATR6572.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H28\sem-data\CIPP ATR6572.pdf;S
+veiculos;SEF1H28;CIV;CIV ATR6572.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H28\sem-data\CIV ATR6572.pdf;S
+veiculos;SEF1H28;CIV;CIV SEF1H28 (3).pdf;;2026-01-12;vencido;-185;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H28\vencidos\CIV SEF1H28 (3).pdf;S
+veiculos;SEF1H28;OUTROS;Comprovante endereço CELSO .pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H28\sem-data\Comprovante endereço CELSO .pdf;N
+veiculos;SEF1H28;CRLV;CRLV AVS9H13.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H28\sem-data\CRLV AVS9H13.pdf;S
+veiculos;SEF1H28;CRLV;CRLV_ATR6572.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H28\sem-data\CRLV_ATR6572.pdf;S
+veiculos;SEF1H28;CRLV;CRLV_SEF-1H28.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H28\sem-data\CRLV_SEF-1H28.pdf;S
+veiculos;SEF1H28;OUTROS;PONTUAL BRASIL SEF1H28_PARANA[1].pdf;;2025-07-14;vencido;-366;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H28\vencidos\PONTUAL BRASIL SEF1H28_PARANA[1].pdf;N
+veiculos;SEF1H29;IPEM;AFERIÇÃO ASI-3363-2026.pdf;2026-03-09;2028-03-03;ok;597;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H29\AFERIÇÃO ASI-3363-2026.pdf;N
+veiculos;SEF1H29;CIPP;CIPP ASI3363 (4).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H29\sem-data\CIPP ASI3363 (4).pdf;S
+veiculos;SEF1H29;CIV;CIV ASI3363 (5).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H29\sem-data\CIV ASI3363 (5).pdf;S
+veiculos;SEF1H29;CIV;CIV SEF-1H29.pdf;;2026-01-13;vencido;-184;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H29\vencidos\CIV SEF-1H29.pdf;S
+veiculos;SEF1H29;OUTROS;COMPROVANTE DE ENDEREÇO ISMAXON.pdf;2025-11-03;2025-12-16;vencido;-211;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H29\vencidos\COMPROVANTE DE ENDEREÇO ISMAXON.pdf;N
+veiculos;SEF1H29;CRLV;CRLV ASI-3363.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H29\sem-data\CRLV ASI-3363.pdf;S
+veiculos;SEF1H29;CRLV;CRLV_SEF1H29.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H29\sem-data\CRLV_SEF1H29.pdf;S
+veiculos;SEF1H29;OUTROS;ISMAXON - ENDEREÇO.pdf;2025-09-01;2025-10-16;vencido;-272;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H29\vencidos\ISMAXON - ENDEREÇO.pdf;N
+veiculos;SEF1H31;IPEM;AFERIÇÃO AVS-9H13.pdf;;2026-08-06;vencendo_30d;21;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H31\AFERIÇÃO AVS-9H13.pdf;S
+veiculos;SEF1H31;CIPP;CIPP-AVS9H13-PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H31\sem-data\CIPP-AVS9H13-PONTUAL.pdf;S
+veiculos;SEF1H31;CIV;CIV SEF1H31 (2).pdf;;2026-01-19;vencido;-178;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H31\vencidos\CIV SEF1H31 (2).pdf;S
+veiculos;SEF1H31;CIV;CIV-AVS9H13-PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H31\sem-data\CIV-AVS9H13-PONTUAL.pdf;S
+veiculos;SEF1H31;CRLV;CRLV_AVS9H13.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H31\sem-data\CRLV_AVS9H13.pdf;S
+veiculos;SEF1H31;CRLV;CRLV_SEF1H31.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H31\sem-data\CRLV_SEF1H31.pdf;S
+veiculos;SEF1H31;OUTROS;ENDERECO HELIO.pdf;;2026-01-15;vencido;-181;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H31\vencidos\ENDERECO HELIO.pdf;N
+veiculos;SEF1H32;IPEM;AFERIÇÃO  AKC4903.pdf;;2026-08-07;vencendo_30d;22;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H32\AFERIÇÃO  AKC4903.pdf;S
+veiculos;SEF1H32;CIPP;CIPP AKC4903.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H32\sem-data\CIPP AKC4903.pdf;S
+veiculos;SEF1H32;CIV;CIV AKC4903.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H32\sem-data\CIV AKC4903.pdf;S
+veiculos;SEF1H32;CIV;CIV SEF1H32 (2).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H32\sem-data\CIV SEF1H32 (2).pdf;S
+veiculos;SEF1H32;CRLV;CRLV  AKC4903.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H32\sem-data\CRLV  AKC4903.pdf;S
+veiculos;SEF1H32;CRLV;CRLV_SEF1H32.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H32\sem-data\CRLV_SEF1H32.pdf;S
+veiculos;SEF1H32;OUTROS;residencia angelo.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H32\sem-data\residencia angelo.pdf;N
+veiculos;SEF1H36;IPEM;AFERIÇÃO TBB3E69.pdf;;2027-02-12;ok;211;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H36\AFERIÇÃO TBB3E69.pdf;S
+veiculos;SEF1H36;CIPP;CIPP TBB3E69-PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H36\sem-data\CIPP TBB3E69-PONTUAL.pdf;S
+veiculos;SEF1H36;CIV;CIV SEF-1H36 (2).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H36\sem-data\CIV SEF-1H36 (2).pdf;S
+veiculos;SEF1H36;CIV;CIV TBB3E69-PONTUAL.pdf;;2026-02-10;vencido;-156;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H36\vencidos\CIV TBB3E69-PONTUAL.pdf;S
+veiculos;SEF1H36;CRLV;CRLV TBB3E69.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H36\sem-data\CRLV TBB3E69.pdf;S
+veiculos;SEF1H36;CRLV;CRLV_SEF1H36.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H36\sem-data\CRLV_SEF1H36.pdf;S
+veiculos;SEF1H36;OUTROS;endereco.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H36\sem-data\endereco.pdf;N
+veiculos;SEF1H37;IPEM;AFERIÇÃO AWA-6090.pdf;;2026-08-07;vencendo_30d;22;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H37\AFERIÇÃO AWA-6090.pdf;S
+veiculos;SEF1H37;CIPP;CIPP-AWA-6090-PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H37\sem-data\CIPP-AWA-6090-PONTUAL.pdf;S
+veiculos;SEF1H37;CIV;CIV SEF-1H37_001.pdf;;2026-01-13;vencido;-184;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H37\vencidos\CIV SEF-1H37_001.pdf;S
+veiculos;SEF1H37;CIV;CIV-AWA-6090-PONTUAL.pdf;;2026-03-09;vencido;-129;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H37\vencidos\CIV-AWA-6090-PONTUAL.pdf;S
+veiculos;SEF1H37;OUTROS;COMPROVANTE DE ENTEDEÇO ADAN.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H37\sem-data\COMPROVANTE DE ENTEDEÇO ADAN.pdf;N
+veiculos;SEF1H37;CRLV;CRLV_AWA6090.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H37\sem-data\CRLV_AWA6090.pdf;S
+veiculos;SEF1H37;CRLV;CRLV_SEF1H37.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H37\sem-data\CRLV_SEF1H37.pdf;S
+veiculos;SEF1H39;IPEM;AFERIÇÃO AWA6093 (2).pdf;;2026-08-06;vencendo_30d;21;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H39\AFERIÇÃO AWA6093 (2).pdf;S
+veiculos;SEF1H39;CIPP;CIPP AWA-6093_20260205_0001.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H39\sem-data\CIPP AWA-6093_20260205_0001.pdf;S
+veiculos;SEF1H39;CIV;CIV AWA-6093_20260205_0001.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H39\sem-data\CIV AWA-6093_20260205_0001.pdf;S
+veiculos;SEF1H39;CIV;CIV SEF-1H39.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H39\sem-data\CIV SEF-1H39.pdf;S
+veiculos;SEF1H39;CRLV;CRLV_AWA6093.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H39\sem-data\CRLV_AWA6093.pdf;S
+veiculos;SEF1H39;CRLV;CRLV_SEF1H39.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H39\sem-data\CRLV_SEF1H39.pdf;S
+veiculos;SEF1H39;OUTROS;NR01-09 EDINEY.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SEF1H39\sem-data\NR01-09 EDINEY.pdf;N
+veiculos;SES9I46;IPEM;AFERIÇÃO TBE6C64 - OK.pdf;;2027-03-18;ok;245;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I46\AFERIÇÃO TBE6C64 - OK.pdf;S
+veiculos;SES9I46;CIPP;CIPP TBE6C64 - OK.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I46\sem-data\CIPP TBE6C64 - OK.pdf;S
+veiculos;SES9I46;CIV;CIV SES-9I46 - OK.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I46\sem-data\CIV SES-9I46 - OK.pdf;S
+veiculos;SES9I46;CIV;CIV TBE6C64 -OK.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I46\sem-data\CIV TBE6C64 -OK.pdf;S
+veiculos;SES9I46;OUTROS;Comprovante Residencia Ronaldo.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I46\sem-data\Comprovante Residencia Ronaldo.pdf;N
+veiculos;SES9I46;CRLV;CRLV TBE6C64 - OK.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I46\sem-data\CRLV TBE6C64 - OK.pdf;S
+veiculos;SES9I46;CRLV;CRLV_SES- 9I46 - OK.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I46\sem-data\CRLV_SES- 9I46 - OK.pdf;S
+veiculos;SES9I57;IPEM;AFERIÇÃO AMX5193 (3).pdf;;2027-07-09;ok;358;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I57\AFERIÇÃO AMX5193 (3).pdf;S
+veiculos;SES9I57;IPEM;AFERIÇÃO AMX5199 (3).pdf;;2027-07-09;ok;358;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I57\AFERIÇÃO AMX5199 (3).pdf;S
+veiculos;SES9I57;CIPP;CIPP AMX-5193.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I57\sem-data\CIPP AMX-5193.pdf;S
+veiculos;SES9I57;CIPP;CIPP AMX-5199.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I57\sem-data\CIPP AMX-5199.pdf;S
+veiculos;SES9I57;CIV;CIV SES9I57.pdf;;2025-09-11;vencido;-308;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I57\vencidos\CIV SES9I57.pdf;S
+veiculos;SES9I57;OUTROS;COMPROVANTE DE ENDEREÇO LORINALDO.pdf;2025-11-17;2025-12-18;vencido;-209;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I57\vencidos\COMPROVANTE DE ENDEREÇO LORINALDO.pdf;N
+veiculos;SES9I57;CRLV;CRLV_AMX5193.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I57\sem-data\CRLV_AMX5193.pdf;S
+veiculos;SES9I57;CRLV;CRLV_AMX5199.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I57\sem-data\CRLV_AMX5199.pdf;S
+veiculos;SES9I57;CRLV;CRLV_SES-9I57.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I57\sem-data\CRLV_SES-9I57.pdf;S
+veiculos;SES9I57;NF_NORDICA;NORDICA 367488.pdf;2024-04-26;2025-04-26;vencido;-445;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I57\vencidos\NORDICA 367488.pdf;N
+veiculos;SES9I76;IPEM;AFERIÇÃO TBE6C67.pdf;;2027-03-18;ok;245;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I76\AFERIÇÃO TBE6C67.pdf;S
+veiculos;SES9I76;CIPP;CIPP TBE6C67.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I76\sem-data\CIPP TBE6C67.pdf;S
+veiculos;SES9I76;CIV;CIV SES-9I76.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I76\sem-data\CIV SES-9I76.pdf;S
+veiculos;SES9I76;CRLV;CRLV TBE6C67.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I76\sem-data\CRLV TBE6C67.pdf;S
+veiculos;SES9I76;CRLV;CRLV_SES-9I76.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I76\sem-data\CRLV_SES-9I76.pdf;S
+veiculos;SES9I77;IPEM;AFERIÇÃO TBE1H61.pdf;;2027-03-13;ok;240;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I77\AFERIÇÃO TBE1H61.pdf;S
+veiculos;SES9I77;CIPP;CIPP TBE1H61.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I77\sem-data\CIPP TBE1H61.pdf;S
+veiculos;SES9I77;CIV;CIV SES9I77.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I77\sem-data\CIV SES9I77.pdf;S
+veiculos;SES9I77;CIV;CIV TBE1H61.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I77\sem-data\CIV TBE1H61.pdf;S
+veiculos;SES9I77;OUTROS;COMP. ENDERECO CLAUDINOR--051.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I77\sem-data\COMP. ENDERECO CLAUDINOR--051.pdf;N
+veiculos;SES9I77;CRLV;CRLV TBE1H61.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I77\sem-data\CRLV TBE1H61.pdf;S
+veiculos;SES9I77;CRLV;CRLV_SES-9I77.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I77\sem-data\CRLV_SES-9I77.pdf;S
+veiculos;SES9I77;OUTROS;CTPP TBE1H61.pdf;;2026-01-12;vencido;-184;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I77\vencidos\CTPP TBE1H61.pdf;N
+veiculos;SES9I82;IPEM;AFERIÇÃO AMX5181.pdf;;2026-08-07;vencendo_30d;22;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\AFERIÇÃO AMX5181.pdf;S
+veiculos;SES9I82;IPEM;AFERIÇÃO AMX5183.pdf;;2026-08-07;vencendo_30d;22;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\AFERIÇÃO AMX5183.pdf;S
+veiculos;SES9I82;CIPP;CIPP AMX-5181.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\sem-data\CIPP AMX-5181.pdf;S
+veiculos;SES9I82;CIPP;CIPP AMX-5183.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\sem-data\CIPP AMX-5183.pdf;S
+veiculos;SES9I82;CIV;CIV AMX5181_2026.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\sem-data\CIV AMX5181_2026.pdf;S
+veiculos;SES9I82;CIV;CIV AMX5183_2026.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\sem-data\CIV AMX5183_2026.pdf;S
+veiculos;SES9I82;CIV;CIV SES9I82 (2).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\sem-data\CIV SES9I82 (2).pdf;S
+veiculos;SES9I82;CRLV;CRLV_AMX5181.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\sem-data\CRLV_AMX5181.pdf;S
+veiculos;SES9I82;CRLV;CRLV_AMX5183.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\sem-data\CRLV_AMX5183.pdf;S
+veiculos;SES9I82;CRLV;CRLV_SES-9I82.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\sem-data\CRLV_SES-9I82.pdf;S
+veiculos;SES9I82;OUTROS;endereco rogerio.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\sem-data\endereco rogerio.pdf;N
+veiculos;SES9I82;OUTROS;PONTUAL BRASIL SES9I82_PARANA[1].pdf;;2025-07-14;vencido;-366;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I82\vencidos\PONTUAL BRASIL SES9I82_PARANA[1].pdf;N
+veiculos;SES9I83;IPEM;AFERIÇÃO ASI-3362 -2026.pdf;2026-03-09;2028-03-05;ok;599;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I83\AFERIÇÃO ASI-3362 -2026.pdf;N
+veiculos;SES9I83;CIPP;CIPP ASI3362.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I83\sem-data\CIPP ASI3362.pdf;S
+veiculos;SES9I83;CIV;CIV ASI3362.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I83\sem-data\CIV ASI3362.pdf;S
+veiculos;SES9I83;CIV;CIV SES9I83.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I83\sem-data\CIV SES9I83.pdf;S
+veiculos;SES9I83;CRLV;CLRV ASI3362.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I83\sem-data\CLRV ASI3362.pdf;S
+veiculos;SES9I83;OUTROS;COMPROVANTE ENDEREÇO VALDECIR.pdf;2025-11-13;2025-12-16;vencido;-211;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I83\vencidos\COMPROVANTE ENDEREÇO VALDECIR.pdf;N
+veiculos;SES9I83;CRLV;CRLV_SES-9I83.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I83\sem-data\CRLV_SES-9I83.pdf;S
+veiculos;SES9I83;NF_NORDICA;NORDICA 367490.pdf;2024-04-26;2025-04-26;vencido;-445;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SES9I83\vencidos\NORDICA 367490.pdf;N
+veiculos;SFL4G35;IPEM;AFERIÇÃO AZO9539.pdf;2025-08-18;2027-07-17;ok;367;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G35\AFERIÇÃO AZO9539.pdf;N
+veiculos;SFL4G35;CIPP;CIPP AZO-9539_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G35\sem-data\CIPP AZO-9539_PONTUAL.pdf;S
+veiculos;SFL4G35;CIV;CIV AZO-9539_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G35\sem-data\CIV AZO-9539_PONTUAL.pdf;S
+veiculos;SFL4G35;CIV;CIV SFL4G35_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G35\sem-data\CIV SFL4G35_PONTUAL.pdf;S
+veiculos;SFL4G35;OUTROS;COMPROVANTE RESIDENCIA LUCIO.pdf;2025-09-26;2025-10-25;vencido;-263;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G35\vencidos\COMPROVANTE RESIDENCIA LUCIO.pdf;N
+veiculos;SFL4G35;CRLV;CRLV_AZO9539.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G35\sem-data\CRLV_AZO9539.pdf;S
+veiculos;SFL4G35;NF_NORDICA;NORDICA 367311.pdf;2024-04-24;2025-04-24;vencido;-447;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G35\vencidos\NORDICA 367311.pdf;N
+veiculos;SFL4G35;CRLV;SFL4G35-CRLV.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G35\sem-data\SFL4G35-CRLV.pdf;S
+veiculos;SFL4G37;IPEM;AFERIÇÃO AZO9538 (2).pdf;;2027-07-16;ok;365;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\AFERIÇÃO AZO9538 (2).pdf;S
+veiculos;SFL4G37;CIPP;CIPP AZO-9538_0001.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\sem-data\CIPP AZO-9538_0001.pdf;S
+veiculos;SFL4G37;CIPP;CIPP AZO9538.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\sem-data\CIPP AZO9538.pdf;S
+veiculos;SFL4G37;CIV;CIV AZO-9538_0001.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\sem-data\CIV AZO-9538_0001.pdf;S
+veiculos;SFL4G37;CIV;CIV AZO9538.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\sem-data\CIV AZO9538.pdf;S
+veiculos;SFL4G37;CIV;CIV SFL4G37.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\sem-data\CIV SFL4G37.pdf;S
+veiculos;SFL4G37;CIV;CIV SFL4G37_0001.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\sem-data\CIV SFL4G37_0001.pdf;S
+veiculos;SFL4G37;CRLV;CRLV AZO9538.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\sem-data\CRLV AZO9538.pdf;S
+veiculos;SFL4G37;OUTROS;laureci comprovante residencia.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\sem-data\laureci comprovante residencia.pdf;N
+veiculos;SFL4G37;OUTROS;MOOP LAURECI SORARES.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\sem-data\MOOP LAURECI SORARES.pdf;N
+veiculos;SFL4G37;NF_NORDICA;NORDICA 367601.pdf;2024-04-29;2025-04-29;vencido;-442;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\vencidos\NORDICA 367601.pdf;N
+veiculos;SFL4G37;CRLV;SFL4G37-CRLV.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G37\sem-data\SFL4G37-CRLV.pdf;S
+veiculos;SFL4G38;IPEM;AFERIÇÃO ATZ0445 (3).pdf;;2027-06-25;ok;344;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G38\AFERIÇÃO ATZ0445 (3).pdf;S
+veiculos;SFL4G38;IPEM;AFERIÇÃO ATZ0445.pdf;;2025-04-18;vencido;-454;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G38\vencidos\AFERIÇÃO ATZ0445.pdf;S
+veiculos;SFL4G38;CIPP;CIPP]ATZ-0445-PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G38\sem-data\CIPP]ATZ-0445-PONTUAL.pdf;S
+veiculos;SFL4G38;CIV;CIV ATZ-0445-PONTUAL.pdf;;2026-03-23;vencido;-115;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G38\vencidos\CIV ATZ-0445-PONTUAL.pdf;S
+veiculos;SFL4G38;CIV;CIV SFL4G38_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G38\sem-data\CIV SFL4G38_PONTUAL.pdf;S
+veiculos;SFL4G38;OUTROS;COMPROVANTE DE ENDEREÇO VALDEREI.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G38\sem-data\COMPROVANTE DE ENDEREÇO VALDEREI.pdf;N
+veiculos;SFL4G38;CRLV;CRLV_ATZ0445.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G38\sem-data\CRLV_ATZ0445.pdf;S
+veiculos;SFL4G38;NF_NORDICA;NORDICA 367602.pdf;2024-04-29;2025-04-29;vencido;-442;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G38\vencidos\NORDICA 367602.pdf;N
+veiculos;SFL4G38;CRLV;SFL4G38-CRLV.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G38\sem-data\SFL4G38-CRLV.pdf;S
+veiculos;SFL4G39;IPEM;AFERIÇÃO ATR7723 (2).pdf;;2027-07-10;ok;359;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\AFERIÇÃO ATR7723 (2).pdf;S
+veiculos;SFL4G39;CIPP;CIPP ATR-7723_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\sem-data\CIPP ATR-7723_PONTUAL.pdf;S
+veiculos;SFL4G39;CIV;CIV ATR-7723_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\sem-data\CIV ATR-7723_PONTUAL.pdf;S
+veiculos;SFL4G39;CIV;CIV SFL4G39_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\sem-data\CIV SFL4G39_PONTUAL.pdf;S
+veiculos;SFL4G39;CRLV;CLRV ATR7723 2025.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\sem-data\CLRV ATR7723 2025.pdf;S
+veiculos;SFL4G39;CRLV;CLRV ATR7723 2026.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\sem-data\CLRV ATR7723 2026.pdf;S
+veiculos;SFL4G39;OUTROS;COMPROVANTE DE ENDEREÇO WEBERSON.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\sem-data\COMPROVANTE DE ENDEREÇO WEBERSON.pdf;N
+veiculos;SFL4G39;CRLV;CRLV SFL4G39.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\sem-data\CRLV SFL4G39.pdf;S
+veiculos;SFL4G39;OUTROS;ENDEREÇO WEBERSON.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\sem-data\ENDEREÇO WEBERSON.pdf;N
+veiculos;SFL4G39;OUTROS;N20 WEBERSON.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\sem-data\N20 WEBERSON.pdf;N
+veiculos;SFL4G39;OUTROS;N35 WEBERSON.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\sem-data\N35 WEBERSON.pdf;N
+veiculos;SFL4G39;NF_NORDICA;NORDICA 367604.pdf;2024-04-29;2025-04-29;vencido;-442;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G39\vencidos\NORDICA 367604.pdf;N
+veiculos;SFL4G42;IPEM;AFERIÇÃO ATZ0E42 (2).pdf;;2027-06-23;ok;342;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G42\AFERIÇÃO ATZ0E42 (2).pdf;S
+veiculos;SFL4G42;CIPP;CIPP ATZ0E42.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G42\sem-data\CIPP ATZ0E42.pdf;S
+veiculos;SFL4G42;CIV;CIV ATZ0E42.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G42\sem-data\CIV ATZ0E42.pdf;S
+veiculos;SFL4G42;CIV;CIV SFL4G42_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G42\sem-data\CIV SFL4G42_PONTUAL.pdf;S
+veiculos;SFL4G42;CRLV;CLRV SFL4G42.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G42\sem-data\CLRV SFL4G42.pdf;S
+veiculos;SFL4G42;CRLV;CRLV_ATZ0E42.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G42\sem-data\CRLV_ATZ0E42.pdf;S
+veiculos;SFL4G42;NF_NORDICA;NORDICA 367603.pdf;2024-04-29;2025-04-29;vencido;-442;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G42\vencidos\NORDICA 367603.pdf;N
+veiculos;SFL4G42;OUTROS;residencia Julio.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G42\sem-data\residencia Julio.pdf;N
+veiculos;SFL4G43;IPEM;AFERIÇÃO TBB-9D65.pdf;;2027-02-18;ok;217;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G43\AFERIÇÃO TBB-9D65.pdf;S
+veiculos;SFL4G43;CIPP;CIPP TBB9D65 PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G43\sem-data\CIPP TBB9D65 PONTUAL.pdf;S
+veiculos;SFL4G43;CIV;CIV SFL4G43-PONTUAL.pdf;;2026-02-23;vencido;-143;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G43\vencidos\CIV SFL4G43-PONTUAL.pdf;S
+veiculos;SFL4G43;CIV;CIV TBB9D65 PONTUAL.pdf;;2026-02-23;vencido;-143;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G43\vencidos\CIV TBB9D65 PONTUAL.pdf;S
+veiculos;SFL4G43;OUTROS;COMPROVANTE ENDEREÇO EDSON.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G43\sem-data\COMPROVANTE ENDEREÇO EDSON.pdf;N
+veiculos;SFL4G43;CRLV;CRLV TBB9D65.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G43\sem-data\CRLV TBB9D65.pdf;S
+veiculos;SFL4G43;NF_NORDICA;NORDICA 367797.pdf;2024-04-30;2025-04-30;vencido;-441;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G43\vencidos\NORDICA 367797.pdf;N
+veiculos;SFL4G43;OUTROS;NR - 35.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G43\sem-data\NR - 35.pdf;N
+veiculos;SFL4G43;OUTROS;NR -20.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G43\sem-data\NR -20.pdf;N
+veiculos;SFL4G43;CRLV;SFL4G43-CRLV.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G43\sem-data\SFL4G43-CRLV.pdf;S
+veiculos;SFL4G49;IPEM;AFERIÇÃO ATZ1243 (2).pdf;;2027-06-25;ok;344;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G49\AFERIÇÃO ATZ1243 (2).pdf;S
+veiculos;SFL4G49;CIPP;CIPP ATZ-1243 PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G49\sem-data\CIPP ATZ-1243 PONTUAL.pdf;S
+veiculos;SFL4G49;CIV;CIV ATZ-1243 PONTUAL.pdf;;2026-02-23;vencido;-143;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G49\vencidos\CIV ATZ-1243 PONTUAL.pdf;S
+veiculos;SFL4G49;CIV;CIV SFL4G49_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G49\sem-data\CIV SFL4G49_PONTUAL.pdf;S
+veiculos;SFL4G49;CRLV;CLRV SFL4G49.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G49\sem-data\CLRV SFL4G49.pdf;S
+veiculos;SFL4G49;OUTROS;COMPROVANTE RESIDENCIA IDINEI.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G49\sem-data\COMPROVANTE RESIDENCIA IDINEI.pdf;N
+veiculos;SFL4G49;CRLV;CRLV_ATZ1243.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G49\sem-data\CRLV_ATZ1243.pdf;S
+veiculos;SFL4G49;NF_NORDICA;NORDICA 367599.pdf;2024-04-29;2025-04-29;vencido;-442;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G49\vencidos\NORDICA 367599.pdf;N
+veiculos;SFL4G51;IPEM;AFERIÇÃO ATR7I52.pdf;;2027-06-05;ok;324;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G51\AFERIÇÃO ATR7I52.pdf;S
+veiculos;SFL4G51;CIPP;CIPP ATR7I52_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G51\sem-data\CIPP ATR7I52_PONTUAL.pdf;S
+veiculos;SFL4G51;CIV;CIV ATR7I52_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G51\sem-data\CIV ATR7I52_PONTUAL.pdf;S
+veiculos;SFL4G51;CIV;CIV SFL4G51_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G51\sem-data\CIV SFL4G51_PONTUAL.pdf;S
+veiculos;SFL4G51;OUTROS;COMPROVANTE DE ENDEREÇO AGADIR.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G51\sem-data\COMPROVANTE DE ENDEREÇO AGADIR.pdf;N
+veiculos;SFL4G51;OUTROS;COMPROVANTE RESIDENCIA AGADIR (3).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G51\sem-data\COMPROVANTE RESIDENCIA AGADIR (3).pdf;N
+veiculos;SFL4G51;CRLV;CRLV_ATR7I52.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G51\sem-data\CRLV_ATR7I52.pdf;S
+veiculos;SFL4G51;NF_NORDICA;NORDICA 367493.pdf;2024-04-26;2025-04-26;vencido;-445;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G51\vencidos\NORDICA 367493.pdf;N
+veiculos;SFL4G51;CRLV;SFL4G51-CRLV.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G51\sem-data\SFL4G51-CRLV.pdf;S
+veiculos;SFL4G80;IPEM;AFERIÇÃO RHR-4E11.pdf;;2027-02-19;ok;218;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G80\AFERIÇÃO RHR-4E11.pdf;S
+veiculos;SFL4G80;CIPP;CIPP RHR4E11.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G80\sem-data\CIPP RHR4E11.pdf;S
+veiculos;SFL4G80;CIV;CIV RHR4E11.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G80\sem-data\CIV RHR4E11.pdf;S
+veiculos;SFL4G80;CIV;CIV SFL4G80.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G80\sem-data\CIV SFL4G80.pdf;S
+veiculos;SFL4G80;OUTROS;Comprovamte Residencia  VALDINEI DO CARMO DE ANDRADE.pdf;;2025-11-25;vencido;-232;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G80\vencidos\Comprovamte Residencia  VALDINEI DO CARMO DE ANDRADE.pdf;N
+veiculos;SFL4G80;CRLV;CRLV RHR-4E11.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G80\sem-data\CRLV RHR-4E11.pdf;S
+veiculos;SFL4G80;NF_NORDICA;NORDICA 367489.pdf;2024-04-26;2025-04-26;vencido;-445;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G80\vencidos\NORDICA 367489.pdf;N
+veiculos;SFL4G80;CRLV;SFL4G80-CRLV.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G80\sem-data\SFL4G80-CRLV.pdf;S
+veiculos;SFL4G83;IPEM;AFERIÇÃO ATZ1236.pdf;2025-09-09;2027-06-04;ok;324;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G83\AFERIÇÃO ATZ1236.pdf;N
+veiculos;SFL4G83;CIPP;CIPP ATZ1236_2026 (1).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G83\sem-data\CIPP ATZ1236_2026 (1).pdf;S
+veiculos;SFL4G83;CIV;CIV ATZ1236_2026.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G83\sem-data\CIV ATZ1236_2026.pdf;S
+veiculos;SFL4G83;CIV;CIV SFL4G83.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G83\sem-data\CIV SFL4G83.pdf;S
+veiculos;SFL4G83;OUTROS;COMPROVANTE RESIDENCIA VANDERSON (2).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G83\sem-data\COMPROVANTE RESIDENCIA VANDERSON (2).pdf;N
+veiculos;SFL4G83;OUTROS;comprovante residencia vanderson soares.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G83\sem-data\comprovante residencia vanderson soares.pdf;N
+veiculos;SFL4G83;CRLV;CRLV_ATZ1236.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G83\sem-data\CRLV_ATZ1236.pdf;S
+veiculos;SFL4G83;NF_NORDICA;NORDICA 367492.pdf;2024-04-26;2025-04-26;vencido;-445;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G83\vencidos\NORDICA 367492.pdf;N
+veiculos;SFL4G83;OUTROS;NR_35_VANDERSON 01.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G83\sem-data\NR_35_VANDERSON 01.pdf;N
+veiculos;SFL4G83;CRLV;SFL4G83-CRLV.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G83\sem-data\SFL4G83-CRLV.pdf;S
+veiculos;SFL4G85;IPEM;AFERIÇÃO TBC6F27.pdf;;2027-02-25;ok;224;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G85\AFERIÇÃO TBC6F27.pdf;S
+veiculos;SFL4G85;CIPP;CIPP TBC6F27.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G85\sem-data\CIPP TBC6F27.pdf;S
+veiculos;SFL4G85;CIV;CIV SFL4G85.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G85\sem-data\CIV SFL4G85.pdf;S
+veiculos;SFL4G85;CIV;CIV TBC6F27.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G85\sem-data\CIV TBC6F27.pdf;S
+veiculos;SFL4G85;OUTROS;COMPROVANTE RESIDENCIA MARCIO (2).pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G85\sem-data\COMPROVANTE RESIDENCIA MARCIO (2).pdf;N
+veiculos;SFL4G85;OUTROS;COMPROVANTE RESIDENCIA MARCIO MACHADO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G85\sem-data\COMPROVANTE RESIDENCIA MARCIO MACHADO.pdf;N
+veiculos;SFL4G85;CRLV;CRLV TBC6F27.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G85\sem-data\CRLV TBC6F27.pdf;S
+veiculos;SFL4G85;OUTROS;MOOP MARCIO ALBERTO DE BARROS MACHADO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G85\sem-data\MOOP MARCIO ALBERTO DE BARROS MACHADO.pdf;N
+veiculos;SFL4G85;NF_NORDICA;NORDICA 367495.pdf;2024-04-26;2025-04-26;vencido;-445;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G85\vencidos\NORDICA 367495.pdf;N
+veiculos;SFL4G85;CRLV;SFL4G85-CRLV.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G85\sem-data\SFL4G85-CRLV.pdf;S
+veiculos;SFL4G86;IPEM;AFERIÇÃO TBF7J71.pdf;;2027-03-27;ok;254;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G86\AFERIÇÃO TBF7J71.pdf;S
+veiculos;SFL4G86;OUTROS;ATPV  TBF7J71.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G86\sem-data\ATPV  TBF7J71.pdf;N
+veiculos;SFL4G86;CIPP;CIPP TBF7J71.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G86\sem-data\CIPP TBF7J71.pdf;S
+veiculos;SFL4G86;CIV;CIV SFL4G86.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G86\sem-data\CIV SFL4G86.pdf;S
+veiculos;SFL4G86;CIV;CIV TBF7J71.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G86\sem-data\CIV TBF7J71.pdf;S
+veiculos;SFL4G86;CIV;CIV-SFL4G86 .pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G86\sem-data\CIV-SFL4G86 .pdf;S
+veiculos;SFL4G86;OUTROS;Comprovante Residencia Vanderlei .pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G86\sem-data\Comprovante Residencia Vanderlei .pdf;N
+veiculos;SFL4G86;CRLV;CRLV TBF7J71.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G86\sem-data\CRLV TBF7J71.pdf;S
+veiculos;SFL4G86;NF_NORDICA;NORDICA 367488.pdf;2024-04-26;2025-04-26;vencido;-445;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G86\vencidos\NORDICA 367488.pdf;N
+veiculos;SFL4G86;CRLV;SFL4G86-CRLV.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G86\sem-data\SFL4G86-CRLV.pdf;S
+veiculos;SFL4G87;OUTROS;19024 - PONTUAL BRASIL TBE-1H59.pdf;;2025-03-14;vencido;-488;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G87\vencidos\19024 - PONTUAL BRASIL TBE-1H59.pdf;N
+veiculos;SFL4G87;IPEM;AFERIÇÃO  TBE1H59.pdf;;2027-03-16;ok;243;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G87\AFERIÇÃO  TBE1H59.pdf;S
+veiculos;SFL4G87;CIPP;CIPP-TBE1H59-PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G87\sem-data\CIPP-TBE1H59-PONTUAL.pdf;S
+veiculos;SFL4G87;CIV;CIV--SFL4G87-PONTUAL.pdf;;2026-03-17;vencido;-121;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G87\vencidos\CIV--SFL4G87-PONTUAL.pdf;S
+veiculos;SFL4G87;CIV;CIV-TBE1H59-PONTUAL.pdf;;2026-03-17;vencido;-121;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G87\vencidos\CIV-TBE1H59-PONTUAL.pdf;S
+veiculos;SFL4G87;OUTROS;COMPROVANTE RESIDENCIA ELTON .pdf;2025-11-12;2025-12-10;vencido;-217;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G87\vencidos\COMPROVANTE RESIDENCIA ELTON .pdf;N
+veiculos;SFL4G87;NF_NORDICA;NORDICA 367494.pdf;2024-04-26;2025-04-26;vencido;-445;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G87\vencidos\NORDICA 367494.pdf;N
+veiculos;SFL4G87;CRLV;SFL4G87-CRLV.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G87\sem-data\SFL4G87-CRLV.pdf;S
+veiculos;SFL4G89;IPEM;AFERIÇÃO AYC-4924.pdf;;2028-02-06;ok;570;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G89\AFERIÇÃO AYC-4924.pdf;S
+veiculos;SFL4G89;CIPP;CIPP AYC-4924.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G89\sem-data\CIPP AYC-4924.pdf;S
+veiculos;SFL4G89;CIV;CIV AYC-4924.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G89\sem-data\CIV AYC-4924.pdf;S
+veiculos;SFL4G89;CIV;CIV SFL4G89_PONTUAL.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G89\sem-data\CIV SFL4G89_PONTUAL.pdf;S
+veiculos;SFL4G89;CRLV;CRLV AYC4924.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G89\sem-data\CRLV AYC4924.pdf;S
+veiculos;SFL4G89;CRLV;CRLV SFL4G89.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G89\sem-data\CRLV SFL4G89.pdf;S
+veiculos;SFL4G89;OUTROS;ENDEREÇO ELIAZER.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G89\sem-data\ENDEREÇO ELIAZER.pdf;N
+veiculos;SFL4G89;NF_NORDICA;NORDICA 367598.pdf;2024-04-29;2025-04-29;vencido;-442;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G89\vencidos\NORDICA 367598.pdf;N
+veiculos;SFL4G89;OUTROS;RESIDENCIA ELIAZER --052.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G89\sem-data\RESIDENCIA ELIAZER --052.pdf;N
+veiculos;SFL4G90;IPEM;AFERIÇÃO TBD-0F10.pdf;;2027-02-27;ok;226;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G90\AFERIÇÃO TBD-0F10.pdf;S
+veiculos;SFL4G90;CIPP;CIPP TBD0F10.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G90\sem-data\CIPP TBD0F10.pdf;S
+veiculos;SFL4G90;CIV;CIV SFL-4G90 2026.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G90\sem-data\CIV SFL-4G90 2026.pdf;S
+veiculos;SFL4G90;CIV;CIV TBD0F10.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G90\sem-data\CIV TBD0F10.pdf;S
+veiculos;SFL4G90;OUTROS;Comprovante residencia Everson .pdf;2025-11-10;2025-12-10;vencido;-217;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G90\vencidos\Comprovante residencia Everson .pdf;N
+veiculos;SFL4G90;OUTROS;comprovante residencia Leonardo .pdf;;2026-01-01;vencido;-195;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G90\vencidos\comprovante residencia Leonardo .pdf;N
+veiculos;SFL4G90;CRLV;CRLV TBD0F10.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G90\sem-data\CRLV TBD0F10.pdf;S
+veiculos;SFL4G90;OUTROS;endereco leonardo .pdf;;2026-01-01;vencido;-195;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G90\vencidos\endereco leonardo .pdf;N
+veiculos;SFL4G90;OUTROS;PONTUAL SES9I83 DNIT.pdf;;2025-08-19;vencido;-330;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G90\vencidos\PONTUAL SES9I83 DNIT.pdf;N
+veiculos;SFL4G90;OUTROS;PONTUAL SES9I83_PARANA.pdf;;2025-09-19;vencido;-299;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G90\vencidos\PONTUAL SES9I83_PARANA.pdf;N
+veiculos;SFL4G90;CRLV;SFL4G90-CRLV.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\SFL4G90\sem-data\SFL4G90-CRLV.pdf;S
+veiculos;TBX5H14;IPEM;afericao tacografo TBX5H14.pdf;2025-10-09;2027-09-25;ok;437;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\afericao tacografo TBX5H14.pdf;N
+veiculos;TBX5H14;IPEM;AFERIÇÃO AKH2258.pdf;;2027-06-02;ok;321;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\AFERIÇÃO AKH2258.pdf;S
+veiculos;TBX5H14;IPEM;AFERIÇÃO APE2305.pdf;;2027-06-02;ok;321;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\AFERIÇÃO APE2305.pdf;S
+veiculos;TBX5H14;CIPP;CIPP AKH-2258.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\sem-data\CIPP AKH-2258.pdf;S
+veiculos;TBX5H14;CIPP;CIPP APE-2305.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\sem-data\CIPP APE-2305.pdf;S
+veiculos;TBX5H14;CIV;CIV AKH-2258.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\sem-data\CIV AKH-2258.pdf;S
+veiculos;TBX5H14;CIV;CIV APE-2305_001.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\sem-data\CIV APE-2305_001.pdf;S
+veiculos;TBX5H14;OUTROS;COMPROVANTE DE ENDEREÇO FÁBIO.pdf;;2025-12-09;vencido;-218;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\vencidos\COMPROVANTE DE ENDEREÇO FÁBIO.pdf;N
+veiculos;TBX5H14;CRLV;CRLV AKH-2258.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\sem-data\CRLV AKH-2258.pdf;S
+veiculos;TBX5H14;CRLV;CRLV APE-2305.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\sem-data\CRLV APE-2305.pdf;S
+veiculos;TBX5H14;CRLV;CRLV TBX5H14.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\sem-data\CRLV TBX5H14.pdf;S
+veiculos;TBX5H14;OUTROS;PONTUAL BRASIL TBX5H14_FEDERAL DNIT 2026.pdf;;2027-04-28;ok;287;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\PONTUAL BRASIL TBX5H14_FEDERAL DNIT 2026.pdf;N
+veiculos;TBX5H14;OUTROS;PONTUAL BRASIL TBX5H14_PARANA CANA 2026.pdf;;2025-07-14;vencido;-366;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\vencidos\PONTUAL BRASIL TBX5H14_PARANA CANA 2026.pdf;N
+veiculos;TBX5H14;OUTROS;RECIBO TBX5H14.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H14\sem-data\RECIBO TBX5H14.pdf;N
+veiculos;TBX5H17;IPEM;AFERIÇÃO AAK-7A44.pdf;;2028-02-06;ok;570;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\AFERIÇÃO AAK-7A44.pdf;S
+veiculos;TBX5H17;IPEM;AFERIÇÃO APE-2C98.pdf;;2028-02-06;ok;570;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\AFERIÇÃO APE-2C98.pdf;S
+veiculos;TBX5H17;CIPP;CIPP AAK7A44.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\sem-data\CIPP AAK7A44.pdf;S
+veiculos;TBX5H17;CIPP;CIPP-APE2C98.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\sem-data\CIPP-APE2C98.pdf;S
+veiculos;TBX5H17;CIV;CIV  APE2C98.pdf;;2026-01-20;vencido;-177;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\vencidos\CIV  APE2C98.pdf;S
+veiculos;TBX5H17;CIV;CIV AAK7A44.pdf;;2026-01-20;vencido;-177;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\vencidos\CIV AAK7A44.pdf;S
+veiculos;TBX5H17;CRLV;CRLV AKD5988.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\sem-data\CRLV AKD5988.pdf;S
+veiculos;TBX5H17;CRLV;CRLV TBX5H17.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\sem-data\CRLV TBX5H17.pdf;S
+veiculos;TBX5H17;CRLV;CRLV_ AAK-7A44.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\sem-data\CRLV_ AAK-7A44.pdf;S
+veiculos;TBX5H17;CRLV;CRLV_ APE-2C98.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\sem-data\CRLV_ APE-2C98.pdf;S
+veiculos;TBX5H17;OUTROS;PONTUAL TBX5H17 (CANA)_PARANA[1].pdf;;2025-07-14;vencido;-366;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\vencidos\PONTUAL TBX5H17 (CANA)_PARANA[1].pdf;N
+veiculos;TBX5H17;OUTROS;PONTUAL TBX5H17_FEDERAL.pdf;;2026-09-25;vencendo_90d;72;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\PONTUAL TBX5H17_FEDERAL.pdf;N
+veiculos;TBX5H17;OUTROS;RECIBO  TBX5H17.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Veiculos\TBX5H17\sem-data\RECIBO  TBX5H17.pdf;N
+desligados;ADILSON FRAGOZO;CNH;CNH ADILSON RIBEIRO FRAGOSO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Desligados\ADILSON FRAGOZO\sem-data\CNH ADILSON RIBEIRO FRAGOSO.pdf;S
+desligados;ADILSON FRAGOZO;CNH;cnh adilson.pdf;;2028-05-05;ok;659;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Desligados\ADILSON FRAGOZO\cnh adilson.pdf;S
+desligados;ADILSON FRAGOZO;MOPP;MOPP ADILSON FRAGOZO.pdf;;;sem_data;;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Desligados\ADILSON FRAGOZO\sem-data\MOPP ADILSON FRAGOZO.pdf;S
+desligados;GUSTAVO DOMINGUES;CNH;CNH GUSTAVO.pdf;;2032-02-03;ok;2028;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Desligados\GUSTAVO DOMINGUES\CNH GUSTAVO.pdf;S
+desligados;GUSTAVO DOMINGUES;CNH;CNH-e.pdf;;2032-02-03;ok;2028;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Desligados\GUSTAVO DOMINGUES\CNH-e.pdf;S
+desligados;GUSTAVO DOMINGUES;MOPP;EAD Cursos de Trânsito  MOPP.pdf;;2025-09-04;vencido;-314;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Desligados\GUSTAVO DOMINGUES\vencidos\EAD Cursos de Trânsito  MOPP.pdf;N
+desligados;GUSTAVO DOMINGUES;CNH;GUSTAVO - CNH.pdf;;2032-02-03;ok;2028;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Desligados\GUSTAVO DOMINGUES\GUSTAVO - CNH.pdf;S
+desligados;GUSTAVO DOMINGUES;MOPP;GUSTAVO - MOPP.pdf;;2025-09-04;vencido;-314;C:/Users/Logistica01/projetos/logistica-ia/arquivo/frota-pontual/Desligados\GUSTAVO DOMINGUES\vencidos\GUSTAVO - MOPP.pdf;N

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, doc, setDoc, getDocs, deleteDoc } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { list as gdsList, save as gdsSave, remove as gdsRemove } from "../services/genericDataSource";
 import { useAuth } from "../contexts/AuthContext";
 import ModuleHeader from "../components/ModuleHeader";
 import { VEICULOS_IMPORT, MOTORISTAS_IMPORT, MANUTENCOES_IMPORT } from "../data/dadosFrota";
@@ -51,10 +50,9 @@ export default function ImportAdmin() {
   // ── Importar Veículos ────────────────────────────────────────────────────
   async function importarVeiculos() {
     addLog("Importando veículos (chassi, renavam, tara, etc.)...", "info");
-    const snap = await getDocs(collection(db, "veiculos"));
+    const rows = await gdsList("veiculos");
     const existentes = {};
-    // Indexa por placa normalizada para evitar mismatch de formato (ex: "AKD5988" vs "AKD-5988")
-    snap.docs.forEach(d => { existentes[normPlaca(d.data().placa || d.id)] = d.id; });
+    rows.forEach(d => { existentes[normPlaca(d.placa || d.id)] = d.id; });
 
     let atualizados = 0, novos = 0;
 
@@ -79,11 +77,11 @@ export default function ImportAdmin() {
 
       const docIdExistente = existentes[normPlaca(placa)];
       if (docIdExistente) {
-        await setDoc(doc(db, "veiculos", docIdExistente), extra, { merge: true });
+        await gdsSave("veiculos", docIdExistente, extra);
         atualizados++;
       } else {
         const newId = normPlaca(placa);
-        await setDoc(doc(db, "veiculos", newId), {
+        await gdsSave("veiculos", newId, {
           placa: normPlaca(placa),
           status:    "ativo",
           fabricante: v.marca || "",
@@ -100,7 +98,7 @@ export default function ImportAdmin() {
         if (!cRaw) continue;
         const cId = normPlaca(cRaw);
         const [ano_fab = null, ano_mod = null] = (carreta.ano || "").split("/");
-        await setDoc(doc(db, "veiculos", cId), {
+        await gdsSave("veiculos", cId, {
           placa:    cId,
           tipo:     "carreta",
           chassi:   carreta.chassi   || null,
@@ -109,7 +107,7 @@ export default function ImportAdmin() {
           ano_fab:  ano_fab          || null,
           ano_mod:  ano_mod || ano_fab || null,
           updatedAt: new Date().toISOString(),
-        }, { merge: true });
+        });
       }
     }
     addLog(`Veículos: ${atualizados} atualizados, ${novos} criados.`, "ok");
@@ -118,9 +116,9 @@ export default function ImportAdmin() {
   // ── Importar Motoristas ──────────────────────────────────────────────────
   async function importarMotoristas() {
     addLog("Importando motoristas (CPF, telefone, nº frota)...", "info");
-    const snap = await getDocs(collection(db, "motoristas"));
+    const rows = await gdsList("motoristas");
     const existentes = {};
-    snap.docs.forEach(d => { existentes[d.data().nome?.toUpperCase().trim()] = d.id; });
+    rows.forEach(d => { existentes[d.nome?.toUpperCase().trim()] = d.id; });
 
     let atualizados = 0, novos = 0;
 
@@ -137,11 +135,11 @@ export default function ImportAdmin() {
       };
 
       if (existentes[nome]) {
-        await setDoc(doc(db, "motoristas", existentes[nome]), extra, { merge: true });
+        await gdsSave("motoristas", existentes[nome], extra);
         atualizados++;
       } else {
         const id = toId(nome);
-        await setDoc(doc(db, "motoristas", id), {
+        await gdsSave("motoristas", id, {
           nome,
           cnh: m.renavam_cnh || "",
           cat: "E",
@@ -199,7 +197,7 @@ export default function ImportAdmin() {
         };
       }
 
-      await setDoc(doc(db, "manutencoes", docId), payload, { merge: true });
+      await gdsSave("manutencoes", docId, payload);
       salvos++;
     }
     addLog(`Manutenções: ${salvos} registros importados.`, "ok");
@@ -213,7 +211,7 @@ export default function ImportAdmin() {
       if (!m.venc) continue;
       const { _docId, ...payload } = m;
       if (!_docId) continue;
-      await setDoc(doc(db, "manutencoes", _docId), { ...payload, updatedAt: new Date().toISOString() }, { merge: true });
+      await gdsSave("manutencoes", _docId, { ...payload, updatedAt: new Date().toISOString() });
       salvos++;
     }
     addLog(`Manutenções extra: ${salvos} registros importados.`, "ok");
@@ -243,7 +241,7 @@ export default function ImportAdmin() {
     let removidos = 0, naoEncontrados = 0;
     for (const id of IDS_INVALIDOS) {
       try {
-        await deleteDoc(doc(db, "veiculos", id));
+        await gdsRemove("veiculos", id);
         addLog(`Removido: ${id}`, "ok");
         removidos++;
       } catch {

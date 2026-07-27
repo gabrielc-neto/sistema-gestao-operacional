@@ -1,0 +1,58 @@
+{
+  "name": "Pontual Logística — Gestão Operacional",
+  "short_name": "Pontual",
+  "description": "Sistema de gestão de frota, manutenção, OS, vistorias e KPIs da Pontual Logística.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a3a5c",
+  "theme_color": "#1a3a5c",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/pontual-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pontual-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pontual-logo-white.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova vistoria",
+      "short_name": "Vistoria",
+      "url": "/manutencao?aba=vistoria",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Rastreamento",
+      "short_name": "Mapa",
+      "url": "/rastreamento",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "OS aberta",
+      "short_name": "OS",
+      "url": "/manutencao?aba=os",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ]
+}

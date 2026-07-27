@@ -80,3 +80,12 @@ Outros achados: `obterMotoristasVeiculos` bloqueado (pedir liberação à SASCAR
 Wesley diz "voltei da SASCAR" → revisar respostas, atualizar este doc, decidir caminho A/B/C de [[project_jornada_motorista_plano]].
 
 Relacionado: [[project_jornada_motorista_plano]], [[project_motorista_caminhao_pontual]], [[reference_sascar_api]]
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

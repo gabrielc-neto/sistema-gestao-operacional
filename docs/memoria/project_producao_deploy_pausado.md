@@ -89,3 +89,12 @@ Conta esperada: **R$ 0,00/mês**. Configurar alerta de orçamento em R$ 10 no Co
 - Email super admin: silvasampaiowesley03@gmail.com (o usuário (Wesley))
 
 Memórias relacionadas: [[project-estado-atual]], [[project-rastreamento-sascar-fase2]], [[project-logistica-ia]]
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **cta**: [[feedback-windows-file-watcher]] · [[project_estado_atual]] · [[project_levantamento_logistica]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **rbac**: [[feedback_sem_permissao]] · [[project-logistica-ia-frontend]] · [[project_apresentacao_mensal]]

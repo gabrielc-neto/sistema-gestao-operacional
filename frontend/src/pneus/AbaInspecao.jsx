@@ -1,0 +1,825 @@
+import { useState, useEffect, useMemo } from "react";
+import { collection, getDocs, addDoc, updateDoc, doc, query, orderBy } from "firebase/firestore";
+import { db } from "../firebase/config";
+import { ESQUEMAS, sugerirEsquema } from "./esquemas";
+import { Check, X, Save, Pen, FileDown, Eye } from "lucide-react";
+import { baixarPdfInspecao, visualizarPdfInspecao } from "../utils/pdfInspecao";
+import { usuarioPontual } from "../utils/format";
+import { list as dsList, insert as dsInsert, patch as dsPatch } from "../services/genericDataSource";
+import { listVeiculos } from "../services/frotaDataSource";
+
+const CHECKLIST_ITENS = [
+  "Alinhamento",
+  "Balanceamento",
+  "Calibragem geral",
+  "Pneus (conserto, T.C.)",
+  "Reaperto de porcas",
+  "Rodas e aros",
+];
+
+const normPlaca = (p) => String(p || "").trim().toUpperCase().replace(/[-\s]\d+$/, "").replace(/[^A-Z0-9]/g, "");
+
+// ── ESTILOS ────────────────────────────────────────────────────────────
+const s = {
+  info: { background: "#dbeafe", border: "1px solid #93c5fd", color: "#1e40af", padding: "10px 14px", borderRadius: 8, fontSize: ".82rem", fontWeight: 600, marginBottom: 14 },
+
+  ficha: { background: "#fff", border: "2px solid #1a3a5c", borderRadius: 10, boxShadow: "0 10px 40px rgba(15,23,42,.10)" },
+
+  fichaHeader: { display: "grid", gridTemplateColumns: "1fr 180px", gap: 0, borderBottom: "2px solid #1a3a5c", background: "linear-gradient(180deg, #f8fafc, #fff)" },
+  hData: { padding: "14px 20px", display: "flex", flexDirection: "column", gap: 8 },
+  hRow: { display: "grid", gridTemplateColumns: "180px 1fr 110px 130px", gap: 10, alignItems: "center" },
+  lbl: { fontSize: ".7rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em" },
+  inp: { padding: "7px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontFamily: "inherit", fontSize: ".88rem" },
+  inpRO: { padding: "7px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontFamily: "inherit", fontSize: ".88rem", background: "#f1f5f9", color: "#334155" },
+  hNumero: { padding: "14px 18px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(180deg, #fef2f2, #fff)" },
+  hNumeroValor: { fontSize: "2.2rem", fontWeight: 900, color: "#dc2626", letterSpacing: ".04em" },
+
+  rowMid: { display: "grid", gridTemplateColumns: "620px 1fr", borderBottom: "2px solid #1a3a5c" },
+  checklist: { padding: "14px 16px", borderRight: "1.5px solid #cbd5e1" },
+  h4: { margin: "0 0 10px", fontSize: ".82rem", textTransform: "uppercase", letterSpacing: ".05em", color: "#1a3a5c", fontWeight: 800, textAlign: "center", paddingBottom: 6, borderBottom: "1.5px solid #e2e8f0" },
+  tbl: { width: "100%", borderCollapse: "collapse", fontSize: ".82rem" },
+  th: { background: "#1a3a5c", color: "#fff", fontWeight: 700, fontSize: ".68rem", padding: "6px 8px", textAlign: "center", border: "1px solid #cbd5e1", textTransform: "uppercase", letterSpacing: ".04em" },
+  td: { padding: "6px 8px", textAlign: "center", border: "1px solid #cbd5e1", fontSize: ".82rem" },
+  tdItem: { padding: "6px 8px", textAlign: "left", border: "1px solid #cbd5e1", fontWeight: 600, color: "#0f172a" },
+  chk: { width: 18, height: 18, cursor: "pointer", accentColor: "#1a3a5c" },
+  aviso: { fontSize: ".72rem", color: "#dc2626", fontStyle: "italic", textAlign: "right", marginTop: 6, fontWeight: 700 },
+  obs: { padding: "14px 16px", display: "flex", flexDirection: "column" },
+  txt: { flex: 1, width: "100%", minHeight: 190, border: "1px solid #cbd5e1", borderRadius: 6, padding: "10px 12px", fontFamily: "inherit", fontSize: ".88rem", resize: "vertical" },
+
+  gridVeic: { display: "grid", gridTemplateColumns: "1fr 1fr", gridAutoRows: "1fr" },
+  quadro: { borderRight: "1.5px solid #1a3a5c", borderBottom: "1.5px solid #1a3a5c", padding: "12px 14px", display: "flex", flexDirection: "column" },
+  qHead: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 10, paddingBottom: 6, borderBottom: "1.5px solid #1a3a5c" },
+  qTit: { fontSize: ".88rem", fontWeight: 800, color: "#1a3a5c", textTransform: "uppercase", letterSpacing: ".03em", display: "inline-flex", alignItems: "center", gap: 8 },
+  qNum: { display: "inline-block", background: "#1a3a5c", color: "#fff", padding: "3px 12px", borderRadius: 6, fontSize: ".82rem" },
+  qPlacaWrap: { display: "flex", alignItems: "center", gap: 8 },
+  qPlaca: { padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontFamily: "inherit", fontSize: ".92rem", fontWeight: 800, color: "#1a3a5c", letterSpacing: ".04em", textTransform: "uppercase", textAlign: "center", width: 130 },
+
+  odomBar: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 16px", background: "linear-gradient(90deg, #fff7ed, #fef3c7)", border: "1.5px solid #f59e0b", borderRadius: 10, marginBottom: 12 },
+  odomLabel: { fontSize: ".78rem", color: "#7c2d12", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".04em" },
+  odomInp: { padding: "8px 14px", border: "1.5px solid #f59e0b", borderRadius: 8, fontFamily: "inherit", fontSize: "1.05rem", fontWeight: 800, textAlign: "center", background: "#fff", color: "#7c2d12", width: 150, MozAppearance: "textfield" },
+
+  estepeWrap: { background: "linear-gradient(180deg, #f8fafc, #fff)", border: "1.5px dashed #94a3b8", borderRadius: 10, padding: "10px 12px", marginBottom: 10, display: "grid", gridTemplateColumns: "80px 1fr", gap: 10, alignItems: "center" },
+  estepeLbl: { fontSize: ".82rem", fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: ".06em", textAlign: "center" },
+
+  eixo: { marginBottom: 10, border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", background: "#fafbfc" },
+  eixoHead: { background: "linear-gradient(180deg, #f1f5f9, #f8fafc)", padding: "6px 12px", fontSize: ".72rem", fontWeight: 800, color: "#1a3a5c", textTransform: "uppercase", letterSpacing: ".05em", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 8 },
+  eixoBody: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, padding: 10 },
+
+  footer: { padding: "18px 24px", display: "grid", gridTemplateColumns: "1fr 320px 1fr", gap: 20, alignItems: "end", background: "linear-gradient(180deg, #f8fafc, #fff)" },
+  assinatura: { textAlign: "center" },
+  assBox: { border: "2px dashed #94a3b8", borderRadius: 8, height: 90, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: ".82rem", cursor: "pointer" },
+  assLbl: { display: "block", fontSize: ".74rem", color: "#1a3a5c", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".04em", marginTop: 6, borderTop: "1px solid #94a3b8", paddingTop: 4 },
+  ordem: { textAlign: "center", padding: "8px 12px", background: "#fff", border: "2px solid #1a3a5c", borderRadius: 10 },
+  ordemP: { fontSize: ".88rem", fontWeight: 800, color: "#1a3a5c", marginBottom: 10 },
+  btnSim: { padding: "10px 28px", borderRadius: 8, border: "2px solid #22c55e", background: "#fff", color: "#14532d", fontWeight: 800, fontSize: "1rem", cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 },
+  btnSimAct: { padding: "10px 28px", borderRadius: 8, border: "2px solid #22c55e", background: "#22c55e", color: "#fff", fontWeight: 800, fontSize: "1rem", cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 },
+  btnNao: { padding: "10px 28px", borderRadius: 8, border: "2px solid #dc2626", background: "#fff", color: "#7f1d1d", fontWeight: 800, fontSize: "1rem", cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 },
+  btnNaoAct: { padding: "10px 28px", borderRadius: 8, border: "2px solid #dc2626", background: "#dc2626", color: "#fff", fontWeight: 800, fontSize: "1rem", cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 },
+  horaFinal: { display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "#fef2f2", border: "1.5px solid #dc2626", borderRadius: 8, marginTop: 10, justifyContent: "center" },
+
+  actions: { marginTop: 14, display: "flex", gap: 10, justifyContent: "flex-end" },
+  btnCancel: { padding: "12px 26px", borderRadius: 10, border: "1px solid #cbd5e1", background: "#f1f5f9", color: "#475569", fontWeight: 700, cursor: "pointer", fontSize: ".95rem", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 },
+  btnPdf:    { padding: "12px 26px", borderRadius: 10, border: "none", background: "#1a3a5c", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: ".95rem", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 },
+  btnSalvar: { padding: "12px 26px", borderRadius: 10, border: "none", background: "#059669", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: ".95rem", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 },
+  err: { background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", padding: "10px 14px", borderRadius: 8, fontWeight: 600, fontSize: ".85rem", marginTop: 12 },
+  ok:  { background: "#dcfce7", border: "1px solid #86efac", color: "#14532d", padding: "10px 14px", borderRadius: 8, fontWeight: 600, fontSize: ".85rem", marginTop: 12 },
+};
+
+// ── CARD DO PNEU (idêntico ao preview aprovado — 42x70) ─────────────────
+function CardPneu({ posicao, dados, onClick }) {
+  const sulcoNum = Number(dados?.sulco);
+  // Thresholds da legenda do preview
+  const status = !Number.isFinite(sulcoNum) || sulcoNum <= 0
+    ? "vazio"
+    : sulcoNum <= 4  ? "critico"   // ≤ 4 mm = trocar (regra Pontual)
+    : sulcoNum <= 6  ? "entre4"    // 5-6 mm = atenção
+    : sulcoNum <  15 ? "entre6"    // 7-14 mm = bom
+    : "novo";
+
+  const bg = {
+    vazio:   "repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #f1f5f9 4px, #f1f5f9 8px)",
+    critico: "linear-gradient(180deg, #dc2626, #7f1d1d)",
+    entre4:  "linear-gradient(180deg, #f97316, #c2410c)",
+    entre6:  "linear-gradient(180deg, #eab308, #a16207)",
+    novo:    "linear-gradient(180deg, #22c55e, #15803d)",
+  }[status];
+
+  return (
+    <div
+      onClick={onClick}
+      title={`${posicao}${dados?.sulco ? ` — Sulco: ${dados.sulco}mm` : ""}`}
+      style={{
+        width: 42, height: 70, borderRadius: 8,
+        background: bg,
+        border: status === "vazio" ? "1.5px dashed #94a3b8" : "1px solid rgba(0,0,0,.3)",
+        boxShadow: "0 2px 4px rgba(0,0,0,.15), inset 0 -3px 6px rgba(0,0,0,.2)",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        cursor: "pointer",
+        transition: "transform .12s",
+        position: "relative",
+        color: status === "vazio" ? "#64748b" : "#fff",
+        fontSize: ".58rem", fontWeight: 900,
+        animation: status === "critico" ? "pulsePneu 1.5s infinite" : "none",
+        flexShrink: 0,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.08)"; e.currentTarget.style.zIndex = 10; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.zIndex = 1; }}
+    >
+      <div style={{ position: "absolute", left: 3, right: 3, top: 8, height: 1.5, background: "rgba(255,255,255,.4)" }} />
+      <div style={{ position: "absolute", left: 3, right: 3, bottom: 8, height: 1.5, background: "rgba(255,255,255,.4)" }} />
+      <span style={{
+        background: "rgba(0,0,0,.4)", padding: "1px 5px", borderRadius: 3,
+        fontSize: ".55rem", letterSpacing: ".02em",
+      }}>{dados?.fogo || "—"}</span>
+      <span style={{ fontSize: ".48rem", opacity: .85, marginTop: 2, fontWeight: 700 }}>{posicao}</span>
+    </div>
+  );
+}
+
+// Keyframes globais uma vez
+if (typeof document !== "undefined" && !document.getElementById("pneus-inspecao-keyframes")) {
+  const st = document.createElement("style");
+  st.id = "pneus-inspecao-keyframes";
+  st.textContent = `@keyframes pulsePneu { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,.5); } 50% { box-shadow: 0 0 0 5px rgba(220,38,38,.1); } }`;
+  document.head.appendChild(st);
+}
+
+// ── MODAL DE EDIÇÃO DO PNEU (abre ao clicar) ────────────────────────────
+function ModalEditPneu({ posicao, dados, onSave, onClose }) {
+  const [psi, setPsi] = useState(dados?.psi ?? "");
+  const [sulco, setSulco] = useState(dados?.sulco ?? "");
+  const [fogo, setFogo] = useState(dados?.fogo ?? "");
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.55)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: 20, width: 340, boxShadow: "0 24px 60px rgba(0,0,0,.35)" }}>
+        <div style={{ marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h3 style={{ margin: 0, color: "#1a3a5c", fontSize: "1rem", fontWeight: 800 }}>Editando: {posicao}</h3>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: "1.2rem" }}>×</button>
+        </div>
+        <div style={{ display: "grid", gap: 10 }}>
+          <div>
+            <label style={{ fontSize: ".72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Nº de Fogo</label>
+            <input type="text" value={fogo} onChange={e => setFogo(e.target.value.toUpperCase())} autoFocus style={{ width: "100%", padding: "9px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontFamily: "inherit", fontSize: "1rem", fontWeight: 700, color: "#1a3a5c" }} />
+          </div>
+          <div>
+            <label style={{ fontSize: ".72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>PSI</label>
+            <input type="number" value={psi} onChange={e => setPsi(e.target.value)} style={{ width: "100%", padding: "9px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontFamily: "inherit", fontSize: "1rem", fontWeight: 700 }} />
+          </div>
+          <div>
+            <label style={{ fontSize: ".72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Sulco (mm)</label>
+            <input type="number" step="0.1" value={sulco} onChange={e => setSulco(e.target.value)} style={{ width: "100%", padding: "9px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontFamily: "inherit", fontSize: "1rem", fontWeight: 700 }} />
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+          <button onClick={onClose} style={{ padding: "10px 18px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#f1f5f9", color: "#475569", fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
+          <button onClick={() => { onSave({ psi, sulco, fogo }); onClose(); }} style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Salvar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── LEGENDA DE CORES ────────────────────────────────────────────────────
+function LegendaCores() {
+  const items = [
+    { bg: "linear-gradient(180deg, #22c55e, #15803d)", label: "≥ 15 mm (novo)" },
+    { bg: "linear-gradient(180deg, #eab308, #a16207)", label: "7 – 14 mm (bom)" },
+    { bg: "linear-gradient(180deg, #f97316, #c2410c)", label: "5 – 6 mm (atenção)" },
+    { bg: "linear-gradient(180deg, #dc2626, #7f1d1d)", label: "≤ 4 mm (trocar)" },
+    { bg: "repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #f1f5f9 4px, #f1f5f9 8px)", label: "Vazio (não medido)" },
+  ];
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+      <div style={{ fontSize: ".72rem", fontWeight: 800, color: "#1a3a5c", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 }}>Legenda de sulco</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px" }}>
+        {items.map((i, k) => (
+          <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: ".72rem", color: "#475569" }}>
+            <span style={{ width: 14, height: 14, borderRadius: 3, border: "1px solid rgba(0,0,0,.15)", background: i.bg, display: "inline-block" }} />
+            {i.label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── QUADRO DE 1 VEÍCULO — layout esquemático (aprovado do preview) ──────
+function QuadroVeiculo({ ordem, titulo, veiculo, esquemaId, dados, onChange }) {
+  // IMPORTANTE: hooks devem ser chamados sempre no topo, antes de qualquer return
+  const [editando, setEditando] = useState(null);
+
+  if (!veiculo) {
+    return (
+      <div style={s.quadro}>
+        <div style={s.qHead}>
+          <div style={s.qTit}><span style={s.qNum}>{ordem}º</span>{titulo}</div>
+          <div style={s.qPlacaWrap}>
+            <span style={s.lbl}>Placa</span>
+            <input type="text" placeholder="—" style={{ ...s.qPlaca, background: "#f1f5f9" }} disabled />
+          </div>
+        </div>
+        <div style={{ padding: "50px 20px", textAlign: "center", color: "#94a3b8", fontSize: ".9rem", background: "repeating-linear-gradient(45deg, #f8fafc, #f8fafc 10px, #fff 10px, #fff 20px)", borderRadius: 10 }}>
+          Sem carreta atrelada nesta posição
+        </div>
+      </div>
+    );
+  }
+  const esquema = ESQUEMAS[esquemaId];
+  if (!esquema) {
+    return (
+      <div style={s.quadro}>
+        <div style={s.qHead}>
+          <div style={s.qTit}><span style={s.qNum}>{ordem}º</span>{titulo}</div>
+          <div style={s.qPlacaWrap}>
+            <span style={s.lbl}>Placa</span>
+            <input type="text" value={veiculo.placa || ""} style={s.qPlaca} readOnly />
+          </div>
+        </div>
+        <div style={{ padding: "40px 20px", textAlign: "center", color: "#dc2626" }}>
+          Esquema de posição não identificado para este veículo. Ajuste o cadastro em /frota.
+        </div>
+      </div>
+    );
+  }
+
+  const setPneu = (pos, v) => onChange({ ...dados, pneus: { ...(dados?.pneus || {}), [pos]: v } });
+  const setEstepe = (v) => onChange({ ...dados, estepe: v });
+  const setOdom = (v) => onChange({ ...dados, odometro: v });
+
+  const linhas = esquema.eixos;
+
+  // Layout: grid 5 colunas
+  //   col1: estepe (só no 1º eixo se lado=esquerda)
+  //   col2: pneus esquerda do eixo
+  //   col3: odômetro (só no 1º eixo)
+  //   col4: pneus direita do eixo
+  //   col5: estepe (só no 1º eixo se lado=direita)
+  return (
+    <div style={s.quadro}>
+      <div style={s.qHead}>
+        <div style={s.qTit}><span style={s.qNum}>{ordem}º</span>{titulo}</div>
+        <div style={s.qPlacaWrap}>
+          <span style={s.lbl}>Placa</span>
+          <input type="text" value={veiculo.placa || ""} style={s.qPlaca} readOnly />
+        </div>
+      </div>
+
+      {/* Odômetro em barra separada em cima (não interfere no desenho) */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: "center", padding: "8px 12px", background: "linear-gradient(90deg, #fff7ed, #fef3c7)", border: "1.5px solid #f59e0b", borderRadius: 10 }}>
+        <span style={{ fontSize: ".72rem", fontWeight: 800, color: "#7c2d12", textTransform: "uppercase", letterSpacing: ".04em" }}>Odômetro</span>
+        <input
+          type="number" value={dados?.odometro ?? ""}
+          onChange={e => setOdom(e.target.value)} placeholder="Digite o KM"
+          style={{ padding: "6px 12px", border: "1.5px solid #f59e0b", borderRadius: 6, fontFamily: "inherit", fontSize: ".95rem", fontWeight: 800, textAlign: "center", background: "#fff", color: "#7c2d12", width: 140, MozAppearance: "textfield" }}
+        />
+      </div>
+
+      {/* CONTAINER DO DESENHO ESQUEMÁTICO — idêntico à imagem WhatsApp 16:53 */}
+      <div style={{
+        position: "relative",
+        padding: "0",
+        background: "linear-gradient(180deg, #dbeafe, #eef2f7)",
+        border: "1.5px solid #cbd5e1",
+        borderRadius: 12,
+        overflow: "hidden",
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+      }}>
+        {/* Estepe canto superior direito */}
+        {esquema.temEstepe && (() => {
+          const est = dados?.estepe || {};
+          const sN = Number(est.sulco);
+          const st = !Number.isFinite(sN) || sN <= 0 ? "vazio"
+                    : sN <= 4  ? "critico"
+                    : sN <= 6  ? "entre4"
+                    : sN <  15 ? "entre6"
+                    : "novo";
+          const bg = {
+            vazio:   "repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #f1f5f9 4px, #f1f5f9 8px)",
+            critico: "linear-gradient(180deg, #dc2626, #7f1d1d)",
+            entre4:  "linear-gradient(180deg, #f97316, #c2410c)",
+            entre6:  "linear-gradient(180deg, #eab308, #a16207)",
+            novo:    "linear-gradient(180deg, #22c55e, #15803d)",
+          }[st];
+          const parts = [];
+          if (est.fogo)  parts.push(`Fogo: ${est.fogo}`);
+          if (est.sulco) parts.push(`Sulco: ${est.sulco}mm`);
+          if (est.psi)   parts.push(`PSI: ${est.psi}`);
+          const tip = `Estepe${parts.length ? " — " + parts.join(" | ") : " (vazio)"}`;
+          return (
+            <div className="estepe-box" style={{
+              position: "absolute",
+              top: esquemaId?.startsWith("cavalo") ? 38 : 8,
+              right: 8,
+              background: "#fff", border: "2px dashed #94a3b8",
+              borderRadius: 8, padding: "3px 5px",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+              zIndex: 5,
+            }}>
+              <div className="estepe-lbl" style={{ fontSize: ".55rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em" }}>Estepe</div>
+              <div
+                className="estepe-card"
+                onClick={() => setEditando({ posicao: "EST", dados: est, isEstepe: true })}
+                title={tip}
+                style={{
+                  width: 32, height: 52, borderRadius: 5,
+                  background: bg,
+                  border: st === "vazio" ? "1.5px dashed #94a3b8" : "1px solid rgba(0,0,0,.3)",
+                  boxShadow: st === "vazio" ? "none" : "0 2px 4px rgba(0,0,0,.15), inset 0 -3px 6px rgba(0,0,0,.2)",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                  color: st === "vazio" ? "#64748b" : "#fff",
+                  fontSize: ".5rem", fontWeight: 800,
+                  gap: 1,
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                <span style={{ background: st === "vazio" ? "transparent" : "rgba(0,0,0,.4)", padding: st === "vazio" ? 0 : "1px 4px", borderRadius: 3 }}>{est.fogo || "—"}</span>
+                {est.sulco && <span style={{ fontSize: ".42rem", opacity: .9 }}>{est.sulco}mm</span>}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* CORPO com chassi vertical + eixos — altura fixa pra padronizar cards */}
+        <div style={{
+          position: "relative",
+          padding: "20px 20px 20px",
+          minHeight: 460,
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-around",
+        }}>
+          {/* CHASSI vertical cinza no meio */}
+          <div style={{
+            position: "absolute",
+            left: "50%", top: 20, bottom: 20,
+            width: 16, transform: "translateX(-50%)",
+            background: "linear-gradient(90deg, #cbd5e1, #94a3b8 50%, #cbd5e1)",
+            border: "1px solid #64748b",
+            borderRadius: 3,
+            zIndex: 0,
+          }} />
+
+          {/* EIXOS */}
+          {linhas.map((eixo, i) => {
+            const meio = Math.floor(eixo.posicoes.length / 2);
+            const esq  = eixo.posicoes.slice(0, meio);
+            const dir  = eixo.posicoes.slice(meio);
+            return (
+              <div key={i} style={{
+                position: "relative",
+                display: "grid",
+                gridTemplateColumns: "1fr 24px 1fr",
+                gap: 0,
+                alignItems: "center",
+                padding: "8px 0",
+              }}>
+                {/* PNEUS ESQUERDA + TRAVESSA + CUBO */}
+                <div style={{ display: "flex", gap: 0, justifyContent: "flex-end", alignItems: "center", position: "relative", zIndex: 2 }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    {esq.map(pos => (
+                      <CardPneu key={pos} posicao={pos}
+                        dados={(dados?.pneus || {})[pos] || {}}
+                        onClick={() => setEditando({ posicao: pos, dados: (dados?.pneus || {})[pos] || {}, isEstepe: false })} />
+                    ))}
+                  </div>
+                  {/* Travessa esquerda — só do pneu mais externo até o cubo */}
+                  <div style={{
+                    flex: "0 1 60px",
+                    height: 8,
+                    background: "linear-gradient(180deg, #94a3b8, #64748b)",
+                    border: "1px solid #475569",
+                    borderRadius: 4,
+                  }} />
+                  {/* Cubo esquerdo */}
+                  <div style={{
+                    width: 24, height: 24,
+                    background: "radial-gradient(circle at 40% 40%, #94a3b8 20%, #334155 100%)",
+                    border: "2px solid #1e293b",
+                    borderRadius: "50%",
+                    boxShadow: "inset 0 -2px 4px rgba(0,0,0,.4)",
+                    flexShrink: 0,
+                    marginLeft: -4,
+                  }} />
+                </div>
+
+                {/* Centro vazio (chassi vertical passa por trás) */}
+                <div />
+
+                {/* CUBO + TRAVESSA + PNEUS DIREITA */}
+                <div style={{ display: "flex", gap: 0, justifyContent: "flex-start", alignItems: "center", position: "relative", zIndex: 2 }}>
+                  {/* Cubo direito */}
+                  <div style={{
+                    width: 24, height: 24,
+                    background: "radial-gradient(circle at 60% 40%, #94a3b8 20%, #334155 100%)",
+                    border: "2px solid #1e293b",
+                    borderRadius: "50%",
+                    boxShadow: "inset 0 -2px 4px rgba(0,0,0,.4)",
+                    flexShrink: 0,
+                    marginRight: -4,
+                  }} />
+                  {/* Travessa direita */}
+                  <div style={{
+                    flex: "0 1 60px",
+                    height: 8,
+                    background: "linear-gradient(180deg, #94a3b8, #64748b)",
+                    border: "1px solid #475569",
+                    borderRadius: 4,
+                  }} />
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    {dir.map(pos => (
+                      <CardPneu key={pos} posicao={pos}
+                        dados={(dados?.pneus || {})[pos] || {}}
+                        onClick={() => setEditando({ posicao: pos, dados: (dados?.pneus || {})[pos] || {}, isEstepe: false })} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {editando && (
+        <ModalEditPneu
+          posicao={editando.posicao}
+          dados={editando.dados}
+          onSave={v => editando.isEstepe ? setEstepe(v) : setPneu(editando.posicao, v)}
+          onClose={() => setEditando(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── ABA INSPEÇÃO (COMPONENTE PRINCIPAL) ─────────────────────────────────
+export default function AbaInspecao({ pneus, setPneus, profile }) {
+  const [veiculos, setVeiculos] = useState([]);
+  const [motoristas, setMotoristas] = useState([]);
+  const [carregado, setCarregado] = useState(false);
+  const [erro, setErro] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const [sucesso, setSucesso] = useState("");
+
+  const [numero, setNumero] = useState(null);
+  const [dataFicha]      = useState(new Date().toISOString().slice(0, 10));
+  const [horaInicio]     = useState(new Date().toTimeString().slice(0, 5));
+  const [horaFinal, setHoraFinal] = useState("");
+  const [motoristaId, setMotoristaId] = useState("");
+  const [placaCavalo, setPlacaCavalo] = useState("");
+  const [checklist, setChecklist] = useState({}); // { alinhamento_1: true, ... }
+  const [observacoes, setObservacoes] = useState("");
+  const [dadosVeic, setDadosVeic] = useState({}); // { cavalo: {...}, carreta1: {...}, ... }
+  const [ordemOK, setOrdemOK] = useState(null); // "sim" | "nao" | null
+
+  useEffect(() => {
+    Promise.all([
+      listVeiculos().catch(() => null),
+      dsList("motoristas", { orderBy: "nome" }).catch(() => null),
+      dsList("pneu_inspecoes", { orderBy: "numero", order: "desc", limit: 1 }).catch(() => null),
+    ]).then(([vs, ms, ins]) => {
+      if (vs) setVeiculos(vs);
+      if (ms) setMotoristas(ms);
+      // próximo número = último + 1 (default 1)
+      if (ins && ins.length > 0) {
+        const ultimo = ins[0];
+        setNumero(Number(ultimo.numero) + 1 || 1);
+      } else {
+        setNumero(1);
+      }
+      setCarregado(true);
+    });
+  }, []);
+
+  // Cavalo selecionado + carretas atreladas
+  const cavalo = useMemo(() => {
+    if (!placaCavalo) return null;
+    return veiculos.find(v => normPlaca(v.placa) === normPlaca(placaCavalo)) || null;
+  }, [placaCavalo, veiculos]);
+
+  const carretas = useMemo(() => {
+    if (!cavalo) return { c1: null, c2: null, c3: null };
+    // Regra Pontual: quando o conjunto for Bitrem ou Rodotrem, TODAS as carretas
+    // atreladas herdam o mesmo tipo — não faz sentido bitrem ter só 1 carreta curta.
+    // Basta que UM dos campos (t1/t2/t3 ou tipo_conjunto do cavalo) indique o tipo.
+    const labels = [cavalo.t1, cavalo.t2, cavalo.t3, cavalo.tipo_conjunto].map(x => String(x || "").toLowerCase());
+    const isBitrem   = labels.some(l => l.includes("bitrem"));
+    const isRodotrem = labels.some(l => l.includes("rodotrem") || l.includes("rodo trem"));
+    const tipoGlobal = isBitrem ? "Bitrem" : (isRodotrem ? "Rodotrem" : "");
+    // Se não for bitrem/rodotrem, cada carreta usa o próprio label (LS / 4° Eixo).
+    const tipoDe = (proprio) => tipoGlobal || proprio || cavalo.tipo_conjunto || "";
+    const acha = (p, tipoLabel) => {
+      if (!p) return null;
+      const base = veiculos.find(v => normPlaca(v.placa) === normPlaca(p)) || { placa: p };
+      return { ...base, tipo: "carreta", tipo_conjunto: tipoDe(tipoLabel) || base.tipo_conjunto || "" };
+    };
+    return {
+      c1: acha(cavalo.c1, cavalo.t1),
+      c2: acha(cavalo.c2, cavalo.t2),
+      c3: acha(cavalo.c3, cavalo.t3),
+    };
+  }, [cavalo, veiculos]);
+
+  const cavalosFrota  = useMemo(() => veiculos.filter(v => v.tipo !== "carreta"), [veiculos]);
+
+  function toggleCheck(item, coluna) {
+    const key = `${item}_${coluna}`;
+    setChecklist(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  const quemSou = () => ({
+    uid:   profile?.uid || "",
+    email: profile?.email || "",
+    nome:  usuarioPontual(profile),
+  });
+
+  function montarPayload() {
+    const agora = new Date();
+    const supervisor = quemSou();
+    const motorista = motoristas.find(m => m.id === motoristaId) || null;
+    const buildVeicPayload = (slot, v, esquemaId) => {
+      const dv = dadosVeic[slot] || {};
+      return {
+        slot, placa: v?.placa || "", tipo: v?.tipo || "", esquemaId,
+        odometro: dv.odometro ? Number(dv.odometro) : null,
+        estepe: dv.estepe || null,
+        pneus: dv.pneus || {},
+      };
+    };
+    const veicsPayload = [];
+    if (cavalo)      veicsPayload.push({ slot: "cavalo",   ordem: 1, titulo: "Cavalo Mecânico", ...buildVeicPayload("cavalo",   cavalo,       sugerirEsquema(cavalo)) });
+    if (carretas.c1) veicsPayload.push({ slot: "carreta1", ordem: 2, titulo: "1ª Carreta",       ...buildVeicPayload("carreta1", carretas.c1, sugerirEsquema(carretas.c1)) });
+    if (carretas.c2) veicsPayload.push({ slot: "carreta2", ordem: 3, titulo: "2ª Carreta",       ...buildVeicPayload("carreta2", carretas.c2, sugerirEsquema(carretas.c2)) });
+    if (carretas.c3) veicsPayload.push({ slot: "carreta3", ordem: 4, titulo: "3ª Carreta",       ...buildVeicPayload("carreta3", carretas.c3, sugerirEsquema(carretas.c3)) });
+    return {
+      numero,
+      data: dataFicha,
+      horaInicio,
+      horaFinal: horaFinal || agora.toTimeString().slice(0, 5),
+      supervisor,
+      motorista: motorista ? { id: motorista.id, nome: motorista.nome } : null,
+      checklist,
+      observacoes: observacoes.trim(),
+      veiculos: veicsPayload,
+      respostaOrdem: ordemOK,
+    };
+  }
+
+  async function gerarPdfAgora(modo) {
+    if (!placaCavalo) { alert("Selecione o veículo (cavalo) antes de gerar o PDF."); return; }
+    const payload = montarPayload();
+    try {
+      if (modo === "ver") await visualizarPdfInspecao(payload, ESQUEMAS);
+      else                await baixarPdfInspecao(payload, ESQUEMAS);
+    } catch (e) {
+      alert("Erro ao gerar PDF: " + e.message);
+    }
+  }
+
+  async function salvar() {
+    setErro(""); setSucesso("");
+    if (!placaCavalo)     { setErro("Selecione o veículo (cavalo)."); return; }
+    if (!motoristaId)     { setErro("Selecione o motorista.");        return; }
+    if (ordemOK == null)  { setErro("Responda se o veículo está em ordem para seguir viagem."); return; }
+
+    setSalvando(true);
+    try {
+      const agora = new Date();
+      const supervisor = quemSou();
+      const motorista = motoristas.find(m => m.id === motoristaId) || null;
+
+      // Estrutura dos veículos
+      const buildVeicPayload = (slot, v, esquemaId) => {
+        const dv = dadosVeic[slot] || {};
+        return {
+          slot, placa: v?.placa || "", tipo: v?.tipo || "", esquemaId,
+          odometro: dv.odometro ? Number(dv.odometro) : null,
+          estepe: dv.estepe || null,
+          pneus: dv.pneus || {},
+        };
+      };
+      const veicsPayload = [];
+      const esqCavalo = sugerirEsquema(cavalo);
+      veicsPayload.push({ slot: "cavalo", ordem: 1, titulo: "Cavalo Mecânico", ...buildVeicPayload("cavalo", cavalo, esqCavalo) });
+      if (carretas.c1) veicsPayload.push({ slot: "carreta1", ordem: 2, titulo: "1ª Carreta", ...buildVeicPayload("carreta1", carretas.c1, sugerirEsquema(carretas.c1)) });
+      if (carretas.c2) veicsPayload.push({ slot: "carreta2", ordem: 3, titulo: "2ª Carreta", ...buildVeicPayload("carreta2", carretas.c2, sugerirEsquema(carretas.c2)) });
+      if (carretas.c3) veicsPayload.push({ slot: "carreta3", ordem: 4, titulo: "3ª Carreta", ...buildVeicPayload("carreta3", carretas.c3, sugerirEsquema(carretas.c3)) });
+
+      const payload = {
+        numero,
+        data: dataFicha,
+        horaInicio,
+        horaFinal: horaFinal || agora.toTimeString().slice(0, 5),
+        supervisor,
+        motorista: motorista ? { id: motorista.id, nome: motorista.nome } : null,
+        checklist,
+        observacoes: observacoes.trim(),
+        veiculos: veicsPayload,
+        respostaOrdem: ordemOK,
+        status: "concluida",
+        criadoEm: agora.toISOString(),
+        criadoPor: supervisor.nome,
+      };
+
+      const ref = await dsInsert("pneu_inspecoes", payload);
+
+      // Efeito: atualiza sulcoAtual de cada pneu (matching por fogo)
+      let atualizados = 0;
+      for (const veic of veicsPayload) {
+        const todosPneus = [];
+        if (veic.estepe?.fogo) todosPneus.push({ ...veic.estepe, posicao: "EST" });
+        Object.entries(veic.pneus || {}).forEach(([pos, d]) => {
+          if (d?.fogo) todosPneus.push({ ...d, posicao: pos });
+        });
+        for (const p of todosPneus) {
+          const fogo = String(p.fogo || "").trim().toUpperCase();
+          if (!fogo) continue;
+          const alvo = pneus.find(x => String(x.fogo || "").trim().toUpperCase() === fogo);
+          if (!alvo) continue;
+          const sulcoNovo = Number(p.sulco);
+          if (!Number.isFinite(sulcoNovo)) continue;
+          try {
+            await dsPatch("pneus", alvo.id, {
+              sulcoAtual: sulcoNovo,
+              status: "em_uso",
+              posicaoAtual: {
+                veiculoPlaca: veic.placa, slot: veic.slot, posicao: p.posicao,
+                atualizadoEm: agora.toISOString(),
+              },
+              ultimaInspecaoId: ref.id,
+              ultimaInspecaoEm: agora.toISOString(),
+            });
+            atualizados++;
+          } catch (e) { console.warn("[inspecao] falha update pneu", fogo, e); }
+        }
+      }
+      // Reflete no state local
+      setPneus(prev => prev.map(x => {
+        const fogo = String(x.fogo || "").trim().toUpperCase();
+        for (const veic of veicsPayload) {
+          const pneus = veic.pneus || {};
+          for (const [pos, d] of Object.entries(pneus)) {
+            if (String(d?.fogo || "").trim().toUpperCase() === fogo) {
+              return { ...x, sulcoAtual: Number(d.sulco), status: "em_uso", posicaoAtual: { veiculoPlaca: veic.placa, slot: veic.slot, posicao: pos, atualizadoEm: agora.toISOString() } };
+            }
+          }
+          if (veic.estepe?.fogo && String(veic.estepe.fogo).trim().toUpperCase() === fogo) {
+            return { ...x, sulcoAtual: Number(veic.estepe.sulco), status: "em_uso", posicaoAtual: { veiculoPlaca: veic.placa, slot: veic.slot, posicao: "EST", atualizadoEm: agora.toISOString() } };
+          }
+        }
+        return x;
+      }));
+
+      setSucesso(`Ficha nº ${numero} salva. ${atualizados} pneu${atualizados === 1 ? "" : "s"} do estoque teve o sulco atualizado.`);
+      // Reset parcial
+      setPlacaCavalo(""); setMotoristaId(""); setChecklist({}); setObservacoes(""); setDadosVeic({}); setOrdemOK(null); setHoraFinal("");
+      setNumero(numero + 1);
+    } catch (e) {
+      setErro("Erro ao salvar: " + e.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  if (!carregado) return <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Carregando…</div>;
+
+  return (
+    <div>
+      <div style={s.info}>
+        Clique em cada pneu do desenho pra editar PSI, sulco e nº de fogo. Cor muda automática pelo sulco. Ao salvar, o sulco de cada pneu é gravado no cadastro dele.
+      </div>
+
+      <LegendaCores />
+
+      <div style={s.ficha} className="pneus-ficha">
+        {/* HEADER */}
+        <div style={s.fichaHeader}>
+          <div style={s.hData}>
+            <div style={s.hRow}>
+              <span style={s.lbl}>Data</span>
+              <input type="date" value={dataFicha} readOnly style={s.inpRO} />
+              <span style={s.lbl}>Hora início</span>
+              <input type="time" value={horaInicio} readOnly style={s.inpRO} />
+            </div>
+            <div style={s.hRow}>
+              <span style={s.lbl}>Supervisor de Manutenção</span>
+              <input type="text" value={quemSou().nome} readOnly style={{ ...s.inpRO, gridColumn: "2 / -1" }} />
+            </div>
+            <div style={s.hRow}>
+              <span style={s.lbl}>Motorista</span>
+              <select value={motoristaId} onChange={e => setMotoristaId(e.target.value)} style={{ ...s.inp, gridColumn: "2 / -1" }}>
+                <option value="">— Selecione —</option>
+                {motoristas.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
+              </select>
+            </div>
+            <div style={s.hRow}>
+              <span style={s.lbl}>Cavalo Mecânico (placa)</span>
+              <select value={placaCavalo} onChange={e => setPlacaCavalo(e.target.value)} style={{ ...s.inp, gridColumn: "2 / -1" }}>
+                <option value="">— Selecione o cavalo —</option>
+                {cavalosFrota.map(v => (
+                  <option key={v.id} value={v.placa}>{v.placa}{v.modelo ? ` — ${v.modelo}` : ""}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div style={s.hNumero}>
+            <span style={s.lbl}>Nº</span>
+            <div style={s.hNumeroValor}>{numero || "…"}</div>
+          </div>
+        </div>
+
+        {/* CHECKLIST + OBSERVACOES */}
+        <div style={s.rowMid} className="pneus-rowmid">
+          <div style={s.checklist}>
+            <h4 style={s.h4}>Itens a verificar</h4>
+            <table style={s.tbl}>
+              <thead>
+                <tr>
+                  <th style={{ ...s.th, width: 24 }}></th>
+                  <th style={{ ...s.th, textAlign: "left" }}>Item</th>
+                  <th style={s.th}>Item Nº</th>
+                  <th style={s.th}>Aviso [X]</th>
+                  <th style={s.th}>1º</th><th style={s.th}>2º</th><th style={s.th}>3º</th><th style={s.th}>4º</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CHECKLIST_ITENS.map((item, i) => (
+                  <tr key={item}>
+                    <td style={{ ...s.td, background: "#f8fafc", fontWeight: 700, color: "#64748b" }}>{i + 1}</td>
+                    <td style={s.tdItem}>{item}</td>
+                    <td style={s.td}>{i + 1}</td>
+                    <td style={s.td}><input type="checkbox" checked={!!checklist[`${item}_aviso`]} onChange={() => toggleCheck(item, "aviso")} style={s.chk} /></td>
+                    {[1,2,3,4].map(n => (
+                      <td key={n} style={s.td}><input type="checkbox" checked={!!checklist[`${item}_${n}`]} onChange={() => toggleCheck(item, n)} style={s.chk} /></td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={s.aviso}>Assinale com [X] o Nº do veículo</div>
+          </div>
+          <div style={s.obs}>
+            <h4 style={s.h4}>Observações</h4>
+            <textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} style={s.txt} placeholder="Registre aqui qualquer particularidade da inspeção…" />
+          </div>
+        </div>
+
+        {/* QUADROS */}
+        <div style={s.gridVeic} className="pneus-gridveic">
+          <QuadroVeiculo ordem={1} titulo="Cavalo Mecânico" veiculo={cavalo} esquemaId={sugerirEsquema(cavalo)} dados={dadosVeic.cavalo}   onChange={d => setDadosVeic(prev => ({ ...prev, cavalo: d }))} />
+          <QuadroVeiculo ordem={2} titulo="1ª Carreta"      veiculo={carretas.c1} esquemaId={sugerirEsquema(carretas.c1)} dados={dadosVeic.carreta1} onChange={d => setDadosVeic(prev => ({ ...prev, carreta1: d }))} />
+          <QuadroVeiculo ordem={3} titulo="2ª Carreta"      veiculo={carretas.c2} esquemaId={sugerirEsquema(carretas.c2)} dados={dadosVeic.carreta2} onChange={d => setDadosVeic(prev => ({ ...prev, carreta2: d }))} />
+          <QuadroVeiculo ordem={4} titulo="3ª Carreta"      veiculo={carretas.c3} esquemaId={sugerirEsquema(carretas.c3)} dados={dadosVeic.carreta3} onChange={d => setDadosVeic(prev => ({ ...prev, carreta3: d }))} />
+        </div>
+
+        {/* RODAPÉ */}
+        <div style={s.footer} className="pneus-footer">
+          <div style={s.assinatura}>
+            <div style={s.assBox} onClick={() => alert("Assinatura digital via canvas — chega em versão futura")}>
+              <Pen size={18} style={{ marginRight: 6 }} />Toque para assinar
+            </div>
+            <label style={s.assLbl}>Assinatura do Supervisor de Manutenção</label>
+          </div>
+          <div style={s.ordem}>
+            <div style={s.ordemP}>O veículo está em ordem para seguir viagem?</div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button type="button" style={ordemOK === "sim" ? s.btnSimAct : s.btnSim} onClick={() => { setOrdemOK("sim"); if (!horaFinal) setHoraFinal(new Date().toTimeString().slice(0, 5)); }}>
+                <Check size={16} /> SIM
+              </button>
+              <button type="button" style={ordemOK === "nao" ? s.btnNaoAct : s.btnNao} onClick={() => { setOrdemOK("nao"); if (!horaFinal) setHoraFinal(new Date().toTimeString().slice(0, 5)); }}>
+                <X size={16} /> NÃO
+              </button>
+            </div>
+            <div style={s.horaFinal}>
+              <label style={{ fontSize: ".72rem", fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>Hora Final:</label>
+              <input type="time" value={horaFinal} onChange={e => setHoraFinal(e.target.value)} style={{ padding: "5px 8px", border: "1px solid #cbd5e1", borderRadius: 5, fontFamily: "inherit", fontSize: ".9rem", fontWeight: 700, width: 90 }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {erro    && <div style={s.err}>{erro}</div>}
+      {sucesso && <div style={s.ok}>{sucesso}</div>}
+
+      <div style={s.actions} className="pneus-inspecao-actions">
+        <button type="button" style={s.btnCancel} className="pneus-btn" onClick={() => { setPlacaCavalo(""); setMotoristaId(""); setChecklist({}); setObservacoes(""); setDadosVeic({}); setOrdemOK(null); }}>
+          Limpar
+        </button>
+        <button type="button" style={s.btnPdf} className="pneus-btn" onClick={() => gerarPdfAgora("baixar")}>
+          <FileDown size={16} /> Baixar PDF
+        </button>
+        <button type="button" style={{ ...s.btnPdf, background: "#0f172a" }} className="pneus-btn" onClick={() => gerarPdfAgora("ver")}>
+          <Eye size={16} /> Visualizar PDF
+        </button>
+        <button type="button" style={{ ...s.btnSalvar, opacity: salvando ? 0.6 : 1 }} className="pneus-btn pneus-btn-primary" onClick={salvar} disabled={salvando}>
+          <Save size={16} /> {salvando ? "Salvando…" : "Salvar Inspeção"}
+        </button>
+      </div>
+    </div>
+  );
+}

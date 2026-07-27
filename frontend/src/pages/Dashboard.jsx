@@ -8,6 +8,9 @@ import GraficoEvolucaoCustos from "../components/GraficoEvolucaoCustos";
 import { useSascarPosicoes } from "../hooks/useSascarPosicoes";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { list as dsList } from "../services/genericDataSource";
+import { listVeiculos } from "../services/frotaDataSource";
+import { listAll as dsListManut } from "../services/manutencaoDataSource";
 import { ClipboardList, Wrench, MapPin, Navigation, AlertTriangle, Activity, Truck, CheckCircle2, Lock, WifiOff } from "lucide-react";
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
@@ -48,17 +51,51 @@ function Donut({ segments, size = 148, stroke = 20 }) {
 }
 
 /* ─── KPI de topo (mesma linguagem visual dos cards do sistema) ───────────── */
-function KpiTile({ Icon, label, value, cor, bg, sub, alerta }) {
+function KpiTile({ Icon, label, value, cor, bg, sub, alerta, total, onClick, ativo }) {
+  // Bullet chart: se total > 0, mostra barra de progresso value/total (padrão dashboard denso - ui-ux-pro-max)
+  const temBullet = Number.isFinite(total) && total > 0 && Number.isFinite(value);
+  const pct = temBullet ? Math.min(100, Math.max(0, (value / total) * 100)) : 0;
+  const clickable = typeof onClick === "function";
+  // Borda destacada quando ativo (filtro aplicado) — usa a cor do próprio KPI
+  const borderColor = ativo ? cor : (alerta ? "var(--warning-border)" : "var(--border)");
+  const borderWidth = ativo ? 2 : 1;
   return (
-    <div style={{ background:"var(--card-bg)", border:`1px solid ${alerta ? "var(--warning-border)" : "var(--border)"}`, borderRadius:"var(--r-lg)", boxShadow:"var(--sh-sm)", padding:"14px 16px", display:"flex", alignItems:"center", gap:12, minWidth:0 }}>
+    <div
+      onClick={clickable ? onClick : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      aria-pressed={clickable ? ativo : undefined}
+      title={clickable ? (ativo ? `Remover filtro "${label}"` : `Filtrar por ${label}`) : undefined}
+      style={{
+        background:"var(--card-bg)",
+        border:`${borderWidth}px solid ${borderColor}`,
+        borderRadius:"var(--r-lg)",
+        boxShadow: ativo ? "0 0 0 3px " + bg : "var(--sh-sm)",
+        padding: ativo ? `${13-(borderWidth-1)}px ${15-(borderWidth-1)}px` : "14px 16px",
+        display:"flex", alignItems:"center", gap:12, minWidth:0,
+        cursor: clickable ? "pointer" : "default",
+        transition:"transform .15s ease, box-shadow .15s ease, border-color .15s ease",
+      }}
+      onMouseEnter={clickable ? (e) => { e.currentTarget.style.transform = "translateY(-1px)"; } : undefined}
+      onMouseLeave={clickable ? (e) => { e.currentTarget.style.transform = "translateY(0)"; } : undefined}
+    >
       <div style={{ width:40, height:40, borderRadius:10, background:bg, color:cor, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
         <Icon size={20} />
       </div>
-      <div style={{ minWidth:0 }}>
-        <div style={{ fontSize:"1.5rem", fontWeight:800, color: alerta ? "var(--warning)" : "var(--text)", lineHeight:1, fontFamily:"var(--font-display)" }}>{value}</div>
+      <div style={{ minWidth:0, flex:1 }}>
+        <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+          <div className="kpi-value numero-tabular" style={{ fontSize:"1.5rem", fontWeight:800, color: alerta ? "var(--warning)" : "var(--text)", lineHeight:1 }}>{value}</div>
+          {temBullet && <div className="numero-tabular" style={{ fontSize:".82rem", color:"var(--text-muted)", fontWeight:600 }}>/ {total}</div>}
+        </div>
         <div style={{ fontSize:".72rem", color:"var(--text-muted)", fontWeight:600, marginTop:3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
           {label}{sub ? <span style={{ color:"var(--text-subtle)", fontWeight:500 }}> · {sub}</span> : null}
         </div>
+        {temBullet && (
+          <div style={{ marginTop:6, height:4, background:"var(--border)", borderRadius:2, overflow:"hidden" }} role="progressbar" aria-valuenow={value} aria-valuemin="0" aria-valuemax={total} aria-label={`${label}: ${value} de ${total}`}>
+            <div style={{ width:`${pct}%`, height:"100%", background:cor, transition:"width .4s ease" }} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -74,6 +111,10 @@ export default function Dashboard() {
   const [recentOCs, setRecentOCs] = useState([]);
   const [recentOS,  setRecentOS]  = useState([]);
   const [erro,      setErro]      = useState(false);
+  const [buscaMapa, setBuscaMapa] = useState(""); // busca no widget do mapa
+  const [filtroStatus, setFiltroStatus] = useState(null); // null | 'EM_MOVIMENTO' | 'SEM_DADOS' | 'PARADO_LIGADO' | 'ESTACIONADO' — filtro clicando nos KPIs
+  // Toggle: clicar de novo remove o filtro
+  const toggleFiltro = (status) => setFiltroStatus(cur => cur === status ? null : status);
 
   useEffect(() => { document.title = "Gestão Operacional - Pontual Brasil Petróleo"; }, []);
 
@@ -82,8 +123,7 @@ export default function Dashboard() {
       const falhas = { v:false, oc:false, os:false };
       const marcarErro = () => setErro(falhas.oc && falhas.os);
 
-      getDocs(collection(db, "veiculos")).then(snap => {
-        const veiculos = snap.docs.map(d => d.data());
+      listVeiculos().then(veiculos => {
         setFrota({
           frotaAtiva: veiculos.filter(v => ["ativo","disponivel"].includes(v.status) && v.tipo !== "carreta").length,
           totalFrota: veiculos.filter(v => v.tipo !== "carreta").length,
@@ -91,12 +131,12 @@ export default function Dashboard() {
         });
       }).catch(() => { falhas.v = true; });
 
-      getDocs(query(collection(db, "ordens_carregamento"), orderBy("data", "desc"), limit(5)))
-        .then(snap => setRecentOCs(snap.docs.map(d => ({ id: d.id, ...d.data() })).slice(0, 5)))
+      dsList("ordens_carregamento", { orderBy: "data", order: "desc", limit: 5 })
+        .then(rows => setRecentOCs(rows.slice(0, 5)))
         .catch(() => { falhas.oc = true; marcarErro(); });
 
-      getDocs(query(collection(db, "ordens_servico"), orderBy("criadoEm", "desc"), limit(5)))
-        .then(snap => setRecentOS(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+      dsListManut("ordens_servico")
+        .then(rows => setRecentOS(rows.sort((a,b) => (b.criadoEm||b.created_at||"").localeCompare(a.criadoEm||a.created_at||"")).slice(0, 5)))
         .catch(() => { falhas.os = true; marcarErro(); });
     }
 
@@ -190,11 +230,16 @@ export default function Dashboard() {
 
         {/* KPIs de topo — resumo da frota + rastreamento em tempo real */}
         <div className="dash-kpi" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(170px, 1fr))", gap:14, marginBottom:20 }}>
-          <KpiTile Icon={Truck}        label="Frota total"       value={frota.totalFrota ?? "…"} cor="var(--accent)"  bg="var(--accent-soft)" />
-          <KpiTile Icon={CheckCircle2} label="Disponíveis"       value={ativos}                  cor="var(--success)" bg="var(--success-bg)" />
-          <KpiTile Icon={Navigation}   label="Em movimento"      value={statusFrota.EM_MOVIMENTO} cor="var(--tech-text)" bg="var(--tech-soft)" sub="tempo real" />
-          <KpiTile Icon={Lock}         label="Bloqueados"        value={bloq}                    cor="var(--danger)"  bg="var(--danger-bg)" />
-          <KpiTile Icon={WifiOff}      label="Sem comunicação"   value={statusFrota.SEM_DADOS}   cor="var(--warning)" bg="var(--warning-bg)" alerta={statusFrota.SEM_DADOS > 0} />
+          <KpiTile Icon={Truck}        label="Frota total"       value={frota.totalFrota ?? "…"} cor="var(--accent)"  bg="var(--accent-soft)"
+                   onClick={() => navigate("/frota")} />
+          <KpiTile Icon={CheckCircle2} label="Disponíveis"       value={ativos}                   total={frota.totalFrota}  cor="var(--success)" bg="var(--success-bg)"
+                   onClick={() => navigate("/frota?status=disponivel")} />
+          <KpiTile Icon={Navigation}   label="Em movimento"      value={statusFrota.EM_MOVIMENTO} total={frota.totalFrota}  cor="#EA580C"        bg="#fff7ed" sub="tempo real"
+                   onClick={() => toggleFiltro("EM_MOVIMENTO")} ativo={filtroStatus === "EM_MOVIMENTO"} />
+          <KpiTile Icon={Lock}         label="Bloqueados"        value={bloq}                     total={frota.totalFrota}  cor="var(--danger)"  bg="var(--danger-bg)"
+                   onClick={() => navigate("/frota?status=bloqueado")} />
+          <KpiTile Icon={WifiOff}      label="Sem comunicação"   value={statusFrota.SEM_DADOS}    total={frota.totalFrota}  cor="var(--warning)" bg="var(--warning-bg)" alerta={statusFrota.SEM_DADOS > 0}
+                   onClick={() => toggleFiltro("SEM_DADOS")} ativo={filtroStatus === "SEM_DADOS"} />
         </div>
 
         {/* Topo: Evolução de custos (esq) + Controle de Frota (dir) */}
@@ -236,6 +281,28 @@ export default function Dashboard() {
             <MapPin size={16} color="var(--accent)" />
             <span style={st.panelTitle}>Rastreamento em tempo real</span>
             <span style={st.chip}><Navigation size={11} /> {emMovimento} em movimento</span>
+            {filtroStatus && (
+              <button
+                onClick={() => setFiltroStatus(null)}
+                title="Remover filtro"
+                style={{ display:"inline-flex", alignItems:"center", gap:6, background:"#fff7ed", color:"#EA580C", border:"1px solid #fed7aa", borderRadius:999, padding:"3px 10px", fontSize:".72rem", fontWeight:700, cursor:"pointer" }}
+              >
+                Filtro: {filtroStatus === "EM_MOVIMENTO" ? "Em movimento" : filtroStatus === "SEM_DADOS" ? "Sem comunicação" : filtroStatus} ✕
+              </button>
+            )}
+            <div className="dash-busca-mapa" style={{ display:"flex", alignItems:"center", gap:6, marginLeft:"auto", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:8, padding:"4px 10px", minWidth:0, flex:"1 1 220px", maxWidth:320 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color:"var(--text-muted)", flexShrink:0 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input
+                value={buscaMapa}
+                onChange={(e) => setBuscaMapa(e.target.value)}
+                placeholder="Buscar placa, motorista ou cidade"
+                aria-label="Buscar veículo no mapa"
+                style={{ border:"none", background:"transparent", outline:"none", color:"var(--text)", fontSize:".82rem", fontFamily:"inherit", flex:1, minWidth:0, width:"100%" }}
+              />
+              {buscaMapa && (
+                <button onClick={() => setBuscaMapa("")} style={{ border:"none", background:"transparent", cursor:"pointer", color:"var(--text-muted)", fontSize:".9rem", padding:0, lineHeight:1, flexShrink:0 }} aria-label="Limpar busca">✕</button>
+              )}
+            </div>
             <button style={st.panelLink} onClick={() => navigate("/rastreamento")}>Abrir →</button>
           </div>
           {sascarErro ? (
@@ -243,7 +310,23 @@ export default function Dashboard() {
               <AlertTriangle size={16} color="var(--danger)" /> Falha ao carregar posições SASCAR.
             </div>
           ) : (
-            <MapaFrota posicoes={posicoes} height={520} />
+            <MapaFrota
+              posicoes={(() => {
+                let filtradas = posicoes;
+                if (filtroStatus) filtradas = filtradas.filter(p => p.statusTexto === filtroStatus);
+                if (buscaMapa) {
+                  const t = buscaMapa.trim().toUpperCase();
+                  filtradas = filtradas.filter(p =>
+                    (p.placa || "").toUpperCase().includes(t)
+                    || (p.motorista || "").toUpperCase().includes(t)
+                    || (p.cidade || "").toUpperCase().includes(t)
+                  );
+                }
+                return filtradas;
+              })()}
+              focusPlaca={buscaMapa.trim().toUpperCase() || null}
+              height={520}
+            />
           )}
         </div>
 
@@ -369,9 +452,10 @@ const st = {
     padding:"14px 16px",
     borderBottom:"1px solid var(--border)",
     background:"var(--card-bg)",
+    flexWrap:"wrap",  /* mobile: quebra pra próxima linha em vez de vazar */
   },
-  panelTitle: { fontWeight:700, fontSize:".88rem", color:"var(--text)", flex:1 },
-  panelLink:  { background:"none", border:"none", color:"var(--accent)", fontSize:".75rem", fontWeight:700, cursor:"pointer", padding:0, whiteSpace:"nowrap" },
+  panelTitle: { fontWeight:700, fontSize:".88rem", color:"var(--text)", flex:1, minWidth:0, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" },
+  panelLink:  { background:"none", border:"none", color:"var(--accent)", fontSize:".75rem", fontWeight:700, cursor:"pointer", padding:0, whiteSpace:"nowrap", flexShrink:0 },
   emptyMsg:   { padding:"28px 16px", textAlign:"center", color:"var(--text-subtle)", fontSize:".82rem" },
   chip: {
     display:"inline-flex", alignItems:"center", gap:4,

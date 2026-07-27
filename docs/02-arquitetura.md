@@ -214,3 +214,13 @@ Hoje todas as coleções são root (uma empresa só). Migração futura via scri
 | Maior chunk lazy | ImportAdmin: 102 kB |
 | Tempo de boot estimado | 1-2s em 3G |
 | Limite Firestore tier free | 50k leituras/dia, 20k escritas/dia |
+
+---
+
+## Relacionado
+
+- Anterior: [[01-visao-geral]]
+- Próximo: [[03-modelo-dados]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]

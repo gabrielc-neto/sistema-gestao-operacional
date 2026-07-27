@@ -107,3 +107,12 @@ SASCAR_SENHA=sascar
 **Why:** Transportadora Pontual contratou SASCAR pra rastrear os 38 cavalos de combustível. Doc é necessária pra implementar Fase 2 do TMS (mapa ao vivo, cerca, telemetria, bloqueio remoto).
 
 **How to apply:** Consultar antes de qualquer integração com SASCAR. Sempre lembrar do TLS 1.2 e do limite de 1 chamada simultânea. Para teste inicial de credencial usar `obterVeiculos` (não tem rate limit). Ver [[project_logistica_rastreamento_levantamento]] para escopo completo da Fase 2.
+
+---
+
+## Relacionado por tema
+
+- **sascar**: [[feedback_colocar_no_ar_completo]] · [[feedback_falar_inviavel_cedo]] · [[feedback_projeto]]
+- **jornada**: [[feedback_projeto]] · [[feedback_solides_so_adm]] · [[feedback_vdo_nao_sascar]]
+- **manutencao**: [[feedback-windows-file-watcher]] · [[feedback_auditoria_estatica_nao_basta]] · [[feedback_bash_forward_slashes]]
+- **pontual**: [[feedback-login-split-pattern]] · [[feedback-svg-logo-iteration-cost]] · [[feedback_arquivo_explicito_obrigatorio]]

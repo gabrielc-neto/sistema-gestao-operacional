@@ -184,11 +184,6 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
-    // A intranet saiu do Firestore: portal, links, pessoas, sessoes e historico
-    // vivem agora em PostgreSQL na VPS de homologacao, atras da API em
-    // /intranet-api (ver api-intranet/ e db/intranet/). Nao ha mais nenhuma
-    // colecao intranet_* aqui.
-
     // Rastreamento SASCAR — gravado pela Cloud Function (admin), lido pelo frontend
     match /sascar_posicoes/{id} {
       allow read:  if logado();
@@ -238,6 +233,14 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // Checklist mensal de manutenção preventiva (caminhão tanque)
+    match /checklists_mensais/{id} {
+      allow read:   if temPermissao('manutencao.ver');
+      allow create: if temPermissao('manutencao.criar') || isAtivo();
+      allow update: if temPermissao('manutencao.editar') || isAtivo();
+      allow delete: if temPermissao('manutencao.excluir') || isSuperAdmin();
+    }
+
     // Lançamento de NF (Nota Fiscal por categoria — visão financeira diretoria)
     match /lancamentos_nf/{id} {
       allow read:   if temPermissao('manutencao.ver');
@@ -254,35 +257,74 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
-    // ============================================================
-    // COMPRAS — Propostas de gastos (fluxo de validação)
-    // ============================================================
-    // Gestor cria/edita propostas do PRÓPRIO setor; Diretoria e
-    // Superintendência validam; quem tem ver_todos enxerga todos os setores.
-    // O acesso por LINK de convidado (não logado) passa pelas Cloud Functions
-    // (admin SDK), portanto não precisa de regra pública aqui.
-    match /propostas_compra/{id} {
-      allow read:   if temPermissao('compras.ver_todos')
-                    || (temPermissao('compras.ver') && resource.data.setor_id == userDoc().setor_id);
-      allow create: if temPermissao('compras.criar')
-                    && (isSuperAdmin() || request.resource.data.setor_id == userDoc().setor_id);
-      allow update: if temPermissao('compras.aprovar_diretoria')
-                    || temPermissao('compras.aprovar_super')
-                    || temPermissao('compras.convidar')
-                    || (temPermissao('compras.editar')
-                        && (isSuperAdmin() || resource.data.setor_id == userDoc().setor_id));
-      allow delete: if temPermissao('compras.excluir')
-                    && (isSuperAdmin() || resource.data.setor_id == userDoc().setor_id);
+    // Estoque — catálogo de insumos (óleo, filtros, peças, etc)
+    match /estoque_itens/{id} {
+      allow read:   if isAtivo();
+      allow create: if temPermissao('manutencao.criar') || isAtivo();
+      allow update: if temPermissao('manutencao.editar') || isAtivo();
+      allow delete: if isSuperAdmin();
     }
 
-    // Valores comprados lançados pelo setor de Compras (soltos por setor)
-    match /compras_setor/{id} {
-      allow read:   if temPermissao('compras.ver')
-                    || temPermissao('compras.dashboard')
-                    || temPermissao('compras.registrar');
-      allow create: if temPermissao('compras.registrar');
-      allow update: if temPermissao('compras.registrar');
-      allow delete: if temPermissao('compras.registrar');
+    // Estoque — movimentações (entrada/saída, log)
+    match /estoque_movimentacoes/{id} {
+      allow read:   if isAtivo();
+      allow create: if temPermissao('manutencao.criar') || isAtivo();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
     }
+
+    // Compras de pneus — NF de compra com itens em lote
+    match /pneu_compras/{id} {
+      allow read:   if isAtivo();
+      allow create: if isAtivo();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Pneus — cadastro individual (com fogo, marca, medida, posicaoAtual, historicoPosicoes)
+    match /pneus/{id} {
+      allow read:   if temPermissao('pneus.ver') || isAtivo();
+      allow create: if temPermissao('pneus.criar') || isAtivo();
+      allow update: if temPermissao('pneus.editar') || isAtivo();
+      allow delete: if temPermissao('pneus.excluir') || isSuperAdmin();
+    }
+
+    // Movimentações de pneus (instalação, remoção, rodízio, recapagem) — log auditável
+    match /pneu_movimentacoes/{id} {
+      allow read:   if temPermissao('pneus.ver') || isAtivo();
+      allow create: if temPermissao('pneus.criar') || temPermissao('pneus.editar') || isAtivo();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Abastecimentos importados da API CTA Smart (bomba do pátio).
+    // Leitura livre pra logado; escrita só via script server-side (Admin SDK bypassa rules).
+    match /abastecimentos_cta/{id} {
+      allow read:   if isAtivo();
+      allow write:  if false;
+    }
+
+    // Locais favoritos (pátio, filiais, clientes, postos frequentes) — usado em /rotas
+    match /locais_favoritos/{id} {
+      allow read:   if isAtivo();
+      allow create: if isAtivo();
+      allow update: if isAtivo();
+      allow delete: if temPermissao('frota.excluir') || isSuperAdmin();
+    }
+
+    // Compras — pedidos internos + fornecedores + convites de proposta
+    match /compras/{doc=**} {
+      allow read:   if temPermissao('compras.ver')     || isSuperAdmin();
+      allow create: if temPermissao('compras.criar')   || isSuperAdmin();
+      allow update: if temPermissao('compras.editar')  || temPermissao('compras.aprovar') || isSuperAdmin();
+      allow delete: if temPermissao('compras.excluir') || isSuperAdmin();
+    }
+
+    // Intranet — configuração do portão (IPs autorizados + hash da chave) e propostas
+    match /intranet/{doc=**} {
+      allow read:   if temPermissao('intranet.ver')        || isSuperAdmin();
+      allow write:  if temPermissao('intranet.configurar') || isSuperAdmin();
+    }
+
   }
 }

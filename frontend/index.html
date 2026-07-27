@@ -1,13 +1,35 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR" translate="no">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#1a3a5c" />
+    <!-- Favicon: o MESMO do site institucional, em todos os apps do homolog.
+         Vem de public/shortcut-pontual.jpg e os apps PHP irmãos referenciam o
+         arquivo na raiz do domínio, gerado por este build. -->
     <link rel="icon" type="image/jpeg" href="/shortcut-pontual.jpg" />
     <link rel="shortcut icon" type="image/jpeg" href="/shortcut-pontual.jpg" />
     <link rel="apple-touch-icon" href="/shortcut-pontual.jpg" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1a3a5c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Pontual" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="google" content="notranslate" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <!-- A porta de entrada é o portal da intranet (/acesso); cada página troca o
+         título ao montar. Este é só o que aparece antes do React subir. -->
     <title>Intranet - Pontual Brasil Petróleo</title>
+    <script>
+      // Registra service worker só em produção (evita atrapalhar Vite HMR)
+      if ("serviceWorker" in navigator && (location.hostname !== "localhost" && !location.hostname.startsWith("192.168."))) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").catch(() => {});
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

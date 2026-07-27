@@ -14,7 +14,9 @@ export const MODULOS = [
   { id: "atrelamento", label: "Atrelamento" },
   { id: "oc",          label: "Ordens de Carregamento" },
   { id: "manutencao",  label: "Manutenção" },
+  { id: "pneus",       label: "Pneus" },
   { id: "compras",     label: "Compras" },
+  { id: "intranet",    label: "Intranet / Gerenciamento de Sistemas" },
   { id: "ferias",      label: "Férias" },
   { id: "historico",   label: "Histórico" },
   { id: "relatorios",  label: "Relatórios" },
@@ -34,21 +36,30 @@ const EXTRAS = [
   { nome: "financeiro.aprovar",  descricao: "Aprovar lançamentos financeiros", modulo: "financeiro", acao: "aprovar"  },
   { nome: "oc.aprovar",          descricao: "Aprovar ordens de carregamento",  modulo: "oc",         acao: "aprovar"  },
   { nome: "historico.exportar",  descricao: "Exportar histórico de auditoria", modulo: "historico",  acao: "exportar" },
-  // Compras — fluxo de propostas de gastos
-  { nome: "compras.ver_todos",        descricao: "Ver propostas de todos os setores",         modulo: "compras", acao: "ver_todos"        },
-  { nome: "compras.aprovar_diretoria",descricao: "Validar propostas (Diretoria Executiva)",   modulo: "compras", acao: "aprovar_diretoria"},
-  { nome: "compras.aprovar_super",    descricao: "Validar propostas (Superintendência)",      modulo: "compras", acao: "aprovar_super"    },
-  { nome: "compras.convidar",         descricao: "Adicionar aprovadores externos por link",   modulo: "compras", acao: "convidar"         },
-  { nome: "compras.registrar",        descricao: "Registrar valores comprados por setor",     modulo: "compras", acao: "registrar"        },
-  { nome: "compras.dashboard",        descricao: "Ver dashboard de excedentes",               modulo: "compras", acao: "dashboard"        },
-  // O módulo "intranet" saiu daqui: configurar o portal deixou de ser assunto do
-  // Gestão Operacional e virou o painel em /intranet, com privilégios próprios,
-  // por palavra-chave, fora do RBAC deste sistema.
-  //
-  // Sobra conhecida: a string "intranet.configurar" continua dentro do array
-  // permissoes[] dos cargos que a tinham — o seed_rbac.py só cria, nunca remove, e
-  // temPermissao é um includes() que não valida contra este catálogo. Não quebra
-  // nada (ninguém mais consulta essa permissão); limpar exige editar os cargos.
+
+  // Manutenção — granular por aba (retrocompat: quem não tem NENHUMA dessas vê tudo)
+  { nome: "manutencao.dashboard",     descricao: "Ver aba Dashboard (analytics)",         modulo: "manutencao", acao: "aba_dashboard" },
+  { nome: "manutencao.por_veiculo",   descricao: "Ver aba Por Veículo (dashboard placa)", modulo: "manutencao", acao: "aba_por_veiculo" },
+  { nome: "manutencao.por_tipo",      descricao: "Ver aba Por Tipo",                       modulo: "manutencao", acao: "aba_por_tipo" },
+  { nome: "manutencao.alertas",       descricao: "Ver aba Alertas",                        modulo: "manutencao", acao: "aba_alertas" },
+  { nome: "manutencao.conjunto",      descricao: "Ver aba Conjunto (vencimentos consolidados por cavalo+carretas)", modulo: "manutencao", acao: "aba_conjunto" },
+  { nome: "manutencao.lavagem",       descricao: "Ver aba Lavagem",           modulo: "manutencao", acao: "aba_lavagem" },
+  { nome: "manutencao.lubrificacao",  descricao: "Ver aba Lubrificação",      modulo: "manutencao", acao: "aba_lubrificacao" },
+  { nome: "manutencao.calibragem",    descricao: "Ver aba Calibragem",        modulo: "manutencao", acao: "aba_calibragem" },
+  { nome: "manutencao.estoque",       descricao: "Ver aba Estoque (catálogo + entrada/saída de insumos)", modulo: "manutencao", acao: "aba_estoque" },
+  { nome: "manutencao.os_abertura",   descricao: "Ver aba Abertura de OS",                 modulo: "manutencao", acao: "aba_os_abertura" },
+  { nome: "manutencao.os_lancamento", descricao: "Ver aba Lançamento de OS (+ PDF/Ver)",   modulo: "manutencao", acao: "aba_os_lancamento" },
+  { nome: "manutencao.nf",            descricao: "Ver aba Lançamento de NF",               modulo: "manutencao", acao: "aba_nf" },
+  { nome: "manutencao.cadastros",     descricao: "Ver aba Cadastros",                      modulo: "manutencao", acao: "aba_cadastros" },
+
+  // Pneus — ações específicas de movimentação (instalação/remoção/rodízio)
+  { nome: "pneus.instalar", descricao: "Instalar pneu em posição do veículo", modulo: "pneus", acao: "instalar" },
+  { nome: "pneus.remover",  descricao: "Remover pneu de posição do veículo",  modulo: "pneus", acao: "remover"  },
+  { nome: "pneus.rodizio",  descricao: "Rodízio (trocar posição) de pneu",    modulo: "pneus", acao: "rodizio"  },
+
+  { nome: "compras.aprovar",     descricao: "Aprovar pedido de compra",                  modulo: "compras",  acao: "aprovar"     },
+  { nome: "intranet.configurar", descricao: "Configurar Intranet / Gerenciamento",       modulo: "intranet", acao: "configurar"  },
+  { nome: "intranet.propostas",  descricao: "Gerenciar propostas + convites",            modulo: "intranet", acao: "propostas"   },
 ];
 
 function rotulo(modulo, acao) {

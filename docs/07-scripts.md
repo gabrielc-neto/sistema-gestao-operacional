@@ -194,3 +194,13 @@ Convenções:
 - ❌ **NUNCA logar conteúdo da chave** no console ou em arquivos
 - ❌ **NUNCA mandar a chave por email/chat** — basta gerar nova no Firebase Console
 - ✅ **Apagar scripts one-off depois de rodar** se contiverem credenciais hardcoded (ex: senhas de seed)
+
+---
+
+## Relacionado
+
+- Anterior: [[06-deploy]]
+- Próximo: [[08-desenvolvimento]]
+- [[INDICE|🏠 Voltar ao índice]]
+- [[CLAUDE|📖 Contexto do sistema]]
+- [[MEMORY|🧠 Memórias]]
