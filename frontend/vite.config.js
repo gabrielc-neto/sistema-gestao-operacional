@@ -18,6 +18,16 @@ export default defineConfig({
         changeOrigin: true,
         headers: { connection: 'close' },
       },
+      // API da intranet (PHP + PostgreSQL, na VPS). Em produção a SPA e a API
+      // são servidas pelo mesmo host, então isto vale só para o dev local —
+      // sem o proxy, seria requisição cross-origin e o navegador barraria.
+      // Aponta para o ambiente de HOMOLOGAÇÃO: mexer no painel em dev altera
+      // os dados de lá.
+      '/intranet-api': {
+        target: 'https://web-homol.pontualpetroleo.com.br',
+        changeOrigin: true,
+        secure: true,
+      },
     },
   },
   build: {

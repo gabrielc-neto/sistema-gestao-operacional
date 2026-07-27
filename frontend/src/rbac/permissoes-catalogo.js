@@ -23,7 +23,6 @@ export const MODULOS = [
   { id: "setores",     label: "Setores" },
   { id: "cargos",      label: "Cargos" },
   { id: "permissoes",  label: "Permissões" },
-  { id: "intranet",    label: "Gerenciamento de Sistemas" },
 ];
 
 export const ACOES = ["ver", "criar", "editar", "excluir"];
@@ -42,8 +41,14 @@ const EXTRAS = [
   { nome: "compras.convidar",         descricao: "Adicionar aprovadores externos por link",   modulo: "compras", acao: "convidar"         },
   { nome: "compras.registrar",        descricao: "Registrar valores comprados por setor",     modulo: "compras", acao: "registrar"        },
   { nome: "compras.dashboard",        descricao: "Ver dashboard de excedentes",               modulo: "compras", acao: "dashboard"        },
-  // Intranet — módulo de configuração do portão de acesso
-  { nome: "intranet.configurar",      descricao: "Configurar rede autorizada e palavra-chave do Gerenciamento de Sistemas", modulo: "intranet", acao: "configurar" },
+  // O módulo "intranet" saiu daqui: configurar o portal deixou de ser assunto do
+  // Gestão Operacional e virou o painel em /intranet, com privilégios próprios,
+  // por palavra-chave, fora do RBAC deste sistema.
+  //
+  // Sobra conhecida: a string "intranet.configurar" continua dentro do array
+  // permissoes[] dos cargos que a tinham — o seed_rbac.py só cria, nunca remove, e
+  // temPermissao é um includes() que não valida contra este catálogo. Não quebra
+  // nada (ninguém mais consulta essa permissão); limpar exige editar os cargos.
 ];
 
 function rotulo(modulo, acao) {

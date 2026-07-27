@@ -7,7 +7,7 @@ import { useRBAC } from "../rbac/RBACContext";
 import {
   Menu, X, LayoutDashboard, Truck, Link2, ClipboardList, Users, Wrench,
   History, Palmtree, MapPin, UserCog, ShieldCheck, Building2, Briefcase,
-  Clock, LogOut, Sun, Moon, ChevronRight, ShoppingCart, Network,
+  Clock, LogOut, Sun, Moon, ChevronRight, ShoppingCart, LayoutGrid,
 } from "lucide-react";
 
 /* ─── Catálogo de módulos, agrupado (mesma lógica de permissão do Dashboard) ── */
@@ -44,7 +44,9 @@ const GRUPOS = [
       { Icon: Building2,   label: "Setores",             link: "/admin/setores", perm: "setores.ver" },
       { Icon: Briefcase,   label: "Cargos & Permissões", link: "/admin/cargos",  perm: "cargos.ver" },
       { Icon: UserCog,     label: "Usuários",            link: "/usuarios",      perm: "usuarios.ver" },
-      { Icon: Network,     label: "Configurações - Gerenciamento de Sistemas", link: "/admin/intranet", perm: "intranet.configurar" },
+      // "Configurações - Gerenciamento de Sistemas" saiu daqui: configurar o portal
+      // da intranet não é assunto do Gestão Operacional. Virou o painel em /intranet,
+      // dentro do próprio portal, com acesso por palavra-chave.
       { Icon: ShieldCheck, label: "Permissões (legado)", link: "/permissoes",    perm: "permissoes.ver" },
     ],
   },
@@ -164,8 +166,14 @@ export default function MenuNavegacao({ variante = "escuro" }) {
             ))}
           </nav>
 
-          {/* Rodapé — tema + sair */}
+          {/* Rodapé — portal + tema + sair */}
           <div className="nav-footer">
+            {/* Volta para a grade de sistemas da intranet sem encerrar a sessão.
+                Antes disto, a única saída daqui era "Sair", que desloga. */}
+            <button className="nav-foot-btn" onClick={() => ir("/sistemas")}>
+              <LayoutGrid size={17} />
+              <span>Voltar ao portal</span>
+            </button>
             <button className="nav-foot-btn" onClick={toggleTheme}>
               {isDark ? <Sun size={17} /> : <Moon size={17} />}
               <span>{isDark ? "Tema claro" : "Tema escuro"}</span>

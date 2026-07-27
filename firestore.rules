@@ -184,14 +184,10 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
-    // Configuração da Intranet (rede autorizada + palavra-chave).
-    // Lida/gravada só por quem administra a Intranet. O portão público valida
-    // via Cloud Function (admin SDK), então NÃO há leitura pública aqui —
-    // o hash da palavra-chave nunca é exposto ao navegador anônimo.
-    match /intranet/{id} {
-      allow read:  if temPermissao('intranet.configurar');
-      allow write: if temPermissao('intranet.configurar');
-    }
+    // A intranet saiu do Firestore: portal, links, pessoas, sessoes e historico
+    // vivem agora em PostgreSQL na VPS de homologacao, atras da API em
+    // /intranet-api (ver api-intranet/ e db/intranet/). Nao ha mais nenhuma
+    // colecao intranet_* aqui.
 
     // Rastreamento SASCAR — gravado pela Cloud Function (admin), lido pelo frontend
     match /sascar_posicoes/{id} {

@@ -5,7 +5,10 @@ import { PermissionsProvider } from "./contexts/PermissionsContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { RBACProvider } from "./rbac/RBACContext";
 import RotaProtegida from "./rbac/RotaProtegida";
-import Login from "./pages/Login";
+// Telas públicas da intranet: eager, como a antiga Login. São a porta de entrada,
+// e o lazy inseriria o fallback do Suspense no meio da animação de saída de /acesso.
+import Acesso from "./pages/Acesso";
+import Sistemas from "./pages/Sistemas";
 
 const Dashboard   = lazy(() => import("./pages/Dashboard"));
 const Frota       = lazy(() => import("./pages/Frota"));
@@ -25,8 +28,12 @@ const Usuarios    = lazy(() => import("./pages/Usuarios"));
 const ImportAdmin = lazy(() => import("./pages/ImportAdmin"));
 const Setores     = lazy(() => import("./pages/admin/Setores"));
 const Cargos      = lazy(() => import("./pages/admin/Cargos"));
-const ConfiguracoesIntranet = lazy(() => import("./pages/admin/ConfiguracoesIntranet"));
+// Configurar a intranet deixou de ser assunto do Gestão Operacional: virou o
+// painel em /intranet, dentro do próprio portal, com acesso por palavra-chave.
 const IntranetArea= lazy(() => import("./pages/IntranetArea"));
+// Validação pública de certificados. Sem login e sem palavra-chave: quem confere
+// está fora da empresa (ver o cabeçalho da página).
+const Certificado = lazy(() => import("./pages/Certificado"));
 
 const Loading = () => (
   <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16, background:"var(--bg)" }}>
@@ -42,12 +49,6 @@ function PrivateRoute({ children }) {
   if (!user) return <Navigate to="/" replace />;
   if (profile && profile.ativo === false) return <Navigate to="/" replace />;
   return children;
-}
-
-function PublicRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return <Loading />;
-  return user ? <Navigate to="/dashboard" replace /> : children;
 }
 
 // Helper para condensar PrivateRoute + RotaProtegida.
@@ -70,10 +71,28 @@ export default function App() {
             <BrowserRouter>
               <Suspense fallback={<Loading />}>
                 <Routes>
-                  <Route path="/"            element={<PublicRoute><Login /></PublicRoute>} />
+                  {/* Intranet pública, em duas páginas: /acesso é a porta de entrada
+                      (splash + anel de ícones) e /sistemas lista os sistemas e trata o
+                      que vem depois deles. A raiz só encaminha para a porta de entrada.
+
+                      Estas rotas NÃO usam PublicRoute de propósito. O portal é o hub de 12
+                      sistemas, a maioria sem relação com o SGO — estar logado no SGO não pode
+                      impedir de voltar aqui para abrir o Service Desk ou o Canal de Integridade.
+                      Envolvê-las em PublicRoute prendia o usuário logado num laço: voltar ao
+                      portal era interceptado e devolvido ao /dashboard. Quem redireciona para o
+                      /dashboard depois de autenticar é a própria Sistemas.jsx, na tela de login. */}
+                  <Route path="/"            element={<Navigate to="/acesso" replace />} />
+                  <Route path="/acesso"      element={<Acesso />} />
+                  <Route path="/sistemas"    element={<Sistemas />} />
 
                   {/* Convite público a UMA proposta (sem login, via token no link) */}
                   <Route path="/proposta-convite/:id" element={<PropostaConvite />} />
+
+                  {/* Validação de certificado — aberta a qualquer um, de fora da
+                      empresa inclusive. Duas formas: a tela com o campo de código,
+                      e o link direto (QR impresso no documento), que já consulta. */}
+                  <Route path="/certificado"         element={<Certificado />} />
+                  <Route path="/certificado/:codigo" element={<Certificado />} />
 
                   {/* Área interna da Intranet — acesso liberado pelo portão (rede + palavra-chave),
                       sem login Firebase. A própria página valida a flag de sessão do portão. */}
@@ -99,7 +118,6 @@ export default function App() {
                   <Route path="/usuarios"        element={<Privada permissao="usuarios.ver"><Usuarios /></Privada>} />
                   <Route path="/admin/setores"   element={<Privada permissao="setores.ver"><Setores /></Privada>} />
                   <Route path="/admin/cargos"    element={<Privada permissao="cargos.ver"><Cargos /></Privada>} />
-                  <Route path="/admin/intranet"  element={<Privada permissao="intranet.configurar"><ConfiguracoesIntranet /></Privada>} />
                   <Route path="/permissoes"      element={<Privada permissao="permissoes.ver"><Permissoes /></Privada>} />
                   <Route path="/import"          element={<PrivateRoute><ImportAdmin /></PrivateRoute>} />
                 </Routes>
