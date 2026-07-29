@@ -143,6 +143,19 @@ export default function Usuarios() {
     }
   }
 
+  async function resetarSenha(u) {
+    const novaSenha = window.prompt(`Nova senha para "${u.nome || u.email}"\n(mínimo 6 caracteres):`);
+    if (novaSenha == null) return; // cancelou
+    if (String(novaSenha).length < 6) { alert("Senha muito curta — mínimo 6 caracteres."); return; }
+    if (!window.confirm(`Confirmar reset da senha de "${u.nome || u.email}"?\n\nA senha nova ficará: ${novaSenha}\n\nAvise o usuário.`)) return;
+    try {
+      await authApi.resetSenha(u.id, novaSenha);
+      alert(`Senha resetada. Nova senha: ${novaSenha}`);
+    } catch (e) {
+      alert("Erro ao resetar: " + (e.message || e));
+    }
+  }
+
   async function excluir(u) {
     if (!window.confirm(`Excluir PERMANENTEMENTE "${u.nome || u.email}"?\n\nEssa ação não pode ser desfeita.\nSe quiser só bloquear o acesso, use "Inativar".`)) return;
     try {
@@ -253,6 +266,13 @@ export default function Usuarios() {
                       <div style={{ display: "flex", gap: 6 }}>
                         <ProtegerPor permissao="usuarios.editar">
                           <button style={s.btnEdit} onClick={() => abrirEditar(u)}>Editar</button>
+                        </ProtegerPor>
+                        <ProtegerPor permissao="usuarios.editar">
+                          <button
+                            style={{ ...s.btnEdit, background: "var(--info-bg, #dbeafe)", color: "var(--info, #1d4ed8)" }}
+                            onClick={() => resetarSenha(u)}>
+                            Senha
+                          </button>
                         </ProtegerPor>
                         <ProtegerPor permissao="usuarios.editar">
                           <button
