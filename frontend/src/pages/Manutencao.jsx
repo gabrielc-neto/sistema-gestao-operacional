@@ -95,7 +95,7 @@ const CAMPO_LABEL = {
 const EMPTY_FORM = { data_realiz:"", venc:"", agendamento:"", local:"", numero_doc:"", km_atual:"", km_prox:"", resp:"", obs:"" };
 
 // Abertura de OS — form vazio (bloqueia o veículo, NÃO tem custo)
-const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "", fornecedor: "", fornecedorCnpj: "" };
+const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "", fornecedor: "", fornecedorCnpj: "", itens: [] };
 const EMPTY_CONCLUSAO = { kmSaida: "", mecanico: "", oficina: "", servicoExecutado: "", fornecedor: "", fornecedorCnpj: "", assinaturaMotorista: null, garantiaDias: "90" };
 
 // Lançamento de NF — registro de nota fiscal/custo (NÃO bloqueia o veículo)
@@ -336,18 +336,18 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
     const fim = fimPeriodo(periodo, agora, customFim);
 
     const filtrados = (lancamentos || []).filter(l => {
-      const t = new Date(l.criadoEm || l.dataHora).getTime();
+      const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at).getTime();
       return Number.isFinite(t) && t >= ini && t <= fim;
     });
 
-    const totalGeral = filtrados.reduce((s, l) => s + (Number(l.valorTotal) || 0), 0);
+    const totalGeral = filtrados.reduce((s, l) => s + (Number(l.valorTotal ?? l.valor_total) || 0), 0);
 
     // Agrupa lançamentos por categoria, guardando total + registros para a série mensal
     const porCategoria = {};
     for (const l of filtrados) {
       const cat = (l.tipoLancamento || "Sem categoria").trim() || "Sem categoria";
       if (!porCategoria[cat]) porCategoria[cat] = { total: 0, registros: [] };
-      porCategoria[cat].total += (Number(l.valorTotal) || 0);
+      porCategoria[cat].total += (Number(l.valorTotal ?? l.valor_total) || 0);
       porCategoria[cat].registros.push(l);
     }
     const ranking = Object.entries(porCategoria)
@@ -359,7 +359,7 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
     else if (periodo === "ano") mesesNoPeriodo = agora.getMonth() + 1;
     else if (filtrados.length === 0) mesesNoPeriodo = 1;
     else {
-      const ts = filtrados.map(l => new Date(l.criadoEm || l.dataHora).getTime()).filter(Number.isFinite);
+      const ts = filtrados.map(l => new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at).getTime()).filter(Number.isFinite);
       const minT = Math.min(...ts);
       const dM = (agora.getTime() - minT) / (1000 * 60 * 60 * 24 * 30.4);
       mesesNoPeriodo = Math.max(1, Math.round(dM));
@@ -397,11 +397,11 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
       const cor = PALETA_CAT[i % PALETA_CAT.length];
       const mesesSerie = monthsTemplate.map(m => ({ ...m, valor: 0 }));
       for (const l of (porCategoria[r.nome]?.registros || [])) {
-        const t = new Date(l.criadoEm || l.dataHora);
+        const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
         if (!Number.isFinite(t.getTime())) continue;
         const k = `${t.getFullYear()}-${t.getMonth()}`;
         const slot = mesesSerie.find(x => x.key === k);
-        if (slot) slot.valor += (Number(l.valorTotal) || 0);
+        if (slot) slot.valor += (Number(l.valorTotal ?? l.valor_total) || 0);
       }
       const maxMes = Math.max(1, ...mesesSerie.map(m => m.valor));
       const qtdLanc = (porCategoria[r.nome]?.registros || []).length;
@@ -718,7 +718,7 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
     const ini = inicioPeriodo(periodo, agora, customIni);
     const fim = fimPeriodo(periodo, agora, customFim);
     return (lancamentosRaw || []).filter(l => {
-      const t = new Date(l.criadoEm || l.dataHora).getTime();
+      const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at).getTime();
       return Number.isFinite(t) && t >= ini && t <= fim;
     });
   }, [lancamentosRaw, periodo, customIni, customFim]);
@@ -727,7 +727,7 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
   const anosDisponiveis = useMemo(() => {
     const set = new Set([agoraAno]);
     for (const l of (lancamentosRaw || [])) {
-      const t = new Date(l.criadoEm || l.dataHora);
+      const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
       if (Number.isFinite(t.getTime())) set.add(t.getFullYear());
     }
     return Array.from(set).sort((a, b) => b - a);
@@ -743,13 +743,13 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
   } = useMemo(() => {
     const list = lancamentos || [];
     // Total geral (todos os lançamentos, sem filtro de período)
-    const totalGeral = list.reduce((s, l) => s + (Number(l.valorTotal) || 0), 0);
+    const totalGeral = list.reduce((s, l) => s + (Number(l.valorTotal ?? l.valor_total) || 0), 0);
 
     // Distribuição por categoria (pizza)
     const porCategoria = {};
     for (const l of list) {
       const cat = (l.tipoLancamento || "Sem categoria").trim() || "Sem categoria";
-      porCategoria[cat] = (porCategoria[cat] || 0) + (Number(l.valorTotal) || 0);
+      porCategoria[cat] = (porCategoria[cat] || 0) + (Number(l.valorTotal ?? l.valor_total) || 0);
     }
     const dadosPizzaCategoria = Object.entries(porCategoria)
       .map(([name, value]) => ({ name, value }))
@@ -758,10 +758,10 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
     // Evolução mensal do ano selecionado (barras)
     const mesesAnoBarras = Array.from({ length: 12 }, (_, i) => ({ mes: nomeMes(i), valor: 0 }));
     for (const l of list) {
-      const t = new Date(l.criadoEm || l.dataHora);
+      const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
       if (!Number.isFinite(t.getTime())) continue;
       if (t.getFullYear() !== anoBarras) continue;
-      mesesAnoBarras[t.getMonth()].valor += (Number(l.valorTotal) || 0);
+      mesesAnoBarras[t.getMonth()].valor += (Number(l.valorTotal ?? l.valor_total) || 0);
     }
     const dadosBarrasMensal = mesesAnoBarras;
 
@@ -769,7 +769,7 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
     const porPlaca = {};
     for (const l of list) {
       const p = (l.placa || "Sem placa").trim() || "Sem placa";
-      porPlaca[p] = (porPlaca[p] || 0) + (Number(l.valorTotal) || 0);
+      porPlaca[p] = (porPlaca[p] || 0) + (Number(l.valorTotal ?? l.valor_total) || 0);
     }
     const top10Veiculos = Object.entries(porPlaca)
       .map(([placa, valor]) => ({ placa, valor }))
@@ -796,10 +796,10 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
     let acc = 0;
     const dadosLinhaAcumulado = Array.from({ length: 12 }, (_, i) => {
       const valorMes = list.reduce((s, l) => {
-        const t = new Date(l.criadoEm || l.dataHora);
+        const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
         if (!Number.isFinite(t.getTime())) return s;
         if (t.getFullYear() !== anoLinhas || t.getMonth() !== i) return s;
-        return s + (Number(l.valorTotal) || 0);
+        return s + (Number(l.valorTotal ?? l.valor_total) || 0);
       }, 0);
       acc += valorMes;
       return { mes: nomeMes(i), valor: acc };
@@ -1047,7 +1047,7 @@ export default function Manutencao() {
   const navigate    = useNavigate();
   const [searchParams] = useSearchParams();
   const abaInicialUrl = searchParams.get("aba"); // ?aba=os vem do Dashboard "Ver todas"
-  const canDelete   = ["master","admin"].includes(profile?.role);
+  const canDelete   = isSuperAdmin || ["master","admin"].includes(profile?.role);
 
   // Permissões granulares por aba (retrocompat: quem NÃO tem nenhuma sub-perm vê tudo)
   const SUB_ABAS = ["dashboard","por_veiculo","por_tipo","alertas","os_abertura","os_lancamento","nf","cadastros"];
@@ -2020,6 +2020,7 @@ export default function Manutencao() {
         obs:           (formOS.obs || "").trim(),
         fornecedor:    fornecedorNome,
         fornecedorCnpj,
+        itens:         (formOS.itens || []).filter(i => (i.descricao || "").trim()),
         status:        "aberta",
         criadoPor:     usuarioPontual(profile),
         criadoEm:      agora.toISOString(),
@@ -3689,6 +3690,12 @@ export default function Manutencao() {
                       ))}
                     </optgroup>
                   ))}
+                  <optgroup label="Compra / Fornecimento">
+                    <option value="Peça">Peça</option>
+                    <option value="Serviço">Serviço</option>
+                    <option value="Peça + Serviço">Peça + Serviço</option>
+                    <option value="Mão de obra">Mão de obra</option>
+                  </optgroup>
                   <optgroup label="Rápidos (sem cadastro)">
                     <option value="Reparo geral">Reparo geral</option>
                     <option value="Limpeza">Limpeza</option>
@@ -3819,6 +3826,76 @@ export default function Manutencao() {
                   placeholder="Motivo da entrada em manutenção, observações..."
                 />
               </label>
+
+              {/* Itens da OS — peças e serviços (livre digitação, múltiplas linhas, autocomplete do catálogo) */}
+              <div style={{ gridColumn: "1 / -1", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <strong style={{ fontSize: ".9rem", color: "#1a3a5c" }}>Itens da OS (peças e serviços)</strong>
+                  <span style={{ fontSize: ".72rem", color: "#64748b" }}>digite livremente — sugestões do catálogo aparecem enquanto digita</span>
+                </div>
+                <datalist id="dl-pecas">
+                  {itensCatalogo.filter(i => i.tipo === "peca").map(i => <option key={i.id} value={i.nome} />)}
+                </datalist>
+                <datalist id="dl-servicos">
+                  {itensCatalogo.filter(i => i.tipo === "servico").map(i => <option key={i.id} value={i.nome} />)}
+                </datalist>
+                <datalist id="dl-mao-obra">
+                  {itensCatalogo.filter(i => i.tipo === "servico" || i.tipo === "mao_obra").map(i => <option key={i.id} value={i.nome} />)}
+                </datalist>
+                {(formOS.itens || []).length === 0 && (
+                  <p style={{ margin: 0, fontSize: ".8rem", color: "#94a3b8", textAlign: "center", padding: "6px 0" }}>Nenhum item ainda — clique em <strong>+ Adicionar item</strong> abaixo.</p>
+                )}
+                {(formOS.itens || []).map((it, idx) => {
+                  const tipo = it.tipo || "peca";
+                  const listId = tipo === "peca" ? "dl-pecas" : tipo === "servico" ? "dl-servicos" : "dl-mao-obra";
+                  return (
+                    <div key={idx} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <select
+                        style={{ ...s.fieldInput, width: 130, fontSize: ".82rem", padding: "6px 8px" }}
+                        value={tipo}
+                        onChange={e => {
+                          const arr = [...(formOS.itens || [])];
+                          arr[idx] = { ...arr[idx], tipo: e.target.value };
+                          setFormOS({ ...formOS, itens: arr });
+                        }}
+                      >
+                        <option value="peca">Peça</option>
+                        <option value="servico">Serviço</option>
+                        <option value="mao_obra">Mão de obra</option>
+                      </select>
+                      <input
+                        style={{ ...s.fieldInput, flex: 1, fontSize: ".85rem" }}
+                        value={it.descricao || ""}
+                        list={listId}
+                        onChange={e => {
+                          const arr = [...(formOS.itens || [])];
+                          arr[idx] = { ...arr[idx], descricao: e.target.value };
+                          setFormOS({ ...formOS, itens: arr });
+                        }}
+                        placeholder={tipo === "peca" ? "Ex: Bateria 150Ah / Óleo motor 15W40" : tipo === "servico" ? "Ex: Troca de óleo / Alinhamento" : "Ex: Solda no chassi (2h)"}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const arr = (formOS.itens || []).filter((_, i) => i !== idx);
+                          setFormOS({ ...formOS, itens: arr });
+                        }}
+                        style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer", fontSize: ".82rem", fontWeight: 600 }}
+                        title="Remover item"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setFormOS({ ...formOS, itens: [...(formOS.itens || []), { tipo: "peca", descricao: "" }] })}
+                  style={{ alignSelf: "flex-start", padding: "6px 12px", borderRadius: 8, border: "1px dashed #94a3b8", background: "#fff", color: "#1a3a5c", cursor: "pointer", fontSize: ".82rem", fontWeight: 600 }}
+                >
+                  + Adicionar item
+                </button>
+              </div>
 
               <p style={{ gridColumn:"1 / -1", margin:0, fontSize:".75rem", color:"#b45309", background:"#fffbeb", border:"1px solid #fcd34d", borderRadius:8, padding:"8px 10px", lineHeight:1.5 }}>
                 🔒 Ao abrir a OS, o veículo é <strong>bloqueado automaticamente</strong> no sistema (não gera OC) e só é liberado quando a OS for <strong>finalizada</strong>. Depois de aberta, a OS só pode ser editada por <strong>24h</strong>.
@@ -5168,6 +5245,12 @@ export default function Manutencao() {
                     {TIPOS_TODOS.filter(t => t.grupo === "Mecânica").map(t => (
                       <option key={t.id} value={t.label}>{t.label}</option>
                     ))}
+                  </optgroup>
+                  <optgroup label="Compra / Fornecimento">
+                    <option value="Peça">Peça</option>
+                    <option value="Serviço">Serviço</option>
+                    <option value="Peça + Serviço">Peça + Serviço</option>
+                    <option value="Mão de obra">Mão de obra</option>
                   </optgroup>
                   <optgroup label="Outro">
                     {["Reparo geral","Limpeza","Borracharia","Elétrica","Lanternagem / Pintura","Outro"].map(o => (

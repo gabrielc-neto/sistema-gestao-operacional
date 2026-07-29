@@ -2,7 +2,7 @@
 // Interface mantida (cloudinaryConfigured, uploadArquivo) pra não quebrar callers.
 // Backend: POST /api/uploads (multipart) → salva em /var/pontual/uploads/, retorna URL.
 
-import { auth } from "../firebase/config";
+import { getToken } from "./authVPS";
 
 const VPS_BASE = import.meta.env?.VITE_PONTUAL_API_URL || "";
 
@@ -13,8 +13,8 @@ export function cloudinaryConfigured() {
 export async function uploadArquivo(file, { folder = "geral" } = {}) {
   if (!file) throw new Error("Nenhum arquivo selecionado.");
 
-  const token = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
-  if (!token) throw new Error("Não autenticado.");
+  const token = getToken();
+  if (!token) throw new Error("Não autenticado. Faça login novamente.");
 
   const fd = new FormData();
   fd.append("file", file);

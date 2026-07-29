@@ -35,8 +35,36 @@ r.post("/dia", requireAuth, asyncH(async (req, res) => {
   const ttl = data === hojeBRT ? 30_000 : 5 * 60_000;
 
   const { data: cacheData, age, fresh } = await cached(`jornada-eventos:${data}`, ttl, async () => {
-    const eventos = await obterEventosTempoDirecao({ ...creds(), dataInicio, dataFim, quantidade: 3000 });
-    return { eventos, totalEventos: eventos.length };
+    // 1) Tenta SASCAR primeiro (dados frescos)
+    let eventos = [];
+    let fonte = "sascar";
+    try {
+      eventos = await obterEventosTempoDirecao({ ...creds(), dataInicio, dataFim, quantidade: 3000 });
+    } catch (e) {
+      console.warn(`[jornada] SASCAR falhou pra ${data}: ${e.message.slice(0, 120)}`);
+    }
+
+    // 2) Fallback: se SASCAR retornou vazio, busca no banco (histórico persistido)
+    if (eventos.length === 0) {
+      try {
+        const row = await q(`SELECT data FROM documents WHERE collection = 'sascar_jornada_eventos' AND id = $1`, [data]);
+        if (row.length > 0 && Array.isArray(row[0].data?.eventos)) {
+          eventos = row[0].data.eventos;
+          fonte = "banco";
+        }
+      } catch (e) { console.warn(`[jornada] leitura banco falhou: ${e.message}`); }
+    } else {
+      // 3) Se SASCAR retornou dados, PERSISTE no banco (pra ter histórico depois que sumir da SASCAR)
+      try {
+        await q(
+          `INSERT INTO documents (collection, id, data) VALUES ('sascar_jornada_eventos', $1, $2)
+           ON CONFLICT (collection, id) DO UPDATE SET data = EXCLUDED.data`,
+          [data, JSON.stringify({ eventos, salvoEm: new Date().toISOString(), totalEventos: eventos.length })]
+        );
+      } catch (e) { console.warn(`[jornada] persistência banco falhou: ${e.message}`); }
+    }
+
+    return { eventos, totalEventos: eventos.length, fonte };
   });
 
   // Classificação motorista (interno/px) — sempre fresca
@@ -72,6 +100,7 @@ r.post("/dia", requireAuth, asyncH(async (req, res) => {
   res.json({
     data, jornadas, naoIniciaram, totalCadastro,
     totalEventos: cacheData.totalEventos,
+    fonte: cacheData.fonte,
     dataInicio, dataFim, cache: { age, fresh },
   });
 }));
@@ -93,7 +122,25 @@ r.post("/periodo", requireAuth, asyncH(async (req, res) => {
     for (const dia of dias) {
       const { dataInicio: di, dataFim: df } = rangeUtcParaDiaLocal(dia);
       const { data: pj } = await cached(`jornada:${dia}`, 5 * 60_000, async () => {
-        const eventos = await obterEventosTempoDirecao({ ...creds(), dataInicio: di, dataFim: df, quantidade: 3000 });
+        let eventos = [];
+        try {
+          eventos = await obterEventosTempoDirecao({ ...creds(), dataInicio: di, dataFim: df, quantidade: 3000 });
+        } catch (e) { console.warn(`[jornada/periodo] SASCAR falhou ${dia}: ${e.message.slice(0,120)}`); }
+
+        if (eventos.length === 0) {
+          try {
+            const row = await q(`SELECT data FROM documents WHERE collection='sascar_jornada_eventos' AND id=$1`, [dia]);
+            if (row.length > 0 && Array.isArray(row[0].data?.eventos)) eventos = row[0].data.eventos;
+          } catch { /* ok */ }
+        } else {
+          try {
+            await q(
+              `INSERT INTO documents (collection, id, data) VALUES ('sascar_jornada_eventos', $1, $2)
+               ON CONFLICT (collection, id) DO UPDATE SET data = EXCLUDED.data`,
+              [dia, JSON.stringify({ eventos, salvoEm: new Date().toISOString(), totalEventos: eventos.length })]
+            );
+          } catch { /* ok */ }
+        }
         return { jornadas: calcularJornadas(eventos, dia), totalEventos: eventos.length };
       });
       porDia.push({ data: dia, jornadas: pj.jornadas });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { list as dsList } from "../services/genericDataSource";
+import { listAll as dsList } from "../services/manutencaoDataSource";
 import { TrendingUp } from "lucide-react";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -61,7 +61,7 @@ export default function GraficoEvolucaoCustos({ style }) {
 
   const anos = useMemo(() => {
     const s = new Set();
-    lancamentos.forEach(l => { const d = new Date(l.criadoEm || l.dataHora); if (!isNaN(d)) s.add(d.getFullYear()); });
+    lancamentos.forEach(l => { const d = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at); if (!isNaN(d)) s.add(d.getFullYear()); });
     s.add(new Date().getFullYear());
     return [...s].sort((a, b) => b - a);
   }, [lancamentos]);
@@ -71,8 +71,8 @@ export default function GraficoEvolucaoCustos({ style }) {
   const meses = useMemo(() => {
     const arr = Array.from({ length: 12 }, (_, m) => ({ mes: m, valor: 0 }));
     lancamentos.forEach(l => {
-      const d = new Date(l.criadoEm || l.dataHora);
-      if (!isNaN(d) && d.getFullYear() === ano) arr[d.getMonth()].valor += Number(l.valorTotal) || 0;
+      const d = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
+      if (!isNaN(d) && d.getFullYear() === ano) arr[d.getMonth()].valor += Number(l.valorTotal ?? l.valor_total) || 0;
     });
     return arr;
   }, [lancamentos, ano]);
