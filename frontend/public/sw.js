@@ -1,7 +1,8 @@
-/* Pontual Logística — service worker STUB (desativado durante Sprint 2 migração)
+/* Pontual Logística — service worker STUB (v2 — força hard reload)
    Motivo: cada deploy novo tava cacheando versão antiga → tela branca.
    Este SW se auto-remove e limpa todos os caches. */
 
+const SW_VERSION = "2026-07-30-force-reload-2";
 self.addEventListener("install", () => { self.skipWaiting(); });
 
 self.addEventListener("activate", async (e) => {
