@@ -11,7 +11,8 @@
 
 import { auth } from "../firebase/config";
 
-const BASE = import.meta.env.VITE_PONTUAL_API_URL || "http://srv1464919.hstgr.cloud";
+// Vazio = URL relativa (mesma origem HTTPS). Evita mixed content.
+const BASE = import.meta.env.VITE_PONTUAL_API_URL ?? "";
 
 async function getToken() {
   const user = auth?.currentUser;

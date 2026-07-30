@@ -35,6 +35,9 @@ const COLECOES = new Set([
   "vistorias",
   "motoristas_classificacao", "motoristas_desligados",
   "config", "system",
+  // Aliases defensivos pra builds antigos cacheados que ainda chamam via /collections/*
+  // (rotas dedicadas: /api/manutencoes, /api/ordens-servico, /api/lancamentos-os, /api/tipos-manutencao)
+  "manutencoes", "ordens_servico", "lancamentos_os", "tipos_manutencao_custom",
 ]);
 
 function validCol(nome) {

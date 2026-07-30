@@ -1022,15 +1022,16 @@ function NavTab({ icon: Icon, label, active, onClick, accent, badge }) {
 }
 
 // Dropdown de grupo — 1 botão que abre menu com os NavTabs dentro. Click fora fecha.
-function NavGroupDropdown({ label, icon: GroupIcon, active, activeLabel, accent, children }) {
+function NavGroupDropdown({ label, icon: GroupIcon, active, activeLabel, accent, itens, setAba, podeVer }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
     if (!open) return;
     function onDown(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    function onKey(e) { if (e.key === "Escape") setOpen(false); }
     document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
-    return () => { document.removeEventListener("mousedown", onDown); };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
   }, [open]);
   const base = {
     padding: "8px 12px", border: "1px solid transparent", borderRadius: 10,
@@ -1041,12 +1042,10 @@ function NavGroupDropdown({ label, icon: GroupIcon, active, activeLabel, accent,
   const activeStyle = active
     ? { background: accent || "#1a3a5c", color: "#fff", borderColor: accent || "#1a3a5c", boxShadow: `0 4px 12px ${accent || "#1a3a5c"}40` }
     : {};
+  const itensVisiveis = itens.filter(i => podeVer(i.key));
   return (
-    <div ref={ref} style={{ position: "relative", display: "inline-block" }} onClick={(e) => {
-      // fecha ao clicar num NavTab dentro (bubbling)
-      if (e.target.closest("button") !== e.currentTarget.querySelector(":scope > button")) setOpen(false);
-    }}>
-      <button type="button" style={{ ...base, ...activeStyle }} onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+      <button type="button" style={{ ...base, ...activeStyle }} onClick={() => setOpen(o => !o)}
         onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = accent || "#1a3a5c"; } }}
         onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#475569"; } }}>
         {GroupIcon && <GroupIcon size={16} strokeWidth={2.2} />}
@@ -1060,7 +1059,33 @@ function NavGroupDropdown({ label, icon: GroupIcon, active, activeLabel, accent,
           boxShadow: "0 10px 30px rgba(0,0,0,.12)", padding: 6,
           display: "flex", flexDirection: "column", gap: 2, minWidth: 200,
         }}>
-          {children}
+          {itensVisiveis.map((it, idx) => {
+            const Icon = it.icon;
+            const isActive = false; // dentro do dropdown, mostra sempre em estado normal
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => { setAba(it.id); setOpen(false); }}
+                style={{
+                  padding: "8px 12px", border: "none", borderRadius: 8, background: "transparent",
+                  cursor: "pointer", fontSize: ".85rem", fontWeight: 600, color: "#1a3a5c",
+                  display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit",
+                  textAlign: "left", width: "100%",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#f1f5f9"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                {Icon && <Icon size={16} strokeWidth={2.2} color={it.accent || "#475569"} />}
+                <span style={{ flex: 1 }}>{it.label}</span>
+                {it.badge && (
+                  <span style={{ background: it.badge.color, color: "#fff", borderRadius: 20, fontSize: ".62rem", fontWeight: 800, padding: "1px 6px", minWidth: 16, textAlign: "center" }}>
+                    {it.badge.text}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1096,9 +1121,10 @@ export default function Manutencao() {
   const canDelete   = isSuperAdmin || ["master","admin"].includes(profile?.role);
 
   // Permissões granulares por aba (retrocompat: quem NÃO tem nenhuma sub-perm vê tudo)
-  const SUB_ABAS = ["dashboard","por_veiculo","por_tipo","alertas","os_abertura","os_lancamento","nf","cadastros"];
+  const SUB_ABAS = ["dashboard","por_veiculo","por_tipo","alertas","conjunto","lavagem","lubrificacao","calibragem","estoque","os_abertura","os_lancamento","nf","cadastros"];
   const usaSubPerms = SUB_ABAS.some(k => temPermissao(`manutencao.${k}`));
-  const podeVerAba = (sub) => !usaSubPerms || temPermissao(`manutencao.${sub}`);
+  // Super admin sempre passa; senão respeita RBAC granular
+  const podeVerAba = (sub) => isSuperAdmin || !usaSubPerms || temPermissao(`manutencao.${sub}`);
 
   const [registros,      setRegistros]      = useState({});
   const [todosRegistros, setTodosRegistros] = useState([]);
@@ -2699,63 +2725,58 @@ export default function Manutencao() {
           </div>
         )}
 
-        {(podeVerAba("por_veiculo") || podeVerAba("por_tipo") || podeVerAba("alertas") || podeVerAba("conjunto") || podeVerAba("lavagem") || podeVerAba("lubrificacao") || podeVerAba("calibragem")) && (() => {
-          const abasManut = ["veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem"];
-          const activeManut = abasManut.includes(aba);
-          const activeLabel = { veiculo:"Por Veículo", tipo:"Por Tipo", alertas:"Alertas", conjunto:"Conjunto", lavagem:"Lavagem", lubrificacao:"Lubrificação", calibragem:"Calibragem" }[aba];
-          return (
-            <NavGroupDropdown label="Manutenção" icon={Truck} active={activeManut} activeLabel={activeLabel} accent="#2563eb">
-              {podeVerAba("por_veiculo") && <NavTab icon={Truck} label="Por Veículo" active={aba==="veiculo"} onClick={() => setAba("veiculo")} accent="#2563eb" />}
-              {podeVerAba("por_tipo") && <NavTab icon={ListChecks} label="Por Tipo" active={aba==="tipo"} onClick={() => setAba("tipo")} accent="#2563eb" />}
-              {podeVerAba("alertas") && <NavTab icon={AlertTriangle} label="Alertas" active={aba==="alertas"} onClick={() => setAba("alertas")} accent="#dc2626" badge={alertaCount > 0 ? { text: alertaCount, color: "#dc2626" } : null} />}
-              {podeVerAba("conjunto") && <NavTab icon={Layers} label="Conjunto" active={aba==="conjunto"} onClick={() => setAba("conjunto")} accent="#7c3aed" />}
-              {podeVerAba("lavagem") && <NavTab icon={Droplet} label="Lavagem" active={aba==="lavagem"} onClick={() => setAba("lavagem")} accent="#0891b2" />}
-              {podeVerAba("lubrificacao") && <NavTab icon={SprayCan} label="Lubrificação" active={aba==="lubrificacao"} onClick={() => setAba("lubrificacao")} accent="#059669" />}
-              {podeVerAba("calibragem") && <NavTab icon={Gauge} label="Calibragem" active={aba==="calibragem"} onClick={() => setAba("calibragem")} accent="#dc2626" />}
-            </NavGroupDropdown>
-          );
-        })()}
+        {(podeVerAba("por_veiculo") || podeVerAba("por_tipo") || podeVerAba("alertas") || podeVerAba("conjunto") || podeVerAba("lavagem") || podeVerAba("lubrificacao") || podeVerAba("calibragem")) && (
+          <NavGroupDropdown label="Manutenção" icon={Truck} active={["veiculo","tipo","alertas","conjunto","lavagem","lubrificacao","calibragem"].includes(aba)} activeLabel={{veiculo:"Por Veículo",tipo:"Por Tipo",alertas:"Alertas",conjunto:"Conjunto",lavagem:"Lavagem",lubrificacao:"Lubrificação",calibragem:"Calibragem"}[aba]} accent="#2563eb"
+            setAba={setAba} podeVer={podeVerAba} alertaCount={alertaCount}
+            itens={[
+              { key:"por_veiculo", label:"Por Veículo", icon:Truck, id:"veiculo", accent:"#2563eb" },
+              { key:"por_tipo", label:"Por Tipo", icon:ListChecks, id:"tipo", accent:"#2563eb" },
+              { key:"alertas", label:"Alertas", icon:AlertTriangle, id:"alertas", accent:"#dc2626", badge: alertaCount > 0 ? { text: alertaCount, color:"#dc2626" } : null },
+              { key:"conjunto", label:"Conjunto", icon:Layers, id:"conjunto", accent:"#7c3aed" },
+              { key:"lavagem", label:"Lavagem", icon:Droplet, id:"lavagem", accent:"#0891b2" },
+              { key:"lubrificacao", label:"Lubrificação", icon:SprayCan, id:"lubrificacao", accent:"#059669" },
+              { key:"calibragem", label:"Calibragem", icon:Gauge, id:"calibragem", accent:"#dc2626" },
+            ]}
+          />
+        )}
 
-        {podeVerAba("estoque") && (() => {
-          const activeIns = ["estoque","fornecedores","requisicoes"].includes(aba);
-          const activeLabel = { estoque:"Estoque", fornecedores:"Fornecedores", requisicoes:"Requisições" }[aba];
-          return (
-            <NavGroupDropdown label="Insumos" icon={Package} active={activeIns} activeLabel={activeLabel} accent="#0f172a">
-              <NavTab icon={Package} label="Estoque" active={aba==="estoque"} onClick={() => setAba("estoque")} accent="#0f172a" />
-              <NavTab icon={Store} label="Fornecedores" active={aba==="fornecedores"} onClick={() => setAba("fornecedores")} accent="#0f172a" />
-              <NavTab icon={ShoppingCartIco} label="Requisições" active={aba==="requisicoes"} onClick={() => setAba("requisicoes")} accent="#4338ca" />
-            </NavGroupDropdown>
-          );
-        })()}
+        {podeVerAba("estoque") && (
+          <NavGroupDropdown label="Insumos" icon={Package} active={["estoque","fornecedores","requisicoes"].includes(aba)} activeLabel={{estoque:"Estoque",fornecedores:"Fornecedores",requisicoes:"Requisições"}[aba]} accent="#0f172a"
+            setAba={setAba} podeVer={() => true}
+            itens={[
+              { key:"_", label:"Estoque", icon:Package, id:"estoque", accent:"#0f172a" },
+              { key:"_", label:"Fornecedores", icon:Store, id:"fornecedores", accent:"#0f172a" },
+              { key:"_", label:"Requisições", icon:ShoppingCartIco, id:"requisicoes", accent:"#4338ca" },
+            ]}
+          />
+        )}
 
-        {(podeVerAba("os_abertura") || podeVerAba("os_lancamento")) && (() => {
-          const activeOS = ["os","os_lanc"].includes(aba);
-          const activeLabel = aba === "os" ? "Abertura" : aba === "os_lanc" ? "Lançamento" : null;
-          return (
-            <NavGroupDropdown label="Ordens de Serviço" icon={FilePlus2} active={activeOS} activeLabel={activeLabel} accent="#16a34a">
-              {podeVerAba("os_abertura") && <NavTab icon={FilePlus2} label="Abertura" active={aba==="os"} onClick={() => setAba("os")} accent="#16a34a" badge={ordensServico.length > 0 ? { text: ordensServico.length, color: "#16a34a" } : null} />}
-              {podeVerAba("os_lancamento") && <NavTab icon={FileText} label="Lançamento" active={aba==="os_lanc"} onClick={() => setAba("os_lanc")} accent="#16a34a" />}
-            </NavGroupDropdown>
-          );
-        })()}
+        {(podeVerAba("os_abertura") || podeVerAba("os_lancamento")) && (
+          <NavGroupDropdown label="Ordens de Serviço" icon={FilePlus2} active={["os","os_lanc"].includes(aba)} activeLabel={{os:"Abertura",os_lanc:"Lançamento"}[aba]} accent="#16a34a"
+            setAba={setAba} podeVer={podeVerAba}
+            itens={[
+              { key:"os_abertura", label:"Abertura", icon:FilePlus2, id:"os", accent:"#16a34a", badge: ordensServico.length > 0 ? { text: ordensServico.length, color:"#16a34a" } : null },
+              { key:"os_lancamento", label:"Lançamento", icon:FileText, id:"os_lanc", accent:"#16a34a" },
+            ]}
+          />
+        )}
 
         <div style={s.navGroup}>
           <span style={s.navGroupLabel}>Preventiva</span>
           <NavTab icon={ClipboardCheck} label="Checklist Mensal" active={aba==="checklist"} onClick={() => setAba("checklist")} accent="#0891b2" />
         </div>
 
-        {podeVerAba("nf") && (() => {
-          const activeFin = ["lancamento","cpk","preditiva","indicadores"].includes(aba);
-          const activeLabel = { lancamento:"Lançamento NF", cpk:"CPK", preditiva:"Preditiva", indicadores:"Indicadores" }[aba];
-          return (
-            <NavGroupDropdown label="Financeiro" icon={Receipt} active={activeFin} activeLabel={activeLabel} accent="#4338ca">
-              <NavTab icon={Receipt} label="Lançamento de NF" active={aba==="lancamento"} onClick={() => setAba("lancamento")} accent="#4338ca" badge={lancamentos.length > 0 ? { text: lancamentos.length, color: "#4338ca" } : null} />
-              <NavTab icon={TrendingUp} label="CPK" active={aba==="cpk"} onClick={() => setAba("cpk")} accent="#4338ca" />
-              <NavTab icon={Brain} label="Preditiva" active={aba==="preditiva"} onClick={() => setAba("preditiva")} accent="#7c3aed" />
-              <NavTab icon={LayoutDashboard} label="Indicadores" active={aba==="indicadores"} onClick={() => setAba("indicadores")} accent="#0891b2" />
-            </NavGroupDropdown>
-          );
-        })()}
+        {podeVerAba("nf") && (
+          <NavGroupDropdown label="Financeiro" icon={Receipt} active={["lancamento","cpk","preditiva","indicadores"].includes(aba)} activeLabel={{lancamento:"Lançamento NF",cpk:"CPK",preditiva:"Preditiva",indicadores:"Indicadores"}[aba]} accent="#4338ca"
+            setAba={setAba} podeVer={() => true}
+            itens={[
+              { key:"_", label:"Lançamento de NF", icon:Receipt, id:"lancamento", accent:"#4338ca", badge: lancamentos.length > 0 ? { text: lancamentos.length, color:"#4338ca" } : null },
+              { key:"_", label:"CPK", icon:TrendingUp, id:"cpk", accent:"#4338ca" },
+              { key:"_", label:"Preditiva", icon:Brain, id:"preditiva", accent:"#7c3aed" },
+              { key:"_", label:"Indicadores", icon:LayoutDashboard, id:"indicadores", accent:"#0891b2" },
+            ]}
+          />
+        )}
 
         {podeVerAba("cadastros") && (
           <div style={s.navGroup}>

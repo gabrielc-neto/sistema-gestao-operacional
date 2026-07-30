@@ -44,7 +44,8 @@ r.post("/", requireAuth, upload.single("file"), asyncH(async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "no_file" });
   const rel = req.file.path.replace(config.uploadsDir + "/", "").replace(config.uploadsDir + "\\", "");
   const publicId = rel.replace(/\\/g, "/");
-  const url = `${req.protocol}://${req.get("host")}${config.uploadsBaseUrl}/${publicId}`;
+  // URL relativa (funciona em qualquer host que sirva a app — evita mixed-content e cross-origin)
+  const url = `${config.uploadsBaseUrl}/${publicId}`;
   res.status(201).json({
     url,
     publicId,
