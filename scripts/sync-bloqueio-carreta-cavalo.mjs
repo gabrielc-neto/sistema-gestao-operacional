@@ -30,11 +30,12 @@ if (existsSync(ENV_PATH)) {
 const APPLY = process.argv.includes("--apply");
 const VPS_HOST = process.env.VPS_HOST || "72.60.8.135";
 const VPS_USER = process.env.VPS_USER || "root";
-const VPS_PASS = process.env.VPS_PASS;
-const PG_PASS  = process.env.PG_PASS;
+// Aceita nomes da convencao do projeto (VPS_SSH_PASS, DB_PASS) ou os antigos (VPS_PASS, PG_PASS).
+const VPS_PASS = process.env.VPS_SSH_PASS || process.env.VPS_PASS;
+const PG_PASS  = process.env.DB_PASS || process.env.PG_PASS;
 
 if (!VPS_PASS || !PG_PASS) {
-  console.error("ERR: defina VPS_PASS e PG_PASS em scripts/.env.vps");
+  console.error("ERR: defina VPS_SSH_PASS e DB_PASS em scripts/.env.vps");
   process.exit(2);
 }
 
