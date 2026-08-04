@@ -9,16 +9,33 @@
 import { initializeApp, cert } from 'firebase-admin/app';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { readFileSync, existsSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const keyPath = resolve(__dirname, '../../scripts/serviceAccountKey.json');
 initializeApp({ credential: cert(keyPath), projectId: 'pontual-logistica' });
 
+// Carrega scripts/.env.cta (gitignored) — CTA_TOKEN=xxx
+const ENV_PATH = resolve(__dirname, '../../scripts/.env.cta');
+if (existsSync(ENV_PATH)) {
+  for (const line of readFileSync(ENV_PATH, 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+  }
+}
+
 const { sincronizarCtaAgora } = await import('../src/cta/sincronizar.js');
 
 const argDe   = process.argv.find(a => a.startsWith('--de='));
 const argAte  = process.argv.find(a => a.startsWith('--ate='));
-const TOKEN   = (process.argv.find(a => a.startsWith('--token=')) || '=bEsu0JDwbL').split('=')[1];
+const argTok  = process.argv.find(a => a.startsWith('--token='));
+const TOKEN   = argTok ? argTok.split('=')[1] : process.env.CTA_TOKEN;
+if (!TOKEN) {
+  console.error('ERR: defina CTA_TOKEN em scripts/.env.cta ou passe --token=<token> na CLI');
+  console.error('Exemplo scripts/.env.cta:');
+  console.error('  CTA_TOKEN=seu_token_aqui');
+  process.exit(2);
+}
 const DRY     = process.argv.includes('--dry-run');
 const INTERVAL_MS = Number(process.env.CTA_INTERVAL_MS) || 65_000;
 

@@ -5,6 +5,7 @@ import {
 import { list as dsList, watch as dsWatch } from "../services/genericDataSource";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useRBAC } from "../rbac/RBACContext";
 import LogoPontual from "../components/LogoPontual";
 import VeiculoQR from "../components/VeiculoQR";
 import { QrCode, Rows3, LayoutGrid, Columns2, Lock as LockIco, Unlock as UnlockIco, Edit3 } from "lucide-react";
@@ -184,9 +185,11 @@ export default function Frota() {
   const [listaMotoristas, setListaMotoristas] = useState([]);
   const [feriasAtivas, setFeriasAtivas] = useState(new Set());
   const { profile } = useAuth();
+  const { temPermissao } = useRBAC();
   const navigate = useNavigate();
   const role      = profile?.role || "";
   const isAdmin   = ["master","admin"].includes(role);
+  const podeCriar = temPermissao("frota.criar") || isAdmin;
   const canBlock   = ["master","admin","manutencao","logistica"].includes(role);
   const canUnblock = ["master","admin","manutencao"].includes(role);
 
@@ -414,7 +417,7 @@ export default function Frota() {
           <span style={s.sub} className="hide-mobile">{lista.length} veículos cadastrados</span>
         </div>
         <div style={{ marginLeft:"auto", display:"flex", gap:8 }} className="pg-header-actions">
-          {isAdmin && (
+          {podeCriar && (
             <button style={s.btnNovo} className="frota-header-btn" onClick={abrirNovo}>
               <Ico.Plus size={16} />
               <span className="hide-mobile">Novo veículo</span>

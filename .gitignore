@@ -47,6 +47,17 @@ firebase-debug.log
 
 # Credenciais sensíveis
 scripts/serviceAccountKey.json
+**/serviceAccountKey*.json
+*.pem
+*.key
+*.pfx
+*.p12
+.env.vps
+scripts/.env.cta
+scripts/.env.sascar
+
+# Outputs de auditoria de segurança (contêm segredos em plaintext nos findings)
+docs/auditoria/
 
 # Binários grandes (baixar separado)
 scripts/bin/

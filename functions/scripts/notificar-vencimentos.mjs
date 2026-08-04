@@ -11,7 +11,7 @@
 
 import admin from 'firebase-admin';
 import { readFileSync, existsSync } from 'fs';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import nodemailer from 'nodemailer';
@@ -43,17 +43,22 @@ const db = admin.firestore();
 /** Dispara toast Windows via PowerShell (BurntToast-free) */
 function toastWindows(titulo, msg) {
   if (SILENT) { console.log(`[SILENT] ${titulo} · ${msg}`); return; }
-  const t = String(titulo).replace(/"/g, "'").slice(0, 60);
-  const m = String(msg).replace(/"/g, "'").slice(0, 400);
+  const t = String(titulo).slice(0, 60);
+  const m = String(msg).slice(0, 400);
+  // Passa strings via env vars — evita injection em PowerShell (backtick, $(), etc)
   const ps = `Add-Type -AssemblyName System.Windows.Forms; ` +
     `$n = New-Object System.Windows.Forms.NotifyIcon; ` +
     `$n.Icon = [System.Drawing.SystemIcons]::Information; ` +
     `$n.Visible = $true; ` +
-    `$n.ShowBalloonTip(10000, "${t}", "${m}", 'Info'); ` +
+    `$n.ShowBalloonTip(10000, $env:TOAST_TITULO, $env:TOAST_MSG, 'Info'); ` +
     `Start-Sleep -Seconds 11; ` +
     `$n.Dispose()`;
   try {
-    execSync(`powershell -NoProfile -WindowStyle Hidden -Command "${ps}"`, { stdio: 'ignore', timeout: 15000 });
+    spawnSync('powershell', ['-NoProfile', '-WindowStyle', 'Hidden', '-Command', ps], {
+      stdio: 'ignore',
+      timeout: 15000,
+      env: { ...process.env, TOAST_TITULO: t, TOAST_MSG: m },
+    });
   } catch (e) {
     console.warn('toast falhou:', e.message);
   }

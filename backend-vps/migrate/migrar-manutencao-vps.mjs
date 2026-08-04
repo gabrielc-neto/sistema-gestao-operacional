@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 const SERVICE_ACCOUNT = process.env.SA_PATH || "/var/pontual/serviceAccountKey.json";
 const DB = {
   host: "127.0.0.1", port: 5432, database: "pontual",
-  user: "pontual_app", password: process.env.DB_PASS || "GrCkanrD2zwmkhz8RVh98CIY",
+  user: "pontual_app", password: process.env.DB_PASS,
 };
 
 // Firestore

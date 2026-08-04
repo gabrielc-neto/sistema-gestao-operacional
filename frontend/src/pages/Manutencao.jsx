@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { uploadArquivo } from "../services/cloudinary"; // cloudinary.js agora bate no VPS
 import { usuarioPontual } from "../utils/format";
@@ -1024,15 +1025,38 @@ function NavTab({ icon: Icon, label, active, onClick, accent, badge }) {
 // Dropdown de grupo — 1 botão que abre menu com os NavTabs dentro. Click fora fecha.
 function NavGroupDropdown({ label, icon: GroupIcon, active, activeLabel, accent, itens, setAba, podeVer }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+
+  // Recalcula posição do menu baseado no botão (position: fixed via portal — escapa overflow do pai)
+  const updatePos = useCallback(() => {
+    if (!btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 6, left: rect.left });
+  }, []);
+
   useEffect(() => {
     if (!open) return;
-    function onDown(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    updatePos();
+    function onDown(e) {
+      const clickedButton = btnRef.current && btnRef.current.contains(e.target);
+      const clickedMenu   = menuRef.current && menuRef.current.contains(e.target);
+      if (!clickedButton && !clickedMenu) setOpen(false);
+    }
     function onKey(e) { if (e.key === "Escape") setOpen(false); }
+    function onScrollOrResize() { updatePos(); }
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
-  }, [open]);
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, [open, updatePos]);
   const base = {
     padding: "8px 12px", border: "1px solid transparent", borderRadius: 10,
     background: "transparent", cursor: "pointer", fontSize: ".82rem", fontWeight: 600,
@@ -1044,24 +1068,23 @@ function NavGroupDropdown({ label, icon: GroupIcon, active, activeLabel, accent,
     : {};
   const itensVisiveis = itens.filter(i => podeVer(i.key));
   return (
-    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
-      <button type="button" style={{ ...base, ...activeStyle }} onClick={() => setOpen(o => !o)}
+    <div style={{ position: "relative", display: "inline-block" }}>
+      <button ref={btnRef} type="button" style={{ ...base, ...activeStyle }} onClick={() => setOpen(o => !o)}
         onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = accent || "#1a3a5c"; } }}
         onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#475569"; } }}>
         {GroupIcon && <GroupIcon size={16} strokeWidth={2.2} />}
         <span>{label}{active && activeLabel ? `: ${activeLabel}` : ""}</span>
         <ChevronDown size={14} strokeWidth={2.4} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
       </button>
-      {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50,
+      {open && createPortal(
+        <div ref={menuRef} style={{
+          position: "fixed", top: pos.top, left: pos.left, zIndex: 9999,
           background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0",
-          boxShadow: "0 10px 30px rgba(0,0,0,.12)", padding: 6,
+          boxShadow: "0 10px 30px rgba(0,0,0,.15)", padding: 6,
           display: "flex", flexDirection: "column", gap: 2, minWidth: 200,
         }}>
           {itensVisiveis.map((it, idx) => {
             const Icon = it.icon;
-            const isActive = false; // dentro do dropdown, mostra sempre em estado normal
             return (
               <button
                 key={idx}
@@ -1086,7 +1109,8 @@ function NavGroupDropdown({ label, icon: GroupIcon, active, activeLabel, accent,
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -2019,25 +2043,55 @@ export default function Manutencao() {
       || null;
   }
 
+  // Se `veiculo` é carreta, retorna o cavalo atrelado (que tem c1 ou c2 = placa da carreta). Senão, null.
+  function cavaloAtreladoACarreta(veiculo) {
+    if (!veiculo || veiculo.tipo !== "carreta") return null;
+    const placaCarreta = normP(veiculo.placa);
+    return veiculos.find(v =>
+      v.tipo !== "carreta" &&
+      (normP(v.c1) === placaCarreta || normP(v.c2) === placaCarreta)
+    ) || null;
+  }
+
   // bloqueia o veículo por causa de uma OS aberta (não sobrescreve bloqueio manual prévio)
+  // Se é carreta atrelada, propaga bloqueio pro cavalo também.
   async function bloquearVeiculoPorOS(veiculo, os) {
     if (!veiculo) return;
-    if (veiculo.bloqueio?.ativo) return; // já bloqueado (manual ou outra OS) — mantém
-    const bloqueio = {
-      ativo: true,
-      motivo: "Manutenção",
-      descricao: `OS ${os.numero} — ${os.tipoServico}`,
-      origem: "os",
-      osId: os.id,
-      osNumero: os.numero,
-      bloqueadoPor: quemSou(),
-      bloqueadoEm: new Date().toISOString(),
-    };
-    await patchVeiculo(veiculo.id, { bloqueio });
-    patchVeiculoLocal(veiculo.id, bloqueio);
+    if (!veiculo.bloqueio?.ativo) {
+      const bloqueio = {
+        ativo: true,
+        motivo: "Manutenção",
+        descricao: `OS ${os.numero} — ${os.tipoServico}`,
+        origem: "os",
+        osId: os.id,
+        osNumero: os.numero,
+        bloqueadoPor: quemSou(),
+        bloqueadoEm: new Date().toISOString(),
+      };
+      await patchVeiculo(veiculo.id, { bloqueio });
+      patchVeiculoLocal(veiculo.id, bloqueio);
+    }
+    // Propaga pro cavalo atrelado se a OS é numa carreta
+    const cavalo = cavaloAtreladoACarreta(veiculo);
+    if (cavalo && !cavalo.bloqueio?.ativo) {
+      const bloqCavalo = {
+        ativo: true,
+        motivo: "Manutenção",
+        descricao: `OS ${os.numero} — carreta ${veiculo.placa} atrelada`,
+        origem: "os",
+        osId: os.id,
+        osNumero: os.numero,
+        propagadoDaCarreta: veiculo.id,
+        bloqueadoPor: quemSou(),
+        bloqueadoEm: new Date().toISOString(),
+      };
+      await patchVeiculo(cavalo.id, { bloqueio: bloqCavalo });
+      patchVeiculoLocal(cavalo.id, bloqCavalo);
+    }
   }
 
   // libera o veículo se a OS que estava bloqueando foi finalizada e não há outra OS aberta nele
+  // Se é carreta, também tenta liberar o cavalo atrelado (se não tiver outra pendência).
   async function liberarVeiculoSePossivel(veiculo, osFinalizadaId) {
     if (!veiculo) return;
     if (veiculo.bloqueio?.origem !== "os") return; // bloqueio manual/documento — não mexe
@@ -2056,6 +2110,36 @@ export default function Manutencao() {
     };
     await patchVeiculo(veiculo.id, { bloqueio });
     patchVeiculoLocal(veiculo.id, bloqueio);
+
+    // Propagação de desbloqueio pro cavalo se veículo é carreta
+    const cavalo = cavaloAtreladoACarreta(veiculo);
+    if (cavalo && cavalo.bloqueio?.origem === "os" && cavalo.bloqueio?.propagadoDaCarreta === veiculo.id) {
+      // Verifica se cavalo ainda tem OS própria aberta OU outra carreta atrelada com OS aberta
+      const cavaloTemOSPropria = ordensServico.some(o =>
+        o.id !== osFinalizadaId &&
+        osStatus(o) === "aberta" &&
+        (o.veiculoId === cavalo.id || normP(o.placa) === normP(cavalo.placa))
+      );
+      const outraCarretaComOS = [cavalo.c1, cavalo.c2].filter(Boolean).some(placaC => {
+        if (normP(placaC) === normP(veiculo.placa)) return false; // essa é a carreta atual sendo liberada
+        return ordensServico.some(o =>
+          o.id !== osFinalizadaId &&
+          osStatus(o) === "aberta" &&
+          normP(o.placa) === normP(placaC)
+        );
+      });
+      if (!cavaloTemOSPropria && !outraCarretaComOS) {
+        const bloqCavalo = {
+          ativo: false,
+          origem: "os",
+          motivoAnterior: cavalo.bloqueio?.motivo || "Manutenção carreta",
+          desbloqueadoPor: quemSou(),
+          desbloqueadoEm: new Date().toISOString(),
+        };
+        await patchVeiculo(cavalo.id, { bloqueio: bloqCavalo });
+        patchVeiculoLocal(cavalo.id, bloqCavalo);
+      }
+    }
   }
 
   async function salvarOS(e) {

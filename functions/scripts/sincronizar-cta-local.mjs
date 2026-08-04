@@ -5,7 +5,7 @@
 //   node scripts/sincronizar-cta-local.mjs --dry-run        # simula
 //   node scripts/sincronizar-cta-local.mjs --token=XXXX     # usa token específico
 //
-// Sem argumento --token, usa o padrão do projeto (bEsu0JDwbL).
+// Sem argumento --token, usa o padrão do projeto (<TOKEN_REMOVIDO>).
 
 import { initializeApp, cert } from 'firebase-admin/app';
 import { fileURLToPath } from 'node:url';
@@ -26,7 +26,7 @@ const LOOP        = process.argv.includes('--loop');
 const NO_CONFIRM  = process.argv.includes('--no-confirmar');   // debug: não avança cursor
 const argToken    = process.argv.find(a => a.startsWith('--token='));
 const argData     = process.argv.find(a => a.startsWith('--data-inicio='));
-const TOKEN       = argToken ? argToken.split('=')[1] : (process.env.CTA_TOKEN || 'bEsu0JDwbL');
+const TOKEN       = argToken ? argToken.split('=')[1] : (process.env.CTA_TOKEN);
 const DATA_INICIO = argData  ? argData.split('=')[1]  : null;   // "DD/MM/YYYY" — null = 30 dias atrás
 
 // Intervalo entre chamadas — respeita rate limit (60s) + 5s de folga

@@ -16,19 +16,44 @@
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import pg from "pg";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Client as SshClient } from "ssh2";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Carrega scripts/.env.vps (gitignored) — VPS_PASS + PG_PASS
+const ENV_PATH = path.join(__dirname, "..", "..", "scripts", ".env.vps");
+if (existsSync(ENV_PATH)) {
+  for (const line of readFileSync(ENV_PATH, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+  }
+}
+
 const SERVICE_ACCOUNT = "C:/Users/Logistica01/projetos/logistica-ia/scripts/serviceAccountKey.json";
-const VPS_HOST = "72.60.8.135";
-const VPS_USER = "root";
-const VPS_PASS = process.env.VPS_PASS || "mn+X4OH5U-nBB1lE";
+const VPS_HOST = process.env.VPS_HOST || "72.60.8.135";
+const VPS_USER = process.env.VPS_USER || "root";
+const VPS_PASS = process.env.VPS_PASS;
+const PG_PASS = process.env.PG_PASS;
+
+if (!VPS_PASS || !PG_PASS) {
+  console.error("ERR: defina VPS_PASS e PG_PASS em scripts/.env.vps ou no ambiente");
+  console.error("Exemplo scripts/.env.vps:");
+  console.error("  VPS_HOST=72.60.8.135");
+  console.error("  VPS_USER=root");
+  console.error("  VPS_PASS=xxxx");
+  console.error("  PG_PASS=xxxx");
+  process.exit(2);
+}
+
 const DB = {
   host: "127.0.0.1",  // via túnel
   port: 15432,        // local port pro forward
   database: "pontual",
   user: "pontual_app",
-  password: "GrCkanrD2zwmkhz8RVh98CIY",
+  password: PG_PASS,
 };
 
 // ─── Firestore init ─────────────────────────────────────────

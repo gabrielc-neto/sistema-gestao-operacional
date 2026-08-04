@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 
 const SA = "/var/pontual/serviceAccountKey.json";
 const DB = { host: "127.0.0.1", port: 5432, database: "pontual",
-             user: "pontual_app", password: process.env.DB_PASS || "GrCkanrD2zwmkhz8RVh98CIY" };
+             user: "pontual_app", password: process.env.DB_PASS };
 
 // Coleções a migrar (as ja migradas com schema proprio ficam de fora)
 const COLECOES = [

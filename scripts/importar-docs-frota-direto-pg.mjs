@@ -19,7 +19,7 @@ const XLSX_PATH = path.join(__dirname, "preview-docs-frota.xlsx");
 
 const HOST = "72.60.8.135";
 const USER = "root";
-const PASS = process.env.VPS_PASS || "Pontual@pontual01";
+const PASS = process.env.VPS_PASS;
 const UPLOADS_BASE = "/var/pontual/uploads";
 const BASE_URL = "http://srv1464919.hstgr.cloud/uploads";
 

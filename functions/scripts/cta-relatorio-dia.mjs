@@ -3,7 +3,7 @@
 import { XMLParser } from '../node_modules/fast-xml-parser/src/fxp.js';
 
 const DIA   = process.argv[2] || '14/07/2026';
-const TOKEN = process.env.CTA_TOKEN || 'bEsu0JDwbL';
+const TOKEN = process.env.CTA_TOKEN;
 const URL   = `https://ctasmart.com.br:8443/SvWebSincronizaAbastecimentos?token=${TOKEN}&data_inicio=${encodeURIComponent(DIA)}&data_fim=${encodeURIComponent(DIA)}&confirmar=false`;
 
 const arr = v => v == null ? [] : Array.isArray(v) ? v : [v];

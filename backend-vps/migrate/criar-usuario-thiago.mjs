@@ -7,7 +7,7 @@ const DB = {
   port: 5432,
   database: process.env.DB_NAME || "pontual",
   user: process.env.DB_USER || "pontual_app",
-  password: process.env.DB_PASS || "GrCkanrD2zwmkhz8RVh98CIY",
+  password: process.env.DB_PASS,
 };
 
 const CARGO_ID = "126f1ba0-dbb4-475b-88ef-9b881647cbaa"; // Analista de Logística (criado antes)
