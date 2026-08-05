@@ -19,7 +19,7 @@ r.use(requireAuth);
 
 // Lista coleções permitidas (whitelist pra segurança)
 const COLECOES = new Set([
-  "motoristas", "cargos", "setores", "usuarios", "permissoes_catalogo",
+  "motoristas", "veiculos", "cargos", "setores", "usuarios", "permissoes_catalogo",
   "cercas_eletronicas", "cercas_eventos",
   "checklists_mensais",
   "compras_setor", "propostas_compra", "requisicoes_compra",

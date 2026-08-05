@@ -7,6 +7,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 import { q, q1 } from "../db.js";
 import { cached, getCache, setCache } from "../integracoes/cache.js";
+import { processarEventoEntrada } from "../services/automacao-viagens.js";
 import {
   obterVeiculos,
   obterPacotePosicoesMotorista,
@@ -135,6 +136,17 @@ export async function atualizarPosicoesSascar() {
           })]
         );
         eventos++;
+
+        // Automacao: se este veiculo tem viagem aberta, atualiza status
+        try {
+          const r = await processarEventoEntrada({
+            placa: v.placa, cercaId: cid, cercaNome: c.nome || "",
+            cercaTipo: c.tipo || "", dataPosicao: nova.dataPosicao,
+          });
+          if (r?.acao) console.log(`[automacao-viagem] ${v.placa} → ${r.acao} (cerca: ${r.cerca})`);
+        } catch (e) {
+          console.warn(`[automacao-viagem] falha ${v.placa}: ${e.message}`);
+        }
       }
       // SAIDA
       for (const cid of dentroAntes) {

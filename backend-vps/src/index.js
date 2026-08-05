@@ -20,6 +20,9 @@ import jornadaRoutes from "./routes/jornada.js";
 import ctaRoutes from "./routes/cta.js";
 import authRoutes from "./routes/auth.js";
 import intranetGateRoutes from "./routes/intranet-gate.js";
+import fornecedoresRoutes from "./routes/fornecedores.js";
+import contratosRoutes from "./routes/contratos.js";
+import viagensRoutes from "./routes/viagens.js";
 import { iniciarCronjobs } from "./cron.js";
 
 const app = express();
@@ -52,6 +55,11 @@ app.use("/api/jornada",          jornadaRoutes);
 app.use("/api/cta",              ctaRoutes);
 app.use("/api/auth",             authRoutes);
 app.use("/api/intranet-gate",    intranetGateRoutes);
+
+// Módulo Contratos & Viagens (retiradas de combustível)
+app.use("/api/fornecedores",     fornecedoresRoutes);
+app.use("/api/contratos",        contratosRoutes);
+app.use("/api/viagens",          viagensRoutes);
 
 // 404 catch-all
 app.use((req, res) => res.status(404).json({ error: "not_found", path: req.originalUrl }));

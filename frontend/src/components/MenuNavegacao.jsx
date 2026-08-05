@@ -8,7 +8,7 @@ import {
   Menu, X, LayoutDashboard, Truck, Link2, ClipboardList, Users, Wrench,
   History, Palmtree, MapPin, UserCog, ShieldCheck, Building2, Briefcase,
   Clock, LogOut, Sun, Moon, ChevronRight, ShoppingCart, Network,
-  CircleDot, Fuel, FileUp,
+  CircleDot, Fuel, FileUp, FileText,
 } from "lucide-react";
 
 /* ─── Catálogo de módulos, agrupado (mesma lógica de permissão do Dashboard) ── */
@@ -29,6 +29,8 @@ const GRUPOS = [
       { Icon: Wrench,        label: "Manutenção",             link: "/manutencao",   module: "manutencao" },
       { Icon: CircleDot,     label: "Gestão de Pneus",        link: "/pneus",        module: "pneus" },
       { Icon: Fuel,          label: "Abastecimento",          link: "/abastecimento", sempre: true },
+      { Icon: FileText,      label: "Contratos",              link: "/contratos",    perm: "contratos.ver" },
+      { Icon: Truck,         label: "Viagens (Retiradas)",    link: "/viagens",      perm: "viagens.ver" },
       { Icon: ShoppingCart,  label: "Compras",                link: "/compras",      perm: "compras.ver" },
       { Icon: History,       label: "Histórico",              link: "/historico",    module: "historico" },
       { Icon: Palmtree,      label: "Férias",                 link: "/ferias",       module: "ferias" },

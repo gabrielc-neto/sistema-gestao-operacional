@@ -28,6 +28,9 @@ const ImportAdmin = lazy(() => import("./pages/ImportAdmin"));
 const Setores     = lazy(() => import("./pages/admin/Setores"));
 const Cargos      = lazy(() => import("./pages/admin/Cargos"));
 const Compras            = lazy(() => import("./pages/Compras"));
+const Contratos          = lazy(() => import("./pages/Contratos"));
+const ContratoDetalhe    = lazy(() => import("./pages/ContratoDetalhe"));
+const Viagens            = lazy(() => import("./pages/Viagens"));
 const IntranetArea       = lazy(() => import("./pages/IntranetArea"));
 const ConfiguracoesIntranet = lazy(() => import("./pages/admin/ConfiguracoesIntranet"));
 const PropostaConvite    = lazy(() => import("./pages/PropostaConvite"));
@@ -85,6 +88,9 @@ export default function App() {
                   <Route path="/oc"          element={<Privada permissao="oc.ver"><OC /></Privada>} />
                   <Route path="/manutencao"  element={<Privada permissao="manutencao.ver"><Manutencao /></Privada>} />
                   <Route path="/compras"     element={<Privada permissao="compras.ver"><Compras /></Privada>} />
+                  <Route path="/contratos"    element={<Privada permissao="contratos.ver"><Contratos /></Privada>} />
+                  <Route path="/contratos/:id" element={<Privada permissao="contratos.ver"><ContratoDetalhe /></Privada>} />
+                  <Route path="/viagens"     element={<Privada permissao="viagens.ver"><Viagens /></Privada>} />
                   <Route path="/intranet"    element={<Privada permissao="intranet.ver"><IntranetArea /></Privada>} />
                   <Route path="/abastecimento" element={<PrivateRoute><Abastecimento /></PrivateRoute>} />
                   <Route path="/pneus"       element={<Privada permissao="pneus.ver"><Pneus /></Privada>} />
