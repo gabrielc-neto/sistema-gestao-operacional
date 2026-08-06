@@ -113,6 +113,7 @@ const EMPTY_LANC = {
   placa:          "",
   fornecedor:     "",
   hodometro:      "",
+  nfNumero:       "",
   servicoFeito:   "",
 };
 // Um item (serviço ou peça) dentro do lançamento
@@ -1611,6 +1612,24 @@ export default function Manutencao() {
     };
   }, [conjuntoComStatus]);
 
+  // Gastos NF acumulados por placa (para faixa da aba "Por Veículo")
+  const custoDoVeiculo = useMemo(() => {
+    if (!placa) return { totalAno: 0, totalGeral: 0, qtd: 0, ultimo: null };
+    const p = normP(placa);
+    const anoAtual = new Date().getFullYear();
+    let totalAno = 0, totalGeral = 0, qtd = 0, ultimo = null;
+    for (const l of lancamentos) {
+      if (normP(l.placa) !== p) continue;
+      const v = Number(l.valorTotal) || 0;
+      totalGeral += v;
+      qtd += 1;
+      const dt = l.criadoEm || l.dataHora;
+      if (dt && new Date(dt).getFullYear() === anoAtual) totalAno += v;
+      if (!ultimo || (dt && new Date(dt) > new Date(ultimo.criadoEm || ultimo.dataHora))) ultimo = l;
+    }
+    return { totalAno, totalGeral, qtd, ultimo };
+  }, [lancamentos, placa]);
+
   // ── Aba Por Tipo ──────────────────────────────────────────────────────
   const listaPorTipo = useMemo(() => {
     return todosRegistros
@@ -2507,7 +2526,7 @@ export default function Manutencao() {
     if (!iso) return "—";
     try {
       const d = new Date(iso);
-      return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
     } catch { return iso; }
   }
 
@@ -2656,6 +2675,7 @@ export default function Manutencao() {
         placa,
         fornecedor:     (formLanc.fornecedor || "").trim(),
         hodometro:      numOS(formLanc.hodometro),
+        nfNumero:       (formLanc.nfNumero || "").trim(),
         itens,
         valorTotal,
         servicoFeito:   (formLanc.servicoFeito || "").trim(),
@@ -2922,6 +2942,38 @@ export default function Manutencao() {
               </button>
             )}
           </div>
+
+          {placa && custoDoVeiculo.qtd > 0 && (
+            <div style={{ display:"flex", gap:12, marginBottom:12, background:"var(--card-bg)", border:"1px solid var(--border)", borderRadius:10, padding:"12px 16px", alignItems:"center", flexWrap:"wrap" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, color:"#1a3a5c", fontWeight:700, fontSize:".82rem", textTransform:"uppercase", letterSpacing:".03em" }}>
+                <Receipt size={16} strokeWidth={2.2} />
+                Gastos deste veículo
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", minWidth:120 }}>
+                <span style={{ fontSize:".68rem", color:"#64748b", fontWeight:600, textTransform:"uppercase" }}>Total {new Date().getFullYear()}</span>
+                <span style={{ fontSize:"1.1rem", fontWeight:800, color:"#1a3a5c" }}>{fmtBRL(custoDoVeiculo.totalAno)}</span>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", minWidth:120 }}>
+                <span style={{ fontSize:".68rem", color:"#64748b", fontWeight:600, textTransform:"uppercase" }}>Total geral</span>
+                <span style={{ fontSize:"1.1rem", fontWeight:800, color:"#1a3a5c" }}>{fmtBRL(custoDoVeiculo.totalGeral)}</span>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", minWidth:110 }}>
+                <span style={{ fontSize:".68rem", color:"#64748b", fontWeight:600, textTransform:"uppercase" }}>Lançamentos</span>
+                <span style={{ fontSize:"1.1rem", fontWeight:800, color:"#1a3a5c" }}>{custoDoVeiculo.qtd}</span>
+              </div>
+              {custoDoVeiculo.ultimo && (
+                <div style={{ display:"flex", flexDirection:"column", minWidth:150, marginLeft:"auto" }}>
+                  <span style={{ fontSize:".68rem", color:"#64748b", fontWeight:600, textTransform:"uppercase" }}>Último lançamento</span>
+                  <span style={{ fontSize:".85rem", color:"#1a3a5c", fontWeight:600 }}>
+                    {custoDoVeiculo.ultimo.tipoLancamento || "—"} · {fmtBRL(Number(custoDoVeiculo.ultimo.valorTotal) || 0)}
+                  </span>
+                  <span style={{ fontSize:".7rem", color:"#94a3b8" }}>
+                    {fmtDateTimeBR(custoDoVeiculo.ultimo.criadoEm || custoDoVeiculo.ultimo.dataHora)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           {loading ? (
             <p style={s.info}>Carregando...</p>
@@ -4300,6 +4352,8 @@ export default function Manutencao() {
                   >
                     <option value="">— Nenhuma OS vinculada —</option>
                     {[...ordensServico]
+                      .filter(o => !lancamentos.some(l => (l.osId && l.osId === o.id) || (l.osNumero && o.numero && l.osNumero === o.numero)))
+                      .filter(o => (o.fornecedor || "").trim().toUpperCase() !== "INTERNO")
                       .sort((a, b) => (b.criadoEm || "").localeCompare(a.criadoEm || ""))
                       .map(o => (
                         <option key={o.id} value={o.id}>
@@ -4463,6 +4517,26 @@ export default function Manutencao() {
                   Total do lançamento: <span style={{ fontSize: "1.1rem" }}>{fmtBRL(lancItens.reduce((sum, it) => sum + (Number(it.valorTotal) || 0), 0))}</span>
                 </div>
               </div>
+
+              {(() => {
+                const fornInterno = (formLanc.fornecedor || "").trim().toUpperCase() === "INTERNO";
+                return (
+                  <label style={{ ...s.fieldLabel, marginTop: 12 }}>
+                    Nº da NF <span style={{ color: "#64748b", fontWeight: 400, fontSize: ".72rem" }}>
+                      {fornInterno ? "(serviço interno — não gera NF fiscal)" : "(número da nota fiscal do fornecedor)"}
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      style={{ ...s.fieldInput, background: fornInterno ? "#f1f5f9" : s.fieldInput.background, cursor: fornInterno ? "not-allowed" : "text" }}
+                      value={fornInterno ? "" : formLanc.nfNumero}
+                      onChange={e => setFormLanc({ ...formLanc, nfNumero: e.target.value })}
+                      placeholder={fornInterno ? "Sem NF (serviço interno)" : "Ex: 12345"}
+                      disabled={fornInterno}
+                    />
+                  </label>
+                );
+              })()}
 
               <label style={{ ...s.fieldLabel, marginTop: 12 }}>
                 Serviço feito / descrição

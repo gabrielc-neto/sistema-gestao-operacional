@@ -24,6 +24,7 @@ const ROLE_LABEL = {
   master:"Administrador", admin:"Administrador", diretor:"Diretor",
   superintendente:"Superintendente", gestao:"Gestão", logistica:"Logística",
   comercial:"Comercial", faturamento:"Faturamento", rh:"RH", motorista:"Motorista",
+  super_admin:"Super Admin",
 };
 
 /* ─── Donut (gráfico SVG, sem dependências) ───────────────────────────────── */
@@ -126,7 +127,8 @@ export default function Dashboard() {
 
       listVeiculos().then(veiculos => {
         setFrota({
-          frotaAtiva: veiculos.filter(v => ["ativo","disponivel"].includes(v.status) && v.tipo !== "carreta").length,
+          // Disponíveis = ativos/disponivel E NÃO bloqueados (bloqueio via OS torna indisponível).
+          frotaAtiva: veiculos.filter(v => ["ativo","disponivel"].includes(v.status) && v.tipo !== "carreta" && !v.bloqueio?.ativo).length,
           totalFrota: veiculos.filter(v => v.tipo !== "carreta").length,
           bloqueados: veiculos.filter(v => v.bloqueio?.ativo && v.tipo !== "carreta").length,
         });
@@ -185,7 +187,7 @@ export default function Dashboard() {
     };
   }, []);
 
-  const role      = profile?.role || "visualizador";
+  const role      = profile?.is_super_admin ? "super_admin" : (profile?.role || "visualizador");
   const roleLabel = ROLE_LABEL[role] || role;
   const agora     = new Date();
   const dataFmt   = agora.toLocaleDateString("pt-BR", { weekday:"long", day:"2-digit", month:"long" });
