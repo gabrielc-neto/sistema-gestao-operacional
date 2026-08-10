@@ -37,7 +37,7 @@ import {
   LayoutDashboard, Truck, ListChecks, AlertTriangle, FilePlus2,
   FileText, Receipt, Settings, TrendingUp, FileDown, Eye, Layers, Droplet, Gauge, SprayCan, Package,
   ClipboardCheck, Store, Camera, Circle, AlertCircle, CheckCircle2, Lightbulb, Award, Trash2,
-  AlertOctagon, ShoppingCart as ShoppingCartIco, Clock, CheckSquare, Brain, Printer, ChevronDown,
+  AlertOctagon, ShoppingCart as ShoppingCartIco, Clock, CheckSquare, Brain, Printer, ChevronDown, Search,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -1179,6 +1179,7 @@ export default function Manutencao() {
   );
   const [aba,            setAba]            = useState(primeiraAba);
   const [placa,          setPlaca]          = useState("");
+  const [buscaPlaca,     setBuscaPlaca]     = useState("");
   const [busca,          setBusca]          = useState("");
   const [filtroSt,       setFiltroSt]       = useState("todos");
   const [filtroTipo,     setFiltroTipo]     = useState("civ");
@@ -2903,20 +2904,46 @@ export default function Manutencao() {
         <main style={{ ...s.main, maxWidth: "none", margin: 0, padding: "16px 20px" }} className="pg-body">
           <div style={s.veiculoRow}>
             <label style={s.veiculoLabel}>Veículo</label>
-            <select style={s.veiculoSelect} value={placa} onChange={e => setPlaca(e.target.value)}>
-              <optgroup label="── Cavalos">
-                {veiculos.filter(v => v.tipo !== "carreta").map(v => (
-                  <option key={v.id} value={v.placa}>
-                    {v.placa}{v.modelo ? ` — ${v.modelo}` : ""}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="── Carretas">
-                {veiculos.filter(v => v.tipo === "carreta").map(v => (
-                  <option key={v.id} value={v.placa}>{v.placa}</option>
-                ))}
-              </optgroup>
-            </select>
+            <div style={{ position:"relative", display:"inline-flex", alignItems:"center" }}>
+              <Search size={14} strokeWidth={2.2} style={{ position:"absolute", left:10, color:"#64748b", pointerEvents:"none" }} />
+              <input
+                type="search"
+                value={buscaPlaca}
+                onChange={e => setBuscaPlaca(e.target.value)}
+                placeholder="Buscar placa/modelo…"
+                style={{ padding:"10px 12px 10px 30px", border:"1px solid #e2e8f0", borderRadius:10, fontSize:".85rem", background:"#fff", color:"#1e293b", minWidth:180, fontFamily:"inherit", outline:"none" }}
+                aria-label="Buscar veículo por placa ou modelo"
+              />
+            </div>
+            {(() => {
+              const q = buscaPlaca.trim().toLowerCase();
+              const filtra = (v) => !q || (v.placa || "").toLowerCase().includes(q) || (v.modelo || "").toLowerCase().includes(q);
+              const cavalos = veiculos.filter(v => v.tipo !== "carreta").filter(filtra);
+              const carretas = veiculos.filter(v => v.tipo === "carreta").filter(filtra);
+              return (
+                <select style={s.veiculoSelect} value={placa} onChange={e => setPlaca(e.target.value)}>
+                  {q && cavalos.length === 0 && carretas.length === 0 && (
+                    <option value="" disabled>— nenhum veículo bate com "{buscaPlaca}" —</option>
+                  )}
+                  {cavalos.length > 0 && (
+                    <optgroup label="── Cavalos">
+                      {cavalos.map(v => (
+                        <option key={v.id} value={v.placa}>
+                          {v.placa}{v.modelo ? ` — ${v.modelo}` : ""}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {carretas.length > 0 && (
+                    <optgroup label="── Carretas">
+                      {carretas.map(v => (
+                        <option key={v.id} value={v.placa}>{v.placa}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              );
+            })()}
             {placa && (
                 <div style={s.resumoPills}>
                   {summaryStatus.vencido > 0 && <span style={{ ...s.rPill, background:"#fee2e2", color:"#dc2626" }}>{summaryStatus.vencido} vencido{summaryStatus.vencido>1?"s":""}</span>}
