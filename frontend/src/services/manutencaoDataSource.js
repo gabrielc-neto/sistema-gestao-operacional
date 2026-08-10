@@ -42,7 +42,10 @@ function restResource(colecao) {
 export async function listAll(colecao) {
   if (USE_VPS) {
     const rows = await api.list(restResource(colecao));
-    return rows.map(r => ({ id: r.legacy_id || r.id, ...r }));
+    // Ordem importa: `...r` primeiro, depois override do `id` — senão o UUID
+    // interno do backend sobrescreve o legacy_id composto, e o próximo save
+    // insere registro duplicado ao invés de fazer upsert.
+    return rows.map(r => ({ ...r, id: r.legacy_id || r.id }));
   }
   const snap = await getDocs(collection(db, colecao));
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
