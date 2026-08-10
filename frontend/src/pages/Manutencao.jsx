@@ -194,16 +194,21 @@ function calcStatus(vencStrOuRec, ctx = {}) {
   }
 
   // 2) Cheque por data
+  // vencStr pode vir como "YYYY-MM-DD" (input HTML) ou "YYYY-MM-DDTHH:mm:ss.sssZ" (PG DATE
+  // serializado como ISO datetime). Pegar só os 10 primeiros chars pra evitar
+  // string inválida do tipo "2026-07-27T00:00:00.000ZT00:00:00" → NaN → falso "ok".
   let statusData = "sem_data";
   if (vencStr) {
     const hoje = new Date(); hoje.setHours(0,0,0,0);
-    const venc = new Date(vencStr + "T00:00:00");
+    const venc = new Date(String(vencStr).slice(0, 10) + "T00:00:00");
     const diff = Math.ceil((venc - hoje) / 86400000);
-    if (diff < 0) {
+    if (Number.isNaN(diff)) {
+      statusData = "sem_data";
+    } else if (diff < 0) {
       if (agendamento) {
-        const dag = new Date(agendamento + "T00:00:00");
+        const dag = new Date(String(agendamento).slice(0, 10) + "T00:00:00");
         const diffAg = Math.ceil((dag - hoje) / 86400000);
-        if (diffAg >= 0) statusData = "agendado";
+        if (!Number.isNaN(diffAg) && diffAg >= 0) statusData = "agendado";
         else statusData = "vencido";
       } else {
         statusData = "vencido";
