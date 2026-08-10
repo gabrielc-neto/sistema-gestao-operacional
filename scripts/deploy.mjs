@@ -1,14 +1,23 @@
 // Deploy rápido do frontend pro VPS.
-// Uso: node deploy.mjs                → só frontend (build + upload)
+// Uso: node deploy.mjs                → só frontend (build + backup + upload + extract)
 //      node deploy.mjs --backend      → só backend (upload + pm2 restart)
 //      node deploy.mjs --tudo         → frontend + backend
 //
-// Reduz de ~3 min manuais pra ~30s automático.
+// Reduz de ~3 min manuais pra ~10s automático.
+//
+// Alvo prod frontend: /var/www/prod/intranet.pontualpetroleo.com.br/
+//   (vhost `intranet.pontualpetroleo.com.br` — Apache serve este dir)
+// Merge NÃO-DESTRUTIVO: extract por cima sobrescreve index.html + assets/
+// e preserva assets institucionais do Gabriel (login-*.jpg/png, logos,
+// PDFs, manifest.json, sw.js). Nunca `rm -rf` no dir prod.
 
 import { execSync } from "node:child_process";
 import { statSync } from "node:fs";
 
 const ROOT = "C:/Users/Logistica01/projetos/logistica-ia";
+const PROD_DIR = "/var/www/prod/intranet.pontualpetroleo.com.br";
+const PROD_URL = "https://intranet.pontualpetroleo.com.br/";
+
 const args = process.argv.slice(2);
 const soBackend = args.includes("--backend");
 const tudo = args.includes("--tudo");
@@ -29,16 +38,24 @@ async function deployFrontend() {
   const size = (statSync(`${ROOT}/frontend/_dist.tar.gz`).size / 1024 / 1024).toFixed(1);
   ok(`${size} MB`);
 
+  step("[frontend] backup do prod atual");
+  const stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 15); // YYYYMMDDTHHMMSS → YYYYMMDDHHMMSS
+  const backupPath = `/var/pontual/backup-prod-${stamp}.tar.gz`;
+  execSync(`node vps-ssh.mjs "tar -czf ${backupPath} -C ${PROD_DIR} . 2>/dev/null && ls -la ${backupPath}"`,
+    { cwd: `${ROOT}/scripts`, env: { ...process.env, MSYS_NO_PATHCONV: "1" }, stdio: "inherit" });
+  ok(`backup salvo em ${backupPath}`);
+
   step("[frontend] upload SFTP");
-  execSync(`node vps-scp.mjs "${ROOT}/frontend/_dist.tar.gz" /var/pontual/dist.tar.gz`,
+  execSync(`node vps-scp.mjs "${ROOT}/frontend/_dist.tar.gz" /var/pontual/dist-prod.tar.gz`,
     { cwd: `${ROOT}/scripts`, env: { ...process.env, MSYS_NO_PATHCONV: "1" }, stdio: "inherit" });
 
-  step("[frontend] extraindo no VPS");
-  execSync(`node vps-ssh.mjs "tar -xzf /var/pontual/dist.tar.gz -C /var/pontual/frontend/"`,
+  step("[frontend] extract merge (não-destrutivo) em prod");
+  execSync(`node vps-ssh.mjs "cd ${PROD_DIR} && tar -xzf /var/pontual/dist-prod.tar.gz && rm /var/pontual/dist-prod.tar.gz"`,
     { cwd: `${ROOT}/scripts`, env: { ...process.env, MSYS_NO_PATHCONV: "1" }, stdio: "inherit" });
 
   execSync(`rm ${ROOT}/frontend/_dist.tar.gz`, { shell: "bash" });
-  ok("frontend online em http://srv1464919.hstgr.cloud/");
+  ok(`frontend online em ${PROD_URL}`);
+  ok(`rollback: node scripts/vps-ssh.mjs "cd ${PROD_DIR} && tar -xzf ${backupPath}"`);
 }
 
 async function deployBackend() {
