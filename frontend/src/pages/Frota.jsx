@@ -187,11 +187,12 @@ export default function Frota() {
   const { profile } = useAuth();
   const { temPermissao } = useRBAC();
   const navigate = useNavigate();
-  const role      = profile?.role || "";
-  const isAdmin   = ["master","admin"].includes(role);
-  const podeCriar = temPermissao("frota.criar") || isAdmin;
-  const canBlock   = ["master","admin","manutencao","logistica"].includes(role);
-  const canUnblock = ["master","admin","manutencao"].includes(role);
+  const role         = profile?.role || "";
+  const isSuperAdmin = !!(profile?.is_super_admin || profile?.isSuperAdmin);
+  const isAdmin      = isSuperAdmin || ["master","admin"].includes(role);
+  const podeCriar    = isAdmin || temPermissao("frota.criar");
+  const canBlock     = isAdmin || ["manutencao","logistica"].includes(role) || temPermissao("frota.bloquear");
+  const canUnblock   = isAdmin || role === "manutencao" || temPermissao("frota.desbloquear");
 
   const [flipped, setFlipped] = useState(() => new Set()); // ids de cards virados
   const toggleFlip = (id) => setFlipped(prev => {
@@ -298,7 +299,8 @@ export default function Frota() {
     if (!placa) return alert("Informe a placa!");
     setSalvando(true);
     try {
-      await saveVeiculo(placa, { ...form, placa, empresa: "PONTUAL" });
+      // Backend só aceita motorista_nome (não `motorista`). Mapear aqui pra persistir troca/remoção.
+      await saveVeiculo(placa, { ...form, placa, empresa: "PONTUAL", motorista_nome: form.motorista ?? null });
       for (const n of ["1","2"]) {
         const cPlaca = form[`c${n}`]?.trim().toUpperCase().replace(/[^A-Z0-9]/g,"");
         if (!cPlaca) continue;
@@ -379,24 +381,31 @@ export default function Frota() {
   const lista = veiculos.filter(v => {
     const txt = filtro.toLowerCase();
     const ok = !txt || v.placa?.toLowerCase().includes(txt) || v.modelo?.toLowerCase().includes(txt) || v.fabricante?.toLowerCase().includes(txt) || v.motorista?.toLowerCase().includes(txt) || v.c1?.toLowerCase().includes(txt) || v.c2?.toLowerCase().includes(txt) || v.c3?.toLowerCase().includes(txt);
-    const st = statusFiltro === "todos" || v.status === statusFiltro || (statusFiltro === "ativo" && (v.status === "ativo" || v.status === "disponivel"));
+    const bloqueado = !!v.bloqueio?.ativo;
+    const st = statusFiltro === "todos"
+      || (statusFiltro === "bloqueados" && bloqueado)
+      || (statusFiltro === "ativo" && (v.status === "ativo" || v.status === "disponivel") && !bloqueado)
+      || (statusFiltro !== "bloqueados" && statusFiltro !== "ativo" && v.status === statusFiltro);
     return ok && st;
   });
 
   const counts = { todos: veiculos.length, ativo: veiculos.filter(v => ["ativo","disponivel"].includes(v.status)).length, inativo: veiculos.filter(v => v.status === "inativo").length };
 
-  // estatísticas pra linha do topo (inspirado no guia)
+  // estatísticas pra linha do topo.
+  // Disponíveis = ativos/disponivel E NÃO bloqueados (bloqueio via OS torna indisponível).
+  // Bloqueados = subgrupo temporal (soma com Disponíveis dá o total de ativos).
+  // Status "em_manutencao" não é usado — bloqueio.ativo faz o papel.
   const stats = {
     total: veiculos.length,
-    disponivel: veiculos.filter(v => v.status === "disponivel" || v.status === "ativo").length,
+    disponivel: veiculos.filter(v => (v.status === "disponivel" || v.status === "ativo") && !v.bloqueio?.ativo).length,
+    bloqueados: veiculos.filter(v => v.bloqueio?.ativo).length,
     emViagem: veiculos.filter(v => v.status === "em_viagem").length,
-    manutencao: veiculos.filter(v => v.status === "manutencao").length,
   };
   const statItems = [
     { label:"Total da frota", value:stats.total,       Icon:Ico.Truck,  bg:"#e0e7ff", color:"#4338ca", filtro:"todos" },
-    { label:"Disponíveis",     value:stats.disponivel, Icon:Ico.Check,  bg:"#dcfce7", color:"#15803d", filtro:"ativo" },
-    { label:"Em viagem",       value:stats.emViagem,   Icon:Ico.Route,  bg:"#dbeafe", color:"#1d4ed8", filtro:"em_viagem" },
-    { label:"Em manutenção",   value:stats.manutencao, Icon:Ico.Wrench, bg:"#fef3c7", color:"#b45309", filtro:"manutencao" },
+    { label:"Disponíveis",    value:stats.disponivel,  Icon:Ico.Check,  bg:"#dcfce7", color:"#15803d", filtro:"ativo" },
+    { label:"Bloqueados",     value:stats.bloqueados,  Icon:Ico.Lock,   bg:"#fee2e2", color:"#dc2626", filtro:"bloqueados" },
+    { label:"Em viagem",      value:stats.emViagem,    Icon:Ico.Route,  bg:"#dbeafe", color:"#1d4ed8", filtro:"em_viagem" },
   ];
 
   return (

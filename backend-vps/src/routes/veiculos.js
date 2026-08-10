@@ -16,7 +16,10 @@ const JSON_CAMPOS = ["bloqueio","extras"];
 function enriquecer(row) {
   if (!row) return row;
   const { extras, ...rest } = row;
-  return { ...(extras || {}), ...rest };
+  const merged = { ...(extras || {}), ...rest };
+  // UI lê `v.motorista`, banco grava `motorista_nome`. Alias garante leitura pós-save.
+  merged.motorista = rest.motorista_nome ?? extras?.motorista ?? null;
+  return merged;
 }
 
 // GET /api/veiculos?status=ativo
