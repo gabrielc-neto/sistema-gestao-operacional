@@ -39,7 +39,8 @@ async function deployFrontend() {
   ok(`${size} MB`);
 
   step("[frontend] backup do prod atual");
-  const stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 15); // YYYYMMDDTHHMMSS → YYYYMMDDHHMMSS
+  const iso = new Date().toISOString(); // 2026-08-10T18:38:05.123Z
+  const stamp = `${iso.slice(0,10).replace(/-/g,"")}-${iso.slice(11,19).replace(/:/g,"")}`; // YYYYMMDD-HHMMSS
   const backupPath = `/var/pontual/backup-prod-${stamp}.tar.gz`;
   execSync(`node vps-ssh.mjs "tar -czf ${backupPath} -C ${PROD_DIR} . 2>/dev/null && ls -la ${backupPath}"`,
     { cwd: `${ROOT}/scripts`, env: { ...process.env, MSYS_NO_PATHCONV: "1" }, stdio: "inherit" });
