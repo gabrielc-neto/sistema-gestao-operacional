@@ -1556,6 +1556,28 @@ export default function Manutencao() {
     veiculos.find(v => v.placa === placa) || null,
   [veiculos, placa]);
 
+  // Filtro da busca de placas: cavalos + carretas que batem em placa OU modelo.
+  const veiculosFiltradosBusca = useMemo(() => {
+    const q = buscaPlaca.trim().toLowerCase();
+    const bate = (v) => !q || (v.placa || "").toLowerCase().includes(q) || (v.modelo || "").toLowerCase().includes(q);
+    return {
+      q,
+      cavalos:  veiculos.filter(v => v.tipo !== "carreta").filter(bate),
+      carretas: veiculos.filter(v => v.tipo === "carreta").filter(bate),
+    };
+  }, [veiculos, buscaPlaca]);
+
+  // Autoseleção: se busca não vazia e filtra pra um único veículo, seleciona.
+  useEffect(() => {
+    const { q, cavalos, carretas } = veiculosFiltradosBusca;
+    if (!q) return;
+    const total = cavalos.length + carretas.length;
+    if (total === 1) {
+      const unico = cavalos[0] || carretas[0];
+      if (unico && unico.placa !== placa) setPlaca(unico.placa);
+    }
+  }, [veiculosFiltradosBusca, placa]);
+
   const conjuntoComStatus = useMemo(() => {
     if (!veiculoSelecionado) return [];
     const isCarreta = veiculoSelecionado.tipo === "carreta";
@@ -2915,35 +2937,27 @@ export default function Manutencao() {
                 aria-label="Buscar veículo por placa ou modelo"
               />
             </div>
-            {(() => {
-              const q = buscaPlaca.trim().toLowerCase();
-              const filtra = (v) => !q || (v.placa || "").toLowerCase().includes(q) || (v.modelo || "").toLowerCase().includes(q);
-              const cavalos = veiculos.filter(v => v.tipo !== "carreta").filter(filtra);
-              const carretas = veiculos.filter(v => v.tipo === "carreta").filter(filtra);
-              return (
-                <select style={s.veiculoSelect} value={placa} onChange={e => setPlaca(e.target.value)}>
-                  {q && cavalos.length === 0 && carretas.length === 0 && (
-                    <option value="" disabled>— nenhum veículo bate com "{buscaPlaca}" —</option>
-                  )}
-                  {cavalos.length > 0 && (
-                    <optgroup label="── Cavalos">
-                      {cavalos.map(v => (
-                        <option key={v.id} value={v.placa}>
-                          {v.placa}{v.modelo ? ` — ${v.modelo}` : ""}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {carretas.length > 0 && (
-                    <optgroup label="── Carretas">
-                      {carretas.map(v => (
-                        <option key={v.id} value={v.placa}>{v.placa}</option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-              );
-            })()}
+            <select style={s.veiculoSelect} value={placa} onChange={e => setPlaca(e.target.value)}>
+              {veiculosFiltradosBusca.q && veiculosFiltradosBusca.cavalos.length === 0 && veiculosFiltradosBusca.carretas.length === 0 && (
+                <option value="" disabled>— nenhum veículo bate com "{buscaPlaca}" —</option>
+              )}
+              {veiculosFiltradosBusca.cavalos.length > 0 && (
+                <optgroup label="── Cavalos">
+                  {veiculosFiltradosBusca.cavalos.map(v => (
+                    <option key={v.id} value={v.placa}>
+                      {v.placa}{v.modelo ? ` — ${v.modelo}` : ""}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {veiculosFiltradosBusca.carretas.length > 0 && (
+                <optgroup label="── Carretas">
+                  {veiculosFiltradosBusca.carretas.map(v => (
+                    <option key={v.id} value={v.placa}>{v.placa}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
             {placa && (
                 <div style={s.resumoPills}>
                   {summaryStatus.vencido > 0 && <span style={{ ...s.rPill, background:"#fee2e2", color:"#dc2626" }}>{summaryStatus.vencido} vencido{summaryStatus.vencido>1?"s":""}</span>}
