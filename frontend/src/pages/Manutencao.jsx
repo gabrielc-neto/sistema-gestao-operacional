@@ -1605,8 +1605,10 @@ export default function Manutencao() {
         else if (t.id === "licenca_parana" || t.id === "licenca_federal") padrao = is9eixos;
         else padrao = true;
       }
-      // Se há lista custom, intersecciona com o padrão (não pode exibir o que o tipo de veículo não permite)
-      if (aplicaveis) return padrao && aplicaveis.has(t.id);
+      // Se há lista custom, a escolha explicita do user prevalece sobre o padrão
+      // do tipo de veículo — permite ex.: carreta bitrem (7 eixos) marcar Licença
+      // Paraná/Federal, que o padrão só liga em 9 eixos.
+      if (aplicaveis) return aplicaveis.has(t.id);
       return padrao;
     });
 
