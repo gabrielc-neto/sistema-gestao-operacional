@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { uploadArquivo } from "../services/cloudinary"; // cloudinary.js agora bate no VPS
 import { usuarioPontual } from "../utils/format";
+import { resolverDataHora } from "../utils/dataRetroativa";
 import {
   listAll as dsListAll,
   watch as dsWatch,
@@ -96,7 +97,7 @@ const CAMPO_LABEL = {
 const EMPTY_FORM = { data_realiz:"", venc:"", agendamento:"", local:"", numero_doc:"", km_atual:"", km_prox:"", resp:"", obs:"" };
 
 // Abertura de OS — form vazio (bloqueia o veículo, NÃO tem custo)
-const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "", fornecedor: "", fornecedorCnpj: "", itens: [] };
+const EMPTY_OS = { tipoServico: "", placa: "", motoristaId: "", hodometro: "", obs: "", fornecedor: "", fornecedorCnpj: "", itens: [], dataRetroativa: "" };
 const EMPTY_CONCLUSAO = { kmSaida: "", mecanico: "", oficina: "", servicoExecutado: "", fornecedor: "", fornecedorCnpj: "", assinaturaMotorista: null, garantiaDias: "90" };
 
 // Lançamento de NF — registro de nota fiscal/custo (NÃO bloqueia o veículo)
@@ -115,6 +116,7 @@ const EMPTY_LANC = {
   hodometro:      "",
   nfNumero:       "",
   servicoFeito:   "",
+  dataRetroativa: "",
 };
 // Um item (serviço ou peça) dentro do lançamento
 const EMPTY_ITEM = { tipoItem: "", item: "", quantidade: "", valorUnitario: "" };
@@ -1936,14 +1938,32 @@ export default function Manutencao() {
       if (novos.length > 0) {
         const atualizado = [...anexos, ...novos];
         setAnexos(atualizado);
-        // Persiste imediato: se modal.record existe, atualiza Firestore agora; senão fica pendente até user clicar Salvar
+        // Persiste imediato SEMPRE — mesmo se registro é novo. Cria stub em manutencoes
+        // com placa+tipo+anexos+checklist. Usuário preenche venc/número/local depois.
+        // Evita anexo órfão quando usuário fecha a tela sem clicar "Salvar".
+        const agoraIso = new Date().toISOString();
+        const usuario  = usuarioPontual(profile);
+        const key = `${modal.placa}__${modal.tipo.id}`;
         if (modal.record?.id) {
-          await dsPatch("manutencoes", modal.record.id, { anexos: atualizado, updatedAt: new Date().toISOString(), atualizadoPor: usuarioPontual(profile) });
-          // atualiza registros local sem refazer fetch completo
-          setRegistros(prev => {
-            const key = `${modal.placa}__${modal.tipo.id}`;
-            return prev[key] ? { ...prev, [key]: { ...prev[key], anexos: atualizado } } : prev;
-          });
+          await dsPatch("manutencoes", modal.record.id, { anexos: atualizado, updatedAt: agoraIso, atualizadoPor: usuario });
+          setRegistros(prev => prev[key] ? { ...prev, [key]: { ...prev[key], anexos: atualizado } } : prev);
+        } else {
+          // NOVO registro: cria stub imediato (o botão Salvar depois faz UPSERT com venc/etc)
+          const stub = {
+            placa:         modal.placa,
+            tipo:          modal.tipo.id,
+            label:         modal.tipo.label,
+            grupo:         modal.tipo.grupo,
+            anexos:        atualizado,
+            createdAt:     agoraIso,
+            criadoPor:     usuario,
+            updatedAt:     agoraIso,
+            atualizadoPor: usuario,
+          };
+          await dsSave("manutencoes", key, stub);
+          // Marca record como existente pra próximas ações usarem PATCH
+          setModal(m => m ? { ...m, record: { id: key, ...stub } } : m);
+          setRegistros(prev => ({ ...prev, [key]: { id: key, ...stub } }));
         }
       }
     } catch (e) {
@@ -2215,7 +2235,7 @@ export default function Manutencao() {
       }
       const payload = {
         numero:        proximoNumeroOS(),
-        dataHora:      agora.toISOString(),
+        dataHora:      resolverDataHora(formOS.dataRetroativa, agora),
         tipoServico:   formOS.tipoServico,
         placa,
         veiculoId:     veiculo?.id || null,
@@ -2698,7 +2718,7 @@ export default function Manutencao() {
       const valorTotal = itens.reduce((sum, it) => sum + (Number(it.valorTotal) || 0), 0);
       const payload = {
         numero:         proximoNumeroLanc(),
-        dataHora:       agora.toISOString(),
+        dataHora:       resolverDataHora(formLanc.dataRetroativa, agora),
         osId:           formLanc.osId || "",
         osNumero:       formLanc.osNumero || "",
         tipoLancamento,
@@ -4052,14 +4072,22 @@ export default function Manutencao() {
                 })()}
               </label>
 
-              <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 4 }}>
-                <div style={{ fontSize: ".75rem", color: "#64748b" }}>
-                  Data/hora: <strong style={{ color: "#1a3a5c" }}>preenchida automaticamente ao salvar</strong>
+              <label style={s.fieldLabel}>
+                Data de abertura <span style={{ color: "#64748b", fontWeight: 400, fontSize: ".72rem" }}>(opcional — deixe vazio p/ agora)</span>
+                <input
+                  type="date"
+                  style={s.fieldInput}
+                  value={formOS.dataRetroativa}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={e => setFormOS({ ...formOS, dataRetroativa: e.target.value })}
+                />
+                <div style={{ fontSize: ".7rem", color: "#64748b", marginTop: 3 }}>
+                  {formOS.dataRetroativa
+                    ? <>Retroativo: <strong style={{ color: "#b45309" }}>{new Date(formOS.dataRetroativa + "T00:00").toLocaleDateString("pt-BR")}</strong> · hora = agora · Próximo nº <strong style={{ color: "#1a3a5c" }}>{proximoNumeroOS()}</strong></>
+                    : <>Data/hora = agora · Próximo nº <strong style={{ color: "#1a3a5c" }}>{proximoNumeroOS()}</strong></>
+                  }
                 </div>
-                <div style={{ fontSize: ".75rem", color: "#64748b" }}>
-                  Próximo número: <strong style={{ color: "#1a3a5c" }}>{proximoNumeroOS()}</strong>
-                </div>
-              </div>
+              </label>
 
               <label style={{ ...s.fieldLabel, gridColumn: "1 / -1" }}>
                 Observações / motivo da entrada
@@ -4585,6 +4613,22 @@ export default function Manutencao() {
                   </label>
                 );
               })()}
+
+              <label style={{ ...s.fieldLabel, marginTop: 12 }}>
+                Data do lançamento <span style={{ color: "#64748b", fontWeight: 400, fontSize: ".72rem" }}>(opcional — deixe vazio p/ agora; use p/ NF antiga)</span>
+                <input
+                  type="date"
+                  style={s.fieldInput}
+                  value={formLanc.dataRetroativa}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={e => setFormLanc({ ...formLanc, dataRetroativa: e.target.value })}
+                />
+                {formLanc.dataRetroativa && (
+                  <div style={{ fontSize: ".7rem", color: "#b45309", marginTop: 3 }}>
+                    Retroativo: <strong>{new Date(formLanc.dataRetroativa + "T00:00").toLocaleDateString("pt-BR")}</strong> (hora atual será usada)
+                  </div>
+                )}
+              </label>
 
               <label style={{ ...s.fieldLabel, marginTop: 12 }}>
                 Serviço feito / descrição
