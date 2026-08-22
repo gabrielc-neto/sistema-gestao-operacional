@@ -40,6 +40,20 @@ function pick(body, camel, snake) {
   return undefined;
 }
 
+// Se osId chegar como "OS-00009" (numero legível) em vez de UUID, resolver pra id real.
+// Evita "invalid input syntax for type uuid" quando frontend passa numero da OS.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+async function resolverOsId(v) {
+  if (v == null || v === "") return null;
+  const s = String(v).trim();
+  if (UUID_RE.test(s)) return s;
+  const row = await q1(
+    `SELECT id FROM ordens_servico WHERE numero = $1 OR legacy_id = $1 LIMIT 1`,
+    [s]
+  );
+  return row?.id || null;
+}
+
 // GET /api/lancamentos-os?os_id=...&fornecedor=...&limit=200
 r.get("/", asyncH(async (req, res) => {
   const { os_id, os_numero, fornecedor, placa, limit = 500 } = req.query;
@@ -83,6 +97,11 @@ r.post("/", asyncH(async (req, res) => {
   const cnpj            = pick(b, "cnpj",            "cnpj");
   const obs             = pick(b, "obs",             "obs");
 
+  // Resolve osId (aceita UUID direto OU numero 'OS-XXXXX' que é resolvido pro UUID real)
+  const osIdResolvido = await resolverOsId(osId);
+  // Se osNumero não veio mas osId original era numero, reaproveita
+  const osNumeroFinal = osNumero || (osId && !UUID_RE.test(String(osId)) ? String(osId) : null);
+
   const row = await q1(
     `INSERT INTO lancamentos_os
        (legacy_id, numero, os_id, os_numero, fornecedor, cnpj, nf_numero, nf_serie, nf_chave,
@@ -99,7 +118,7 @@ r.post("/", asyncH(async (req, res) => {
        hodometro=EXCLUDED.hodometro, servico_feito=EXCLUDED.servico_feito,
        editado_em=now()
      RETURNING *`,
-    [b.id || b.numero, b.numero, osId || null, osNumero || null,
+    [b.id || b.numero, b.numero, osIdResolvido, osNumeroFinal,
      fornecedor || null, cnpj || null, nfNumero || null, nfSerie || null, nfChave || null,
      Number(valorTotal) || 0, JSON.stringify(b.itens || []), JSON.stringify(b.anexos || []),
      dataEmissao || null, dataPagamento || null, obs || null,
@@ -127,6 +146,13 @@ r.patch("/:id", asyncH(async (req, res) => {
   const merged = { ...b };
   for (const [camel, snake] of Object.entries(camelToSnake)) {
     if (camel in b && !(snake in b)) merged[snake] = b[camel];
+  }
+
+  // Se veio os_id como "OS-XXXXX" (numero), resolver pra UUID real e mover pra os_numero
+  if ("os_id" in merged && merged.os_id != null && !UUID_RE.test(String(merged.os_id))) {
+    const numeroBruto = String(merged.os_id);
+    merged.os_id = await resolverOsId(numeroBruto);
+    if (!("os_numero" in merged)) merged.os_numero = numeroBruto;
   }
 
   const sets = [], params = [];
