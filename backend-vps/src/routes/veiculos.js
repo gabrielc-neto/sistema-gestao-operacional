@@ -41,6 +41,25 @@ r.get("/:id", asyncH(async (req, res) => {
   res.json(enriquecer(row));
 }));
 
+// Campos internos que NUNCA devem virar extras (id do banco, aliases, timestamps).
+const NAO_EXTRAS = new Set([
+  "id", "legacy_id", "created_at", "updated_at", "createdAt", "updatedAt",
+  "motorista", // alias de leitura gerado por enriquecer()
+]);
+
+// Separa o body em: colunas mapeadas + JSON_CAMPOS + resto (extras dinâmicos).
+// Qualquer campo que o frontend enviar e não estiver em CAMPOS/JSON_CAMPOS vai
+// pra dentro de `extras` — sem whitelist estreito que apagava dados silenciosamente.
+function separarCampos(b) {
+  const conhecidos = new Set([...CAMPOS, ...JSON_CAMPOS]);
+  const extras = {};
+  for (const [k, v] of Object.entries(b)) {
+    if (conhecidos.has(k) || NAO_EXTRAS.has(k)) continue;
+    extras[k] = v;
+  }
+  return extras;
+}
+
 // POST /api/veiculos — upsert por placa (compatível com setDoc merge Firestore)
 r.post("/", asyncH(async (req, res) => {
   const b = req.body || {};
@@ -51,10 +70,20 @@ r.post("/", asyncH(async (req, res) => {
   const cols = ["legacy_id", "placa"];
   const vals = [b.id || placa, placa];
   for (const c of CAMPOS) if (c in b && c !== "placa") { cols.push(c); vals.push(b[c] ?? null); }
-  for (const c of JSON_CAMPOS) if (c in b) { cols.push(c); vals.push(JSON.stringify(b[c] || {})); }
+
+  // JSON_CAMPOS: bloqueio substitui, extras faz deep-merge com o body inteiro (top-level dinâmico + extras explícito)
+  const extrasDinamicos = separarCampos(b);
+  const extrasFinal = { ...extrasDinamicos, ...(b.extras || {}) };
+  if ("bloqueio" in b) { cols.push("bloqueio"); vals.push(JSON.stringify(b.bloqueio || {})); }
+  if (Object.keys(extrasFinal).length) { cols.push("extras"); vals.push(JSON.stringify(extrasFinal)); }
 
   const placeholders = cols.map((_, i) => `$${i + 1}`).join(", ");
-  const updates = cols.filter(c => c !== "placa" && c !== "legacy_id").map(c => `${c}=EXCLUDED.${c}`).join(", ");
+  // Para `extras` usa jsonb_deep_merge — nunca sobrescreve dados salvos com objeto parcial.
+  const updates = cols.filter(c => c !== "placa" && c !== "legacy_id").map(c =>
+    c === "extras"
+      ? `extras = jsonb_deep_merge(COALESCE(veiculos.extras, '{}'::jsonb), EXCLUDED.extras)`
+      : `${c}=EXCLUDED.${c}`
+  ).join(", ");
 
   const row = await q1(
     `INSERT INTO veiculos (${cols.join(", ")}) VALUES (${placeholders})
@@ -70,17 +99,15 @@ r.patch("/:id", asyncH(async (req, res) => {
   const b = req.body || {};
   const sets = [], params = [];
   for (const c of CAMPOS) if (c in b) { params.push(b[c]); sets.push(`${c}=$${params.length}`); }
-  for (const c of JSON_CAMPOS) if (c in b) { params.push(JSON.stringify(b[c])); sets.push(`${c}=$${params.length}`); }
+  if ("bloqueio" in b) { params.push(JSON.stringify(b.bloqueio)); sets.push(`bloqueio=$${params.length}`); }
 
-  // Campos legado que ficam guardados dentro de JSONB `extras` (evita migração de schema).
-  // Ex: documentosAplicaveis, ipem, aet, licenca_paranas etc — qualquer coisa não mapeada.
-  const EXTRAS_KEYS = ["documentosAplicaveis"];
-  const extrasPatch = {};
-  for (const k of EXTRAS_KEYS) if (k in b) extrasPatch[k] = b[k];
+  // Qualquer campo não-mapeado vai pra `extras` (deep-merge, preserva sub-objetos).
+  // Ex: documentosAplicaveis, ipem, aet, licenca_paranas, e qualquer novo doc futuro.
+  const extrasDinamicos = separarCampos(b);
+  const extrasPatch = { ...extrasDinamicos, ...(b.extras || {}) };
   if (Object.keys(extrasPatch).length) {
-    // Merge no jsonb: `extras = COALESCE(extras,'{}') || $N`
     params.push(JSON.stringify(extrasPatch));
-    sets.push(`extras = COALESCE(extras,'{}'::jsonb) || $${params.length}::jsonb`);
+    sets.push(`extras = jsonb_deep_merge(COALESCE(extras,'{}'::jsonb), $${params.length}::jsonb)`);
   }
 
   if (!sets.length) return res.status(400).json({ error: "sem_campos_pra_atualizar" });

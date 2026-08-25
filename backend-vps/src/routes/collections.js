@@ -89,9 +89,11 @@ r.post("/:nome", asyncH(async (req, res) => {
   const id = b.id || randomUUID();
   const { id: _ignore, ...data } = b;
 
+  // jsonb_deep_merge: preserva sub-objetos (documentos.cnh, endereco, contato…)
+  // que o `||` nativo do PG apagava (merge era raso, só top-level).
   const row = await q1(
     `INSERT INTO documents (collection, id, data) VALUES ($1, $2, $3)
-     ON CONFLICT (collection, id) DO UPDATE SET data = documents.data || EXCLUDED.data
+     ON CONFLICT (collection, id) DO UPDATE SET data = jsonb_deep_merge(documents.data, EXCLUDED.data)
      RETURNING id, data`,
     [nome, id, JSON.stringify(data)]
   );
@@ -103,7 +105,7 @@ r.patch("/:nome/:id", asyncH(async (req, res) => {
   const nome = validCol(req.params.nome);
   const b = req.body || {};
   const row = await q1(
-    `UPDATE documents SET data = data || $3::jsonb
+    `UPDATE documents SET data = jsonb_deep_merge(data, $3::jsonb)
      WHERE collection = $1 AND id = $2
      RETURNING id, data`,
     [nome, req.params.id, JSON.stringify(b)]
