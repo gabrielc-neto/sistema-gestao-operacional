@@ -29,8 +29,9 @@ const GRUPOS = [
       { Icon: Wrench,        label: "Manutenção",             link: "/manutencao",   module: "manutencao" },
       { Icon: CircleDot,     label: "Gestão de Pneus",        link: "/pneus",        module: "pneus" },
       { Icon: Fuel,          label: "Abastecimento",          link: "/abastecimento", sempre: true },
-      { Icon: FileText,      label: "Contratos",              link: "/contratos",    perm: "contratos.ver" },
-      { Icon: Truck,         label: "Viagens (Retiradas)",    link: "/viagens",      perm: "viagens.ver" },
+      // Contratos + Viagens ocultos temporariamente (2026-08-10) — módulo em desenvolvimento
+      // { Icon: FileText,      label: "Contratos",              link: "/contratos",    perm: "contratos.ver" },
+      // { Icon: Truck,         label: "Viagens (Retiradas)",    link: "/viagens",      perm: "viagens.ver" },
       { Icon: ShoppingCart,  label: "Compras",                link: "/compras",      perm: "compras.ver" },
       { Icon: History,       label: "Histórico",              link: "/historico",    module: "historico" },
       { Icon: Palmtree,      label: "Férias",                 link: "/ferias",       module: "ferias" },

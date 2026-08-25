@@ -10,6 +10,7 @@ import ModuleHeader from "../components/ModuleHeader";
 import { useRBAC } from "../rbac/RBACContext";
 import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from "../services/api";
 import { list as dsList } from "../services/genericDataSource";
+import { listVeiculos } from "../services/frotaDataSource";
 
 const NAVY = "#18216E";
 const AMARELO = "#F5B800";
@@ -900,7 +901,7 @@ function NovaViagemModal({ contratoPrincipal, onClose, onSalvo }) {
   // Carrega motoristas + cavalos do Firestore
   useEffect(() => {
     dsList("motoristas", { orderBy: "nome" }).then(setMotoristas).catch(() => setMotoristas([]));
-    dsList("veiculos").then(rows => setCavalos(rows.filter(v => v.tipo === "cavalo"))).catch(() => setCavalos([]));
+    listVeiculos().then(rows => setCavalos(rows.filter(v => v.tipo === "cavalo"))).catch(() => setCavalos([]));
   }, []);
 
   // Ao mudar capacidade → pede sugestao de complemento se saldo < capacidade

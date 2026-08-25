@@ -88,9 +88,10 @@ export default function App() {
                   <Route path="/oc"          element={<Privada permissao="oc.ver"><OC /></Privada>} />
                   <Route path="/manutencao"  element={<Privada permissao="manutencao.ver"><Manutencao /></Privada>} />
                   <Route path="/compras"     element={<Privada permissao="compras.ver"><Compras /></Privada>} />
-                  <Route path="/contratos"    element={<Privada permissao="contratos.ver"><Contratos /></Privada>} />
-                  <Route path="/contratos/:id" element={<Privada permissao="contratos.ver"><ContratoDetalhe /></Privada>} />
-                  <Route path="/viagens"     element={<Privada permissao="viagens.ver"><Viagens /></Privada>} />
+                  {/* Contratos + Viagens ocultos temporariamente (2026-08-10) — módulo em desenvolvimento */}
+                  {/* <Route path="/contratos"    element={<Privada permissao="contratos.ver"><Contratos /></Privada>} /> */}
+                  {/* <Route path="/contratos/:id" element={<Privada permissao="contratos.ver"><ContratoDetalhe /></Privada>} /> */}
+                  {/* <Route path="/viagens"     element={<Privada permissao="viagens.ver"><Viagens /></Privada>} /> */}
                   <Route path="/intranet"    element={<Privada permissao="intranet.ver"><IntranetArea /></Privada>} />
                   <Route path="/abastecimento" element={<PrivateRoute><Abastecimento /></PrivateRoute>} />
                   <Route path="/pneus"       element={<Privada permissao="pneus.ver"><Pneus /></Privada>} />
