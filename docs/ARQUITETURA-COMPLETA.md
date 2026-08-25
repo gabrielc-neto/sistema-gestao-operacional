@@ -352,15 +352,75 @@ Todas em `~/.claude/commands/*.md` — carregam sob trigger.
 
 ---
 
-## Como o fluxo funciona na prática
+## Fluxo interno de decisão a cada mensagem sua
 
-1. Você pede algo no terminal
-2. Eu classifico em qual pilar bate
-3. Escolho ferramenta code-first (MCP/CLI/skill) — mais rápido, sem key
-4. Se precisar autônomo/24-7 → aviso que precisa LLM provider e derrubo o pedido pra você decidir
-5. Se subir Docker (Vane/maxun/TencentDB) → subo, uso, derrubo
-6. Registro em `docs/sessoes/YYYY-MM-DD.md`
-7. Se aprender algo permanente → memória `~/.claude/projects/.../memory/`
+```
+1. VOCÊ FALA
+   ↓
+2. LEIO CONTEXTO
+   memória + sessão do dia + regras permanentes + BRAIN.md
+   ↓
+3. CLASSIFICO
+   qual pilar do mapa bate? (código · web · segurança · RAG · comunic. · Pontual)
+   ↓
+4. ESCOLHO A FERRAMENTA MÍNIMA (ladder ponytail)
+   ┌──────────────────────────────────────────────────────────┐
+   │  Rung 1: precisa mesmo? → talvez só resposta em texto    │
+   │  Rung 2: skill/MCP ativo resolve? → chamo direto         │
+   │  Rung 3: CLI (uv tool / npm) → rodo via Bash             │
+   │  Rung 4: Docker on-demand → subo, uso, derrubo           │
+   │  Rung 5: framework autônomo → aviso que precisa key      │
+   └──────────────────────────────────────────────────────────┘
+   ↓
+5. EXECUTO + VERIFICO (verify/truth/no-ai-slop antes de reportar)
+   ↓
+6. REGISTRO em docs/sessoes/YYYY-MM-DD.md
+   ↓
+7. SE APRENDI ALGO PERMANENTE → salvo em memória
+   SE INSTALEI/REMOVI PEÇA → atualizo ARQUITETURA-COMPLETA.md
+```
+
+### Exemplos concretos do dia-a-dia
+
+| Você pede                                             | Eu escolho (ladder)                                                              |
+|-------------------------------------------------------|----------------------------------------------------------------------------------|
+| "acha 10 concorrentes da Pontual"                     | Rung 2: Exa MCP find_similar + deep_research → resposta com fontes               |
+| "extrai preço S10 dos 3 postos concorrentes"          | Rung 3: crawl4ai ou agent-reach direto via Bash                                  |
+| "abre https://portal.pontualpetroleo... e clica em X" | Rung 2: playwright MCP ou chrome-devtools MCP                                    |
+| "roda pentest no /api/lancamentos-os"                 | Rung 3: Strix via Bash com scope explícito                                       |
+| "consulta docs do FastAPI último"                     | Rung 2: context7 MCP                                                             |
+| "acha essa função em todo o repo"                     | Rung 2: serena MCP find_symbol                                                   |
+| "gera PPT executivo dos KPIs da frota"                | Rung 2: skills kpi-assistant + pptx encadeadas                                   |
+| "revisa se meu commit tem vazamento de segredo"       | Rung 2: sentry-mcp + skill security-audit + agente security-reviewer             |
+| "escreve o CRUD de motoristas com testes"             | Rung 2: superpowers TDD skill + agente tdd-guide                                 |
+| "manda email pra Rosilda com relatório"               | Rung 2: Gmail MCP (28 tools) — draft, review, send                               |
+| "cria uma automação que roda 6h todo dia"             | Rung 5: precisa crewAI/OpenHands autônomo → aviso que precisa LLM key + WSL/VPS  |
+| "diagrama de fluxo do módulo X"                       | Rung 2: skill excalidraw-diagram ou mermaid                                      |
+
+### Quem monitora minha atuação (guarda-costas)
+
+- `godmode:quality-gate` → não deixo passar código sem verificar
+- `superpowers:verification-before-completion` → não digo "feito" sem testar
+- `no-ai-slop` → me alerto se estou enrolando ou usando frase-AI-genérica
+- `ponytail` → me alerto se estou sobre-engenheirando
+- `i-have-adhd` → ação primeiro, análise depois
+- `karpathy-guidelines` → evito erros comuns LLM ao codar
+
+### Como você me redireciona no meio
+
+- Digita e envia → eu paro, releio, ajusto rota
+- Palavras-chave: "para", "não é isso", "muda", "esquece" → abandono a rota
+- "atualiza mapa" → regenero ARQUITETURA-COMPLETA.md via `scripts/varredura-arsenal.sh`
+- "onde paramos" → nunca, você já sabe que eu leio a sessão sozinho
+
+### O que EU nunca faço sem você mandar
+
+- Deploy prod (.tech OK, .br só com ordem)
+- Remover ferramenta do arsenal
+- Rotacionar credencial
+- Modificar código sem testar
+- Instalar peça que você não nomeou
+- Commit master que não seja o que você pediu
 
 ---
 
