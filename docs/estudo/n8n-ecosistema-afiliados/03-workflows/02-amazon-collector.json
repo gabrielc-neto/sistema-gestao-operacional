@@ -1,0 +1,91 @@
+{
+  "name": "02 - Amazon PA-API Collector",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 10 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 10min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "1", "name": "keyword", "value": "smartphone", "type": "string" },
+            { "id": "2", "name": "keyword", "value": "notebook", "type": "string" },
+            { "id": "3", "name": "keyword", "value": "smart tv", "type": "string" },
+            { "id": "4", "name": "keyword", "value": "kindle", "type": "string" },
+            { "id": "5", "name": "keyword", "value": "echo dot", "type": "string" }
+          ]
+        }
+      },
+      "id": "keywords",
+      "name": "Keywords",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Amazon PA-API 5 requer assinatura SigV4\n// Usa credencial HTTP Custom + biblioteca externa\n// Este node prepara o payload; a chamada real é feita no HTTP Request abaixo\n\nconst crypto = require('crypto');\nconst keyword = $input.item.json.keyword;\n\nconst payload = {\n  Keywords: keyword,\n  Resources: [\n    'ItemInfo.Title',\n    'ItemInfo.Features',\n    'Offers.Listings.Price',\n    'Offers.Listings.SavingBasis',\n    'Images.Primary.Large'\n  ],\n  PartnerTag: $env.AMAZON_PARTNER_TAG,\n  PartnerType: 'Associates',\n  Marketplace: 'www.amazon.com.br',\n  ItemCount: 10\n};\n\nreturn { json: { payload, keyword } };"
+      },
+      "id": "prep-payload",
+      "name": "Prepara Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://webservices.amazon.com.br/paapi5/searchitems",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json; charset=utf-8" },
+            { "name": "X-Amz-Target", "value": "com.amazon.paapi5.v1.ProductAdvertisingAPIv1.SearchItems" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [{ "name": "payload", "value": "={{ JSON.stringify($json.payload) }}" }]
+        },
+        "options": {}
+      },
+      "id": "http-amazon",
+      "name": "Amazon PA-API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [860, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "ofertas_coletadas",
+        "columns": "fonte,titulo,preco,link_original,link_afiliado,categoria,coletado_em",
+        "additionalFields": {}
+      },
+      "id": "pg-insert",
+      "name": "Salva Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1080, 400]
+    }
+  ],
+  "connections": {
+    "A cada 4h": { "main": [[{ "node": "Keywords", "type": "main", "index": 0 }]] },
+    "Keywords": { "main": [[{ "node": "Prepara Payload", "type": "main", "index": 0 }]] },
+    "Prepara Payload": { "main": [[{ "node": "Amazon PA-API", "type": "main", "index": 0 }]] },
+    "Amazon PA-API": { "main": [[{ "node": "Salva Postgres", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "IMPORTANTE: Amazon PA-API exige assinatura AWS SigV4. Use community node 'n8n-nodes-amazon-paapi' (instala via Settings > Community Nodes) OU use servico intermediario como https://paapi-scratchpad.com. Alternativa: rodar SigV4 manualmente no node Code (biblioteca aws4)."
+  }
+}

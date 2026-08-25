@@ -1,0 +1,99 @@
+{
+  "name": "08 - Méliuz Coupons + Offers Collector",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 5min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://api.meliuz.com.br/v2/coupons",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "limit", "value": "50" },
+            { "name": "sort", "value": "created_at_desc" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Client-Id", "value": "={{ $env.MELIUZ_CLIENT_ID }}" },
+            { "name": "Client-Secret", "value": "={{ $env.MELIUZ_CLIENT_SECRET }}" }
+          ]
+        }
+      },
+      "id": "meliuz-coupons",
+      "name": "Méliuz Coupons API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.meliuz.com.br/v2/offers",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "limit", "value": "50" },
+            { "name": "min_cashback", "value": "3" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Client-Id", "value": "={{ $env.MELIUZ_CLIENT_ID }}" },
+            { "name": "Client-Secret", "value": "={{ $env.MELIUZ_CLIENT_SECRET }}" }
+          ]
+        }
+      },
+      "id": "meliuz-offers",
+      "name": "Méliuz Offers API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse cupons + gera link duplo (afiliado direto + meliuz)\nconst refCode = $env.MELIUZ_REFERRAL_CODE || '';\nconst source = $input.item.json.data?.coupons || $input.item.json.data?.offers || [];\nconst isOffer = !!$input.item.json.data?.offers;\n\nreturn source.map(item => ({\n  json: {\n    fonte: isOffer ? 'meliuz-oferta' : 'meliuz-cupom',\n    titulo: item.title || item.description,\n    codigo: item.code || null,\n    loja: item.store?.name,\n    cashback_pct: parseFloat(item.cashback || 0),\n    link_original: item.url,\n    link_meliuz: `https://www.meliuz.com.br/i/${refCode}?redirect=${encodeURIComponent(item.url)}`,\n    valido_ate: item.expires_at || null,\n    categoria: item.store?.category?.name || 'geral',\n    coletado_em: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "parse",
+      "name": "Parse + Link Duplo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "cupons_coletados",
+        "columns": "fonte,titulo,codigo,link,loja,desconto_pct,valido_ate,coletado_em",
+        "additionalFields": {}
+      },
+      "id": "pg-save",
+      "name": "Salva Cupons",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "A cada 4h": {
+      "main": [[
+        { "node": "Méliuz Coupons API", "type": "main", "index": 0 },
+        { "node": "Méliuz Offers API", "type": "main", "index": 0 }
+      ]]
+    },
+    "Méliuz Coupons API": { "main": [[{ "node": "Parse + Link Duplo", "type": "main", "index": 0 }]] },
+    "Méliuz Offers API": { "main": [[{ "node": "Parse + Link Duplo", "type": "main", "index": 0 }]] },
+    "Parse + Link Duplo": { "main": [[{ "node": "Salva Cupons", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

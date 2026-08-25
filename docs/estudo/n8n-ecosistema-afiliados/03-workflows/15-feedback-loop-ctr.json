@@ -1,0 +1,86 @@
+{
+  "name": "15 - Feedback Loop CTR (sistema aprende com cliques)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 30 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 30min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, kutt_link_id, categoria FROM posts_log WHERE postado_em > NOW() - INTERVAL '7 days' AND kutt_link_id IS NOT NULL"
+      },
+      "id": "pg-posts",
+      "name": "Posts últimos 7 dias",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "url": "=http://kutt:3000/api/v2/links/{{ $json.kutt_link_id }}/stats",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-API-Key", "value": "={{ $env.KUTT_API_KEY }}" }
+          ]
+        }
+      },
+      "id": "http-kutt-stats",
+      "name": "Kutt Stats API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrai cliques totais do link e atualiza posts_log\nconst stats = $input.item.json;\nconst posts = $('Posts últimos 7 dias').item.json;\nconst cliques = stats.total_visits || stats.visit_count || 0;\n\nreturn {\n  json: {\n    post_id: posts.id,\n    categoria: posts.categoria,\n    cliques\n  }\n};"
+      },
+      "id": "parse-stats",
+      "name": "Parse Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE posts_log SET cliques_ultimo_check = {{ $json.cliques }} WHERE id = {{ $json.post_id }}"
+      },
+      "id": "pg-update-post",
+      "name": "Atualiza post",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Recalcula performance por categoria com dados dos últimos 7 dias\nWITH stats AS (\n  SELECT \n    categoria,\n    COUNT(*) as posts_totais,\n    SUM(cliques_ultimo_check) as cliques_totais,\n    CASE WHEN COUNT(*) > 0 \n      THEN (SUM(cliques_ultimo_check)::NUMERIC / COUNT(*)) * 100\n      ELSE 0 END as ctr_pct\n  FROM posts_log\n  WHERE postado_em > NOW() - INTERVAL '7 days'\n    AND categoria IS NOT NULL\n  GROUP BY categoria\n),\nmedia AS (SELECT AVG(ctr_pct) as media_ctr FROM stats WHERE posts_totais >= 5)\nINSERT INTO performance_categoria (categoria, posts_totais, cliques_totais, ctr_pct, boost_score, atualizado_em)\nSELECT \n  s.categoria,\n  s.posts_totais,\n  s.cliques_totais,\n  s.ctr_pct,\n  -- Boost: se CTR > 2x média = +20, > 1.5x = +15, > 1x = +10, > 0.5x = 0, senão -10\n  CASE \n    WHEN s.posts_totais < 5 THEN 0  -- ainda sem dados suficientes\n    WHEN s.ctr_pct > COALESCE((SELECT media_ctr FROM media), 0) * 2 THEN 20\n    WHEN s.ctr_pct > COALESCE((SELECT media_ctr FROM media), 0) * 1.5 THEN 15\n    WHEN s.ctr_pct > COALESCE((SELECT media_ctr FROM media), 0) THEN 10\n    WHEN s.ctr_pct > COALESCE((SELECT media_ctr FROM media), 0) * 0.5 THEN 0\n    ELSE -10\n  END as boost_score,\n  NOW()\nFROM stats s\nON CONFLICT (categoria) DO UPDATE SET\n  posts_totais = EXCLUDED.posts_totais,\n  cliques_totais = EXCLUDED.cliques_totais,\n  ctr_pct = EXCLUDED.ctr_pct,\n  boost_score = EXCLUDED.boost_score,\n  atualizado_em = NOW();"
+      },
+      "id": "pg-recalc",
+      "name": "Recalcula boost por categoria",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1340, 400]
+    }
+  ],
+  "connections": {
+    "A cada 30min": { "main": [[{ "node": "Posts últimos 7 dias", "type": "main", "index": 0 }]] },
+    "Posts últimos 7 dias": { "main": [[{ "node": "Kutt Stats API", "type": "main", "index": 0 }]] },
+    "Kutt Stats API": { "main": [[{ "node": "Parse Stats", "type": "main", "index": 0 }]] },
+    "Parse Stats": { "main": [[{ "node": "Atualiza post", "type": "main", "index": 0 }]] },
+    "Atualiza post": { "main": [[{ "node": "Recalcula boost por categoria", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "Feedback loop CTR. Roda 30min: (1) le cliques do Kutt pra cada post ultimos 7 dias, (2) atualiza posts_log, (3) recalcula CTR medio por categoria e calibra boost_score (-10 a +20). Score Engine (12) consulta performance_categoria e aplica boost automatico. Precisa 5+ posts por categoria pra ativar aprendizado. Amadurece em 2-4 semanas."
+  }
+}

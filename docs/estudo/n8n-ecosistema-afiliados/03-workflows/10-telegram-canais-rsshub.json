@@ -1,0 +1,89 @@
+{
+  "name": "10 - Telegram Canais Públicos (via RSSHub)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 5min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "1", "name": "canal", "value": "ligadaoferta", "type": "string" },
+            { "id": "2", "name": "canal", "value": "ofertanaweb", "type": "string" },
+            { "id": "3", "name": "canal", "value": "prime_ofertas_amazon", "type": "string" },
+            { "id": "4", "name": "canal", "value": "ali_br_ofertas", "type": "string" },
+            { "id": "5", "name": "canal", "value": "ofertaskabum", "type": "string" }
+          ]
+        }
+      },
+      "id": "canais",
+      "name": "Lista Canais TG",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 400]
+    },
+    {
+      "parameters": {
+        "url": "=https://rsshub.app/telegram/channel/{{ $json.canal }}",
+        "options": { "response": { "response": { "responseFormat": "text" } } }
+      },
+      "id": "http-rsshub",
+      "name": "RSSHub → Canal TG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse RSS do RSSHub — pega title, link, description das últimas 20 msgs\nconst xml = String($input.item.json.data || $input.item.json);\nconst matches = [...xml.matchAll(/<item>[\\s\\S]*?<title>(.*?)<\\/title>[\\s\\S]*?<link>(.*?)<\\/link>[\\s\\S]*?<description>([\\s\\S]*?)<\\/description>[\\s\\S]*?<pubDate>(.*?)<\\/pubDate>[\\s\\S]*?<\\/item>/g)];\nconst canal = $('Lista Canais TG').item.json.canal;\n\n// Regex pra extrair links de dentro da description (afiliados alheios)\nconst extractLinks = (desc) => {\n  const urls = [...desc.matchAll(/https?:\\/\\/[^\\s\"'<>]+/g)].map(m => m[0]);\n  return urls.filter(u => !u.includes('t.me') && !u.includes('telegram')).slice(0, 3);\n};\n\nreturn matches.slice(0, 20).map(m => {\n  const desc = m[3].replace(/<!\\[CDATA\\[|\\]\\]>/g, '').trim();\n  const links = extractLinks(desc);\n  return {\n    json: {\n      fonte: `telegram-${canal}`,\n      titulo: m[1].replace(/<!\\[CDATA\\[|\\]\\]>/g, '').trim().slice(0, 200),\n      descricao_original: desc.replace(/<[^>]+>/g, '').slice(0, 500),\n      link_telegram: m[2].trim(),\n      link_produto_extraido: links[0] || null,\n      todos_links: links,\n      publicado_em: m[4].trim(),\n      coletado_em: new Date().toISOString()\n    }\n  };\n}).filter(r => r.json.link_produto_extraido);"
+      },
+      "id": "parse",
+      "name": "Parse + Extrai Links Externos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Regera link com SUA tag de afiliado dependendo do domínio detectado\nconst item = $input.item.json;\nconst link = item.link_produto_extraido;\nlet linkComSuaTag = link;\nlet plataformaDetectada = 'outros';\n\nif (link.includes('amazon.com.br') || link.includes('amzn.to')) {\n  plataformaDetectada = 'amazon';\n  // Se for amzn.to (encurtado), primeiro expande, senão adiciona tag\n  if (link.includes('amazon.com.br')) {\n    linkComSuaTag = link.includes('?') \n      ? `${link.split('?')[0]}?tag=${$env.AMAZON_PARTNER_TAG}`\n      : `${link}?tag=${$env.AMAZON_PARTNER_TAG}`;\n  }\n} else if (link.includes('mercadolivre.com') || link.includes('mercadolibre.com')) {\n  plataformaDetectada = 'mercadolivre';\n  // ML precisa ir via API pra gerar seu link — placeholder\n  linkComSuaTag = link + (link.includes('?') ? '&' : '?') + `matt_word=${$env.ML_AFFILIATE_ID}`;\n} else if (link.includes('shopee.com.br') || link.includes('s.shopee')) {\n  plataformaDetectada = 'shopee';\n  linkComSuaTag = link + (link.includes('?') ? '&' : '?') + `sub_id=${$env.SHOPEE_AFFILIATE_ID}`;\n} else if (link.includes('aliexpress.com') || link.includes('s.click.ali')) {\n  plataformaDetectada = 'aliexpress';\n  // Ali precisa passar pelo shortener oficial deles — chama API separada\n}\n\nreturn {\n  json: {\n    ...item,\n    plataforma: plataformaDetectada,\n    link_afiliado: linkComSuaTag\n  }\n};"
+      },
+      "id": "rewrite-link",
+      "name": "Regera link com sua tag",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "ofertas_coletadas",
+        "columns": "fonte,titulo,link_original,link_afiliado,categoria,coletado_em",
+        "additionalFields": {}
+      },
+      "id": "pg-save",
+      "name": "Salva Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1320, 400]
+    }
+  ],
+  "connections": {
+    "A cada 1h": { "main": [[{ "node": "Lista Canais TG", "type": "main", "index": 0 }]] },
+    "Lista Canais TG": { "main": [[{ "node": "RSSHub → Canal TG", "type": "main", "index": 0 }]] },
+    "RSSHub → Canal TG": { "main": [[{ "node": "Parse + Extrai Links Externos", "type": "main", "index": 0 }]] },
+    "Parse + Extrai Links Externos": { "main": [[{ "node": "Regera link com sua tag", "type": "main", "index": 0 }]] },
+    "Regera link com sua tag": { "main": [[{ "node": "Salva Postgres", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "USA RSSHub público (grátis, 60 req/hora). Se limite estourar, sobe RSSHub próprio: docker run -p 1200:1200 diygod/rsshub. Troca URL pra http://SEU_IP:1200"
+  }
+}

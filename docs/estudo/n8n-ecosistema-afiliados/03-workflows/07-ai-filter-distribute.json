@@ -1,0 +1,156 @@
+{
+  "name": "07 - AI Filter + Distribute Telegram (com Kutt tracking)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 5min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT o.* FROM ofertas_coletadas o WHERE o.postado = false AND o.score_total >= 70 AND o.urgente_postado = false AND NOT EXISTS (SELECT 1 FROM ofertas_coletadas d WHERE d.titulo = o.titulo AND d.postado = true AND d.postado_em > NOW() - INTERVAL '7 days') ORDER BY o.score_total DESC, o.coletado_em DESC LIMIT 2"
+      },
+      "id": "pg-pendentes",
+      "name": "Ofertas pendentes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [440, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [{ "name": "key", "value": "={{ $env.GEMINI_API_KEY }}" }]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"Reescreva este anúncio de oferta em português brasileiro, tom animado mas natural (não spammy), máximo 4 linhas. Inclua emoji sutil. Inclua o desconto e um call-to-action.\\n\\nProduto: {{ $json.titulo }}\\nPreço atual: R$ {{ $json.preco }}\\nDesconto: {{ $json.desconto_pct }}%\\nFonte: {{ $json.fonte }}\\n\\nResponda APENAS com o texto do post, sem preâmbulo.\"\n    }]\n  }],\n  \"generationConfig\": { \"temperature\": 0.7, \"maxOutputTokens\": 300 }\n}"
+      },
+      "id": "gemini-rewrite",
+      "name": "Gemini reescreve",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const gerado = $input.item.json.candidates?.[0]?.content?.parts?.[0]?.text || '';\nconst o = $('Ofertas pendentes').item.json;\n\nlet linkAfiliado = o.link_afiliado || o.link_original;\nif (o.fonte === 'amazon' && !o.link_afiliado) {\n  linkAfiliado = o.link_original.includes('?')\n    ? `${o.link_original}&tag=${$env.AMAZON_PARTNER_TAG}`\n    : `${o.link_original}?tag=${$env.AMAZON_PARTNER_TAG}`;\n}\n\nreturn { json: { ...o, textoGerado: gerado, linkAfiliado } };"
+      },
+      "id": "prep-link",
+      "name": "Prepara Link Afiliado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 400]
+    },
+    {
+      "parameters": {
+        "url": "http://kutt:3000/api/v2/links",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-API-Key", "value": "={{ $env.KUTT_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"target\": \"{{ $json.linkAfiliado }}\",\n  \"description\": \"cat:{{ $json.categoria || 'geral' }}\"\n}"
+      },
+      "id": "kutt-shorten",
+      "name": "Kutt encurta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1040, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const kuttResp = $input.item.json;\nconst oferta = $('Prepara Link Afiliado').item.json;\n\nconst kuttShortUrl = kuttResp.link || kuttResp.short_url || oferta.linkAfiliado;\nconst kuttLinkId = kuttResp.address || kuttResp.id || null;\n\nconst postFinal = `${oferta.textoGerado}\\n\\n🔗 ${kuttShortUrl}\\n\\n#oferta #${oferta.fonte}`;\n\nreturn {\n  json: {\n    ...oferta,\n    kuttShortUrl,\n    kuttLinkId,\n    postFinal\n  }\n};"
+      },
+      "id": "monta-post",
+      "name": "Monta Post Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, 400]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHANNEL_ID }}\",\n  \"text\": \"{{ $json.postFinal.replace(/\"/g, '\\\\\"') }}\",\n  \"disable_web_page_preview\": false\n}"
+      },
+      "id": "telegram-send",
+      "name": "Envia Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1440, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "posts_log",
+        "columns": "oferta_id,categoria,kutt_link_id,kutt_short_url,link_afiliado_original,postado_em",
+        "additionalFields": {}
+      },
+      "id": "pg-log",
+      "name": "Log em posts_log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1640, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE ofertas_coletadas SET postado = true, postado_em = NOW() WHERE id = {{ $json.id }}"
+      },
+      "id": "pg-mark",
+      "name": "Marca como postado",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1640, 500]
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "id": "wait",
+      "name": "Aguarda 30s (rate limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1840, 400],
+      "webhookId": "wait-webhook-1"
+    }
+  ],
+  "connections": {
+    "A cada 5min": { "main": [[{ "node": "Ofertas pendentes", "type": "main", "index": 0 }]] },
+    "Ofertas pendentes": { "main": [[{ "node": "Gemini reescreve", "type": "main", "index": 0 }]] },
+    "Gemini reescreve": { "main": [[{ "node": "Prepara Link Afiliado", "type": "main", "index": 0 }]] },
+    "Prepara Link Afiliado": { "main": [[{ "node": "Kutt encurta", "type": "main", "index": 0 }]] },
+    "Kutt encurta": { "main": [[{ "node": "Monta Post Final", "type": "main", "index": 0 }]] },
+    "Monta Post Final": { "main": [[{ "node": "Envia Telegram", "type": "main", "index": 0 }]] },
+    "Envia Telegram": {
+      "main": [[
+        { "node": "Log em posts_log", "type": "main", "index": 0 },
+        { "node": "Marca como postado", "type": "main", "index": 0 }
+      ]]
+    },
+    "Marca como postado": { "main": [[{ "node": "Aguarda 30s (rate limit)", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "Poster inteligente. Roda 5min. Pega top 2 ofertas score>=70, anti-duplicata 7d. Reescreve com Gemini, encurta link via Kutt (mede cliques), posta Telegram e loga em posts_log (workflow 15 le pra feedback loop)."
+  }
+}

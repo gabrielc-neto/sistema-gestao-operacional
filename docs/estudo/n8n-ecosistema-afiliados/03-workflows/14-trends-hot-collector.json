@@ -1,0 +1,117 @@
+{
+  "name": "14 - Trends Hot Collector (Google Trends BR + ML Trends)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 1h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://trends.google.com/trends/api/dailytrends",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "hl", "value": "pt-BR" },
+            { "name": "tz", "value": "180" },
+            { "name": "geo", "value": "BR" },
+            { "name": "ns", "value": "15" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "User-Agent", "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
+          ]
+        },
+        "options": { "response": { "response": { "responseFormat": "text" } } }
+      },
+      "id": "http-gtrends",
+      "name": "Google Trends BR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.mercadolibre.com/trends/MLB",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Accept", "value": "application/json" }]
+        }
+      },
+      "id": "http-ml-trends",
+      "name": "ML Trends API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Google Trends retorna JSON prefixado com )]}' (anti-XSSI)\nconst raw = String($input.item.json.data || $input.item.json);\nconst cleaned = raw.replace(/^\\)\\]\\}',?/, '').trim();\nlet data;\ntry { data = JSON.parse(cleaned); }\ncatch(e) { return []; }\n\nconst days = data?.default?.trendingSearchesDays || [];\nconst termos = [];\ndays.forEach(day => {\n  (day.trendingSearches || []).forEach(t => {\n    const titulo = t?.title?.query;\n    const traffic = t?.formattedTraffic;\n    if (titulo) {\n      termos.push({\n        json: {\n          fonte: 'google-trends',\n          termo: titulo.toLowerCase(),\n          volume_estimado: traffic || 'N/A',\n          coletado_em: new Date().toISOString()\n        }\n      });\n    }\n  });\n});\nreturn termos;"
+      },
+      "id": "parse-gtrends",
+      "name": "Parse Google Trends",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ML Trends retorna array simples\nconst items = $input.item.json || [];\nreturn (Array.isArray(items) ? items : []).slice(0, 30).map(t => ({\n  json: {\n    fonte: 'ml-trends',\n    termo: (t.keyword || '').toLowerCase(),\n    volume_estimado: 'N/A',\n    coletado_em: new Date().toISOString()\n  }\n})).filter(x => x.json.termo);"
+      },
+      "id": "parse-ml",
+      "name": "Parse ML Trends",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 500]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM termos_hot_agora WHERE coletado_em < NOW() - INTERVAL '3 hours'"
+      },
+      "id": "pg-limpa",
+      "name": "Limpa termos antigos (>3h)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "termos_hot_agora",
+        "columns": "fonte,termo,volume_estimado,coletado_em",
+        "additionalFields": {}
+      },
+      "id": "pg-insert",
+      "name": "Salva Termos Hot",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1120, 400]
+    }
+  ],
+  "connections": {
+    "A cada 1h": {
+      "main": [[
+        { "node": "Google Trends BR", "type": "main", "index": 0 },
+        { "node": "ML Trends API", "type": "main", "index": 0 }
+      ]]
+    },
+    "Google Trends BR": { "main": [[{ "node": "Parse Google Trends", "type": "main", "index": 0 }]] },
+    "ML Trends API": { "main": [[{ "node": "Parse ML Trends", "type": "main", "index": 0 }]] },
+    "Parse Google Trends": { "main": [[{ "node": "Limpa termos antigos (>3h)", "type": "main", "index": 0 }]] },
+    "Parse ML Trends": { "main": [[{ "node": "Limpa termos antigos (>3h)", "type": "main", "index": 0 }]] },
+    "Limpa termos antigos (>3h)": { "main": [[{ "node": "Salva Termos Hot", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "Coleta 2 fontes de tendencia gratis: Google Trends BR (endpoint interno publico) + Mercado Livre Trends API (oficial). Salva na tabela termos_hot_agora que o Score Engine consulta pra dar +10 pontos em ofertas com produto trending. Total esperado: 30-60 termos hot atualizados a cada 1h."
+  }
+}

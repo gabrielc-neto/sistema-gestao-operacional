@@ -1,0 +1,72 @@
+{
+  "name": "04 - AliExpress SuperDeals Collector",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 5min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// AliExpress Open API - HotProduct Query\n// Docs: https://openservice.aliexpress.com/doc/doc.htm?nodeId=27493&docId=137832\n\nconst appKey = $env.ALIEXPRESS_APP_KEY;\nconst appSecret = $env.ALIEXPRESS_APP_SECRET;\nconst pid = $env.ALIEXPRESS_PID;\nconst timestamp = new Date().toISOString().replace(/[TZ\\-:]/g, '').slice(0, 14);\n\nconst params = {\n  method: 'aliexpress.affiliate.hotproduct.query',\n  app_key: appKey,\n  timestamp,\n  format: 'json',\n  v: '2.0',\n  sign_method: 'md5',\n  target_currency: 'BRL',\n  target_language: 'PT',\n  ship_to_country: 'BR',\n  tracking_id: pid,\n  page_size: '30',\n  page_no: '1'\n};\n\n// Assinatura MD5\nconst crypto = require('crypto');\nconst sortedKeys = Object.keys(params).sort();\nconst signStr = appSecret + sortedKeys.map(k => k + params[k]).join('') + appSecret;\nparams.sign = crypto.createHash('md5').update(signStr).digest('hex').toUpperCase();\n\nreturn { json: { params } };"
+      },
+      "id": "prep",
+      "name": "Prepara Assinatura",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://api-sg.aliexpress.com/sync",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "={{ $json.params.method }}", "value": "={{ Object.entries($json.params).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&') }}" }
+          ]
+        }
+      },
+      "id": "http-ali",
+      "name": "AliExpress API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.item.json;\nconst products = resp.aliexpress_affiliate_hotproduct_query_response?.resp_result?.result?.products?.product || [];\n\nreturn products.map(p => ({\n  json: {\n    fonte: 'aliexpress',\n    item_id: p.product_id,\n    titulo: p.product_title,\n    preco: parseFloat(p.target_sale_price || 0),\n    preco_original: parseFloat(p.target_original_price || 0),\n    desconto_pct: parseInt(p.discount || 0),\n    imagem: p.product_main_image_url,\n    link_original: p.product_detail_url,\n    link_afiliado: p.promotion_link,\n    comissao_pct: parseFloat(p.commission_rate || 0),\n    categoria: 'super-deal',\n    coletado_em: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "parse",
+      "name": "Parse resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "ofertas_coletadas",
+        "columns": "fonte,titulo,preco,preco_original,desconto_pct,imagem,link_original,link_afiliado,categoria,coletado_em",
+        "additionalFields": {}
+      },
+      "id": "pg-insert",
+      "name": "Salva Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1120, 400]
+    }
+  ],
+  "connections": {
+    "A cada 6h": { "main": [[{ "node": "Prepara Assinatura", "type": "main", "index": 0 }]] },
+    "Prepara Assinatura": { "main": [[{ "node": "AliExpress API", "type": "main", "index": 0 }]] },
+    "AliExpress API": { "main": [[{ "node": "Parse resposta", "type": "main", "index": 0 }]] },
+    "Parse resposta": { "main": [[{ "node": "Salva Postgres", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

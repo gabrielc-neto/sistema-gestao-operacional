@@ -1,0 +1,85 @@
+{
+  "name": "01 - Mercado Livre Ofertas Collector",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "minutes", "minutesInterval": 5 }
+          ]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "A cada 5min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://api.mercadolibre.com/sites/MLB/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "q", "value": "={{ $json.termo }}" },
+            { "name": "sort", "value": "price_asc" },
+            { "name": "limit", "value": "20" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-ml-search",
+      "name": "ML API Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "1", "name": "termo", "value": "smartphone", "type": "string" },
+            { "id": "2", "name": "termo", "value": "notebook", "type": "string" },
+            { "id": "3", "name": "termo", "value": "smart tv", "type": "string" },
+            { "id": "4", "name": "termo", "value": "fone bluetooth", "type": "string" },
+            { "id": "5", "name": "termo", "value": "air fryer", "type": "string" }
+          ]
+        }
+      },
+      "id": "set-termos",
+      "name": "Lista Termos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "ofertas_coletadas",
+        "columns": "fonte,titulo,preco,link_original,categoria,coletado_em",
+        "additionalFields": {}
+      },
+      "id": "pg-insert",
+      "name": "Salva Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "A cada 2h": {
+      "main": [[{ "node": "Lista Termos", "type": "main", "index": 0 }]]
+    },
+    "Lista Termos": {
+      "main": [[{ "node": "ML API Search", "type": "main", "index": 0 }]]
+    },
+    "ML API Search": {
+      "main": [[{ "node": "Salva Postgres", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "Busca ofertas ML por termo-chave a cada 2h e salva no Postgres. NO n8n, adicione credencial Postgres apontando pra containner 'postgres' (host: postgres, db: n8n, user: n8n)."
+  }
+}

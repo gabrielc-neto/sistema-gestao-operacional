@@ -1,0 +1,91 @@
+{
+  "name": "06 - Cupom Aggregator (Pelando/Promobit/Cuponomia)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 5min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://www.pelando.com.br/feed/hot",
+        "options": { "response": { "response": { "responseFormat": "text" } } }
+      },
+      "id": "rss-pelando",
+      "name": "Pelando RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://www.promobit.com.br/feed",
+        "options": { "response": { "response": { "responseFormat": "text" } } }
+      },
+      "id": "rss-promobit",
+      "name": "Promobit RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse RSS/XML — pega title, link, description, pubDate\nconst xml = $input.item.json.data || $input.item.json;\nconst matches = [...String(xml).matchAll(/<item>[\\s\\S]*?<title>(.*?)<\\/title>[\\s\\S]*?<link>(.*?)<\\/link>[\\s\\S]*?<description>([\\s\\S]*?)<\\/description>[\\s\\S]*?<pubDate>(.*?)<\\/pubDate>[\\s\\S]*?<\\/item>/g)];\n\nreturn matches.slice(0, 20).map(m => ({\n  json: {\n    fonte: $input.item.json.headers?.host?.includes('pelando') ? 'pelando' : 'promobit',\n    titulo: m[1].replace(/<!\\[CDATA\\[|\\]\\]>/g, '').trim(),\n    link_original: m[2].trim(),\n    descricao: m[3].replace(/<!\\[CDATA\\[|\\]\\]>|<[^>]+>/g, '').trim().slice(0, 500),\n    publicado_em: m[4].trim(),\n    coletado_em: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "parse-rss",
+      "name": "Parse RSS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://api.cuponomia.com.br/v1/coupons",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Authorization", "value": "Bearer {{ $env.CUPONOMIA_API_KEY }}" }]
+        }
+      },
+      "id": "cuponomia",
+      "name": "Cuponomia API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 700]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "cupons_coletados",
+        "columns": "fonte,titulo,codigo,link,loja,desconto_pct,valido_ate,coletado_em",
+        "additionalFields": {}
+      },
+      "id": "pg-cupons",
+      "name": "Salva Cupons",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [900, 500]
+    }
+  ],
+  "connections": {
+    "A cada 2h": {
+      "main": [
+        [
+          { "node": "Pelando RSS", "type": "main", "index": 0 },
+          { "node": "Promobit RSS", "type": "main", "index": 0 },
+          { "node": "Cuponomia API", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Pelando RSS": { "main": [[{ "node": "Parse RSS", "type": "main", "index": 0 }]] },
+    "Promobit RSS": { "main": [[{ "node": "Parse RSS", "type": "main", "index": 0 }]] },
+    "Parse RSS": { "main": [[{ "node": "Salva Cupons", "type": "main", "index": 0 }]] },
+    "Cuponomia API": { "main": [[{ "node": "Salva Cupons", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

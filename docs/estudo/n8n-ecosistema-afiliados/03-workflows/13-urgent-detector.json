@@ -1,0 +1,93 @@
+{
+  "name": "13 - Urgent Detector (Flash Sale + Cupom expirando)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 3 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 3min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM ofertas_coletadas WHERE score_total >= 60 AND urgente_postado = false AND (categoria ILIKE '%flash%' OR categoria ILIKE '%relampago%' OR categoria ILIKE '%super-deal%' OR titulo ILIKE '%ultimas horas%' OR titulo ILIKE '%restam%' OR titulo ILIKE '%acaba%' OR titulo ILIKE '%esgotando%') ORDER BY score_total DESC LIMIT 3"
+      },
+      "id": "pg-urgentes",
+      "name": "Detecta Urgentes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [{ "name": "key", "value": "={{ $env.GEMINI_API_KEY }}" }]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"Reescreva este anúncio de OFERTA RELÂMPAGO/URGENTE em português brasileiro. Tom: urgência real (não desespero fake), curto, direto, MAX 3 linhas. Comece com um emoji de urgência (⚡🔥⏰). Deixe claro que é limitado/relâmpago.\\n\\nProduto: {{ $json.titulo }}\\nPreço: R$ {{ $json.preco }}\\nDesconto: {{ $json.desconto_pct }}%\\nCategoria: {{ $json.categoria }}\\n\\nResponda APENAS com o texto do post, sem preâmbulo.\"\n    }]\n  }],\n  \"generationConfig\": { \"temperature\": 0.6, \"maxOutputTokens\": 200 }\n}"
+      },
+      "id": "gemini-urgent",
+      "name": "Gemini urgent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const gerado = $input.item.json.candidates?.[0]?.content?.parts?.[0]?.text || '';\nconst o = $('Detecta Urgentes').item.json;\n\nlet linkFinal = o.link_afiliado || o.link_original;\nif (o.fonte === 'amazon' && !o.link_afiliado) {\n  linkFinal = o.link_original.includes('?') \n    ? `${o.link_original}&tag=${$env.AMAZON_PARTNER_TAG}`\n    : `${o.link_original}?tag=${$env.AMAZON_PARTNER_TAG}`;\n}\n\nconst postFinal = `⚡ *URGENTE — RELÂMPAGO*\\n\\n${gerado}\\n\\n👉 ${linkFinal}\\n\\n_Corre antes de acabar_`;\nreturn { json: { ...o, postFinal, linkFinal } };"
+      },
+      "id": "monta-urgent",
+      "name": "Monta Post Urgente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.TELEGRAM_CHANNEL_ID }}\",\n  \"text\": \"{{ $json.postFinal.replace(/\"/g, '\\\\\"') }}\",\n  \"parse_mode\": \"Markdown\",\n  \"disable_web_page_preview\": false\n}"
+      },
+      "id": "tg-send",
+      "name": "Envia Telegram URGENTE",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE ofertas_coletadas SET urgente_postado = true, urgente_postado_em = NOW() WHERE id = {{ $json.id }}"
+      },
+      "id": "pg-mark",
+      "name": "Marca urgente postado",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1340, 400]
+    }
+  ],
+  "connections": {
+    "A cada 3min": { "main": [[{ "node": "Detecta Urgentes", "type": "main", "index": 0 }]] },
+    "Detecta Urgentes": { "main": [[{ "node": "Gemini urgent", "type": "main", "index": 0 }]] },
+    "Gemini urgent": { "main": [[{ "node": "Monta Post Urgente", "type": "main", "index": 0 }]] },
+    "Monta Post Urgente": { "main": [[{ "node": "Envia Telegram URGENTE", "type": "main", "index": 0 }]] },
+    "Envia Telegram URGENTE": { "main": [[{ "node": "Marca urgente postado", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "Detecta ofertas relâmpago/flash sale/cupons expirando e posta IMEDIATO com tag URGENTE. Roda paralelo ao poster normal (07). Volume esperado: 5-20 urgentes/dia (só quando aparece algo realmente relâmpago). Filtro: score >=60 + palavras-chave de urgência."
+  }
+}

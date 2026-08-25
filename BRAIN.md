@@ -30,6 +30,14 @@
 - [[docs/memoria/MEMORY|🧠 Índice de 91 memórias (feedbacks, projects, decisões)]]
 - [[docs/skills/INDICE-SKILLS|🎯 561 skills disponíveis por categoria]]
 
+### 6. Arquitetura do arsenal (arma de trabalho)
+- [[docs/ARQUITETURA-COMPLETA|🗺️ Mapa vivo do arsenal — MCPs, plugins, skills, uv tools, npm, on-demand]]
+
+**Contrato de manutenção do mapa (Rota A — 2026-08-24):**
+- **INSTALO** → atualizo `ARQUITETURA-COMPLETA.md` na mesma tarefa, sem perguntar. Aviso em 1 linha: "mapa atualizado — adicionei X".
+- **REMOVO** → **só quando Wesley pedir explícito**. Nunca sozinho. Nem "limpeza", nem "duplicata", nem "não usa". Se ver algo que parece dispensável, aponto em texto — não removo.
+- Fallback manual: Wesley diz "atualiza mapa" → rodar `scripts/varredura-arsenal.sh` e regenerar.
+
 ---
 
 ## 📌 CONTEXTO ESSENCIAL — TL;DR

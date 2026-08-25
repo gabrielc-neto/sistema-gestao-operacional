@@ -1,0 +1,206 @@
+# =====================================================
+# Ecossistema n8n Afiliados — Stack completo GRÁTIS
+# Rodar: docker compose up -d
+# Acessar: http://localhost:5678
+# =====================================================
+
+services:
+  # =====================================================
+  # POSTGRES — banco do n8n
+  # =====================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: n8n-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-n8n}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-n8n}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [n8n-net]
+
+  # =====================================================
+  # REDIS — fila de execuções do n8n (mode queue)
+  # =====================================================
+  redis:
+    image: redis:7-alpine
+    container_name: n8n-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks: [n8n-net]
+
+  # =====================================================
+  # N8N — orquestrador principal
+  # =====================================================
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n-main
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports:
+      - "5678:5678"
+    environment:
+      # === Database ===
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB:-n8n}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      # === Queue mode ===
+      EXECUTIONS_MODE: queue
+      QUEUE_BULL_REDIS_HOST: redis
+      QUEUE_BULL_REDIS_PORT: 6379
+      # === Auth/Security ===
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-troqueestaqualquercoisade32caracteres}
+      N8N_USER_MANAGEMENT_JWT_SECRET: ${N8N_JWT_SECRET:-tambemtroqueestequalquercoisade32chr}
+      # === URLs ===
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
+      # === Timezone ===
+      GENERIC_TIMEZONE: America/Sao_Paulo
+      TZ: America/Sao_Paulo
+      # === Env vars pra usar nos workflows (referência: {{ $env.GEMINI_API_KEY }}) ===
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHANNEL_ID: ${TELEGRAM_CHANNEL_ID}
+      AMAZON_PARTNER_TAG: ${AMAZON_PARTNER_TAG}
+      AMAZON_ACCESS_KEY: ${AMAZON_ACCESS_KEY}
+      AMAZON_SECRET_KEY: ${AMAZON_SECRET_KEY}
+      ML_AFFILIATE_ID: ${ML_AFFILIATE_ID}
+      SHOPEE_AFFILIATE_ID: ${SHOPEE_AFFILIATE_ID}
+      ALIEXPRESS_PID: ${ALIEXPRESS_PID}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/workflows:ro
+    networks: [n8n-net]
+
+  # =====================================================
+  # N8N WORKER — processa execuções em paralelo
+  # =====================================================
+  n8n-worker:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n-worker
+    restart: unless-stopped
+    depends_on:
+      - n8n
+    command: worker
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB:-n8n}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      QUEUE_BULL_REDIS_HOST: redis
+      QUEUE_BULL_REDIS_PORT: 6379
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-troqueestaqualquercoisade32caracteres}
+      GENERIC_TIMEZONE: America/Sao_Paulo
+      TZ: America/Sao_Paulo
+    networks: [n8n-net]
+
+  # =====================================================
+  # EVOLUTION API — WhatsApp não-oficial (grátis)
+  # =====================================================
+  evolution:
+    image: atendai/evolution-api:latest
+    container_name: n8n-evolution
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:-changeme123}
+      DATABASE_ENABLED: "true"
+      DATABASE_CONNECTION_URI: postgres://${POSTGRES_USER:-n8n}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/evolution?schema=public
+      REDIS_ENABLED: "true"
+      REDIS_URI: redis://redis:6379/2
+      CONFIG_SESSION_PHONE_CLIENT: EcossistemaAfiliados
+      CONFIG_SESSION_PHONE_NAME: Chrome
+      TZ: America/Sao_Paulo
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - evolution_data:/evolution/instances
+    networks: [n8n-net]
+
+  # =====================================================
+  # OLLAMA — LLM local (fallback offline)
+  # Descomente se você tem GPU ou quer rodar tudo local
+  # =====================================================
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: n8n-ollama
+  #   restart: unless-stopped
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
+  #   networks: [n8n-net]
+
+  # =====================================================
+  # KUTT — encurtador de link + tracking cliques (feedback loop)
+  # Acesso: http://localhost:3010
+  # =====================================================
+  kutt:
+    image: kutt/kutt:latest
+    container_name: n8n-kutt
+    restart: unless-stopped
+    ports:
+      - "3010:3000"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      SITE_NAME: OfertasWesley
+      DEFAULT_DOMAIN: ${KUTT_DOMAIN:-localhost:3010}
+      LINK_LENGTH: "6"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: kutt
+      DB_USER: ${POSTGRES_USER:-n8n}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: "1"
+      JWT_SECRET: ${KUTT_JWT_SECRET:-troque_esta_chave_kutt_32_chars_ou_mais}
+      ADMIN_EMAILS: ${KUTT_ADMIN_EMAIL:-wesley@exemplo.com}
+      DISALLOW_REGISTRATION: "true"
+      DISALLOW_ANONYMOUS_LINKS: "true"
+      REPORT_EMAIL: ${KUTT_ADMIN_EMAIL:-wesley@exemplo.com}
+      NON_USER_COOLDOWN: "0"
+      USER_LIMIT_PER_DAY: "10000"
+      DEFAULT_MAX_STATS_PER_LINK: "5000"
+    networks: [n8n-net]
+
+volumes:
+  postgres_data:
+  n8n_data:
+  evolution_data:
+  # ollama_data:
+
+networks:
+  n8n-net:
+    driver: bridge

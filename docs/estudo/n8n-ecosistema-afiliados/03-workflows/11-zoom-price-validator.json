@@ -1,0 +1,75 @@
+{
+  "name": "11 - Zoom Price Validator (blinda oferta fajuta)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 5min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, titulo, preco, link_original FROM ofertas_coletadas WHERE coletado_em > NOW() - INTERVAL '2 hours' AND validado_zoom IS NULL LIMIT 20"
+      },
+      "id": "pg-recentes",
+      "name": "Ofertas recentes não validadas",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "url": "=https://www.zoom.com.br/search?q={{ encodeURIComponent($json.titulo) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "User-Agent", "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" }
+          ]
+        },
+        "options": { "response": { "response": { "responseFormat": "text" } } }
+      },
+      "id": "http-zoom",
+      "name": "Zoom Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrai menor preço encontrado no Zoom (regex simples do HTML)\n// Zoom mostra preços em <span class=\"...\">R$ X.XXX,XX</span>\nconst html = String($input.item.json.data || $input.item.json);\nconst precos = [...html.matchAll(/R\\$\\s*([\\d.]+,\\d{2})/g)]\n  .map(m => parseFloat(m[1].replace(/\\./g, '').replace(',', '.')))\n  .filter(p => p > 10 && p < 100000);\n\nconst menorZoom = precos.length ? Math.min(...precos) : null;\nconst mediaZoom = precos.length ? precos.reduce((a,b) => a+b, 0) / precos.length : null;\n\nconst oferta = $('Ofertas recentes não validadas').item.json;\nconst precoOferta = parseFloat(oferta.preco);\n\nlet veredicto = 'sem_dados';\nlet score = 0;\n\nif (menorZoom) {\n  if (precoOferta <= menorZoom * 0.95) {\n    veredicto = 'oferta_real';\n    score = 100;\n  } else if (precoOferta <= menorZoom * 1.10) {\n    veredicto = 'preco_medio';\n    score = 50;\n  } else {\n    veredicto = 'sem_desconto';\n    score = 10;\n  }\n}\n\nreturn {\n  json: {\n    id: oferta.id,\n    preco_oferta: precoOferta,\n    menor_zoom: menorZoom,\n    media_zoom: mediaZoom,\n    veredicto,\n    score_confianca: score\n  }\n};"
+      },
+      "id": "parse-zoom",
+      "name": "Compara com Zoom",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE ofertas_coletadas SET validado_zoom = true, veredicto_zoom = '{{ $json.veredicto }}', score_confianca = {{ $json.score_confianca }}, menor_preco_zoom = {{ $json.menor_zoom || 'NULL' }} WHERE id = {{ $json.id }}"
+      },
+      "id": "pg-update",
+      "name": "Marca validado",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1120, 400]
+    }
+  ],
+  "connections": {
+    "A cada 45min": { "main": [[{ "node": "Ofertas recentes não validadas", "type": "main", "index": 0 }]] },
+    "Ofertas recentes não validadas": { "main": [[{ "node": "Zoom Search", "type": "main", "index": 0 }]] },
+    "Zoom Search": { "main": [[{ "node": "Compara com Zoom", "type": "main", "index": 0 }]] },
+    "Compara com Zoom": { "main": [[{ "node": "Marca validado", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "Antes de postar, verifica com Zoom se preço realmente está bom. Roda no workflow 07 se score_confianca >= 50."
+  }
+}

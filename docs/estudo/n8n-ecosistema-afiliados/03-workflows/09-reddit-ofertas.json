@@ -1,0 +1,83 @@
+{
+  "name": "09 - Reddit Ofertas Collector (r/DealsBrazil + r/brasilofertas)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 5min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "1", "name": "sub", "value": "DealsBrazil", "type": "string" },
+            { "id": "2", "name": "sub", "value": "brasilofertas", "type": "string" },
+            { "id": "3", "name": "sub", "value": "ofertasbrasil", "type": "string" }
+          ]
+        }
+      },
+      "id": "subs",
+      "name": "Lista Subreddits",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 400]
+    },
+    {
+      "parameters": {
+        "url": "=https://www.reddit.com/r/{{ $json.sub }}/hot.json",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [{ "name": "limit", "value": "25" }]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "User-Agent", "value": "n8n-afiliados-bot/1.0" }]
+        }
+      },
+      "id": "http-reddit",
+      "name": "Reddit JSON (sem auth)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse posts Reddit — pega só posts com link externo (oferta) e score > 10\nconst posts = $input.item.json.data?.children || [];\nconst sub = $('Lista Subreddits').item.json.sub;\n\nconst filtered = posts\n  .map(p => p.data)\n  .filter(p => p.score >= 10 && p.url && !p.url.includes('reddit.com') && !p.is_self);\n\nreturn filtered.map(p => ({\n  json: {\n    fonte: `reddit-${sub}`,\n    titulo: p.title,\n    score: p.score,\n    num_comments: p.num_comments,\n    link_original: p.url,\n    reddit_permalink: `https://reddit.com${p.permalink}`,\n    autor: p.author,\n    publicado_em: new Date(p.created_utc * 1000).toISOString(),\n    coletado_em: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "parse",
+      "name": "Filtra + Parse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "ofertas_coletadas",
+        "columns": "fonte,titulo,link_original,categoria,coletado_em",
+        "additionalFields": {}
+      },
+      "id": "pg-save",
+      "name": "Salva Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1100, 400]
+    }
+  ],
+  "connections": {
+    "A cada 2h": { "main": [[{ "node": "Lista Subreddits", "type": "main", "index": 0 }]] },
+    "Lista Subreddits": { "main": [[{ "node": "Reddit JSON (sem auth)", "type": "main", "index": 0 }]] },
+    "Reddit JSON (sem auth)": { "main": [[{ "node": "Filtra + Parse", "type": "main", "index": 0 }]] },
+    "Filtra + Parse": { "main": [[{ "node": "Salva Postgres", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "Reddit permite acesso publico via .json em qualquer URL — sem precisar de OAuth pra leitura simples. Se quiser posts NEW (não HOT), troque /hot.json por /new.json."
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "name": "12 - Score Engine (calcula qualidade da oferta)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 3 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 3min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT o.*, ARRAY(SELECT termo FROM termos_hot_agora WHERE o.titulo ILIKE '%' || termo || '%' LIMIT 5) as termos_hot_match, COALESCE((SELECT boost_score FROM performance_categoria WHERE categoria = o.categoria LIMIT 1), 0) as boost_categoria FROM ofertas_coletadas o WHERE o.coletado_em > NOW() - INTERVAL '2 hours' AND (o.score_total IS NULL OR o.score_total = 0) LIMIT 50"
+      },
+      "id": "pg-nao-scoreadas",
+      "name": "Ofertas sem score",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// SCORE COMPOSTO (max 100 pontos)\nconst o = $input.item.json;\nconst now = new Date();\nconst coletado = new Date(o.coletado_em);\nconst minAge = (now - coletado) / (1000 * 60);\n\nlet score = 0;\nconst breakdown = {};\n\n// 1) DESCONTO REAL (via Zoom validator) — max 40 pontos\nif (o.veredicto_zoom === 'oferta_real') {\n  score += 40;\n  breakdown.desconto_real = 40;\n} else if (o.veredicto_zoom === 'preco_medio') {\n  score += 15;\n  breakdown.desconto_real = 15;\n} else if (o.desconto_pct >= 30) {\n  score += 25;\n  breakdown.desconto_declarado = 25;\n} else if (o.desconto_pct >= 20) {\n  score += 15;\n  breakdown.desconto_declarado = 15;\n} else if (o.desconto_pct >= 10) {\n  score += 5;\n  breakdown.desconto_declarado = 5;\n}\n\n// 2) FONTE CONFIÁVEL — max 15 pontos\nconst fontesTop = ['meliuz-oferta', 'meliuz-cupom', 'mercadolivre', 'amazon'];\nconst fontesMedias = ['shopee', 'aliexpress', 'telegram-ligadaoferta'];\nif (fontesTop.some(f => (o.fonte || '').includes(f))) {\n  score += 15; breakdown.fonte = 15;\n} else if (fontesMedias.some(f => (o.fonte || '').includes(f))) {\n  score += 10; breakdown.fonte = 10;\n} else {\n  score += 5; breakdown.fonte = 5;\n}\n\n// 3) FRESHNESS — max 15 pontos (recentíssimo = mais chance de ainda ter estoque)\nif (minAge < 15) { score += 15; breakdown.freshness = 15; }\nelse if (minAge < 60) { score += 10; breakdown.freshness = 10; }\nelse if (minAge < 120) { score += 5; breakdown.freshness = 5; }\n\n// 4) COMISSÃO — max 10 pontos\nconst com = parseFloat(o.comissao_pct || 0);\nif (com >= 12) { score += 10; breakdown.comissao = 10; }\nelse if (com >= 8) { score += 7; breakdown.comissao = 7; }\nelse if (com >= 5) { score += 4; breakdown.comissao = 4; }\n\n// 5) URGÊNCIA (categoria flash-sale, super-deal, etc) — max 10 pontos\nconst cat = (o.categoria || '').toLowerCase();\nif (cat.includes('flash') || cat.includes('relampago') || cat.includes('super-deal')) {\n  score += 10; breakdown.urgencia = 10;\n}\n\n// 7) FEEDBACK LOOP (workflow 15) — boost -10 a +20 baseado em CTR historico da categoria\nconst boostCat = parseInt(o.boost_categoria || 0);\nscore += boostCat;\nif (boostCat !== 0) breakdown.boost_feedback = boostCat;\n\n// 6) TRENDING NOW (dinamico via tabela termos_hot_agora) — max 10 pontos\n// Fonte: workflow 14 (Google Trends BR + ML Trends) atualiza tabela a cada 1h\nconst termosHotMatch = o.termos_hot_match || [];\nif (termosHotMatch.length >= 2) {\n  score += 10; breakdown.trending_now = 10;\n  breakdown.termos_matched = termosHotMatch;\n} else if (termosHotMatch.length === 1) {\n  score += 7; breakdown.trending_now = 7;\n  breakdown.termos_matched = termosHotMatch;\n} else {\n  // Fallback: lista fixa se workflow 14 nao esta rodando\n  const titulo = (o.titulo || '').toLowerCase();\n  const keywordsHot = ['iphone', 'samsung', 'notebook', 'smart tv', 'kindle', 'air fryer', 'echo dot', 'ps5', 'xbox'];\n  if (keywordsHot.some(k => titulo.includes(k))) {\n    score += 5; breakdown.categoria_fallback = 5;\n  }\n}\n\nreturn {\n  json: {\n    id: o.id,\n    score_total: Math.min(score, 100),\n    breakdown_json: JSON.stringify(breakdown)\n  }\n};"
+      },
+      "id": "calc-score",
+      "name": "Calcula Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE ofertas_coletadas SET score_total = {{ $json.score_total }}, score_breakdown = '{{ $json.breakdown_json }}'::jsonb, scoreado_em = NOW() WHERE id = {{ $json.id }}"
+      },
+      "id": "pg-update",
+      "name": "Salva Score",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "A cada 3min": { "main": [[{ "node": "Ofertas sem score", "type": "main", "index": 0 }]] },
+    "Ofertas sem score": { "main": [[{ "node": "Calcula Score", "type": "main", "index": 0 }]] },
+    "Calcula Score": { "main": [[{ "node": "Salva Score", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "Motor de qualidade. Calcula score 0-100 pra cada oferta combinando 6 fatores: desconto real (Zoom), fonte, freshness, comissao, urgencia, categoria-hot. Sem esse workflow, o poster nao sabe o que priorizar."
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "name": "03 - Shopee Flash Sale Scraper",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] }
+      },
+      "id": "trigger",
+      "name": "A cada 5min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://shopee.com.br/api/v4/flash_sale/get_items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "limit", "value": "50" },
+            { "name": "offset", "value": "0" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "User-Agent", "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+            { "name": "Referer", "value": "https://shopee.com.br/flash_sale" }
+          ]
+        }
+      },
+      "id": "shopee-fetch",
+      "name": "Shopee Flash Sale API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transforma resposta Shopee em rows pra Postgres\nconst items = $input.item.json.data?.items || [];\nconst affId = $env.SHOPEE_AFFILIATE_ID || 'default';\n\nreturn items.map(item => ({\n  json: {\n    fonte: 'shopee',\n    item_id: item.itemid,\n    shop_id: item.shopid,\n    titulo: item.name,\n    preco: item.price / 100000,\n    preco_original: item.price_before_discount / 100000,\n    desconto_pct: item.raw_discount,\n    imagem: `https://cf.shopee.com.br/file/${item.image}`,\n    link_original: `https://shopee.com.br/product/${item.shopid}/${item.itemid}`,\n    link_afiliado: `https://s.shopee.com.br/-/${item.shopid}/${item.itemid}?smtt=0&sub_id=${affId}-flash`,\n    categoria: 'flash-sale',\n    coletado_em: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "parse",
+      "name": "Parse + Gera Link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "ofertas_coletadas",
+        "columns": "fonte,titulo,preco,preco_original,desconto_pct,imagem,link_original,link_afiliado,categoria,coletado_em",
+        "additionalFields": {}
+      },
+      "id": "pg-insert",
+      "name": "Salva Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "A cada 3h": { "main": [[{ "node": "Shopee Flash Sale API", "type": "main", "index": 0 }]] },
+    "Shopee Flash Sale API": { "main": [[{ "node": "Parse + Gera Link", "type": "main", "index": 0 }]] },
+    "Parse + Gera Link": { "main": [[{ "node": "Salva Postgres", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "Scraper da API interna Shopee. Se cair, rotacione User-Agent ou use residential proxy grátis (Scrapoxy)."
+  }
+}
