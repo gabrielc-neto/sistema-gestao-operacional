@@ -2448,6 +2448,10 @@ export default function Manutencao() {
       setErroConclusao("Descreva o serviço executado.");
       return;
     }
+    if (conclusaoItens.length === 0) {
+      setErroConclusao("Adicione pelo menos 1 serviço ou peça na lista abaixo (Tipo + Item + Qtd + Valor → botão + Item). Sem itens, o Lançamento de NF não puxa valores automáticos.");
+      return;
+    }
     salvandoConclusaoRef.current = true;
     setSalvandoConclusao(true);
     try {
@@ -4062,7 +4066,7 @@ export default function Manutencao() {
                       formOS.placa
                         ? (sascarLoading ? "Buscando SASCAR..." : (() => {
                             const r = resolverKmSascar(formOS.placa);
-                            return r ? `SASCAR: ${r.km.toLocaleString("pt-BR")}${r.fonte.startsWith("via") ? ` (${r.fonte})` : ""}` : "Ex: 350000";
+                            return r && r.km != null ? `SASCAR: ${r.km.toLocaleString("pt-BR")}${r.fonte.startsWith("via") ? ` (${r.fonte})` : ""}` : (r ? `Sem SASCAR (${r.fonte})` : "Ex: 350000");
                           })())
                         : "Selecione a placa"
                     }
@@ -4441,19 +4445,35 @@ export default function Manutencao() {
                         fornecedor: os.fornecedor || formLanc.fornecedor,
                         hodometro:  formLanc.hodometro || (os.hodometroSaida != null ? String(os.hodometroSaida) : (os.hodometro != null ? String(os.hodometro) : "")),
                       });
-                      // Puxa itens da OS concluida pro lancamento (se OS tiver itens)
+                      // Puxa itens da OS concluida pro lancamento (aceita camelCase ou snake_case do backend)
                       const itensDaOS = Array.isArray(os.itens) ? os.itens : [];
+                      console.log("[Manutencao] OS selecionada:", os.numero, "· itens:", itensDaOS, "· custoTotal:", os.custoTotal ?? os.custo_total, "· valorTotal:", os.valorTotal);
                       if (itensDaOS.length > 0) {
                         const podePreencher = lancItens.length === 0
                           || window.confirm(`Ja ha ${lancItens.length} item(ns) no lancamento. Substituir pelos ${itensDaOS.length} item(ns) da OS ${os.numero}?`);
                         if (podePreencher) {
-                          setLancItens(itensDaOS.map(it => ({
-                            tipoItem:      it.tipoItem || "",
-                            item:          it.item || "",
-                            quantidade:    numOS(it.quantidade),
-                            valorUnitario: numOS(it.valorUnitario),
-                            valorTotal:    numOS(it.quantidade) * numOS(it.valorUnitario),
-                          })));
+                          setLancItens(itensDaOS.map(it => {
+                            const tipoItem      = it.tipoItem      ?? it.tipo_item      ?? "";
+                            const item          = it.item          ?? it.descricao      ?? it.nome ?? "";
+                            const quantidade    = numOS(it.quantidade ?? it.qtd ?? 1);
+                            const valorUnitario = numOS(it.valorUnitario ?? it.valor_unitario ?? it.valor);
+                            const valorTotal    = numOS(it.valorTotal ?? it.valor_total ?? (quantidade * valorUnitario));
+                            return { tipoItem, item, quantidade, valorUnitario, valorTotal };
+                          }));
+                        }
+                      } else {
+                        // Fallback: OS finalizada sem itens estruturados mas com valor total → cria 1 item genérico
+                        const totalOS = numOS(os.custoTotal ?? os.custo_total ?? os.valorTotal);
+                        if (totalOS > 0 && lancItens.length === 0) {
+                          setLancItens([{
+                            tipoItem:      "servico",
+                            item:          (os.descricaoServico || os.descricao_servico || os.servicoExecutado || "Serviço da OS").slice(0, 80),
+                            quantidade:    1,
+                            valorUnitario: totalOS,
+                            valorTotal:    totalOS,
+                          }]);
+                        } else if (totalOS === 0 && lancItens.length === 0) {
+                          alert(`OS ${os.numero} foi finalizada sem itens/valor. Preencha Tipo + Serviço + Qtd + Valor manualmente e clique "+ Item".`);
                         }
                       }
                     }}
@@ -4526,7 +4546,7 @@ export default function Manutencao() {
                         formLanc.placa
                           ? (sascarLoading ? "Buscando SASCAR..." : (() => {
                               const r = resolverKmSascar(formLanc.placa);
-                              return r ? `SASCAR: ${r.km.toLocaleString("pt-BR")}${r.fonte.startsWith("via") ? ` (${r.fonte})` : ""}` : "Ex: 350000";
+                              return r && r.km != null ? `SASCAR: ${r.km.toLocaleString("pt-BR")}${r.fonte.startsWith("via") ? ` (${r.fonte})` : ""}` : (r ? `Sem SASCAR (${r.fonte})` : "Ex: 350000");
                             })())
                           : "Selecione a placa"
                       }
