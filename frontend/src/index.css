@@ -423,6 +423,15 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); width
   .grid-form-2, .grid-form-3, .grid-form-4 { grid-template-columns: 1fr !important; }
 }
 
+/* Grid item peca/servico dentro de modais (Tipo | Descricao | Qtd | Valor | +Add)
+   Flex-wrap responde ao CONTAINER (modal), nao ao viewport. Cabe/quebra automatico. */
+.grid-item-linha { display: flex; flex-wrap: wrap; gap: 6px; align-items: end; margin-bottom: 8px; }
+.grid-item-linha > *:nth-child(1) { flex: 0 1 100px; }    /* Tipo */
+.grid-item-linha > *:nth-child(2) { flex: 1 1 180px; }    /* Descricao (cresce, quebra se <180px) */
+.grid-item-linha > *:nth-child(3) { flex: 0 1 65px; }     /* Qtd */
+.grid-item-linha > *:nth-child(4) { flex: 0 1 100px; }    /* Valor unit. */
+.grid-item-linha > *:nth-child(5) { flex: 0 0 auto; }     /* Botao +Add */
+
 /* Grid auto-fill responsivo — minmax reduz em mobile */
 .grid-auto-280 { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
 .grid-auto-240 { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }

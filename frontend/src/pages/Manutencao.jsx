@@ -351,13 +351,27 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
 
     const totalGeral = filtrados.reduce((s, l) => s + (Number(l.valorTotal ?? l.valor_total) || 0), 0);
 
-    // Agrupa lançamentos por categoria, guardando total + registros para a série mensal
+    // Agrupa por tipoItem dos itens de cada lancamento (Peca / Servico / Documentacao / Outros).
+    // Lancamento sem itens[] cai em "Outros" com o valorTotal cheio.
+    const LABEL_TIPO_ITEM = { peca: "Peças", servico: "Serviço", documentacao: "Documentação" };
     const porCategoria = {};
     for (const l of filtrados) {
-      const cat = (l.tipoLancamento || "Sem categoria").trim() || "Sem categoria";
-      if (!porCategoria[cat]) porCategoria[cat] = { total: 0, registros: [] };
-      porCategoria[cat].total += (Number(l.valorTotal ?? l.valor_total) || 0);
-      porCategoria[cat].registros.push(l);
+      const itens = Array.isArray(l.itens) ? l.itens : [];
+      if (itens.length === 0) {
+        const cat = "Outros";
+        if (!porCategoria[cat]) porCategoria[cat] = { total: 0, registros: [] };
+        porCategoria[cat].total += (Number(l.valorTotal ?? l.valor_total) || 0);
+        porCategoria[cat].registros.push(l);
+        continue;
+      }
+      for (const it of itens) {
+        const cat = LABEL_TIPO_ITEM[it.tipoItem] || "Outros";
+        const valor = (Number(it.valorTotal) || (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0));
+        if (!porCategoria[cat]) porCategoria[cat] = { total: 0, registros: [] };
+        porCategoria[cat].total += valor;
+        // Registro carimba a data do lancamento pai (serie mensal usa criadoEm/dataHora)
+        porCategoria[cat].registros.push({ ...l, __valorNoTipo: valor });
+      }
     }
     const ranking = Object.entries(porCategoria)
       .map(([nome, d]) => ({ nome, valor: d.total, pct: totalGeral > 0 ? (d.total / totalGeral) * 100 : 0 }))
@@ -410,7 +424,8 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
         if (!Number.isFinite(t.getTime())) continue;
         const k = `${t.getFullYear()}-${t.getMonth()}`;
         const slot = mesesSerie.find(x => x.key === k);
-        if (slot) slot.valor += (Number(l.valorTotal ?? l.valor_total) || 0);
+        // __valorNoTipo = valor do item que caiu neste tipo. Se ausente (lancamento em "Outros" sem itens), usa valorTotal cheio.
+        if (slot) slot.valor += (Number(l.__valorNoTipo ?? l.valorTotal ?? l.valor_total) || 0);
       }
       const maxMes = Math.max(1, ...mesesSerie.map(m => m.valor));
       const qtdLanc = (porCategoria[r.nome]?.registros || []).length;
@@ -2252,8 +2267,10 @@ export default function Manutencao() {
       };
       const ref = await dsInsert("ordens_servico", payload);
       const osCriada = { id: ref.id, ...payload };
-      // Não fazer optimistic push: onSnapshot já traz a OS nova.
-      // Optimistic aqui duplicava porque o snapshot chegava antes do await resolver.
+      // Push otimista: watch VPS eh polling 20s (nao Firebase onSnapshot).
+      // Sem isto, historico demora ate 20s pra mostrar OS recem-criada.
+      // Dedup natural: proximo poll faz setOrdensServico(oss) replace total, mesmo id sobrescreve.
+      setOrdensServico(prev => [osCriada, ...prev]);
       setFormOS({ ...EMPTY_OS });
 
       // bloqueia o veículo automaticamente (não derruba a OS se falhar por permissão)
@@ -4404,7 +4421,7 @@ export default function Manutencao() {
               {/* Cabeçalho */}
               <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
                 <label style={{ ...s.fieldLabel, gridColumn: "1 / -1" }}>
-                  OS relacionada <span style={{ color: "#64748b", fontWeight: 400, fontSize: ".72rem" }}>(opcional — se selecionar, preenche placa/fornecedor/hodômetro)</span>
+                  OS relacionada <span style={{ color: "#64748b", fontWeight: 400, fontSize: ".72rem" }}>(opcional — se selecionar, preenche placa/fornecedor/hodômetro + itens da OS concluída)</span>
                   <select
                     style={s.fieldInput}
                     value={formLanc.osId}
@@ -4424,6 +4441,21 @@ export default function Manutencao() {
                         fornecedor: os.fornecedor || formLanc.fornecedor,
                         hodometro:  formLanc.hodometro || (os.hodometroSaida != null ? String(os.hodometroSaida) : (os.hodometro != null ? String(os.hodometro) : "")),
                       });
+                      // Puxa itens da OS concluida pro lancamento (se OS tiver itens)
+                      const itensDaOS = Array.isArray(os.itens) ? os.itens : [];
+                      if (itensDaOS.length > 0) {
+                        const podePreencher = lancItens.length === 0
+                          || window.confirm(`Ja ha ${lancItens.length} item(ns) no lancamento. Substituir pelos ${itensDaOS.length} item(ns) da OS ${os.numero}?`);
+                        if (podePreencher) {
+                          setLancItens(itensDaOS.map(it => ({
+                            tipoItem:      it.tipoItem || "",
+                            item:          it.item || "",
+                            quantidade:    numOS(it.quantidade),
+                            valorUnitario: numOS(it.valorUnitario),
+                            valorTotal:    numOS(it.quantidade) * numOS(it.valorUnitario),
+                          })));
+                        }
+                      }
                     }}
                   >
                     <option value="">— Nenhuma OS vinculada —</option>
@@ -4525,16 +4557,17 @@ export default function Manutencao() {
               {/* Itens (serviços/peças) */}
               <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, padding: 12 }}>
                 <div style={{ fontWeight: 700, color: "#1a3a5c", fontSize: ".9rem", marginBottom: 8 }}>Serviços / Peças deste lançamento</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
-                  <label style={{ ...s.fieldLabel, minWidth: 120 }}>
+                <div className="grid-item-linha">
+                  <label style={s.fieldLabel}>
                     Tipo
                     <select style={s.fieldInput} value={itemDraft.tipoItem} onChange={e => setItemDraft({ ...itemDraft, tipoItem: e.target.value, item: "" })}>
                       <option value="">—</option>
                       <option value="servico">Serviço</option>
                       <option value="peca">Peça</option>
+                      <option value="documentacao">Documentação</option>
                     </select>
                   </label>
-                  <label style={{ ...s.fieldLabel, flex: 1, minWidth: 160 }}>
+                  <label style={s.fieldLabel}>
                     {itemDraft.tipoItem === "peca" ? "Peça" : "Serviço"}
                     <input
                       type="text" list="cat-item-novo" style={s.fieldInput}
@@ -4548,11 +4581,11 @@ export default function Manutencao() {
                       {itensCatalogo.filter(i => i.tipo === itemDraft.tipoItem).map(i => <option key={i.id} value={i.nome} />)}
                     </datalist>
                   </label>
-                  <label style={{ ...s.fieldLabel, width: 80 }}>
+                  <label style={s.fieldLabel}>
                     Qtd
                     <input type="number" min="0" step="1" inputMode="numeric" style={s.fieldInput} value={itemDraft.quantidade} onChange={e => setItemDraft({ ...itemDraft, quantidade: e.target.value.replace(/\D/g, "") })} placeholder="1" />
                   </label>
-                  <label style={{ ...s.fieldLabel, width: 120 }}>
+                  <label style={s.fieldLabel}>
                     Valor unit. (R$)
                     <input type="text" inputMode="decimal" style={s.fieldInput} value={itemDraft.valorUnitario} onChange={e => setItemDraft({ ...itemDraft, valorUnitario: maskMoeda(e.target.value) })} placeholder="0,00" />
                   </label>
@@ -5416,7 +5449,7 @@ export default function Manutencao() {
                 </div>
 
                 {/* Draft do próximo item */}
-                <div style={{ display: "grid", gridTemplateColumns: "110px 1fr 70px 110px auto", gap: 6, alignItems: "end", marginBottom: 8 }}>
+                <div className="grid-item-linha">
                   <label style={{ ...s.fieldLabel, fontSize: ".72rem" }}>
                     Tipo
                     <select
@@ -5427,6 +5460,7 @@ export default function Manutencao() {
                       <option value="">—</option>
                       <option value="servico">Serviço</option>
                       <option value="peca">Peça</option>
+                      <option value="documentacao">Documentação</option>
                     </select>
                   </label>
                   <div style={{ ...s.fieldLabel, fontSize: ".72rem" }}>
@@ -5755,6 +5789,7 @@ export default function Manutencao() {
                       <option value="">—</option>
                       <option value="servico">Serviço</option>
                       <option value="peca">Peça</option>
+                      <option value="documentacao">Documentação</option>
                     </select>
                   </label>
                   <label style={{ ...s.fieldLabel, flex:1, minWidth:140 }}>

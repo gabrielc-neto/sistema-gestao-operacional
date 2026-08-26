@@ -1,5 +1,8 @@
 // Cliente HTTP pro backend Pontual VPS.
-// Substitui chamadas Firestore por REST + envia token Firebase Auth.
+// Envia token JWT proprio (authVPS) — nao Firebase.
+// Migracao 2026-07-23: sistema mudou de Firebase Auth pra JWT proprio,
+// mas esta funcao continuou lendo Firebase.getIdToken() (bug silencioso
+// ate Wesley perder form de OS-00024 em 2026-08-26).
 //
 // Base URL configurável via VITE_PONTUAL_API_URL.
 // Default aponta pra http://srv1464919.hstgr.cloud (VPS Hostinger).
@@ -9,15 +12,35 @@
 //   const rows = await api.list("manutencoes", { placa: "ABC-1234" });
 //   await api.create("manutencoes", { placa, tipo, ... });
 
-import { auth } from "../firebase/config";
+import { getToken as getVpsToken } from "./authVPS";
 
 // Vazio = URL relativa (mesma origem HTTPS). Evita mixed content.
 const BASE = import.meta.env.VITE_PONTUAL_API_URL ?? "";
 
 async function getToken() {
-  const user = auth?.currentUser;
-  if (!user) return null;
-  try { return await user.getIdToken(); } catch { return null; }
+  return getVpsToken();
+}
+
+// Backup de submissoes perigosas (POST/PATCH/DELETE) em localStorage.
+// Se 401 (token expirado) o payload fica preservado ate o user relogar e
+// clicar "Reenviar" no banner (componente RecuperarPendente). TTL 24h.
+const KEY_PENDING = "pontual_pending_writes";
+
+function loadPending() {
+  try { return JSON.parse(localStorage.getItem(KEY_PENDING) || "[]"); }
+  catch { return []; }
+}
+function savePending(arr) {
+  try {
+    // Descarta itens >24h
+    const agora = Date.now();
+    const filtrado = arr.filter(it => (agora - (it.at || 0)) < 24 * 3600 * 1000);
+    localStorage.setItem(KEY_PENDING, JSON.stringify(filtrado));
+  } catch {}
+}
+export function listarPendentes() { return loadPending(); }
+export function descartarPendente(id) {
+  savePending(loadPending().filter(it => it.id !== id));
 }
 
 async function request(path, opts = {}) {
@@ -27,15 +50,46 @@ async function request(path, opts = {}) {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(opts.headers || {}),
   };
+  const method = (opts.method || "GET").toUpperCase();
+  const ehEscrita = method !== "GET" && method !== "HEAD";
   const resp = await fetch(`${BASE}${path}`, { ...opts, headers });
   const isJson = (resp.headers.get("content-type") || "").includes("application/json");
   const body = isJson ? await resp.json().catch(() => ({})) : await resp.text();
   if (!resp.ok) {
-    const msg = (body && body.message) || (body && body.error) || `HTTP ${resp.status}`;
+    // Salva payload de escrita quando token expirou — user relogar e reenviar
+    if (resp.status === 401 && ehEscrita && opts.body) {
+      const pend = loadPending();
+      pend.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        at: Date.now(),
+        path, method,
+        body: opts.body,       // string JSON
+        contentType: headers["Content-Type"],
+      });
+      savePending(pend);
+    }
+    const msgBase = (body && body.message) || (body && body.error) || `HTTP ${resp.status}`;
+    const msg = resp.status === 401
+      ? `Sessao expirada. Seus dados foram salvos localmente — faca login novamente e clique "Reenviar" no banner amarelo pra concluir.`
+      : msgBase;
     const err = new Error(msg); err.status = resp.status; err.body = body;
     throw err;
   }
   return body;
+}
+
+// Reenvia 1 pendente com token atual. Devolve {ok, err}. Chamado pelo banner.
+export async function reenviarPendente(id) {
+  const pend = loadPending();
+  const it = pend.find(p => p.id === id);
+  if (!it) return { ok: false, err: "Pendente nao encontrado" };
+  try {
+    await request(it.path, { method: it.method, body: it.body });
+    descartarPendente(id);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, err: e.message };
+  }
 }
 
 // ─── API genérica ─────────────────────────────────────────────

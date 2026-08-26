@@ -7,6 +7,7 @@ import { RBACProvider } from "./rbac/RBACContext";
 import RotaProtegida from "./rbac/RotaProtegida";
 import Login from "./pages/Login";
 import InstallPWA from "./components/InstallPWA";
+import RecuperarPendente from "./components/RecuperarPendente";
 
 const Dashboard   = lazy(() => import("./pages/Dashboard"));
 const Frota       = lazy(() => import("./pages/Frota"));
@@ -73,6 +74,7 @@ export default function App() {
         <RBACProvider>
           <PermissionsProvider>
             <BrowserRouter>
+              <RecuperarPendente />
               <Suspense fallback={<Loading />}>
                 <Routes>
                   <Route path="/"            element={<PublicRoute><Login /></PublicRoute>} />
