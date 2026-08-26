@@ -21,7 +21,7 @@ const STATUS_TEXT   = { ativo:"#15803d", disponivel:"#15803d", em_viagem:"#1d4ed
 const STATUS_STRIPE = { ativo:"#22c55e", disponivel:"#22c55e", em_viagem:"#3b82f6", manutencao:"#f59e0b", inativo:"#cbd5e1" };
 
 const VAZIO = {
-  placa:"", status:"disponivel", modelo:"", fabricante:"", ano_modelo:"", motorista:"",
+  placa:"", status:"disponivel", tipo:"cavalo", modelo:"", fabricante:"", ano_modelo:"", motorista:"",
   // Carreta 1
   c1:"", t1:"—", c1_chassi:"", c1_renavam:"", c1_tara:"", c1_ano_fab:"", c1_ano_mod:"",
   // Carreta 2 (opcional)
@@ -174,6 +174,8 @@ export default function Frota() {
   const [loading, setLoading]     = useState(true);
   const [filtro, setFiltro]       = useState("");
   const [statusFiltro, setStatusFiltro] = useState("ativo");
+  const [tipoFiltro, setTipoFiltro] = useState(() => localStorage.getItem("frota_tipo") || "cavalo"); // cavalo | carreta
+  useEffect(() => { localStorage.setItem("frota_tipo", tipoFiltro); }, [tipoFiltro]);
   const [modal, setModal]         = useState(false);
   const [qrModal, setQrModal]     = useState(null); // placa do veículo pra mostrar QR
   const [modoView, setModoView]   = useState(() => localStorage.getItem("frota_view") || "cards"); // cards | tabela | split
@@ -216,7 +218,7 @@ export default function Frota() {
         const seen = new Set();
         setVeiculos(snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
-          .filter(v => v.tipo !== "carreta")
+          .filter(v => tipoFiltro === "carreta" ? v.tipo === "carreta" : v.tipo !== "carreta")
           .filter(v => {
             const norm = (v.placa || v.id).toUpperCase().replace(/[^A-Z0-9]/g, "");
             if (seen.has(norm)) return false;
@@ -248,7 +250,7 @@ export default function Frota() {
       try { unsubMot(); }    catch {}
       try { unsubFerias(); } catch {}
     };
-  }, []);
+  }, [tipoFiltro]);
 
   function abrirNovo() { setForm(VAZIO); setEditId(null); setModal(true); }
   async function abrirEditar(v) {
@@ -486,6 +488,13 @@ export default function Frota() {
             value={filtro}
             onChange={e => setFiltro(e.target.value)}
           />
+        </div>
+        <div style={s.tabs}>
+          {[["cavalo","Cavalos"], ["carreta","Carretas"]].map(([v,l]) => (
+            <button key={v} style={{ ...s.tab, ...(tipoFiltro===v ? s.tabAtivo : {}) }} onClick={() => setTipoFiltro(v)}>
+              {l}
+            </button>
+          ))}
         </div>
         <div style={s.tabs}>
           {[["ativo","Ativos"], ["inativo","Inativos"]].map(([v,l]) => (
@@ -898,8 +907,15 @@ export default function Frota() {
             <div style={s.modalBody}>
               <div style={s.row}>
                 <div style={s.fg}>
-                  <label style={s.lbl}>Placa Cavalo</label>
-                  <input style={s.inp} value={form.placa} onChange={e => campo("placa", e.target.value.toUpperCase())} disabled={!!editId} placeholder="AKD5988" autoCapitalize="characters" autoComplete="off" maxLength={7} inputMode="text" spellCheck={false} />
+                  <label style={s.lbl}>Tipo</label>
+                  <select style={s.inp} value={form.tipo || "cavalo"} onChange={e => campo("tipo", e.target.value)}>
+                    <option value="cavalo">Cavalo</option>
+                    <option value="carreta">Carreta (reserva)</option>
+                  </select>
+                </div>
+                <div style={s.fg}>
+                  <label style={s.lbl}>{form.tipo === "carreta" ? "Placa Carreta" : "Placa Cavalo"}</label>
+                  <input style={s.inp} value={form.placa} onChange={e => campo("placa", e.target.value.toUpperCase())} disabled={!!editId} placeholder={form.tipo === "carreta" ? "AKC4899" : "AKD5988"} autoCapitalize="characters" autoComplete="off" maxLength={7} inputMode="text" spellCheck={false} />
                 </div>
                 <div style={s.fg}>
                   <label style={s.lbl}>Status</label>
@@ -918,6 +934,7 @@ export default function Frota() {
                   <input style={s.inp} value={form.fabricante} onChange={e => campo("fabricante", e.target.value)} placeholder="Mercedes-Benz" />
                 </div>
               </div>
+              {form.tipo !== "carreta" && (<>
               <MotoristaSearch
                 value={form.motorista}
                 lista={listaMotoristas}
@@ -1034,8 +1051,9 @@ export default function Frota() {
                 <textarea style={{ ...s.inp, height:60, resize:"vertical" }} value={form.obs} onChange={e => campo("obs", e.target.value)} />
               </div>
 
-              {/* ── Dados técnicos do cavalo ── */}
-              <div style={s.secTitle}>Dados Técnicos — Cavalo</div>
+              </>)}
+              {/* ── Dados técnicos ── */}
+              <div style={s.secTitle}>Dados Técnicos — {form.tipo === "carreta" ? "Carreta" : "Cavalo"}</div>
               <div style={s.row}>
                 <div style={{ ...s.fg, flex:3 }}>
                   <label style={s.lbl}>Chassi</label>
