@@ -845,10 +845,11 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
 
   const [anoBarras, setAnoBarras] = useState(agoraAno);
   const [anoLinhas, setAnoLinhas] = useState(agoraAno);
+  const [mostrarTodosVeiculos, setMostrarTodosVeiculos] = useState(false);
 
   const {
     totalGeral, totalVeiculos, mediaVeiculo, mediaMes,
-    dadosPizzaCategoria, dadosBarrasMensal, top10Veiculos,
+    dadosPizzaCategoria, dadosBarrasMensal, veiculosPorCusto,
     dadosStatusFrota, dadosLinhaAcumulado,
   } = useMemo(() => {
     const list = lancamentos || [];
@@ -882,10 +883,9 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
       const p = (l.placa || "Sem placa").trim() || "Sem placa";
       porPlaca[p] = (porPlaca[p] || 0) + (Number(l.valorTotal ?? l.valor_total) || 0);
     }
-    const top10Veiculos = Object.entries(porPlaca)
+    const veiculosPorCusto = Object.entries(porPlaca)
       .map(([placa, valor]) => ({ placa, valor }))
-      .sort((a, b) => b.valor - a.valor)
-      .slice(0, 10);
+      .sort((a, b) => b.valor - a.valor);
 
     // Status da frota — classificação por custo médio mensal por veículo
     // normal < 500, atenção 500-2000, crítico > 2000
@@ -923,7 +923,7 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
 
     return {
       totalGeral, totalVeiculos, mediaVeiculo, mediaMes,
-      dadosPizzaCategoria, dadosBarrasMensal, top10Veiculos,
+      dadosPizzaCategoria, dadosBarrasMensal, veiculosPorCusto,
       dadosStatusFrota, dadosLinhaAcumulado,
     };
   }, [lancamentos, anoBarras, anoLinhas]);
@@ -1105,14 +1105,33 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
         </ResponsiveContainer>
       </div>
 
-      {/* Top 10 veículos */}
+      {/* Veículos com maior custo */}
       <div style={cardStyle}>
-        <h3 style={chartTitle}>Top 10 veículos com maior custo</h3>
-        {top10Veiculos.length === 0 ? (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          <h3 style={{ ...chartTitle, margin: 0 }}>
+            {mostrarTodosVeiculos ? `Todos os veículos com maior custo (${veiculosPorCusto.length})` : "Top 10 veículos com maior custo"}
+          </h3>
+          {veiculosPorCusto.length > 10 && (
+            <button
+              type="button"
+              onClick={() => setMostrarTodosVeiculos(v => !v)}
+              style={{
+                padding: "6px 12px", borderRadius: 8, border: "1px solid #cbd5e1",
+                background: "#fff", cursor: "pointer", fontSize: ".78rem", fontWeight: 600,
+                color: "#334155", fontFamily: "inherit",
+              }}
+            >
+              {mostrarTodosVeiculos ? "Ver Top 10" : `Ver todos (${veiculosPorCusto.length})`}
+            </button>
+          )}
+        </div>
+        {veiculosPorCusto.length === 0 ? (
           <p style={{ color: "#94a3b8", fontSize: ".85rem", margin: "20px 0" }}>Sem lançamentos ainda.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={Math.max(220, top10Veiculos.length * 36)}>
-            <BarChart data={top10Veiculos} layout="vertical" margin={{ top: 6, right: 30, left: 20, bottom: 0 }}>
+        ) : (() => {
+          const lista = mostrarTodosVeiculos ? veiculosPorCusto : veiculosPorCusto.slice(0, 10);
+          return (
+          <ResponsiveContainer width="100%" height={Math.max(220, lista.length * 36)}>
+            <BarChart data={lista} layout="vertical" margin={{ top: 6, right: 30, left: 20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
               <XAxis type="number" tickFormatter={(v) => fmtBRLcurto(v)} tick={{ fontSize: 12 }} />
               <YAxis type="category" dataKey="placa" tick={{ fontSize: 12, fontWeight: 600 }} width={100} />
@@ -1120,7 +1139,8 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
               <Bar dataKey="valor" fill="#dc2626" radius={[0, 6, 6, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        )}
+          );
+        })()}
       </div>
     </div>
   );
