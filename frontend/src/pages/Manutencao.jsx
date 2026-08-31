@@ -301,6 +301,37 @@ const PERIODOS_LANC = [
 
 // Paleta cíclica para colorir categorias do ranking
 const PALETA_CAT = ["#1d4ed8","#15803d","#b45309","#dc2626","#7c3aed","#0891b2","#db2777","#65a30d","#c2410c","#0284c7","#9333ea","#059669"];
+// Cores fixas por categoria (tipoLancamento) — replicar imagem JULHO 2026 aprovada pelo Wesley
+const COR_CAT_FIXA = {
+  "Peças":         "#A8D18D",
+  "Manutenção":    "#1F77B4",
+  "Pneus":         "#8FAADC",
+  "Estoque":       "#C6E0B4",  // verde mais claro que Peças (Wesley: cores diferentes)
+  "Documentação":  "#FFD966",
+  "Lavagem":       "#F4B183",
+  "Socorro":       "#C00000",
+};
+const corCategoria = (nome, i = 0) => COR_CAT_FIXA[nome] || PALETA_CAT[i % PALETA_CAT.length];
+
+// Wesley 2026-08-27: dashboard mostra APENAS os 7 baldes. Tipos legados
+// ("SERVIÇO", "SERVIÇO E PEÇA", etc) são normalizados pro balde mais próximo.
+const CATS_VALIDAS = ["Peças","Manutenção","Pneus","Estoque","Documentação","Lavagem","Socorro"];
+const NORM_CAT_LEGADO = {
+  "SERVIÇO":         "Manutenção",
+  "SERVIÇO E PEÇA":  "Peças",
+  "SERVICOS":        "Manutenção",
+  "MANUTENCAO":      "Manutenção",
+  "PECAS":           "Peças",
+  "PNEU":            "Pneus",
+  "DOCUMENTACAO":    "Documentação",
+};
+function normalizarCategoria(tipo) {
+  const t = (tipo || "").trim();
+  if (!t) return "Manutenção";
+  if (CATS_VALIDAS.includes(t)) return t;
+  const up = t.toUpperCase();
+  return NORM_CAT_LEGADO[up] || "Manutenção";
+}
 
 function inicioPeriodo(key, agora, customIni) {
   const y = agora.getFullYear();
@@ -351,21 +382,28 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
 
     const totalGeral = filtrados.reduce((s, l) => s + (Number(l.valorTotal ?? l.valor_total) || 0), 0);
 
-    // Agrupa por tipoItem dos itens de cada lancamento (Peca / Servico / Documentacao / Outros).
-    // Lancamento sem itens[] cai em "Outros" com o valorTotal cheio.
-    const LABEL_TIPO_ITEM = { peca: "Peças", servico: "Serviço", documentacao: "Documentação" };
+    // Agrupa pelo tipoLancamento do cabeçalho (Peças / Manutenção / Pneus / Estoque /
+    // Documentação / Lavagem / Socorro / ...). Override: se o item é documento conhecido
+    // (CIV, CIPP, CRLV, Tacógrafo, Extintor, RNTRC, Licença Paraná, Licença Federal-DNIT,
+    // AET, IPEM) — força Documentação mesmo que o cabeçalho diga outra coisa.
+    const ehLancDoc = (l) => (l.tipoLancamento || "").trim().toLowerCase() === "documentação"
+                          || (l.tipoLancamento || "").trim().toLowerCase() === "documentacao";
+    const NOMES_DOC = new Set(TIPOS.filter(t => t.grupo === "Documentação").map(t => t.label.trim().toLowerCase()));
+    const ehItemDoc = (nome) => NOMES_DOC.has((nome || "").trim().toLowerCase());
+    const catDoLancamento = (l) => normalizarCategoria(l.tipoLancamento);
     const porCategoria = {};
     for (const l of filtrados) {
       const itens = Array.isArray(l.itens) ? l.itens : [];
+      const forcaDoc = ehLancDoc(l);
       if (itens.length === 0) {
-        const cat = "Outros";
+        const cat = forcaDoc ? "Documentação" : catDoLancamento(l);
         if (!porCategoria[cat]) porCategoria[cat] = { total: 0, registros: [] };
         porCategoria[cat].total += (Number(l.valorTotal ?? l.valor_total) || 0);
         porCategoria[cat].registros.push(l);
         continue;
       }
       for (const it of itens) {
-        const cat = LABEL_TIPO_ITEM[it.tipoItem] || "Outros";
+        const cat = (forcaDoc || ehItemDoc(it.item)) ? "Documentação" : catDoLancamento(l);
         const valor = (Number(it.valorTotal) || (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0));
         if (!porCategoria[cat]) porCategoria[cat] = { total: 0, registros: [] };
         porCategoria[cat].total += valor;
@@ -415,22 +453,64 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
       }
     }
 
-    // Uma série mensal POR CATEGORIA — cada categoria vira seu próprio gráfico
-    const seriesPorCategoria = ranking.map((r, i) => {
-      const cor = PALETA_CAT[i % PALETA_CAT.length];
-      const mesesSerie = monthsTemplate.map(m => ({ ...m, valor: 0 }));
-      for (const l of (porCategoria[r.nome]?.registros || [])) {
+    // Gráfico "Evolução mês a mês" é DESACOPLADO do filtro superior — usa TODOS
+    // os lançamentos pra Wesley ver jul+ago mesmo com filtro="Mês atual".
+    // Constrói porCategoriaAll com mesma lógica de categorização.
+    const porCategoriaAll = {};
+    for (const l of (lancamentos || [])) {
+      const itens = Array.isArray(l.itens) ? l.itens : [];
+      const forcaDoc = ehLancDoc(l);
+      if (itens.length === 0) {
+        const cat = forcaDoc ? "Documentação" : catDoLancamento(l);
+        if (!porCategoriaAll[cat]) porCategoriaAll[cat] = [];
+        porCategoriaAll[cat].push(l);
+        continue;
+      }
+      for (const it of itens) {
+        const cat = (forcaDoc || ehItemDoc(it.item)) ? "Documentação" : catDoLancamento(l);
+        const valor = (Number(it.valorTotal) || (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0));
+        if (!porCategoriaAll[cat]) porCategoriaAll[cat] = [];
+        porCategoriaAll[cat].push({ ...l, __valorNoTipo: valor });
+      }
+    }
+    // Meses com dado no dataset COMPLETO (não filtrado)
+    const mesesComDado = new Set();
+    for (const arr of Object.values(porCategoriaAll)) {
+      for (const l of arr) {
+        const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
+        if (Number.isFinite(t.getTime())) mesesComDado.add(`${t.getFullYear()}-${t.getMonth()}`);
+      }
+    }
+    const monthsTemplateFiltrado = mesesComDado.size > 0
+      ? monthsTemplate.filter(m => mesesComDado.has(m.key))
+      : monthsTemplate;
+
+    // Ranking do topo (ordenado por valor). Categorias que existem no dataset
+    // completo mas não aparecem no ranking (filtro atual não pega) entram
+    // com valor=0 pra manter a coerência visual do gráfico Evolução.
+    const rankingParaEvolucao = [
+      ...ranking,
+      ...Object.keys(porCategoriaAll)
+        .filter(nome => !ranking.some(r => r.nome === nome))
+        .map(nome => ({ nome, valor: 0, pct: 0 })),
+    ];
+
+    // Uma série mensal POR CATEGORIA — usa porCategoriaAll (todos lançamentos)
+    const seriesPorCategoria = rankingParaEvolucao.map((r, i) => {
+      const cor = corCategoria(r.nome, i);
+      const mesesSerie = monthsTemplateFiltrado.map(m => ({ ...m, valor: 0 }));
+      for (const l of (porCategoriaAll[r.nome] || [])) {
         const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
         if (!Number.isFinite(t.getTime())) continue;
         const k = `${t.getFullYear()}-${t.getMonth()}`;
         const slot = mesesSerie.find(x => x.key === k);
-        // __valorNoTipo = valor do item que caiu neste tipo. Se ausente (lancamento em "Outros" sem itens), usa valorTotal cheio.
         if (slot) slot.valor += (Number(l.__valorNoTipo ?? l.valorTotal ?? l.valor_total) || 0);
       }
       const maxMes = Math.max(1, ...mesesSerie.map(m => m.valor));
-      const qtdLanc = (porCategoria[r.nome]?.registros || []).length;
-      return { ...r, cor, mesesSerie, maxMes, qtdLanc };
-    });
+      const qtdLanc = (porCategoriaAll[r.nome] || []).length;
+      const valorAll = (porCategoriaAll[r.nome] || []).reduce((s, l) => s + (Number(l.__valorNoTipo ?? l.valorTotal ?? l.valor_total) || 0), 0);
+      return { ...r, valor: valorAll, cor, mesesSerie, maxMes, qtdLanc };
+    }).sort((a,b) => b.valor - a.valor);
 
     return { filtrados, totalGeral, ranking, mediaMes, seriesPorCategoria };
   }, [lancamentos, periodo, customIni, customFim]);
@@ -510,7 +590,7 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {ranking.map((r, i) => {
-              const cor = PALETA_CAT[i % PALETA_CAT.length];
+              const cor = corCategoria(r.nome, i);
               return (
                 <div key={r.nome} style={{ padding: "6px 8px", borderRadius: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, fontSize: ".82rem" }}>
@@ -563,17 +643,23 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
     }
   }
 
-  // Largura do gráfico escala com o número de meses (1 mês = compacto, 12 = mais largo)
-  // Card pai também usa cardMaxWidth pra acompanhar
-  const cardMaxWidth = Math.min(620, 220 + nMeses * 34);
-  const W = Math.min(560, 140 + nMeses * 36);
+  // Wesley 27/08: card + SVG ocupam a página inteira (100%). Pra evitar
+  // barras gigantescas quando só 1 mês, viewBox tem W bem largo — quando
+  // estica pra largura do card, as barras ficam grossas mas espaçadas
+  // horizontalmente, ocupando toda a área.
+  const cardMaxWidth = "100%";
+  const W = nMeses === 1 ? 1000 : nMeses === 2 ? 900 : Math.min(1000, 300 + nMeses * 60);
   const H = 360, padL = 44, padR = 8, padT = 12, padB = 40;
   const innerW = W - padL - padR;
   const innerH = H - padT - padB;
-  const groupW = innerW / nMeses;            // largura disponível para cada mês
-  const gapEntreMeses = groupW * 0.18;       // 18% do grupo é espaço entre meses
+  const groupW = innerW / nMeses;
+  // Espaço lateral (35% quando 1 mês) + gap entre barras individuais (25% de cada slot)
+  const gapPct = nMeses === 1 ? 0.35 : nMeses === 2 ? 0.25 : 0.18;
+  const gapEntreMeses = groupW * gapPct;
   const groupInner    = groupW - gapEntreMeses;
-  const barW = Math.max(4, groupInner / nCats);
+  const slotW = groupInner / nCats;
+  const barW = Math.max(4, slotW * 0.75);   // 25% de gap entre barras
+  const barOffset = (slotW - barW) / 2;      // centraliza barra no slot
 
   return (
     <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px", background: "#fff", boxShadow: "0 1px 3px rgba(15,23,42,.05)", width: "100%", maxWidth: cardMaxWidth, boxSizing: "border-box" }}>
@@ -611,16 +697,16 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
                 {series.map((cat, ci) => {
                   const valor = cat.mesesSerie[mi]?.valor || 0;
                   const h = (valor / maxVal) * innerH;
-                  const x = groupX + ci * barW;
+                  const x = groupX + ci * slotW + barOffset;
                   const y = padT + innerH - h;
                   return (
                     <g key={cat.nome}>
                       {h > 0 ? (
-                        <rect x={x + 1} y={y} width={Math.max(2, barW - 2)} height={h} fill={cat.cor} rx="2">
+                        <rect x={x} y={y} width={barW} height={h} fill={cat.cor} rx="2">
                           <title>{`${cat.nome} · ${m.label}/${String(m.ano).slice(2)}: ${fmtBRLfn(valor)}`}</title>
                         </rect>
                       ) : (
-                        <rect x={x + 1} y={padT + innerH - 1} width={Math.max(2, barW - 2)} height={1} fill="#e2e8f0" />
+                        <rect x={x} y={padT + innerH - 1} width={barW} height={1} fill="#e2e8f0" />
                       )}
                     </g>
                   );
@@ -769,10 +855,10 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
     // Total geral (todos os lançamentos, sem filtro de período)
     const totalGeral = list.reduce((s, l) => s + (Number(l.valorTotal ?? l.valor_total) || 0), 0);
 
-    // Distribuição por categoria (pizza)
+    // Distribuição por categoria (pizza) — mesma normalização dos 7 baldes
     const porCategoria = {};
     for (const l of list) {
-      const cat = (l.tipoLancamento || "Sem categoria").trim() || "Sem categoria";
+      const cat = normalizarCategoria(l.tipoLancamento);
       porCategoria[cat] = (porCategoria[cat] || 0) + (Number(l.valorTotal ?? l.valor_total) || 0);
     }
     const dadosPizzaCategoria = Object.entries(porCategoria)
@@ -926,9 +1012,9 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie data={dadosPizzaCategoria} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} labelLine={false}
-                  label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ""}>
-                  {dadosPizzaCategoria.map((_, i) => (
-                    <Cell key={i} fill={PALETA_CAT[i % PALETA_CAT.length]} />
+                  label={({ value, percent }) => percent > 0.05 ? fmt(value) : ""}>
+                  {dadosPizzaCategoria.map((d, i) => (
+                    <Cell key={i} fill={corCategoria(d.name, i)} />
                   ))}
                 </Pie>
                 <Tooltip formatter={(v) => fmt(v)} />
@@ -1247,6 +1333,10 @@ export default function Manutencao() {
   const [formLanc,        setFormLanc]        = useState({ ...EMPTY_LANC });
   const [abastecimentos,  setAbastecimentos]  = useState([]); // pra CPK sub-aba Combustível
   const [subCpk,          setSubCpk]          = useState("total"); // total | pneu | manutencao | combustivel
+  // Filtros de status (Wesley 27/08 — evita acúmulo visual na tela)
+  const [filtroOSStatus,   setFiltroOSStatus]   = useState("aberta");   // aberta | finalizada | todas
+  const [filtroLancStatus, setFiltroLancStatus] = useState("todas");    // todas | com_os_aberta | com_os_finalizada | sem_os
+  const [filtroOSPlaca,    setFiltroOSPlaca]    = useState("");         // placa selecionada (vazio = todas)
 
   // Resolve o odômetro SASCAR de uma placa.
   // Se placa é carreta (sem rastreador), acha o cavalo que tem ela atrelada
@@ -4311,18 +4401,68 @@ export default function Manutencao() {
       {aba === "os_lanc" && podeVerAba("os_lancamento") && (
         <main style={s.main} className="pg-body">
           {(() => {
-            // Aging OS — computa uma vez, reutiliza pra contador e ordenação
-            const abertas = ordensServico.filter(o => osStatus(o) !== "finalizada");
+            // Filtro Wesley 27/08 — aberta / finalizada / todas + filtro placa
+            const placaNorm = (filtroOSPlaca || "").trim().toUpperCase();
+            const matchPlaca = (o) => !placaNorm || (o.placa || "").toUpperCase().includes(placaNorm);
+            const totalAbertas    = ordensServico.filter(o => osStatus(o) !== "finalizada" && matchPlaca(o)).length;
+            const totalFinalizadas= ordensServico.filter(o => osStatus(o) === "finalizada" && matchPlaca(o)).length;
+            const listadasOS = ordensServico.filter(o => {
+              if (!matchPlaca(o)) return false;
+              const st = osStatus(o);
+              if (filtroOSStatus === "aberta") return st === "aberta";
+              if (filtroOSStatus === "finalizada") return st === "finalizada";
+              return true;
+            });
+            // Placas distintas pra sugerir no datalist
+            const placasDistintas = [...new Set(ordensServico.map(o => o.placa).filter(Boolean))].sort();
+            const abertas = listadasOS;
             const comAging = abertas
               .map(os => ({ os, aging: osAging(os) }))
-              .sort((a, b) => (b.aging.dias ?? -1) - (a.aging.dias ?? -1)); // mais antigas primeiro
+              .sort((a, b) => (b.aging.dias ?? -1) - (a.aging.dias ?? -1));
             const criticas = comAging.filter(x => x.aging.urgencia === "critico").length;
             const atencao  = comAging.filter(x => x.aging.urgencia === "atencao").length;
             return (
               <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
                 <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
+                  <div style={{ display:"flex", gap:8, marginBottom:8, flexWrap:"wrap", alignItems:"center" }}>
+                    {[
+                      { k:"aberta",     label:"Abertas",     n: totalAbertas,     cor:"#dc2626" },
+                      { k:"finalizada", label:"Finalizadas", n: totalFinalizadas, cor:"#15803d" },
+                      { k:"todas",      label:"Todas",       n: totalAbertas + totalFinalizadas, cor:"#334155" },
+                    ].map(t => (
+                      <button key={t.k} type="button" onClick={() => setFiltroOSStatus(t.k)}
+                        style={{
+                          padding:"5px 12px", borderRadius:8, fontSize:".78rem", fontWeight:700,
+                          border: filtroOSStatus === t.k ? `2px solid ${t.cor}` : "1px solid #e2e8f0",
+                          background: filtroOSStatus === t.k ? t.cor : "#fff",
+                          color: filtroOSStatus === t.k ? "#fff" : "#334155",
+                          cursor:"pointer",
+                        }}>
+                        {t.label} · {t.n}
+                      </button>
+                    ))}
+                    {/* Filtro por placa (autocomplete) */}
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:4, marginLeft:"auto" }}>
+                      <input
+                        list="placas-os-list"
+                        value={filtroOSPlaca}
+                        onChange={e => setFiltroOSPlaca(e.target.value.toUpperCase())}
+                        placeholder="Filtrar por placa..."
+                        style={{ padding:"6px 10px", borderRadius:8, fontSize:".82rem", border:"1px solid #cbd5e1", width:170, fontFamily:"monospace", letterSpacing:1 }}
+                      />
+                      <datalist id="placas-os-list">
+                        {placasDistintas.map(p => <option key={p} value={p} />)}
+                      </datalist>
+                      {filtroOSPlaca && (
+                        <button type="button" onClick={() => setFiltroOSPlaca("")} title="Limpar filtro"
+                          style={{ background:"transparent", border:"none", color:"#64748b", fontSize:"1.1rem", cursor:"pointer", padding:"0 4px" }}>
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-                    OSs abertas — registrar conclusão ({abertas.length})
+                    {filtroOSStatus === "aberta" ? "OSs abertas" : filtroOSStatus === "finalizada" ? "OSs finalizadas" : "Todas as OSs"} ({abertas.length})
                     {criticas > 0 && (
                       <span title={`${criticas} OS aberta(s) há 14 dias ou mais — investigar`} style={{ background:"#fee2e2", color:"#b91c1c", fontSize:".72rem", fontWeight:700, padding:"3px 8px", borderRadius:999, display:"inline-flex", alignItems:"center", gap:5 }}>
                         <AlertCircle size={12} />
@@ -4359,7 +4499,9 @@ export default function Manutencao() {
                     <tbody>
                       {abertas.length === 0 ? (
                         <tr><td colSpan={10} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
-                          Nenhuma OS aberta — todas finalizadas
+                          {filtroOSStatus === "aberta" ? "Nenhuma OS aberta — todas finalizadas" :
+                           filtroOSStatus === "finalizada" ? "Nenhuma OS finalizada ainda" :
+                           "Nenhuma OS cadastrada"}
                         </td></tr>
                       ) : comAging.map(({ os, aging }) => (
                         <tr key={os.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
@@ -4707,9 +4849,45 @@ export default function Manutencao() {
           </div>
 
           {/* Lista de lançamentos */}
+          {(() => {
+            // Cache: OSs por id/numero pra determinar status vinculado
+            const osStatusPorLanc = (l) => {
+              const key = l.osId || l.osNumero;
+              if (!key) return "sem_os";
+              const os = ordensServico.find(o => o.id === l.osId || o.numero === l.osNumero || o.legacy_id === l.osNumero);
+              if (!os) return "sem_os";
+              return osStatus(os) === "finalizada" ? "com_os_finalizada" : "com_os_aberta";
+            };
+            const contadores = { todas: lancamentos.length, com_os_aberta: 0, com_os_finalizada: 0, sem_os: 0 };
+            for (const l of lancamentos) contadores[osStatusPorLanc(l)]++;
+            const lancamentosFiltrados = filtroLancStatus === "todas"
+              ? lancamentos
+              : lancamentos.filter(l => osStatusPorLanc(l) === filtroLancStatus);
+            return (
           <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
-              <h3 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem" }}>Histórico de lançamentos ({lancamentos.length})</h3>
+              <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
+                {[
+                  { k:"todas",              label:"Todos",           n: contadores.todas,             cor:"#334155" },
+                  { k:"com_os_aberta",      label:"Com OS aberta",   n: contadores.com_os_aberta,     cor:"#dc2626" },
+                  { k:"com_os_finalizada",  label:"Com OS finalizada", n: contadores.com_os_finalizada, cor:"#15803d" },
+                  { k:"sem_os",             label:"Sem OS",          n: contadores.sem_os,            cor:"#7c3aed" },
+                ].map(t => (
+                  <button key={t.k} type="button" onClick={() => setFiltroLancStatus(t.k)}
+                    style={{
+                      padding:"5px 12px", borderRadius:8, fontSize:".78rem", fontWeight:700,
+                      border: filtroLancStatus === t.k ? `2px solid ${t.cor}` : "1px solid #e2e8f0",
+                      background: filtroLancStatus === t.k ? t.cor : "#fff",
+                      color: filtroLancStatus === t.k ? "#fff" : "#334155",
+                      cursor:"pointer",
+                    }}>
+                    {t.label} · {t.n}
+                  </button>
+                ))}
+              </div>
+              <h3 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem" }}>
+                Histórico de lançamentos ({lancamentosFiltrados.length}{filtroLancStatus !== "todas" ? ` de ${lancamentos.length}` : ""})
+              </h3>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".88rem" }}>
@@ -4727,9 +4905,11 @@ export default function Manutencao() {
                   </tr>
                 </thead>
                 <tbody>
-                  {lancamentos.length === 0 ? (
-                    <tr><td colSpan={9} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Nenhum lançamento ainda</td></tr>
-                  ) : lancamentos.map(l => (
+                  {lancamentosFiltrados.length === 0 ? (
+                    <tr><td colSpan={9} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+                      {lancamentos.length === 0 ? "Nenhum lançamento ainda" : "Nenhum lançamento nesse filtro"}
+                    </td></tr>
+                  ) : lancamentosFiltrados.map(l => (
                     <tr key={l.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                       <td style={tdOS}><strong style={{ color: "#1a3a5c" }}>{l.numero}</strong></td>
                       <td style={tdOS}>
@@ -4802,6 +4982,8 @@ export default function Manutencao() {
               </table>
             </div>
           </div>
+            );
+          })()}
         </main>
       )}
 
