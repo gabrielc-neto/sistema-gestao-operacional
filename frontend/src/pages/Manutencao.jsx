@@ -1012,7 +1012,21 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie data={dadosPizzaCategoria} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} labelLine={false}
-                  label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ""}>
+                  label={(props) => {
+                    const { cx, cy, midAngle, outerRadius, percent } = props;
+                    if (percent < 0.05) return null;
+                    const RADIAN = Math.PI / 180;
+                    const r = outerRadius * 0.62;
+                    const x = cx + r * Math.cos(-midAngle * RADIAN);
+                    const y = cy + r * Math.sin(-midAngle * RADIAN);
+                    return (
+                      <text x={x} y={y} fill="#fff" stroke="#000" strokeWidth={3}
+                        paintOrder="stroke" fontWeight={700} fontSize={13}
+                        textAnchor="middle" dominantBaseline="central">
+                        {`${(percent * 100).toFixed(0)}%`}
+                      </text>
+                    );
+                  }}>
                   {dadosPizzaCategoria.map((d, i) => (
                     <Cell key={i} fill={corCategoria(d.name, i)} />
                   ))}
