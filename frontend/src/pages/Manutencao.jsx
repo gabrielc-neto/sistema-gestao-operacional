@@ -1012,7 +1012,7 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie data={dadosPizzaCategoria} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} labelLine={false}
-                  label={({ value, percent }) => percent > 0.05 ? fmt(value) : ""}>
+                  label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ""}>
                   {dadosPizzaCategoria.map((d, i) => (
                     <Cell key={i} fill={corCategoria(d.name, i)} />
                   ))}
