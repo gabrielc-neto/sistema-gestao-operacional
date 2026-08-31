@@ -121,32 +121,32 @@ export default function AbaIndicadores({ veiculos = [], ordensServico = [], lanc
 
   const S = {
     wrap: { padding: 20, display: "flex", flexDirection: "column", gap: 16 },
-    subtabs: { display: "flex", gap: 4, background: "#f1f5f9", padding: 4, borderRadius: 10, alignSelf: "flex-start" },
+    subtabs: { display: "flex", gap: 4, background: "var(--surface-2)", padding: 4, borderRadius: 10, alignSelf: "flex-start" },
     subtab: (ativo, cor) => ({
       padding: "8px 16px", borderRadius: 8, border: "none",
-      background: ativo ? "#fff" : "transparent",
-      color: ativo ? cor : "#475569",
+      background: ativo ? "var(--card-bg)" : "transparent",
+      color: ativo ? cor : "var(--text-muted)",
       boxShadow: ativo ? "0 1px 3px rgba(15,23,42,.1)" : "none",
       fontWeight: 700, fontSize: ".84rem", cursor: "pointer", fontFamily: "inherit",
     }),
-    card: { background: "#fff", borderRadius: 12, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,.06)" },
-    kpi: (cor, bg) => ({ background: bg, borderRadius: 10, padding: 14, border: `1px solid ${cor}22` }),
+    card: { background: "var(--card-bg)", borderRadius: 12, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,.06)" },
+    kpi: (cor, bg) => ({ background: bg, borderRadius: 10, padding: 14, border: `1px solid var(--border)` }),
     kpiN: (cor) => ({ fontSize: "1.8rem", fontWeight: 800, color: cor, lineHeight: 1 }),
     kpiL: (cor) => ({ fontSize: ".72rem", fontWeight: 700, color: cor, textTransform: "uppercase", marginTop: 4 }),
     barra: (pct, cor) => ({ height: 10, borderRadius: 5, background: cor, width: `${pct}%`, transition: "width .3s" }),
-    barraWrap: { height: 10, borderRadius: 5, background: "#f1f5f9", overflow: "hidden" },
+    barraWrap: { height: 10, borderRadius: 5, background: "var(--surface-2)", overflow: "hidden" },
     table: { width: "100%", borderCollapse: "collapse", fontSize: ".88rem" },
-    th: { padding: "9px 12px", fontSize: ".72rem", fontWeight: 600, color: "#64748b", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", textAlign: "left" },
-    td: { padding: "10px 12px", fontSize: ".85rem", borderBottom: "1px solid #f1f5f9" },
+    th: { padding: "9px 12px", fontSize: ".72rem", fontWeight: 600, color: "var(--text-muted)", background: "var(--surface-2)", borderBottom: "1px solid var(--border)", textAlign: "left" },
+    td: { padding: "10px 12px", fontSize: ".85rem", borderBottom: "1px solid var(--surface-2)" },
   };
 
   return (
     <div style={S.wrap}>
       <div style={S.subtabs}>
-        <button style={S.subtab(subInd === "prev-corr", "#7c3aed")} onClick={() => setSubInd("prev-corr")}>
+        <button style={S.subtab(subInd === "prev-corr", "var(--chart-6)")} onClick={() => setSubInd("prev-corr")}>
           Preventiva x Corretiva
         </button>
-        <button style={S.subtab(subInd === "disponibilidade", "#0891b2")} onClick={() => setSubInd("disponibilidade")}>
+        <button style={S.subtab(subInd === "disponibilidade", "var(--tech)")} onClick={() => setSubInd("disponibilidade")}>
           Disponibilidade da Frota
         </button>
       </div>
@@ -164,19 +164,19 @@ export default function AbaIndicadores({ veiculos = [], ordensServico = [], lanc
             <div style={S.card}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <CheckCircle2 size={18} color="#15803d" />
-                  <span style={{ fontWeight: 700, color: "#1a3a5c" }}>Preventiva</span>
+                  <CheckCircle2 size={18} color="var(--success)" />
+                  <span style={{ fontWeight: 700, color: "var(--text)" }}>Preventiva</span>
                 </div>
-                <span style={{ background: "#dcfce7", color: "#15803d", fontWeight: 700, fontSize: ".78rem", padding: "3px 10px", borderRadius: 999 }}>
+                <span style={{ background: "var(--success-bg)", color: "var(--success)", fontWeight: 700, fontSize: ".78rem", padding: "3px 10px", borderRadius: 999 }}>
                   {fmtPct(prevCorr.preventiva.pct)}
                 </span>
               </div>
-              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#15803d" }}>{fmtBRL(prevCorr.preventiva.gasto)}</div>
-              <div style={{ fontSize: ".78rem", color: "#64748b", marginTop: 4 }}>
+              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--success)" }}>{fmtBRL(prevCorr.preventiva.gasto)}</div>
+              <div style={{ fontSize: ".78rem", color: "var(--text-muted)", marginTop: 4 }}>
                 {prevCorr.preventiva.os} OS · ticket médio {fmtBRL(prevCorr.preventiva.ticketMedio)}
               </div>
               <div style={{ ...S.barraWrap, marginTop: 12 }}>
-                <div style={S.barra(prevCorr.preventiva.pct, "#15803d")} />
+                <div style={S.barra(prevCorr.preventiva.pct, "var(--success)")} />
               </div>
             </div>
 
@@ -184,34 +184,34 @@ export default function AbaIndicadores({ veiculos = [], ordensServico = [], lanc
             <div style={S.card}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <AlertCircle size={18} color="#b91c1c" />
-                  <span style={{ fontWeight: 700, color: "#1a3a5c" }}>Corretiva</span>
+                  <AlertCircle size={18} color="var(--danger)" />
+                  <span style={{ fontWeight: 700, color: "var(--text)" }}>Corretiva</span>
                 </div>
-                <span style={{ background: "#fee2e2", color: "#b91c1c", fontWeight: 700, fontSize: ".78rem", padding: "3px 10px", borderRadius: 999 }}>
+                <span style={{ background: "var(--danger-bg)", color: "var(--danger)", fontWeight: 700, fontSize: ".78rem", padding: "3px 10px", borderRadius: 999 }}>
                   {fmtPct(prevCorr.corretiva.pct)}
                 </span>
               </div>
-              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#b91c1c" }}>{fmtBRL(prevCorr.corretiva.gasto)}</div>
-              <div style={{ fontSize: ".78rem", color: "#64748b", marginTop: 4 }}>
+              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--danger)" }}>{fmtBRL(prevCorr.corretiva.gasto)}</div>
+              <div style={{ fontSize: ".78rem", color: "var(--text-muted)", marginTop: 4 }}>
                 {prevCorr.corretiva.os} OS · ticket médio {fmtBRL(prevCorr.corretiva.ticketMedio)}
               </div>
               <div style={{ ...S.barraWrap, marginTop: 12 }}>
-                <div style={S.barra(prevCorr.corretiva.pct, "#b91c1c")} />
+                <div style={S.barra(prevCorr.corretiva.pct, "var(--danger)")} />
               </div>
             </div>
           </div>
 
           <div style={S.card}>
-            <div style={{ fontSize: ".9rem", fontWeight: 700, color: "#1a3a5c", marginBottom: 8 }}>Como interpretar</div>
-            <div style={{ fontSize: ".82rem", color: "#475569", lineHeight: 1.5 }}>
+            <div style={{ fontSize: ".9rem", fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>Como interpretar</div>
+            <div style={{ fontSize: ".82rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
               Meta ideal: <strong>70% preventiva / 30% corretiva.</strong> Preventiva evita quebra + custa 3-5x menos que corretiva (que envolve guincho, veículo parado, urgência).
               {prevCorr.corretiva.pct > 50 && (
-                <div style={{ background: "#fee2e2", color: "#991b1b", padding: 8, borderRadius: 6, marginTop: 8 }}>
+                <div style={{ background: "var(--danger-bg)", color: "#991b1b", padding: 8, borderRadius: 6, marginTop: 8 }}>
                   Alerta: mais de metade do gasto é corretiva ({fmtPct(prevCorr.corretiva.pct)}). Aumentar preventiva reduz custo total.
                 </div>
               )}
               {prevCorr.preventiva.pct >= 70 && (
-                <div style={{ background: "#dcfce7", color: "#166534", padding: 8, borderRadius: 6, marginTop: 8 }}>
+                <div style={{ background: "var(--success-bg)", color: "#166534", padding: 8, borderRadius: 6, marginTop: 8 }}>
                   Excelente — preventiva acima de 70%. Segue assim.
                 </div>
               )}
@@ -229,26 +229,26 @@ export default function AbaIndicadores({ veiculos = [], ordensServico = [], lanc
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
-            <div style={S.kpi("#0891b2", "#cffafe")}>
-              <div style={S.kpiN("#0891b2")}>{fmtPct(disponibilidade.mediaFrota)}</div>
-              <div style={S.kpiL("#0891b2")}>Média da frota</div>
+            <div style={S.kpi("var(--tech)", "#cffafe")}>
+              <div style={S.kpiN("var(--tech)")}>{fmtPct(disponibilidade.mediaFrota)}</div>
+              <div style={S.kpiL("var(--tech)")}>Média da frota</div>
             </div>
-            <div style={S.kpi("#0f172a", "#f8fafc")}>
-              <div style={S.kpiN("#0f172a")}>{disponibilidade.totalCavalos}</div>
-              <div style={S.kpiL("#0f172a")}>Cavalos monitorados</div>
+            <div style={S.kpi("var(--text)", "var(--surface-2)")}>
+              <div style={S.kpiN("var(--text)")}>{disponibilidade.totalCavalos}</div>
+              <div style={S.kpiL("var(--text)")}>Cavalos monitorados</div>
             </div>
-            <div style={S.kpi("#b91c1c", "#fee2e2")}>
-              <div style={S.kpiN("#b91c1c")}>{disponibilidade.emManutAgora}</div>
-              <div style={S.kpiL("#b91c1c")}>Em manutenção agora</div>
+            <div style={S.kpi("var(--danger)", "var(--danger-bg)")}>
+              <div style={S.kpiN("var(--danger)")}>{disponibilidade.emManutAgora}</div>
+              <div style={S.kpiL("var(--danger)")}>Em manutenção agora</div>
             </div>
-            <div style={S.kpi("#15803d", "#dcfce7")}>
-              <div style={S.kpiN("#15803d")}>{disponibilidade.linhas.filter(l => l.disponibilidade === 100).length}</div>
-              <div style={S.kpiL("#15803d")}>Com 100% disponibilidade</div>
+            <div style={S.kpi("var(--success)", "var(--success-bg)")}>
+              <div style={S.kpiN("var(--success)")}>{disponibilidade.linhas.filter(l => l.disponibilidade === 100).length}</div>
+              <div style={S.kpiL("var(--success)")}>Com 100% disponibilidade</div>
             </div>
           </div>
 
           <div style={S.card}>
-            <div style={{ fontSize: ".95rem", fontWeight: 700, color: "#1a3a5c", marginBottom: 12 }}>
+            <div style={{ fontSize: ".95rem", fontWeight: 700, color: "var(--text)", marginBottom: 12 }}>
               Ranking por veículo (piores primeiro)
             </div>
             <div style={{ overflowX: "auto" }}>
@@ -265,12 +265,12 @@ export default function AbaIndicadores({ veiculos = [], ordensServico = [], lanc
                 </thead>
                 <tbody>
                   {disponibilidade.linhas.length === 0 ? (
-                    <tr><td colSpan={6} style={{ ...S.td, textAlign: "center", color: "#94a3b8", padding: 30 }}>Sem veículos cadastrados.</td></tr>
+                    <tr><td colSpan={6} style={{ ...S.td, textAlign: "center", color: "var(--text-subtle)", padding: 30 }}>Sem veículos cadastrados.</td></tr>
                   ) : disponibilidade.linhas.map(l => {
                     const critico = l.disponibilidade < 80;
                     const atencao = l.disponibilidade >= 80 && l.disponibilidade < 95;
-                    const cor = critico ? "#b91c1c" : atencao ? "#b45309" : "#15803d";
-                    const bg = critico ? "#fee2e2" : atencao ? "#fef3c7" : "#dcfce7";
+                    const cor = critico ? "var(--danger)" : atencao ? "var(--warning)" : "var(--success)";
+                    const bg = critico ? "var(--danger-bg)" : atencao ? "var(--warning-bg)" : "var(--success-bg)";
                     return (
                       <tr key={l.placa}>
                         <td style={{ ...S.td, fontWeight: 700 }}>{l.placa}</td>

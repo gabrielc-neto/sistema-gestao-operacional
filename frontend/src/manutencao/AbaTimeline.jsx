@@ -9,10 +9,10 @@ import { watch as dsWatch } from "../services/genericDataSource";
 import { Wrench, AlertOctagon, Fuel, FileText, Calendar, Truck, Filter } from "lucide-react";
 
 const TIPO_META = {
-  os:         { icon: Wrench,       cor: "#16a34a", bg: "#dcfce7", label: "OS" },
-  manutencao: { icon: FileText,     cor: "#7c3aed", bg: "#f3e8ff", label: "Manutenção/Doc" },
-  multa:      { icon: AlertOctagon, cor: "#b91c1c", bg: "#fee2e2", label: "Multa" },
-  abastecimento: { icon: Fuel,       cor: "#0891b2", bg: "#cffafe", label: "Abastecimento" },
+  os:         { icon: Wrench,       cor: "var(--success)", bg: "var(--success-bg)", label: "OS" },
+  manutencao: { icon: FileText,     cor: "var(--chart-6)", bg: "#f3e8ff", label: "Manutenção/Doc" },
+  multa:      { icon: AlertOctagon, cor: "var(--danger)", bg: "var(--danger-bg)", label: "Multa" },
+  abastecimento: { icon: Fuel,       cor: "var(--tech)", bg: "var(--tech-soft)", label: "Abastecimento" },
 };
 
 const fmtBRL = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -110,11 +110,11 @@ export default function AbaTimeline({ veiculos = [], ordensServico = [], registr
 
   const S = {
     wrap: { padding: 20, display: "flex", flexDirection: "column", gap: 16 },
-    toolbar: { display: "flex", alignItems: "center", gap: 10, background: "#fff", padding: 12, borderRadius: 10, border: "1px solid #e2e8f0", flexWrap: "wrap" },
-    input: { padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: ".88rem" },
-    chip: (ativo, cor) => ({ background: ativo ? cor : "#f1f5f9", color: ativo ? "#fff" : "#64748b", border: "none", padding: "5px 12px", borderRadius: 999, fontSize: ".78rem", fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }),
-    line: { position: "absolute", left: 20, top: 40, bottom: 0, width: 2, background: "#e2e8f0" },
-    evento: (cor, bg) => ({ position: "relative", background: "#fff", border: "1px solid #e2e8f0", borderLeft: `4px solid ${cor}`, borderRadius: 8, padding: "12px 14px", marginLeft: 44, display: "flex", flexDirection: "column", gap: 4 }),
+    toolbar: { display: "flex", alignItems: "center", gap: 10, background: "var(--card-bg)", padding: 12, borderRadius: 10, border: "1px solid var(--border)", flexWrap: "wrap" },
+    input: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", fontSize: ".88rem" },
+    chip: (ativo, cor) => ({ background: ativo ? cor : "var(--surface-2)", color: ativo ? "#fff" : "var(--text-muted)", border: "none", padding: "5px 12px", borderRadius: 999, fontSize: ".78rem", fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }),
+    line: { position: "absolute", left: 20, top: 40, bottom: 0, width: 2, background: "var(--border)" },
+    evento: (cor, bg) => ({ position: "relative", background: "var(--card-bg)", border: "1px solid var(--border)", borderLeft: `4px solid ${cor}`, borderRadius: 8, padding: "12px 14px", marginLeft: 44, display: "flex", flexDirection: "column", gap: 4 }),
     bola: (cor, bg) => ({ position: "absolute", left: 12, width: 20, height: 20, borderRadius: "50%", background: bg, border: `3px solid ${cor}`, display: "flex", alignItems: "center", justifyContent: "center" }),
   };
 
@@ -135,23 +135,23 @@ export default function AbaTimeline({ veiculos = [], ordensServico = [], registr
       </div>
 
       {!placa ? (
-        <div style={{ padding: 60, textAlign: "center", color: "#94a3b8", background: "#fff", borderRadius: 10 }}>
+        <div style={{ padding: 60, textAlign: "center", color: "var(--text-subtle)", background: "var(--card-bg)", borderRadius: 10 }}>
           <Truck size={40} style={{ opacity: .3, marginBottom: 12 }} /><br />
           Selecione um veículo pra ver a linha do tempo completa.
         </div>
       ) : (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
-            <div style={{ background: "#fff", padding: 12, borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1a3a5c" }}>{kpi.total}</div>
-              <div style={{ fontSize: ".72rem", color: "#64748b", fontWeight: 600 }}>eventos</div>
+            <div style={{ background: "var(--card-bg)", padding: 12, borderRadius: 10, border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--text)" }}>{kpi.total}</div>
+              <div style={{ fontSize: ".72rem", color: "var(--text-muted)", fontWeight: 600 }}>eventos</div>
             </div>
-            <div style={{ background: "#fff", padding: 12, borderRadius: 10, border: "1px solid #e2e8f0" }}>
-              <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#1a3a5c" }}>{fmtBRL(kpi.gastoTotal)}</div>
-              <div style={{ fontSize: ".72rem", color: "#64748b", fontWeight: 600 }}>gasto acumulado</div>
+            <div style={{ background: "var(--card-bg)", padding: 12, borderRadius: 10, border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--text)" }}>{fmtBRL(kpi.gastoTotal)}</div>
+              <div style={{ fontSize: ".72rem", color: "var(--text-muted)", fontWeight: 600 }}>gasto acumulado</div>
             </div>
             {Object.entries(kpi.porTipo).map(([tipo, n]) => (
-              <div key={tipo} style={{ background: TIPO_META[tipo].bg, padding: 12, borderRadius: 10, border: `1px solid ${TIPO_META[tipo].cor}22` }}>
+              <div key={tipo} style={{ background: TIPO_META[tipo].bg, padding: 12, borderRadius: 10, border: `1px solid ${TIPO_META[tipo].cor}` }}>
                 <div style={{ fontSize: "1.4rem", fontWeight: 800, color: TIPO_META[tipo].cor }}>{n}</div>
                 <div style={{ fontSize: ".72rem", color: TIPO_META[tipo].cor, fontWeight: 600 }}>{TIPO_META[tipo].label}</div>
               </div>
@@ -159,7 +159,7 @@ export default function AbaTimeline({ veiculos = [], ordensServico = [], registr
           </div>
 
           {eventos.length === 0 ? (
-            <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Nenhum evento encontrado com os filtros atuais.</div>
+            <div style={{ padding: 40, textAlign: "center", color: "var(--text-subtle)" }}>Nenhum evento encontrado com os filtros atuais.</div>
           ) : (
             <div style={{ position: "relative", paddingLeft: 0 }}>
               <div style={S.line}></div>
@@ -174,10 +174,10 @@ export default function AbaTimeline({ veiculos = [], ordensServico = [], registr
                       </div>
                       <div style={S.evento(meta.cor, meta.bg)}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                          <div style={{ fontWeight: 700, color: "#1a3a5c", fontSize: ".92rem" }}>{e.titulo}</div>
-                          <div style={{ fontSize: ".72rem", color: "#64748b", whiteSpace: "nowrap" }}>{fmtDT(e.ts)}</div>
+                          <div style={{ fontWeight: 700, color: "var(--text)", fontSize: ".92rem" }}>{e.titulo}</div>
+                          <div style={{ fontSize: ".72rem", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{fmtDT(e.ts)}</div>
                         </div>
-                        <div style={{ fontSize: ".82rem", color: "#475569" }}>{e.detalhe}</div>
+                        <div style={{ fontSize: ".82rem", color: "var(--text-muted)" }}>{e.detalhe}</div>
                         {e.valor > 0 && <div style={{ fontSize: ".82rem", fontWeight: 700, color: meta.cor, marginTop: 2 }}>{fmtBRL(e.valor)}</div>}
                       </div>
                     </div>

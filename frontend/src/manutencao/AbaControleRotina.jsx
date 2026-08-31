@@ -5,46 +5,46 @@ import { useState, useMemo } from "react";
 import { Search, Printer, Pencil, Plus } from "lucide-react";
 
 const STATUS = {
-  vencido:  { txt: "#b91c1c", bg: "#fef2f2", label: "Vencido"  },
-  alerta:   { txt: "#a16207", bg: "#fffbeb", label: "Alerta"   },
-  ok:       { txt: "#15803d", bg: "#f0fdf4", label: "OK"       },
-  sem_data: { txt: "#94a3b8", bg: "#f8fafc", label: "Sem dado" },
+  vencido:  { txt: "var(--danger)", bg: "var(--danger-bg)", label: "Vencido"  },
+  alerta:   { txt: "#a16207", bg: "var(--warning-bg)", label: "Alerta"   },
+  ok:       { txt: "var(--success)", bg: "#f0fdf4", label: "OK"       },
+  sem_data: { txt: "var(--text-subtle)", bg: "var(--surface-2)", label: "Sem dado" },
 };
 const chaveOrdem = { vencido: 0, alerta: 1, sem_data: 2, ok: 3 };
 
 const s = {
   wrap: { display: "flex", flexDirection: "column", gap: 14 },
   head: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, flexWrap: "wrap" },
-  h1: { margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#0f172a", letterSpacing: "-.01em", display: "inline-flex", alignItems: "center", gap: 10 },
-  h2: { margin: "3px 0 0", fontSize: ".8rem", color: "#64748b", fontWeight: 500 },
+  h1: { margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "var(--text)", letterSpacing: "-.01em", display: "inline-flex", alignItems: "center", gap: 10 },
+  h2: { margin: "3px 0 0", fontSize: ".8rem", color: "var(--text-muted)", fontWeight: 500 },
 
   kpiRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 },
   kpiSlot: (st) => ({
     background: STATUS[st].bg, borderRadius: 10, padding: "14px 16px",
     display: "flex", flexDirection: "column", gap: 4,
-    border: "1px solid " + STATUS[st].txt + "22",
+    border: "1px solid var(--border)",
   }),
   kpiN: (st) => ({ fontSize: "1.6rem", fontWeight: 800, color: STATUS[st].txt, lineHeight: 1, fontVariantNumeric: "tabular-nums" }),
   kpiL: (st) => ({ fontSize: ".72rem", fontWeight: 700, color: STATUS[st].txt, textTransform: "uppercase", letterSpacing: ".05em" }),
 
-  toolbar: { display: "flex", alignItems: "center", gap: 10, background: "#fff", padding: "10px 12px", borderRadius: 10, border: "1px solid #e2e8f0", flexWrap: "wrap" },
+  toolbar: { display: "flex", alignItems: "center", gap: 10, background: "var(--card-bg)", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", flexWrap: "wrap" },
   searchWrap: { position: "relative", flex: "1 1 240px", minWidth: 180 },
-  searchIcon: { position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" },
-  input: { width: "100%", padding: "8px 10px 8px 32px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontFamily: "inherit", fontSize: ".88rem", color: "#0f172a", outline: "none" },
-  select: { padding: "7px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontFamily: "inherit", fontSize: ".85rem", color: "#0f172a", fontWeight: 600, cursor: "pointer" },
-  btn: { padding: "8px 14px", borderRadius: 8, background: "#0f172a", color: "#fff", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: ".84rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 },
-  counter: { fontSize: ".78rem", color: "#64748b", fontWeight: 600, whiteSpace: "nowrap" },
+  searchIcon: { position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-subtle)", pointerEvents: "none" },
+  input: { width: "100%", padding: "8px 10px 8px 32px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", fontFamily: "inherit", fontSize: ".88rem", color: "var(--text)", outline: "none" },
+  select: { padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", fontFamily: "inherit", fontSize: ".85rem", color: "var(--text)", fontWeight: 600, cursor: "pointer" },
+  btn: { padding: "8px 14px", borderRadius: 8, background: "var(--text)", color: "#fff", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: ".84rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 },
+  counter: { fontSize: ".78rem", color: "var(--text-muted)", fontWeight: 600, whiteSpace: "nowrap" },
 
-  tableWrap: { background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" },
+  tableWrap: { background: "var(--card-bg)", borderRadius: 10, border: "1px solid var(--border)", overflow: "hidden" },
   tableScroll: { overflowX: "auto" },
   table: { width: "100%", borderCollapse: "collapse", fontVariantNumeric: "tabular-nums" },
-  th: { padding: "9px 14px", fontSize: ".7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: ".05em", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", textAlign: "left", whiteSpace: "nowrap" },
-  td: { padding: "10px 14px", fontSize: ".86rem", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle", color: "#0f172a" },
-  tdPlaca: { fontFamily: "'JetBrains Mono', 'Menlo', 'Consolas', monospace", fontWeight: 700, color: "#0f172a", letterSpacing: ".02em" },
-  tdModelo: { color: "#64748b", fontSize: ".78rem" },
-  tdData: { color: "#475569", whiteSpace: "nowrap" },
-  tdVenc: { fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap" },
-  tdEmpty: { color: "#cbd5e1" },
+  th: { padding: "9px 14px", fontSize: ".7rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".05em", background: "var(--surface-2)", borderBottom: "1px solid var(--border)", textAlign: "left", whiteSpace: "nowrap" },
+  td: { padding: "10px 14px", fontSize: ".86rem", borderBottom: "1px solid var(--surface-2)", verticalAlign: "middle", color: "var(--text)" },
+  tdPlaca: { fontFamily: "'JetBrains Mono', 'Menlo', 'Consolas', monospace", fontWeight: 700, color: "var(--text)", letterSpacing: ".02em" },
+  tdModelo: { color: "var(--text-muted)", fontSize: ".78rem" },
+  tdData: { color: "var(--text-muted)", whiteSpace: "nowrap" },
+  tdVenc: { fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap" },
+  tdEmpty: { color: "var(--border-strong)" },
   zebra: { background: "#fafcff" },
 
   chip: (st) => ({
@@ -56,9 +56,9 @@ const s = {
   chipDot: (st) => ({ width: 6, height: 6, borderRadius: "50%", background: STATUS[st].txt }),
   chipDias: (st) => ({ fontSize: ".72rem", color: STATUS[st].txt, fontWeight: 600, marginLeft: 6, whiteSpace: "nowrap" }),
 
-  btnAcao: { padding: "5px 10px", borderRadius: 6, background: "#f8fafc", border: "1px solid #e2e8f0", color: "#475569", cursor: "pointer", fontFamily: "inherit", fontSize: ".78rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 },
-  btnLancar: { padding: "5px 10px", borderRadius: 6, background: "#0f172a", color: "#fff", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: ".78rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 },
-  vazio: { padding: "60px 20px", textAlign: "center", color: "#94a3b8", fontSize: ".9rem" },
+  btnAcao: { padding: "5px 10px", borderRadius: 6, background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-muted)", cursor: "pointer", fontFamily: "inherit", fontSize: ".78rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 },
+  btnLancar: { padding: "5px 10px", borderRadius: 6, background: "var(--text)", color: "#fff", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: ".78rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 },
+  vazio: { padding: "60px 20px", textAlign: "center", color: "var(--text-subtle)", fontSize: ".9rem" },
 };
 
 const normP = (p) => (p || "").toUpperCase().replace(/[^A-Z0-9]/g, "");

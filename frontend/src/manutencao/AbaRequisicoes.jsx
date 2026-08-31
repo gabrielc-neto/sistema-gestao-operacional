@@ -9,10 +9,10 @@ import { watch as dsWatch, insert as dsInsert, patch as dsPatch, remove as dsRem
 import { ShoppingCart, Plus, X, Trash2, Check, XCircle, Package, Clock } from "lucide-react";
 
 const STATUS_OPTS = [
-  { id: "pendente",   label: "Pendente aprovação", cor: "#b45309", bg: "#fef3c7" },
+  { id: "pendente",   label: "Pendente aprovação", cor: "var(--warning)", bg: "var(--warning-bg)" },
   { id: "aprovada",   label: "Aprovada",           cor: "#1d4ed8", bg: "#dbeafe" },
-  { id: "rejeitada",  label: "Rejeitada",          cor: "#b91c1c", bg: "#fee2e2" },
-  { id: "recebida",   label: "Recebida no estoque", cor: "#15803d", bg: "#dcfce7" },
+  { id: "rejeitada",  label: "Rejeitada",          cor: "var(--danger)", bg: "var(--danger-bg)" },
+  { id: "recebida",   label: "Recebida no estoque", cor: "var(--success)", bg: "var(--success-bg)" },
 ];
 const statusMap = Object.fromEntries(STATUS_OPTS.map(s => [s.id, s]));
 
@@ -117,19 +117,19 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
   const S = {
     wrap: { padding: 20, display: "flex", flexDirection: "column", gap: 16 },
     kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 },
-    kpiCard: (cor, bg) => ({ background: bg, borderRadius: 10, padding: "12px 14px", border: `1px solid ${cor}22` }),
+    kpiCard: (cor, bg) => ({ background: bg, borderRadius: 10, padding: "12px 14px", border: "1px solid var(--border)" }),
     kpiN: (cor) => ({ fontSize: "1.5rem", fontWeight: 800, color: cor }),
     kpiL: (cor) => ({ fontSize: ".72rem", fontWeight: 700, color: cor, textTransform: "uppercase" }),
-    toolbar: { display: "flex", alignItems: "center", gap: 10, background: "#fff", padding: 10, borderRadius: 10, border: "1px solid #e2e8f0", flexWrap: "wrap" },
-    input: { padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: ".88rem", outline: "none" },
+    toolbar: { display: "flex", alignItems: "center", gap: 10, background: "var(--card-bg)", padding: 10, borderRadius: 10, border: "1px solid var(--border)", flexWrap: "wrap" },
+    input: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", fontSize: ".88rem", outline: "none" },
     btn: (bg) => ({ padding: "8px 14px", borderRadius: 8, background: bg, color: "#fff", border: "none", cursor: "pointer", fontSize: ".85rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }),
-    table: { width: "100%", borderCollapse: "collapse", background: "#fff", fontSize: ".88rem", borderRadius: 10, overflow: "hidden" },
-    th: { padding: "9px 12px", fontSize: ".72rem", fontWeight: 600, color: "#64748b", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", textAlign: "left" },
-    td: { padding: "10px 12px", fontSize: ".85rem", borderBottom: "1px solid #f1f5f9" },
+    table: { width: "100%", borderCollapse: "collapse", background: "var(--card-bg)", fontSize: ".88rem", borderRadius: 10, overflow: "hidden" },
+    th: { padding: "9px 12px", fontSize: ".72rem", fontWeight: 600, color: "var(--text-muted)", background: "var(--surface-2)", borderBottom: "1px solid var(--border)", textAlign: "left" },
+    td: { padding: "10px 12px", fontSize: ".85rem", borderBottom: "1px solid var(--surface-2)" },
     chip: (s) => ({ background: s.bg, color: s.cor, fontSize: ".72rem", fontWeight: 700, padding: "3px 8px", borderRadius: 999, display: "inline-block" }),
     urgencia: (u) => ({
-      background: u === "urgente" ? "#fee2e2" : u === "alta" ? "#fef3c7" : "#f1f5f9",
-      color:      u === "urgente" ? "#b91c1c" : u === "alta" ? "#b45309" : "#64748b",
+      background: u === "urgente" ? "var(--danger-bg)" : u === "alta" ? "var(--warning-bg)" : "var(--surface-2)",
+      color:      u === "urgente" ? "var(--danger)" : u === "alta" ? "var(--warning)" : "var(--text-muted)",
       fontSize: ".7rem", fontWeight: 700, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase",
     }),
   };
@@ -137,10 +137,10 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
   return (
     <div style={S.wrap}>
       <div style={S.kpiRow}>
-        <div style={S.kpiCard("#0f172a", "#f8fafc")}><div style={S.kpiN("#0f172a")}>{kpi.total}</div><div style={S.kpiL("#0f172a")}>Total</div></div>
-        <div style={S.kpiCard("#b45309", "#fef3c7")}><div style={S.kpiN("#b45309")}>{kpi.pendente}</div><div style={S.kpiL("#b45309")}>Pendentes</div></div>
+        <div style={S.kpiCard("var(--text)", "var(--surface-2)")}><div style={S.kpiN("var(--text)")}>{kpi.total}</div><div style={S.kpiL("var(--text)")}>Total</div></div>
+        <div style={S.kpiCard("var(--warning)", "var(--warning-bg)")}><div style={S.kpiN("var(--warning)")}>{kpi.pendente}</div><div style={S.kpiL("var(--warning)")}>Pendentes</div></div>
         <div style={S.kpiCard("#1d4ed8", "#dbeafe")}><div style={S.kpiN("#1d4ed8")}>{kpi.aprovada}</div><div style={S.kpiL("#1d4ed8")}>Aprovadas</div></div>
-        <div style={S.kpiCard("#15803d", "#dcfce7")}><div style={S.kpiN("#15803d")}>{kpi.recebida}</div><div style={S.kpiL("#15803d")}>Recebidas</div></div>
+        <div style={S.kpiCard("var(--success)", "var(--success-bg)")}><div style={S.kpiN("var(--success)")}>{kpi.recebida}</div><div style={S.kpiL("var(--success)")}>Recebidas</div></div>
       </div>
 
       <div style={S.toolbar}>
@@ -148,8 +148,8 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
           <option value="todos">Todos status</option>
           {STATUS_OPTS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
         </select>
-        <span style={{ fontSize: ".8rem", color: "#64748b", marginLeft: "auto" }}>{filtrada.length} requisição(ões)</span>
-        <button style={S.btn("#4338ca")} onClick={abrirNova}><Plus size={14} /> Nova requisição</button>
+        <span style={{ fontSize: ".8rem", color: "var(--text-muted)", marginLeft: "auto" }}>{filtrada.length} requisição(ões)</span>
+        <button style={S.btn("var(--info)")} onClick={abrirNova}><Plus size={14} /> Nova requisição</button>
       </div>
 
       <div style={{ overflowX: "auto" }}>
@@ -169,7 +169,7 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
           </thead>
           <tbody>
             {filtrada.length === 0 ? (
-              <tr><td colSpan={9} style={{ ...S.td, textAlign: "center", color: "#94a3b8", padding: 30 }}>Nenhuma requisição.</td></tr>
+              <tr><td colSpan={9} style={{ ...S.td, textAlign: "center", color: "var(--text-subtle)", padding: 30 }}>Nenhuma requisição.</td></tr>
             ) : filtrada.map(r => {
               const s = statusMap[r.status] || statusMap.pendente;
               return (
@@ -177,7 +177,7 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
                   <td style={S.td}>{fmtDT(r.criadoEm)}</td>
                   <td style={{ ...S.td, fontWeight: 600 }}>
                     {r.item}
-                    {r.motivo && <div style={{ fontSize: ".72rem", color: "#64748b", marginTop: 2 }}>{r.motivo}</div>}
+                    {r.motivo && <div style={{ fontSize: ".72rem", color: "var(--text-muted)", marginTop: 2 }}>{r.motivo}</div>}
                   </td>
                   <td style={S.td}>{r.quantidade}</td>
                   <td style={S.td}><span style={S.urgencia(r.urgencia)}>{r.urgencia || "normal"}</span></td>
@@ -189,8 +189,8 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                       {r.status === "pendente" && podeAprovar && (
                         <>
-                          <button onClick={() => aprovar(r)} title="Aprovar" style={{ background: "#dcfce7", color: "#15803d", border: "none", padding: "4px 8px", borderRadius: 5, cursor: "pointer" }}><Check size={12} /></button>
-                          <button onClick={() => rejeitar(r)} title="Rejeitar" style={{ background: "#fee2e2", color: "#b91c1c", border: "none", padding: "4px 8px", borderRadius: 5, cursor: "pointer" }}><XCircle size={12} /></button>
+                          <button onClick={() => aprovar(r)} title="Aprovar" style={{ background: "var(--success-bg)", color: "var(--success)", border: "none", padding: "4px 8px", borderRadius: 5, cursor: "pointer" }}><Check size={12} /></button>
+                          <button onClick={() => rejeitar(r)} title="Rejeitar" style={{ background: "var(--danger-bg)", color: "var(--danger)", border: "none", padding: "4px 8px", borderRadius: 5, cursor: "pointer" }}><XCircle size={12} /></button>
                         </>
                       )}
                       {r.status === "aprovada" && (
@@ -198,7 +198,7 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
                           <Package size={12} /> Receber
                         </button>
                       )}
-                      <button onClick={() => apagar(r)} title="Excluir" style={{ background: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0", padding: "4px 8px", borderRadius: 5, cursor: "pointer" }}><Trash2 size={12} /></button>
+                      <button onClick={() => apagar(r)} title="Excluir" style={{ background: "var(--surface-2)", color: "var(--text-muted)", border: "1px solid var(--border)", padding: "4px 8px", borderRadius: 5, cursor: "pointer" }}><Trash2 size={12} /></button>
                     </div>
                   </td>
                 </tr>
@@ -210,16 +210,16 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
 
       {modal === "nova" && (
         <div onClick={fechar} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: 24, maxWidth: 560, width: "100%" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--card-bg)", borderRadius: 12, padding: 24, maxWidth: 560, width: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: "1.1rem", display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <h2 style={{ margin: 0, color: "var(--text)", fontSize: "1.1rem", display: "inline-flex", alignItems: "center", gap: 8 }}>
                 <ShoppingCart size={20} /> Nova requisição de compra
               </h2>
               <button onClick={fechar} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button>
             </div>
             <form onSubmit={salvar} style={{ display: "grid", gap: 12 }}>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Item / peça *</span>
+                <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Item / peça *</span>
                 <input style={S.input} value={form.item} onChange={e => setForm({ ...form, item: e.target.value })} placeholder="Ex: pastilha freio dianteira Scania R450" required list="lista-itens" />
                 <datalist id="lista-itens">
                   {(itensCatalogo || []).map(it => <option key={it.id} value={it.nome} />)}
@@ -227,11 +227,11 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
               </label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Quantidade *</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Quantidade *</span>
                   <input type="number" min="1" step="1" style={S.input} value={form.quantidade} onChange={e => setForm({ ...form, quantidade: e.target.value })} required />
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Urgência</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Urgência</span>
                   <select style={S.input} value={form.urgencia} onChange={e => setForm({ ...form, urgencia: e.target.value })}>
                     <option value="normal">Normal</option>
                     <option value="alta">Alta</option>
@@ -241,24 +241,24 @@ export default function AbaRequisicoes({ itensCatalogo, quemSou, podeAprovar = t
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Fornecedor sugerido</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Fornecedor sugerido</span>
                   <input style={S.input} value={form.fornecedorSugerido} onChange={e => setForm({ ...form, fornecedorSugerido: e.target.value })} />
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Preço estimado (R$)</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Preço estimado (R$)</span>
                   <input type="number" step="0.01" style={S.input} value={form.precoEstimado} onChange={e => setForm({ ...form, precoEstimado: e.target.value })} />
                 </label>
               </div>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Motivo / observação</span>
+                <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Motivo / observação</span>
                 <textarea style={{ ...S.input, resize: "vertical", minHeight: 60 }} value={form.motivo} onChange={e => setForm({ ...form, motivo: e.target.value })} placeholder="Placa afetada, sintoma, urgência..." />
               </label>
 
-              {erro && <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "8px 12px", borderRadius: 6, fontSize: ".85rem" }}>{erro}</div>}
+              {erro && <div style={{ background: "var(--danger-bg)", color: "var(--danger)", padding: "8px 12px", borderRadius: 6, fontSize: ".85rem" }}>{erro}</div>}
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                <button type="button" onClick={fechar} style={{ padding: "8px 16px", borderRadius: 8, background: "#f1f5f9", color: "#475569", border: "none", cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
-                <button type="submit" disabled={salvando} style={{ padding: "8px 20px", borderRadius: 8, background: "#4338ca", color: "#fff", border: "none", cursor: "pointer", fontWeight: 700 }}>
+                <button type="button" onClick={fechar} style={{ padding: "8px 16px", borderRadius: 8, background: "var(--surface-2)", color: "var(--text-muted)", border: "none", cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
+                <button type="submit" disabled={salvando} style={{ padding: "8px 20px", borderRadius: 8, background: "var(--info)", color: "#fff", border: "none", cursor: "pointer", fontWeight: 700 }}>
                   {salvando ? "Enviando..." : "Enviar pra aprovação"}
                 </button>
               </div>

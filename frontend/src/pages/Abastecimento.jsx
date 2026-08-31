@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { list as dsList, get as dsGet } from "../services/genericDataSource";
 import { listVeiculos } from "../services/frotaDataSource";
 import { useAuth } from "../contexts/AuthContext";
+import MenuNavegacao from "../components/MenuNavegacao";
+import LogoPontual from "../components/LogoPontual";
 import { ArrowLeft, Fuel, Truck, MapPin, Download, TrendingUp, AlertTriangle, DollarSign, BarChart3, Building2 } from "lucide-react";
 import { COLORS, SPACING, TYPO, RADIUS } from "../theme/tokens";
-import { PageHeader, KpiCard, Btn, DataTable, Tag, FilterBar, Field, Section, inputStyle } from "../theme/ui";
+import { KpiCard, Btn, DataTable, Tag, FilterBar, Field, Section, inputStyle } from "../theme/ui";
 
 // ── util ─────────────────────────────────────────────────────────────
 function fmtBRL(v) {
@@ -384,14 +386,24 @@ export default function Abastecimento() {
   const ultimaSync = meta?.ultimaSincronizacaoEm?.toDate?.().toLocaleString("pt-BR");
 
   return (
-    <div style={{ minHeight: "100vh", background: COLORS.bg, fontFamily: TYPO.family, color: COLORS.text }}>
-      <PageHeader
-        breadcrumb="Operacional › Combustível"
-        title="Abastecimento"
-        subtitle={`${abasts.length.toLocaleString("pt-BR")} registros CTA Smart`}
-        meta={ultimaSync ? `Última sincronização: ${ultimaSync}` : "Aguardando sincronização"}
-        actions={<Btn variant="secondary" size="sm" icon={<ArrowLeft size={14}/>} onClick={() => navigate("/dashboard")}>Dashboard</Btn>}
-      />
+    <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "system-ui, sans-serif", color: "var(--text)" }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "var(--header-bg)", borderBottom: "1px solid var(--header-border)", boxShadow: "0 4px 14px rgba(15,23,42,.18)", position: "sticky", top: 0, zIndex: 100, flexWrap: "wrap", gap: 10 }} className="pg-header">
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }} className="pg-header-center">
+          <LogoPontual height={34} variant="white" />
+          <div>
+            <h1 style={{ margin: 0, color: "#fff", fontSize: "1.15rem", fontWeight: 800 }}>Abastecimento</h1>
+            <p style={{ margin: 0, fontSize: ".72rem", color: "rgba(255,255,255,.62)" }}>
+              {ultimaSync ? `Última sincronização: ${ultimaSync}` : "Aguardando sincronização"}
+            </p>
+          </div>
+        </div>
+        <div className="pg-header-actions" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <button style={{ padding: "8px 14px", borderRadius: 8, background: "#ffffff", border: "none", color: "var(--accent)", cursor: "pointer", fontWeight: 700, fontSize: ".82rem", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, boxShadow: "0 1px 3px rgba(0,0,0,.1)" }} onClick={() => navigate("/dashboard")}>
+            <ArrowLeft size={14} /> Dashboard
+          </button>
+          <MenuNavegacao />
+        </div>
+      </header>
 
       {/* Tabs */}
       <div style={{ background: COLORS.bgCard, borderBottom: `1px solid ${COLORS.border}`, padding: `0 ${SPACING.xl}px`, display: "flex", gap: SPACING.md, overflowX: "auto" }}>

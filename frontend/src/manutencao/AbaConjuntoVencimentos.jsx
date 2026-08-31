@@ -17,34 +17,34 @@ const EXCLUIR_POR_TIPO_VEIC = {
 };
 const STATUS_ORDER = { vencido: 0, alerta: 1, sem_data: 2, ok: 3 };
 const STATUS_COR = {
-  vencido:  { bg: "#fef2f2", cor: "#991b1b", pt: "#dc2626" },
-  alerta:   { bg: "#fef3c7", cor: "#78350f", pt: "#d97706" },
+  vencido:  { bg: "var(--danger-bg)", cor: "#991b1b", pt: "var(--danger)" },
+  alerta:   { bg: "var(--warning-bg)", cor: "#78350f", pt: "var(--warning)" },
   agendado: { bg: "#dbeafe", cor: "#1e40af", pt: "#2563eb" },
-  ok:       { bg: "#dcfce7", cor: "#166534", pt: "#16a34a" },
-  sem_data: { bg: "#f1f5f9", cor: "#475569", pt: "#94a3b8" },
+  ok:       { bg: "var(--success-bg)", cor: "#166534", pt: "var(--success)" },
+  sem_data: { bg: "var(--surface-2)", cor: "var(--text-muted)", pt: "var(--text-subtle)" },
 };
 const STATUS_LBL = { vencido: "Vencido", alerta: "Alerta", agendado: "Agendado", ok: "OK", sem_data: "Sem registro" };
 
 const s = {
   wrap: { display: "flex", flexDirection: "column", gap: 14 },
-  toolbar: { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", background: "#fff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" },
-  select: { padding: "9px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontFamily: "inherit", fontSize: ".9rem", minWidth: 260, background: "#fff", fontWeight: 700, color: "#1a3a5c" },
+  toolbar: { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", background: "var(--card-bg)", padding: "12px 14px", borderRadius: 10, border: "1px solid var(--border)" },
+  select: { padding: "9px 12px", borderRadius: 8, border: "1px solid var(--border-strong)", fontFamily: "inherit", fontSize: ".9rem", minWidth: 260, background: "var(--card-bg)", fontWeight: 700, color: "var(--text)" },
   btn: (cor) => ({ padding: "9px 14px", borderRadius: 8, background: cor, color: "#fff", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: ".85rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6 }),
-  resumo: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 },
-  resumoTit: { fontSize: ".78rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 },
-  resumoLinha: { display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: "1px dashed #e2e8f0" },
+  resumo: { background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 },
+  resumoTit: { fontSize: ".78rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 },
+  resumoLinha: { display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: "1px dashed var(--border)" },
   chip: (st) => ({ padding: "3px 8px", borderRadius: 20, background: STATUS_COR[st].bg, color: STATUS_COR[st].cor, fontSize: ".72rem", fontWeight: 800 }),
-  card: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" },
-  cardHead: { padding: "12px 16px", background: "linear-gradient(90deg, #1a3a5c, #234775)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" },
+  card: { background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" },
+  cardHead: { padding: "12px 16px", background: "linear-gradient(90deg, var(--text), #234775)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" },
   cardHeadTit: { display: "inline-flex", alignItems: "center", gap: 10, fontSize: ".95rem", fontWeight: 800 },
-  grupoTit: { padding: "8px 16px", background: "#f8fafc", color: "#1a3a5c", fontSize: ".78rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em", borderBottom: "1px solid #e2e8f0", borderTop: "1px solid #e2e8f0" },
+  grupoTit: { padding: "8px 16px", background: "var(--surface-2)", color: "var(--text)", fontSize: ".78rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em", borderBottom: "1px solid var(--border)", borderTop: "1px solid var(--border)" },
   tabela: { width: "100%", borderCollapse: "collapse" },
-  th: { padding: "5px 10px", textAlign: "left", fontSize: ".68rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".04em", background: "#f1f5f9", borderBottom: "1px solid #e2e8f0" },
-  td: { padding: "5px 10px", fontSize: ".8rem", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle", lineHeight: 1.2 },
-  dateInput: { padding: "7px 9px", borderRadius: 6, border: "1px solid #cbd5e1", fontFamily: "inherit", fontSize: ".82rem", background: "#fff", color: "#1a3a5c", fontWeight: 600 },
-  vazio: { padding: "40px 20px", textAlign: "center", color: "#94a3b8", fontSize: ".9rem" },
+  th: { padding: "5px 10px", textAlign: "left", fontSize: ".68rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".04em", background: "var(--surface-2)", borderBottom: "1px solid var(--border)" },
+  td: { padding: "5px 10px", fontSize: ".8rem", borderBottom: "1px solid var(--surface-2)", verticalAlign: "middle", lineHeight: 1.2 },
+  dateInput: { padding: "7px 9px", borderRadius: 6, border: "1px solid var(--border-strong)", fontFamily: "inherit", fontSize: ".82rem", background: "var(--card-bg)", color: "var(--text)", fontWeight: 600 },
+  vazio: { padding: "40px 20px", textAlign: "center", color: "var(--text-subtle)", fontSize: ".9rem" },
   bola: (st) => ({ width: 10, height: 10, borderRadius: "50%", background: STATUS_COR[st].pt, flexShrink: 0, display: "inline-block" }),
-  linkEditar: { background: "transparent", border: "1px solid #cbd5e1", cursor: "pointer", padding: "4px 8px", borderRadius: 6, fontSize: ".75rem", color: "#475569", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 },
+  linkEditar: { background: "transparent", border: "1px solid var(--border-strong)", cursor: "pointer", padding: "4px 8px", borderRadius: 6, fontSize: ".75rem", color: "var(--text-muted)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 },
 };
 
 // Normaliza placa (mesmo padrão do Manutencao.jsx)
@@ -195,7 +195,7 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
     <div style={s.wrap} className="conjunto-wrap">
       <div style={s.toolbar} className="no-print conjunto-toolbar">
         <Truck size={18} color="#2563eb" />
-        <label style={{ fontSize: ".82rem", fontWeight: 700, color: "#475569" }}>Cavalo:</label>
+        <label style={{ fontSize: ".82rem", fontWeight: 700, color: "var(--text-muted)" }}>Cavalo:</label>
         <select style={s.select} value={placaCavalo} onChange={e => setPlacaCavalo(e.target.value)}>
           <option value="">— selecione —</option>
           {cavalos.map(c => (
@@ -204,24 +204,24 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
             </option>
           ))}
         </select>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, borderLeft: "1px solid #e2e8f0", paddingLeft: 12, marginLeft: 4 }}>
-          <label style={{ fontSize: ".78rem", fontWeight: 700, color: "#475569" }}>Vencimento de</label>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, borderLeft: "1px solid var(--border)", paddingLeft: 12, marginLeft: 4 }}>
+          <label style={{ fontSize: ".78rem", fontWeight: 700, color: "var(--text-muted)" }}>Vencimento de</label>
           <input type="date" style={s.dateInput} value={filtroDe} onChange={e => setFiltroDe(e.target.value)} />
-          <label style={{ fontSize: ".78rem", fontWeight: 700, color: "#475569" }}>até</label>
+          <label style={{ fontSize: ".78rem", fontWeight: 700, color: "var(--text-muted)" }}>até</label>
           <input type="date" style={s.dateInput} value={filtroAte} onChange={e => setFiltroAte(e.target.value)} />
           {(filtroDe || filtroAte) && (
             <button onClick={() => { setFiltroDe(""); setFiltroAte(""); }} title="Limpar filtro"
-              style={{ background: "transparent", border: "1px solid #cbd5e1", padding: "6px 10px", borderRadius: 6, cursor: "pointer", fontSize: ".78rem", color: "#475569", fontWeight: 600 }}>
+              style={{ background: "transparent", border: "1px solid var(--border-strong)", padding: "6px 10px", borderRadius: 6, cursor: "pointer", fontSize: ".78rem", color: "var(--text-muted)", fontWeight: 600 }}>
               limpar
             </button>
           )}
         </div>
-        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: ".8rem", fontWeight: 600, color: "#475569", cursor: "pointer" }}>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: ".8rem", fontWeight: 600, color: "var(--text-muted)", cursor: "pointer" }}>
           <input type="checkbox" checked={ocultarOk} onChange={e => setOcultarOk(e.target.checked)} />
           Ocultar OK
         </label>
         {conjunto && (
-          <button style={{ ...s.btn("#1a3a5c"), marginLeft: "auto" }} onClick={imprimir} title="Imprimir relatório do conjunto">
+          <button style={{ ...s.btn("var(--text)"), marginLeft: "auto" }} onClick={imprimir} title="Imprimir relatório do conjunto">
             <Printer size={16} /> Imprimir
           </button>
         )}
@@ -234,24 +234,24 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
       {conjunto && (
         <div id="conjunto-relatorio-print" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {/* Cabeçalho de impressão (só aparece no print) */}
-          <div style={{ display: "none", padding: "0 0 10px", borderBottom: "2.5px solid #1a3a5c", marginBottom: 14 }} className="print-only-header">
+          <div style={{ display: "none", padding: "0 0 10px", borderBottom: "2.5px solid var(--text)", marginBottom: 14 }} className="print-only-header">
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <img src="/pontual-logo.png" alt="Pontual" style={{ height: 50, display: "block" }} />
-              <div style={{ borderLeft: "3px solid #1a3a5c", paddingLeft: 12, flex: 1 }}>
-                <div style={{ fontSize: "1.05rem", fontWeight: 900, color: "#1a3a5c", textTransform: "uppercase", letterSpacing: ".02em" }}>
+              <div style={{ borderLeft: "3px solid var(--text)", paddingLeft: 12, flex: 1 }}>
+                <div style={{ fontSize: "1.05rem", fontWeight: 900, color: "var(--text)", textTransform: "uppercase", letterSpacing: ".02em" }}>
                   Pontual Brasil Petróleo LTDA
                 </div>
-                <div style={{ fontSize: ".72rem", color: "#475569", marginTop: 2 }}>
+                <div style={{ fontSize: ".72rem", color: "var(--text-muted)", marginTop: 2 }}>
                   Rua Luiz Franceschi, 666 — Thomaz Coelho, Araucária/PR · Tel: (41) 9 8818-8088
                 </div>
-                <div style={{ fontSize: ".9rem", fontWeight: 700, color: "#1a3a5c", marginTop: 6 }}>
+                <div style={{ fontSize: ".9rem", fontWeight: 700, color: "var(--text)", marginTop: 6 }}>
                   Relatório de Vencimentos — Conjunto {conjunto.cavalo.placa}
-                  {conjunto.motorista && <span style={{ fontWeight: 500, color: "#475569" }}> · Motorista: {conjunto.motorista.nome || conjunto.motorista.nome_completo || "—"}</span>}
+                  {conjunto.motorista && <span style={{ fontWeight: 500, color: "var(--text-muted)" }}> · Motorista: {conjunto.motorista.nome || conjunto.motorista.nome_completo || "—"}</span>}
                 </div>
               </div>
-              <div style={{ textAlign: "right", fontSize: ".7rem", color: "#64748b", minWidth: 130 }}>
+              <div style={{ textAlign: "right", fontSize: ".7rem", color: "var(--text-muted)", minWidth: 130 }}>
                 <div>Emitido em</div>
-                <div style={{ fontWeight: 700, color: "#1a3a5c", fontSize: ".82rem" }}>{new Date().toLocaleString("pt-BR")}</div>
+                <div style={{ fontWeight: 700, color: "var(--text)", fontSize: ".82rem" }}>{new Date().toLocaleString("pt-BR")}</div>
               </div>
             </div>
           </div>
@@ -262,10 +262,10 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
             <div style={s.resumoTit}>Resumo do conjunto</div>
             {resumoStatus.map(v => (
               <div key={v.placa} style={s.resumoLinha}>
-                <div style={{ minWidth: 130, fontWeight: 800, color: "#1a3a5c" }}>{v.titulo}</div>
-                <div style={{ minWidth: 110, fontFamily: "monospace", fontWeight: 700, color: "#0f172a" }}>{v.placa}</div>
+                <div style={{ minWidth: 130, fontWeight: 800, color: "var(--text)" }}>{v.titulo}</div>
+                <div style={{ minWidth: 110, fontFamily: "monospace", fontWeight: 700, color: "var(--text)" }}>{v.placa}</div>
                 {v.naoCadastrada ? (
-                  <span style={{ color: "#dc2626", fontSize: ".8rem", fontStyle: "italic" }}>⚠ carreta não cadastrada em /frota</span>
+                  <span style={{ color: "var(--danger)", fontSize: ".8rem", fontStyle: "italic" }}>⚠ carreta não cadastrada em /frota</span>
                 ) : (
                   <>
                     {v.contagem.vencido  > 0 && <span style={s.chip("vencido")}>{v.contagem.vencido} vencido{v.contagem.vencido > 1 ? "s" : ""}</span>}
@@ -273,7 +273,7 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
                     {v.contagem.sem_data > 0 && <span style={s.chip("sem_data")}>{v.contagem.sem_data} sem registro</span>}
                     {v.contagem.ok       > 0 && <span style={s.chip("ok")}>{v.contagem.ok} OK</span>}
                     {v.contagem.vencido + v.contagem.alerta + v.contagem.sem_data + v.contagem.ok === 0 && (
-                      <span style={{ color: "#94a3b8", fontSize: ".8rem" }}>nenhum documento aplicável</span>
+                      <span style={{ color: "var(--text-subtle)", fontSize: ".8rem" }}>nenhum documento aplicável</span>
                     )}
                   </>
                 )}
@@ -281,15 +281,15 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
             ))}
             {conjunto.motorista && (
               <div style={{ ...s.resumoLinha, borderBottom: "none" }}>
-                <div style={{ minWidth: 130, fontWeight: 800, color: "#1a3a5c" }}>Motorista</div>
-                <div style={{ fontWeight: 700, color: "#0f172a" }}>{conjunto.motorista.nome || conjunto.motorista.nome_completo || "—"}</div>
-                <span style={{ marginLeft: "auto", fontSize: ".75rem", color: "#64748b" }}>Documentos incluídos no cavalo</span>
+                <div style={{ minWidth: 130, fontWeight: 800, color: "var(--text)" }}>Motorista</div>
+                <div style={{ fontWeight: 700, color: "var(--text)" }}>{conjunto.motorista.nome || conjunto.motorista.nome_completo || "—"}</div>
+                <span style={{ marginLeft: "auto", fontSize: ".75rem", color: "var(--text-muted)" }}>Documentos incluídos no cavalo</span>
               </div>
             )}
             {!conjunto.motorista && (
               <div style={{ ...s.resumoLinha, borderBottom: "none" }}>
-                <div style={{ minWidth: 130, fontWeight: 800, color: "#94a3b8", fontStyle: "italic" }}>Motorista</div>
-                <span style={{ color: "#94a3b8", fontSize: ".8rem", fontStyle: "italic" }}>nenhum atrelado ao cavalo — CNH/MOPP/ASO não listados</span>
+                <div style={{ minWidth: 130, fontWeight: 800, color: "var(--text-subtle)", fontStyle: "italic" }}>Motorista</div>
+                <span style={{ color: "var(--text-subtle)", fontSize: ".8rem", fontStyle: "italic" }}>nenhum atrelado ao cavalo — CNH/MOPP/ASO não listados</span>
               </div>
             )}
           </div>
@@ -326,8 +326,8 @@ export default function AbaConjuntoVencimentos({ veiculos, registros, legacy, TI
                         {veic.linhas[grupo].map(l => (
                           <tr key={l.tipo.id}>
                             <td style={s.td}><span style={s.bola(l.status)} /></td>
-                            <td style={{ ...s.td, fontWeight: 700, color: "#0f172a" }}>{l.tipo.label}</td>
-                            <td style={{ ...s.td, fontWeight: 700, color: "#0f172a" }}>
+                            <td style={{ ...s.td, fontWeight: 700, color: "var(--text)" }}>{l.tipo.label}</td>
+                            <td style={{ ...s.td, fontWeight: 700, color: "var(--text)" }}>
                               {l.rec?.venc ? fmtDate(l.rec.venc) : "—"}
                             </td>
                             <td style={s.td}>

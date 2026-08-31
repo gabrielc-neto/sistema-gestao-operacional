@@ -10,10 +10,10 @@ import { db, storage } from "../firebase/config";
 import { AlertOctagon, Plus, X, Trash2, Paperclip, ExternalLink, Filter } from "lucide-react";
 
 const STATUS_OPTS = [
-  { id: "pendente",   label: "Pendente",   cor: "#b45309", bg: "#fef3c7" },
-  { id: "paga",       label: "Paga",       cor: "#15803d", bg: "#dcfce7" },
+  { id: "pendente",   label: "Pendente",   cor: "var(--warning)", bg: "var(--warning-bg)" },
+  { id: "paga",       label: "Paga",       cor: "var(--success)", bg: "var(--success-bg)" },
   { id: "recorrida",  label: "Recorrida",  cor: "#1d4ed8", bg: "#dbeafe" },
-  { id: "cancelada",  label: "Cancelada",  cor: "#64748b", bg: "#f1f5f9" },
+  { id: "cancelada",  label: "Cancelada",  cor: "var(--text-muted)", bg: "var(--surface-2)" },
 ];
 const statusMap = Object.fromEntries(STATUS_OPTS.map(s => [s.id, s]));
 
@@ -146,25 +146,25 @@ export default function AbaMultas({ veiculos, motoristas, quemSou }) {
   const S = {
     wrap: { padding: 20, display: "flex", flexDirection: "column", gap: 16 },
     kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 },
-    kpiCard: (cor, bg) => ({ background: bg, borderRadius: 10, padding: "12px 14px", border: `1px solid ${cor}22` }),
+    kpiCard: (cor, bg) => ({ background: bg, borderRadius: 10, padding: "12px 14px", border: "1px solid var(--border)" }),
     kpiN: (cor) => ({ fontSize: "1.5rem", fontWeight: 800, color: cor }),
     kpiL: (cor) => ({ fontSize: ".72rem", fontWeight: 700, color: cor, textTransform: "uppercase" }),
-    toolbar: { display: "flex", alignItems: "center", gap: 10, background: "#fff", padding: 10, borderRadius: 10, border: "1px solid #e2e8f0", flexWrap: "wrap" },
+    toolbar: { display: "flex", alignItems: "center", gap: 10, background: "var(--card-bg)", padding: 10, borderRadius: 10, border: "1px solid var(--border)", flexWrap: "wrap" },
     btn: (bg) => ({ padding: "8px 14px", borderRadius: 8, background: bg, color: "#fff", border: "none", cursor: "pointer", fontSize: ".85rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }),
-    input: { padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: ".88rem", outline: "none" },
-    table: { width: "100%", borderCollapse: "collapse", background: "#fff", fontSize: ".88rem", borderRadius: 10, overflow: "hidden" },
-    th: { padding: "9px 12px", fontSize: ".72rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", textAlign: "left" },
-    td: { padding: "10px 12px", fontSize: ".85rem", borderBottom: "1px solid #f1f5f9" },
+    input: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", fontSize: ".88rem", outline: "none" },
+    table: { width: "100%", borderCollapse: "collapse", background: "var(--card-bg)", fontSize: ".88rem", borderRadius: 10, overflow: "hidden" },
+    th: { padding: "9px 12px", fontSize: ".72rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", background: "var(--surface-2)", borderBottom: "1px solid var(--border)", textAlign: "left" },
+    td: { padding: "10px 12px", fontSize: ".85rem", borderBottom: "1px solid var(--surface-2)" },
     chip: (s) => ({ background: s.bg, color: s.cor, fontSize: ".72rem", fontWeight: 700, padding: "3px 8px", borderRadius: 999, display: "inline-block" }),
   };
 
   return (
     <div style={S.wrap}>
       <div style={S.kpiRow}>
-        <div style={S.kpiCard("#0f172a", "#f8fafc")}><div style={S.kpiN("#0f172a")}>{kpi.total}</div><div style={S.kpiL("#0f172a")}>Total de multas</div></div>
-        <div style={S.kpiCard("#b45309", "#fef3c7")}><div style={S.kpiN("#b45309")}>{fmtBRL(kpi.pendente)}</div><div style={S.kpiL("#b45309")}>Pendente</div></div>
-        <div style={S.kpiCard("#15803d", "#dcfce7")}><div style={S.kpiN("#15803d")}>{fmtBRL(kpi.paga)}</div><div style={S.kpiL("#15803d")}>Paga histórica</div></div>
-        <div style={S.kpiCard("#b91c1c", "#fee2e2")}><div style={S.kpiN("#b91c1c")}>{kpi.proxVenc}</div><div style={S.kpiL("#b91c1c")}>Vence em ≤7 dias</div></div>
+        <div style={S.kpiCard("var(--text)", "var(--surface-2)")}><div style={S.kpiN("var(--text)")}>{kpi.total}</div><div style={S.kpiL("var(--text)")}>Total de multas</div></div>
+        <div style={S.kpiCard("var(--warning)", "var(--warning-bg)")}><div style={S.kpiN("var(--warning)")}>{fmtBRL(kpi.pendente)}</div><div style={S.kpiL("var(--warning)")}>Pendente</div></div>
+        <div style={S.kpiCard("var(--success)", "var(--success-bg)")}><div style={S.kpiN("var(--success)")}>{fmtBRL(kpi.paga)}</div><div style={S.kpiL("var(--success)")}>Paga histórica</div></div>
+        <div style={S.kpiCard("var(--danger)", "var(--danger-bg)")}><div style={S.kpiN("var(--danger)")}>{kpi.proxVenc}</div><div style={S.kpiL("var(--danger)")}>Vence em ≤7 dias</div></div>
       </div>
 
       <div style={S.toolbar}>
@@ -173,8 +173,8 @@ export default function AbaMultas({ veiculos, motoristas, quemSou }) {
           <option value="todos">Todos status</option>
           {STATUS_OPTS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
         </select>
-        <span style={{ fontSize: ".8rem", color: "#64748b", marginLeft: "auto" }}>{listaFiltrada.length} multa(s)</span>
-        <button style={S.btn("#b91c1c")} onClick={abrirNova}><Plus size={14} /> Nova multa</button>
+        <span style={{ fontSize: ".8rem", color: "var(--text-muted)", marginLeft: "auto" }}>{listaFiltrada.length} multa(s)</span>
+        <button style={S.btn("var(--danger)")} onClick={abrirNova}><Plus size={14} /> Nova multa</button>
       </div>
 
       <div style={{ overflowX: "auto" }}>
@@ -195,7 +195,7 @@ export default function AbaMultas({ veiculos, motoristas, quemSou }) {
           </thead>
           <tbody>
             {listaFiltrada.length === 0 ? (
-              <tr><td colSpan={10} style={{ ...S.td, textAlign: "center", color: "#94a3b8", padding: 30 }}>Nenhuma multa cadastrada.</td></tr>
+              <tr><td colSpan={10} style={{ ...S.td, textAlign: "center", color: "var(--text-subtle)", padding: 30 }}>Nenhuma multa cadastrada.</td></tr>
             ) : listaFiltrada.map(m => {
               const s = statusMap[m.status] || statusMap.pendente;
               return (
@@ -212,7 +212,7 @@ export default function AbaMultas({ veiculos, motoristas, quemSou }) {
                   <td style={S.td}>
                     <div style={{ display: "flex", gap: 6 }}>
                       <button onClick={() => abrirEdicao(m)} style={{ background: "#dbeafe", color: "#1d4ed8", border: "none", padding: "4px 10px", borderRadius: 5, cursor: "pointer", fontSize: ".76rem", fontWeight: 600 }}>Editar</button>
-                      <button onClick={() => apagar(m)} style={{ background: "#fee2e2", color: "#b91c1c", border: "none", padding: "4px 8px", borderRadius: 5, cursor: "pointer" }}><Trash2 size={12} /></button>
+                      <button onClick={() => apagar(m)} style={{ background: "var(--danger-bg)", color: "var(--danger)", border: "none", padding: "4px 8px", borderRadius: 5, cursor: "pointer" }}><Trash2 size={12} /></button>
                     </div>
                   </td>
                 </tr>
@@ -224,9 +224,9 @@ export default function AbaMultas({ veiculos, motoristas, quemSou }) {
 
       {modal && (
         <div onClick={fechar} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: 24, maxWidth: 620, width: "100%", maxHeight: "90vh", overflow: "auto" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--card-bg)", borderRadius: 12, padding: 24, maxWidth: 620, width: "100%", maxHeight: "90vh", overflow: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: "1.1rem", display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <h2 style={{ margin: 0, color: "var(--text)", fontSize: "1.1rem", display: "inline-flex", alignItems: "center", gap: 8 }}>
                 <AlertOctagon size={20} /> {modal === "nova" ? "Nova multa" : "Editar multa"}
               </h2>
               <button onClick={fechar} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={20} /></button>
@@ -234,58 +234,58 @@ export default function AbaMultas({ veiculos, motoristas, quemSou }) {
             <form onSubmit={salvar} style={{ display: "grid", gap: 12 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Placa *</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Placa *</span>
                   <select style={S.input} value={form.placa} onChange={e => setForm({ ...form, placa: e.target.value })} required>
                     <option value="">—</option>
                     {(veiculos || []).map(v => <option key={v.id} value={v.placa}>{v.placa}</option>)}
                   </select>
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Motorista</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Motorista</span>
                   <select style={S.input} value={form.motorista} onChange={e => setForm({ ...form, motorista: e.target.value })}>
                     <option value="">—</option>
                     {(motoristas || []).map(m => <option key={m.id} value={m.nome}>{m.nome}</option>)}
                   </select>
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Data da infração *</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Data da infração *</span>
                   <input type="date" style={S.input} value={form.data} onChange={e => setForm({ ...form, data: e.target.value })} required />
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Vencimento pagamento</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Vencimento pagamento</span>
                   <input type="date" style={S.input} value={form.vencimento} onChange={e => setForm({ ...form, vencimento: e.target.value })} />
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Órgão autuador</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Órgão autuador</span>
                   <input style={S.input} value={form.orgao} onChange={e => setForm({ ...form, orgao: e.target.value })} placeholder="DER-PR, DNIT, PRF..." />
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Cód. infração / AIT</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Cód. infração / AIT</span>
                   <input style={S.input} value={form.codigo} onChange={e => setForm({ ...form, codigo: e.target.value })} placeholder="Ex: 545-30" />
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Valor *</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Valor *</span>
                   <input type="number" step="0.01" style={S.input} value={form.valor} onChange={e => setForm({ ...form, valor: e.target.value })} required />
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Status</span>
+                  <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Status</span>
                   <select style={S.input} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
                     {STATUS_OPTS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                   </select>
                 </label>
               </div>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Descrição</span>
+                <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Descrição</span>
                 <input style={S.input} value={form.descricao} onChange={e => setForm({ ...form, descricao: e.target.value })} placeholder="Ex: Excesso de velocidade em 20%..." />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <span style={{ fontSize: ".78rem", fontWeight: 600, color: "#475569" }}>Observações</span>
+                <span style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-muted)" }}>Observações</span>
                 <textarea style={{ ...S.input, resize: "vertical", minHeight: 60 }} value={form.obs} onChange={e => setForm({ ...form, obs: e.target.value })} />
               </label>
 
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontSize: ".85rem", fontWeight: 600, color: "#1a3a5c" }}>Anexos (AIT, comprovante)</span>
+                  <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--text)" }}>Anexos (AIT, comprovante)</span>
                   <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} style={{ background: "#f0f9ff", color: "#0369a1", border: "1px solid #7dd3fc", padding: "4px 10px", borderRadius: 6, fontSize: ".78rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <Paperclip size={12} /> {uploading ? "Enviando..." : "Adicionar"}
                   </button>
@@ -294,22 +294,22 @@ export default function AbaMultas({ veiculos, motoristas, quemSou }) {
                 {anexos.length > 0 && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {anexos.map((a, i) => (
-                      <div key={a.path} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "#f8fafc", borderRadius: 6, fontSize: ".82rem" }}>
-                        <Paperclip size={12} color="#64748b" />
-                        <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ color: "#1a3a5c", textDecoration: "none", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nome}</a>
+                      <div key={a.path} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "var(--surface-2)", borderRadius: 6, fontSize: ".82rem" }}>
+                        <Paperclip size={12} color="var(--text-muted)" />
+                        <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text)", textDecoration: "none", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nome}</a>
                         <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ color: "#1d4ed8" }}><ExternalLink size={12} /></a>
-                        <button type="button" onClick={() => removerAnexo(i)} style={{ background: "none", border: "none", color: "#b91c1c", cursor: "pointer" }}><Trash2 size={12} /></button>
+                        <button type="button" onClick={() => removerAnexo(i)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}><Trash2 size={12} /></button>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              {erro && <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "8px 12px", borderRadius: 6, fontSize: ".85rem" }}>{erro}</div>}
+              {erro && <div style={{ background: "var(--danger-bg)", color: "var(--danger)", padding: "8px 12px", borderRadius: 6, fontSize: ".85rem" }}>{erro}</div>}
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                <button type="button" onClick={fechar} style={{ padding: "8px 16px", borderRadius: 8, background: "#f1f5f9", color: "#475569", border: "none", cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
-                <button type="submit" disabled={salvando} style={{ padding: "8px 20px", borderRadius: 8, background: "#b91c1c", color: "#fff", border: "none", cursor: "pointer", fontWeight: 700 }}>
+                <button type="button" onClick={fechar} style={{ padding: "8px 16px", borderRadius: 8, background: "var(--surface-2)", color: "var(--text-muted)", border: "none", cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
+                <button type="submit" disabled={salvando} style={{ padding: "8px 20px", borderRadius: 8, background: "var(--danger)", color: "#fff", border: "none", cursor: "pointer", fontWeight: 700 }}>
                   {salvando ? "Salvando..." : "Salvar"}
                 </button>
               </div>

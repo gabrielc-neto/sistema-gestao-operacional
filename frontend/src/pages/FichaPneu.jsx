@@ -4,6 +4,7 @@ import { collection, getDocs, doc, getDoc, query, where } from "firebase/firesto
 import { db } from "../firebase/config";
 import { get as dsGet, list as dsList } from "../services/genericDataSource";
 import LogoPontual from "../components/LogoPontual";
+import MenuNavegacao from "../components/MenuNavegacao";
 import { ArrowLeft, Package, MapPin, RefreshCw, ClipboardCheck, Plus, Calendar } from "lucide-react";
 import { VIDAS, STATUS_PNEU } from "../pneus/esquemas";
 
@@ -15,9 +16,9 @@ const fmtDateTime = (iso) => {
 
 const s = {
   root: { minHeight: "100vh", background: "var(--bg)", fontFamily: "system-ui, sans-serif" },
-  header: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "#fff", borderBottom: "1px solid #e2e8f0", position: "sticky", top: 0, zIndex: 5 },
+  header: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "var(--header-bg)", borderBottom: "1px solid var(--header-border)", boxShadow: "0 4px 14px rgba(15,23,42,.18)", position: "sticky", top: 0, zIndex: 100 },
   headerLeft: { display: "flex", alignItems: "center", gap: 14 },
-  backBtn: { padding: "8px 14px", borderRadius: 8, background: "transparent", border: "1px solid #cbd5e1", color: "#475569", cursor: "pointer", fontWeight: 600, fontSize: ".82rem", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 },
+  backBtn: { padding: "8px 14px", borderRadius: 8, background: "#ffffff", border: "none", color: "var(--accent)", cursor: "pointer", fontWeight: 700, fontSize: ".82rem", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, boxShadow: "0 1px 3px rgba(0,0,0,.1)" },
 
   main: { padding: 20, maxWidth: 1200, margin: "0 auto" },
 
@@ -203,14 +204,15 @@ export default function FichaPneu() {
     <div style={s.root}>
       <header style={s.header} className="pg-header">
         <div style={s.headerLeft} className="pg-header-center">
-          <LogoPontual height={30} />
+          <LogoPontual height={30} variant="white" />
           <div>
-            <h1 style={{ margin: 0, color: "#1a3a5c", fontSize: "1.05rem", fontWeight: 800 }}>Ficha do Pneu</h1>
-            <p style={{ margin: 0, fontSize: ".72rem", color: "#64748b" }}>Histórico completo</p>
+            <h1 style={{ margin: 0, color: "#fff", fontSize: "1.05rem", fontWeight: 800 }}>Ficha do Pneu</h1>
+            <p style={{ margin: 0, fontSize: ".72rem", color: "rgba(255,255,255,.62)" }}>Histórico completo</p>
           </div>
         </div>
         <div className="pg-header-actions">
           <button style={s.backBtn} onClick={() => navigate("/pneus")}><ArrowLeft size={14} /> Voltar</button>
+          <MenuNavegacao />
         </div>
       </header>
 

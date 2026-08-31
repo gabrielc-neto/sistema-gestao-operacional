@@ -6,6 +6,7 @@ import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import { usuarioPontual } from "../utils/format";
 import LogoPontual from "../components/LogoPontual";
+import MenuNavegacao from "../components/MenuNavegacao";
 import { Package, MapPin, ClipboardCheck, RefreshCw, LayoutDashboard, ShoppingCart, History } from "lucide-react";
 import { STATUS_PNEU } from "../pneus/esquemas";
 import AbaEstoque from "../pneus/AbaEstoque";
@@ -22,10 +23,10 @@ const normNome = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " "
 // ── Estilos base compartilhados ───────────────────────────────────────
 const s = {
   root: { minHeight: "100vh", background: "var(--bg)", fontFamily: "system-ui, sans-serif" },
-  header: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "#fff", borderBottom: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,.03)", position: "sticky", top: 0, zIndex: 5, flexWrap: "wrap", gap: 10 },
+  header: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "var(--header-bg)", borderBottom: "1px solid var(--header-border)", boxShadow: "0 4px 14px rgba(15,23,42,.18)", position: "sticky", top: 0, zIndex: 100, flexWrap: "wrap", gap: 10 },
   headerLeft:  { display: "flex", alignItems: "center", gap: 14 },
   headerRight: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" },
-  backBtn: { padding: "8px 14px", borderRadius: 8, background: "transparent", border: "1px solid #cbd5e1", color: "#475569", cursor: "pointer", fontWeight: 600, fontSize: ".82rem", fontFamily: "inherit" },
+  backBtn: { padding: "8px 14px", borderRadius: 8, background: "#ffffff", border: "none", color: "var(--accent)", cursor: "pointer", fontWeight: 700, fontSize: ".82rem", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, boxShadow: "0 1px 3px rgba(0,0,0,.1)" },
   navGroups: { display: "flex", gap: 6, background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "10px 20px", overflowX: "auto", flexWrap: "wrap", boxShadow: "0 1px 3px rgba(15,23,42,.03)" },
   navTab: (active) => ({
     padding: "8px 14px", border: "1px solid " + (active ? "#1a3a5c" : "transparent"), borderRadius: 10,
@@ -126,16 +127,17 @@ export default function Pneus() {
     <div style={s.root}>
       <header style={s.header} className="pg-header">
         <div style={s.headerLeft} className="pg-header-center">
-          <LogoPontual height={34} />
+          <LogoPontual height={34} variant="white" />
           <div>
-            <h1 style={{ margin: 0, color: "#1a3a5c", fontSize: "1.15rem", fontWeight: 800 }}>Gestão de Pneus</h1>
-            <p style={{ margin: 0, fontSize: ".72rem", color: "#64748b" }}>
+            <h1 style={{ margin: 0, color: "#fff", fontSize: "1.15rem", fontWeight: 800 }}>Gestão de Pneus</h1>
+            <p style={{ margin: 0, fontSize: ".72rem", color: "rgba(255,255,255,.62)" }}>
               {loading ? "Carregando…" : `${contadores.total} pneu${contadores.total === 1 ? "" : "s"} cadastrado${contadores.total === 1 ? "" : "s"} · ${fmtBRL(contadores.investido)} investido`}
             </p>
           </div>
         </div>
         <div style={s.headerRight} className="pg-header-actions">
           <button style={s.backBtn} onClick={() => navigate("/dashboard")}>← Dashboard</button>
+          <MenuNavegacao />
         </div>
       </header>
 

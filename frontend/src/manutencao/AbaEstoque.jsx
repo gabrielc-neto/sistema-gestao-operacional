@@ -45,14 +45,14 @@ const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("pt-BR") : "—"
 const s = {
   wrap: { display: "flex", flexDirection: "column", gap: 14 },
   head: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, flexWrap: "wrap" },
-  h1: { margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "#0f172a" },
-  h2: { margin: "3px 0 0", fontSize: ".8rem", color: "#64748b", fontWeight: 500 },
+  h1: { margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "var(--text)" },
+  h2: { margin: "3px 0 0", fontSize: ".8rem", color: "var(--text-muted)", fontWeight: 500 },
 
-  subnav: { display: "flex", gap: 4, background: "#f1f5f9", padding: 4, borderRadius: 10, alignSelf: "flex-start" },
+  subnav: { display: "flex", gap: 4, background: "var(--surface-2)", padding: 4, borderRadius: 10, alignSelf: "flex-start" },
   subtab: (active, cor) => ({
     padding: "8px 14px", borderRadius: 8, border: "none",
-    background: active ? "#fff" : "transparent",
-    color: active ? cor : "#475569",
+    background: active ? "var(--card-bg)" : "transparent",
+    color: active ? cor : "var(--text-muted)",
     boxShadow: active ? "0 1px 3px rgba(15,23,42,.1)" : "none",
     fontWeight: 700, fontSize: ".84rem", cursor: "pointer",
     display: "inline-flex", alignItems: "center", gap: 6,
@@ -60,51 +60,51 @@ const s = {
   }),
 
   kpiRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 },
-  kpiCard: (cor, bg) => ({ background: bg, borderRadius: 10, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4, border: "1px solid " + cor + "22" }),
+  kpiCard: (cor, bg) => ({ background: bg, borderRadius: 10, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4, border: "1px solid var(--border)" }),
   kpiN: (cor) => ({ fontSize: "1.5rem", fontWeight: 800, color: cor, lineHeight: 1, fontVariantNumeric: "tabular-nums" }),
   kpiL: (cor) => ({ fontSize: ".72rem", fontWeight: 700, color: cor, textTransform: "uppercase", letterSpacing: ".05em" }),
 
-  toolbar: { display: "flex", alignItems: "center", gap: 10, background: "#fff", padding: "10px 12px", borderRadius: 10, border: "1px solid #e2e8f0", flexWrap: "wrap" },
+  toolbar: { display: "flex", alignItems: "center", gap: 10, background: "var(--card-bg)", padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", flexWrap: "wrap" },
   searchWrap: { position: "relative", flex: "1 1 220px", minWidth: 180 },
-  searchIcon: { position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" },
-  input: { width: "100%", padding: "8px 10px 8px 32px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: ".88rem", outline: "none", fontFamily: "inherit" },
-  select: { padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: ".85rem", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
+  searchIcon: { position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-subtle)", pointerEvents: "none" },
+  input: { width: "100%", padding: "8px 10px 8px 32px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", fontSize: ".88rem", outline: "none", fontFamily: "inherit" },
+  select: { padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", fontSize: ".85rem", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" },
   btn: (bg) => ({ padding: "8px 14px", borderRadius: 8, background: bg, color: "#fff", border: "none", cursor: "pointer", fontSize: ".85rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "inherit" }),
 
-  tableWrap: { background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" },
+  tableWrap: { background: "var(--card-bg)", borderRadius: 10, border: "1px solid var(--border)", overflow: "hidden" },
   tableScroll: { overflowX: "auto" },
   table: { width: "100%", borderCollapse: "collapse", fontVariantNumeric: "tabular-nums" },
-  th: { padding: "9px 14px", fontSize: ".7rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: ".05em", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", textAlign: "left", whiteSpace: "nowrap" },
-  td: { padding: "10px 14px", fontSize: ".85rem", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle", color: "#0f172a" },
-  zebra: { background: "#fafcff" },
+  th: { padding: "9px 14px", fontSize: ".7rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".05em", background: "var(--surface-2)", borderBottom: "1px solid var(--border)", textAlign: "left", whiteSpace: "nowrap" },
+  td: { padding: "10px 14px", fontSize: ".85rem", borderBottom: "1px solid var(--surface-2)", verticalAlign: "middle", color: "var(--text)" },
+  zebra: { background: "var(--surface-2)" },
 
-  catChip: (cor) => ({ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 6, background: cor + "12", color: cor, fontSize: ".72rem", fontWeight: 700 }),
+  catChip: (cor) => ({ display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 6, background: "var(--border)", color: cor, fontSize: ".72rem", fontWeight: 700 }),
   tipoChip: (tipo) => ({
     display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 6,
-    background: tipo === "entrada" ? "#dcfce7" : "#fee2e2",
+    background: tipo === "entrada" ? "var(--success-bg)" : "var(--danger-bg)",
     color: tipo === "entrada" ? "#166534" : "#991b1b",
     fontSize: ".72rem", fontWeight: 700,
   }),
-  saldoBaixo: { color: "#dc2626", fontWeight: 800 },
-  saldoOk: { color: "#0f172a", fontWeight: 700 },
+  saldoBaixo: { color: "var(--danger)", fontWeight: 800 },
+  saldoOk: { color: "var(--text)", fontWeight: 700 },
 
   modal: { position: "fixed", inset: 0, background: "rgba(15,23,42,.55)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 },
-  modalBox: { background: "#fff", borderRadius: 12, padding: 20, width: 480, maxWidth: "100%", maxHeight: "92vh", overflowY: "auto", boxShadow: "0 24px 60px rgba(0,0,0,.35)" },
+  modalBox: { background: "var(--card-bg)", borderRadius: 12, padding: 20, width: 480, maxWidth: "100%", maxHeight: "92vh", overflowY: "auto", boxShadow: "0 24px 60px rgba(0,0,0,.35)" },
   modalHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  modalTit: { margin: 0, fontSize: "1rem", fontWeight: 800, color: "#0f172a" },
-  modalClose: { background: "transparent", border: "none", cursor: "pointer", color: "#94a3b8", padding: 4 },
+  modalTit: { margin: 0, fontSize: "1rem", fontWeight: 800, color: "var(--text)" },
+  modalClose: { background: "transparent", border: "none", cursor: "pointer", color: "var(--text-subtle)", padding: 4 },
 
   fRow: { display: "flex", flexDirection: "column", gap: 5, marginBottom: 12 },
-  fLbl: { fontSize: ".72rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: ".04em" },
-  fInp: { padding: "8px 10px", borderRadius: 6, border: "1px solid #cbd5e1", fontFamily: "inherit", fontSize: ".9rem", outline: "none" },
+  fLbl: { fontSize: ".72rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".04em" },
+  fInp: { padding: "8px 10px", borderRadius: 6, border: "1px solid var(--border-strong)", fontFamily: "inherit", fontSize: ".9rem", outline: "none" },
   fRowGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 },
   fMsg: { padding: "8px 12px", borderRadius: 6, fontSize: ".82rem", marginBottom: 12 },
-  fMsgErr: { background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca" },
-  fMsgOk:  { background: "#dcfce7", color: "#166534", border: "1px solid #86efac" },
+  fMsgErr: { background: "var(--danger-bg)", color: "#991b1b", border: "1px solid var(--danger-border)" },
+  fMsgOk:  { background: "var(--success-bg)", color: "#166534", border: "1px solid #86efac" },
   fBtns: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 },
 
-  vazio: { padding: "60px 20px", textAlign: "center", color: "#94a3b8", fontSize: ".9rem" },
-  emptyIcon: { color: "#cbd5e1", margin: "0 auto 12px", display: "block" },
+  vazio: { padding: "60px 20px", textAlign: "center", color: "var(--text-subtle)", fontSize: ".9rem" },
+  emptyIcon: { color: "var(--border-strong)", margin: "0 auto 12px", display: "block" },
 };
 
 // ═══ MODAL: NOVO/EDITAR ITEM ═══
@@ -168,7 +168,7 @@ function ModalItem({ item, onSalvar, onFechar }) {
               <option key={c.id} value={c.id}>{c.label}</option>
             ))}
           </select>
-          {catAtual && <div style={{ fontSize: ".72rem", color: "#64748b", marginTop: 2 }}>Ex: {catAtual.exemplos}</div>}
+          {catAtual && <div style={{ fontSize: ".72rem", color: "var(--text-muted)", marginTop: 2 }}>Ex: {catAtual.exemplos}</div>}
         </div>
 
         <div style={s.fRowGrid}>
@@ -187,8 +187,8 @@ function ModalItem({ item, onSalvar, onFechar }) {
         </div>
 
         <div style={s.fBtns}>
-          <button type="button" style={{ ...s.btn("#f1f5f9"), color: "#475569" }} onClick={onFechar}>Cancelar</button>
-          <button type="submit" style={s.btn("#0f172a")} disabled={salvando}>{salvando ? "Salvando..." : "Salvar"}</button>
+          <button type="button" style={{ ...s.btn("var(--surface-2)"), color: "var(--text-muted)" }} onClick={onFechar}>Cancelar</button>
+          <button type="submit" style={s.btn("var(--text)")} disabled={salvando}>{salvando ? "Salvando..." : "Salvar"}</button>
         </div>
       </form>
     </div>
@@ -297,7 +297,7 @@ function ModalEntrada({ itens, onSalvar, onFechar }) {
         )}
 
         <div style={s.fBtns}>
-          <button type="button" style={{ ...s.btn("#f1f5f9"), color: "#475569" }} onClick={onFechar}>Cancelar</button>
+          <button type="button" style={{ ...s.btn("var(--surface-2)"), color: "var(--text-muted)" }} onClick={onFechar}>Cancelar</button>
           <button type="submit" style={s.btn("#059669")} disabled={salvando}>{salvando ? "Salvando..." : "Registrar entrada"}</button>
         </div>
       </form>
@@ -350,7 +350,7 @@ function ModalSaida({ itens, veiculos, onSalvar, onFechar }) {
     <div style={s.modal} onClick={onFechar}>
       <form style={s.modalBox} onClick={e => e.stopPropagation()} onSubmit={submeter}>
         <div style={s.modalHead}>
-          <h3 style={s.modalTit}><ArrowUpFromLine size={18} color="#dc2626" /> Registrar saída</h3>
+          <h3 style={s.modalTit}><ArrowUpFromLine size={18} color="var(--danger)" /> Registrar saída</h3>
           <button type="button" style={s.modalClose} onClick={onFechar}><X size={20} /></button>
         </div>
 
@@ -370,12 +370,12 @@ function ModalSaida({ itens, veiculos, onSalvar, onFechar }) {
             })}
           </select>
           {itens.length === 0 && (
-            <div style={{ fontSize: ".76rem", color: "#dc2626", marginTop: 4, fontWeight: 600 }}>
+            <div style={{ fontSize: ".76rem", color: "var(--danger)", marginTop: 4, fontWeight: 600 }}>
               Nenhum item cadastrado. Cadastre no Catálogo primeiro.
             </div>
           )}
           {itens.length > 0 && itens.every(i => Number(i.saldoAtual || 0) <= 0) && (
-            <div style={{ fontSize: ".76rem", color: "#d97706", marginTop: 4, fontWeight: 600 }}>
+            <div style={{ fontSize: ".76rem", color: "var(--warning)", marginTop: 4, fontWeight: 600 }}>
               Nenhum item tem saldo. Registre uma entrada primeiro.
             </div>
           )}
@@ -385,7 +385,7 @@ function ModalSaida({ itens, veiculos, onSalvar, onFechar }) {
           <div style={s.fRow}>
             <label style={s.fLbl}>Quantidade * {item ? `(${item.unidade})` : ""}</label>
             <input style={s.fInp} type="number" step="0.01" min="0.01" value={qtd} onChange={e => setQtd(e.target.value)} placeholder="0" />
-            {item && <div style={{ fontSize: ".72rem", color: insuficiente ? "#dc2626" : "#64748b", marginTop: 2, fontWeight: insuficiente ? 700 : 500 }}>
+            {item && <div style={{ fontSize: ".72rem", color: insuficiente ? "var(--danger)" : "var(--text-muted)", marginTop: 2, fontWeight: insuficiente ? 700 : 500 }}>
               Disponível: {fmtQ(saldo, item.unidade)}
             </div>}
           </div>
@@ -417,8 +417,8 @@ function ModalSaida({ itens, veiculos, onSalvar, onFechar }) {
         )}
 
         <div style={s.fBtns}>
-          <button type="button" style={{ ...s.btn("#f1f5f9"), color: "#475569" }} onClick={onFechar}>Cancelar</button>
-          <button type="submit" style={s.btn("#dc2626")} disabled={salvando || insuficiente}>{salvando ? "Salvando..." : "Registrar saída"}</button>
+          <button type="button" style={{ ...s.btn("var(--surface-2)"), color: "var(--text-muted)" }} onClick={onFechar}>Cancelar</button>
+          <button type="submit" style={s.btn("var(--danger)")} disabled={salvando || insuficiente}>{salvando ? "Salvando..." : "Registrar saída"}</button>
         </div>
       </form>
     </div>
@@ -693,10 +693,10 @@ export default function AbaEstoque({ veiculos, quemSou }) {
 
       {/* KPIs */}
       <div style={s.kpiRow}>
-        <div style={s.kpiCard("#0f172a", "#f8fafc")}><div style={s.kpiN("#0f172a")}>{kpi.totalItens}</div><div style={s.kpiL("#0f172a")}>Itens cadastrados</div></div>
-        <div style={s.kpiCard("#dc2626", "#fef2f2")}><div style={s.kpiN("#dc2626")}>{kpi.abaixoMin}</div><div style={s.kpiL("#dc2626")}>Abaixo do mínimo</div></div>
+        <div style={s.kpiCard("var(--text)", "var(--surface-2)")}><div style={s.kpiN("var(--text)")}>{kpi.totalItens}</div><div style={s.kpiL("var(--text)")}>Itens cadastrados</div></div>
+        <div style={s.kpiCard("var(--danger)", "var(--danger-bg)")}><div style={s.kpiN("var(--danger)")}>{kpi.abaixoMin}</div><div style={s.kpiL("var(--danger)")}>Abaixo do mínimo</div></div>
         <div style={s.kpiCard("#059669", "#f0fdf4")}><div style={s.kpiN("#059669")}>{fmtBRL(kpi.valorEstoque)}</div><div style={s.kpiL("#059669")}>Valor em estoque</div></div>
-        <div style={s.kpiCard("#0891b2", "#f0f9ff")}><div style={s.kpiN("#0891b2")}>{kpi.entradaHoje} / {kpi.saidaHoje}</div><div style={s.kpiL("#0891b2")}>Entradas/Saídas hoje</div></div>
+        <div style={s.kpiCard("var(--tech)", "#f0f9ff")}><div style={s.kpiN("var(--tech)")}>{kpi.entradaHoje} / {kpi.saidaHoje}</div><div style={s.kpiL("var(--tech)")}>Entradas/Saídas hoje</div></div>
       </div>
 
       {/* Sub-tabs */}
@@ -713,10 +713,10 @@ export default function AbaEstoque({ veiculos, quemSou }) {
       {kpi.abaixoMin > 0 && (() => {
         const abaixo = itens.filter(i => Number(i.saldoAtual || 0) < Number(i.estoqueMinimo || 0));
         return (
-          <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:10, padding:"12px 16px", display:"flex", alignItems:"flex-start", gap:12 }}>
-            <AlertTriangle size={20} color="#dc2626" style={{ flexShrink:0, marginTop:2 }} />
+          <div style={{ background:"var(--danger-bg)", border:"1px solid var(--danger-border)", borderRadius:10, padding:"12px 16px", display:"flex", alignItems:"flex-start", gap:12 }}>
+            <AlertTriangle size={20} color="var(--danger)" style={{ flexShrink:0, marginTop:2 }} />
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontWeight:700, color:"#b91c1c", fontSize:".9rem", marginBottom:6 }}>
+              <div style={{ fontWeight:700, color:"var(--danger)", fontSize:".9rem", marginBottom:6 }}>
                 {abaixo.length} {abaixo.length === 1 ? "item" : "itens"} abaixo do estoque mínimo — repor urgente
               </div>
               <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
@@ -725,9 +725,9 @@ export default function AbaEstoque({ veiculos, quemSou }) {
                     key={it.id}
                     onClick={() => setModalItem(it)}
                     title={`Editar — atual: ${fmtQ(Number(it.saldoAtual||0), it.unidade)} · mín: ${fmtQ(Number(it.estoqueMinimo||0), it.unidade)}`}
-                    style={{ background:"#fff", border:"1px solid #fca5a5", color:"#991b1b", padding:"4px 10px", borderRadius:999, fontSize:".78rem", fontWeight:600, cursor:"pointer" }}
+                    style={{ background:"var(--card-bg)", border:"1px solid #fca5a5", color:"#991b1b", padding:"4px 10px", borderRadius:999, fontSize:".78rem", fontWeight:600, cursor:"pointer" }}
                   >
-                    {it.nome} <span style={{ color:"#dc2626", marginLeft:4 }}>{fmtQ(Number(it.saldoAtual||0), it.unidade)}/{fmtQ(Number(it.estoqueMinimo||0), it.unidade)}</span>
+                    {it.nome} <span style={{ color:"var(--danger)", marginLeft:4 }}>{fmtQ(Number(it.saldoAtual||0), it.unidade)}/{fmtQ(Number(it.estoqueMinimo||0), it.unidade)}</span>
                   </button>
                 ))}
                 {abaixo.length > 12 && <span style={{ fontSize:".78rem", color:"#7f1d1d", padding:"4px 6px" }}>+{abaixo.length - 12} outros</span>}
@@ -749,14 +749,14 @@ export default function AbaEstoque({ veiculos, quemSou }) {
               <option value="todos">Todas categorias</option>
               {CATEGORIAS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
-            <span style={{ fontSize: ".78rem", color: "#64748b", fontWeight: 600 }}>{itensFiltrados.length} de {itens.length}</span>
+            <span style={{ fontSize: ".78rem", color: "var(--text-muted)", fontWeight: 600 }}>{itensFiltrados.length} de {itens.length}</span>
             <button style={{ ...s.btn("#059669"), marginLeft: "auto" }} onClick={() => setModalEnt(true)} disabled={itens.length === 0}>
               <ArrowDownToLine size={14} /> Entrada
             </button>
-            <button style={s.btn("#dc2626")} onClick={() => setModalSai(true)} disabled={itens.length === 0}>
+            <button style={s.btn("var(--danger)")} onClick={() => setModalSai(true)} disabled={itens.length === 0}>
               <ArrowUpFromLine size={14} /> Saída
             </button>
-            <label style={{ ...s.btn("#4338ca"), cursor: "pointer" }} title="Importar NF-e (XML SEFAZ) — cadastra itens e registra entrada automaticamente">
+            <label style={{ ...s.btn("var(--info)"), cursor: "pointer" }} title="Importar NF-e (XML SEFAZ) — cadastra itens e registra entrada automaticamente">
               <FileUp size={14} /> Importar NF-e
               <input
                 type="file"
@@ -765,12 +765,12 @@ export default function AbaEstoque({ veiculos, quemSou }) {
                 style={{ display: "none" }}
               />
             </label>
-            <button style={s.btn("#0f172a")} onClick={() => setModalItem("novo")}>
+            <button style={s.btn("var(--text)")} onClick={() => setModalItem("novo")}>
               <Plus size={14} /> Novo item
             </button>
           </div>
           {importNfeErro && !modalImportNfe && (
-            <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "8px 12px", borderRadius: 6, fontSize: ".85rem", marginTop: -6 }}>
+            <div style={{ background: "var(--danger-bg)", color: "var(--danger)", padding: "8px 12px", borderRadius: 6, fontSize: ".85rem", marginTop: -6 }}>
               {importNfeErro}
             </div>
           )}
@@ -810,11 +810,11 @@ export default function AbaEstoque({ veiculos, quemSou }) {
                             {abaixoMin && <AlertTriangle size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />}
                             {fmtQ(it.saldoAtual || 0, it.unidade)}
                           </td>
-                          <td style={{ ...s.td, color: "#64748b" }}>{fmtQ(it.estoqueMinimo || 0, it.unidade)}</td>
-                          <td style={{ ...s.td, color: "#475569" }}>{fmtBRL(it.custoMedio || 0)}</td>
+                          <td style={{ ...s.td, color: "var(--text-muted)" }}>{fmtQ(it.estoqueMinimo || 0, it.unidade)}</td>
+                          <td style={{ ...s.td, color: "var(--text-muted)" }}>{fmtBRL(it.custoMedio || 0)}</td>
                           <td style={{ ...s.td, fontWeight: 700 }}>{fmtBRL((it.saldoAtual || 0) * (it.custoMedio || 0))}</td>
                           <td style={{ ...s.td, textAlign: "right" }}>
-                            <button style={{ ...s.btn("#f8fafc"), color: "#475569", border: "1px solid #e2e8f0", padding: "4px 8px", fontSize: ".76rem" }} onClick={() => setModalItem(it)}>
+                            <button style={{ ...s.btn("var(--surface-2)"), color: "var(--text-muted)", border: "1px solid var(--border)", padding: "4px 8px", fontSize: ".76rem" }} onClick={() => setModalItem(it)}>
                               <Edit3 size={11} /> Editar
                             </button>
                           </td>
@@ -842,11 +842,11 @@ export default function AbaEstoque({ veiculos, quemSou }) {
               <option value="entrada">Só entradas</option>
               <option value="saida">Só saídas</option>
             </select>
-            <span style={{ fontSize: ".78rem", color: "#64748b", fontWeight: 600 }}>{movsFiltradas.length} de {movs.length}</span>
+            <span style={{ fontSize: ".78rem", color: "var(--text-muted)", fontWeight: 600 }}>{movsFiltradas.length} de {movs.length}</span>
             <button style={{ ...s.btn("#059669"), marginLeft: "auto" }} onClick={() => setModalEnt(true)} disabled={itens.length === 0}>
               <ArrowDownToLine size={14} /> Entrada
             </button>
-            <button style={s.btn("#dc2626")} onClick={() => setModalSai(true)} disabled={itens.length === 0}>
+            <button style={s.btn("var(--danger)")} onClick={() => setModalSai(true)} disabled={itens.length === 0}>
               <ArrowUpFromLine size={14} /> Saída
             </button>
           </div>
@@ -885,15 +885,15 @@ export default function AbaEstoque({ veiculos, quemSou }) {
                         <td style={{ ...s.td, fontWeight: 700, color: m.tipo === "entrada" ? "#166534" : "#991b1b" }}>
                           {m.tipo === "entrada" ? "+" : "−"}{fmtQ(m.quantidade, m.itemUnidade)}
                         </td>
-                        <td style={{ ...s.td, color: "#475569" }}>
+                        <td style={{ ...s.td, color: "var(--text-muted)" }}>
                           {m.tipo === "entrada" && m.custoTotal ? fmtBRL(m.custoTotal) : "—"}
                         </td>
-                        <td style={{ ...s.td, color: "#475569", fontSize: ".78rem" }}>
+                        <td style={{ ...s.td, color: "var(--text-muted)", fontSize: ".78rem" }}>
                           {m.tipo === "entrada"
                             ? (m.fornecedor ? `Fornec: ${m.fornecedor}${m.notaFiscal ? " · NF " + m.notaFiscal : ""}` : m.notaFiscal ? `NF ${m.notaFiscal}` : "—")
                             : (m.veiculoPlaca ? `Placa: ${m.veiculoPlaca}` : "—")}
                         </td>
-                        <td style={{ ...s.td, color: "#64748b", fontSize: ".78rem" }}>{m.responsavel || "—"}</td>
+                        <td style={{ ...s.td, color: "var(--text-muted)", fontSize: ".78rem" }}>{m.responsavel || "—"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -932,26 +932,26 @@ export default function AbaEstoque({ veiculos, quemSou }) {
           <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:12, maxWidth:1100, width:"100%", maxHeight:"90vh", overflow:"auto", padding:24 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
               <div>
-                <h2 style={{ margin:0, color:"#1a3a5c", fontSize:"1.1rem", display:"flex", alignItems:"center", gap:8 }}>
+                <h2 style={{ margin:0, color:"var(--text)", fontSize:"1.1rem", display:"flex", alignItems:"center", gap:8 }}>
                   <FileUp size={20} /> Importar NF-e — Preview
                 </h2>
-                <p style={{ margin:"4px 0 0 0", fontSize:".85rem", color:"#64748b" }}>
+                <p style={{ margin:"4px 0 0 0", fontSize:".85rem", color:"var(--text-muted)" }}>
                   <strong>{modalImportNfe.fornecedor}</strong> · CNPJ {modalImportNfe.cnpj}
                   <br />NF nº {modalImportNfe.numeroNfe}/{modalImportNfe.serie} · {modalImportNfe.dataEmissao?.slice(0,10)} · Total {fmtBRL(modalImportNfe.valorTotal)}
                 </p>
               </div>
-              <button onClick={() => !importNfeSalvando && setModalImportNfe(null)} style={{ background:"none", border:"none", fontSize:"1.5rem", cursor:"pointer", color:"#64748b" }}>✕</button>
+              <button onClick={() => !importNfeSalvando && setModalImportNfe(null)} style={{ background:"none", border:"none", fontSize:"1.5rem", cursor:"pointer", color:"var(--text-muted)" }}>✕</button>
             </div>
 
-            <p style={{ fontSize:".82rem", color:"#475569", marginBottom:12 }}>
+            <p style={{ fontSize:".82rem", color:"var(--text-muted)", marginBottom:12 }}>
               <strong>{modalImportNfe.items.length}</strong> item(s) na NF-e. Confira categorias antes de importar (chuta pelo nome, você pode ajustar).
               Itens marcados <strong>criam novos</strong> no catálogo (ou reusam se nome bater exato). Todos geram <strong>movimentação de entrada</strong> com custo unitário da NF.
             </p>
 
-            <div style={{ overflowX:"auto", border:"1px solid #e2e8f0", borderRadius:8, marginBottom:12 }}>
+            <div style={{ overflowX:"auto", border:"1px solid var(--border)", borderRadius:8, marginBottom:12 }}>
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".84rem" }}>
                 <thead>
-                  <tr style={{ background:"#f8fafc" }}>
+                  <tr style={{ background:"var(--surface-2)" }}>
                     <th style={s.th}>#</th>
                     <th style={s.th}>Nome</th>
                     <th style={s.th}>Categoria</th>
@@ -967,7 +967,7 @@ export default function AbaEstoque({ veiculos, quemSou }) {
                       <td style={s.td}>{it.nItem}</td>
                       <td style={s.td}>
                         <div style={{ fontWeight:600 }}>{it.nome}</div>
-                        {it.codigo && <div style={{ fontSize:".72rem", color:"#94a3b8" }}>cod: {it.codigo}</div>}
+                        {it.codigo && <div style={{ fontSize:".72rem", color:"var(--text-subtle)" }}>cod: {it.codigo}</div>}
                       </td>
                       <td style={s.td}>
                         <select
@@ -979,7 +979,7 @@ export default function AbaEstoque({ veiculos, quemSou }) {
                               items: prev.items.map((x, idx) => idx === i ? { ...x, categoria: novo } : x)
                             }));
                           }}
-                          style={{ padding:"4px 8px", borderRadius:5, border:"1px solid #e2e8f0", fontSize:".78rem" }}
+                          style={{ padding:"4px 8px", borderRadius:5, border:"1px solid var(--border)", fontSize:".78rem" }}
                         >
                           {CATEGORIAS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                         </select>
@@ -1010,7 +1010,7 @@ export default function AbaEstoque({ veiculos, quemSou }) {
             </div>
 
             {importNfeErro && (
-              <div style={{ background:"#fee2e2", color:"#b91c1c", padding:"8px 12px", borderRadius:6, marginBottom:12, fontSize:".85rem" }}>
+              <div style={{ background:"var(--danger-bg)", color:"var(--danger)", padding:"8px 12px", borderRadius:6, marginBottom:12, fontSize:".85rem" }}>
                 {importNfeErro}
               </div>
             )}
@@ -1019,12 +1019,12 @@ export default function AbaEstoque({ veiculos, quemSou }) {
               <button
                 onClick={() => setModalImportNfe(null)}
                 disabled={importNfeSalvando}
-                style={{ padding:"8px 16px", borderRadius:8, background:"#f1f5f9", color:"#475569", border:"none", cursor:"pointer", fontWeight:600 }}
+                style={{ padding:"8px 16px", borderRadius:8, background:"var(--surface-2)", color:"var(--text-muted)", border:"none", cursor:"pointer", fontWeight:600 }}
               >Cancelar</button>
               <button
                 onClick={confirmarImportNfe}
                 disabled={importNfeSalvando}
-                style={{ padding:"8px 20px", borderRadius:8, background:"#4338ca", color:"#fff", border:"none", cursor:"pointer", fontWeight:700 }}
+                style={{ padding:"8px 20px", borderRadius:8, background:"var(--info)", color:"#fff", border:"none", cursor:"pointer", fontWeight:700 }}
               >
                 {importNfeSalvando ? "Importando..." : `Importar ${modalImportNfe.items.filter(x => x.criarNovo).length} item(s)`}
               </button>

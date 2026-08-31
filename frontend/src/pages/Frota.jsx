@@ -6,6 +6,7 @@ import { list as dsList, watch as dsWatch } from "../services/genericDataSource"
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
+import MenuNavegacao from "../components/MenuNavegacao";
 import VeiculoQR from "../components/VeiculoQR";
 import { QrCode, Rows3, LayoutGrid, Columns2, Lock as LockIco, Unlock as UnlockIco, Edit3 } from "lucide-react";
 import { usuarioPontual } from "../utils/format";
@@ -424,6 +425,7 @@ export default function Frota() {
             <Ico.Dash size={16} />
             <span className="hide-mobile">Dashboard</span>
           </button>
+          <MenuNavegacao />
         </div>
       </header>
 
@@ -1080,11 +1082,11 @@ export default function Frota() {
 }
 
 const s = {
-  wrap:        { minHeight:"100vh", background:"#f5f7fb" },
-  header:      { background:"linear-gradient(105deg, #1a3a5c, #234775)", color:"#fff", borderBottom:"4px solid transparent", borderImage:"linear-gradient(90deg, #3d6b47, #6aaa5e, #b5d947, #f5c318, #f0a500) 1", padding:"14px 24px", display:"flex", alignItems:"center", gap:14, boxShadow:"0 4px 14px rgba(15,23,42,.18)" },
+  wrap:        { minHeight:"100vh", background:"var(--bg)" },
+  header:      { background:"var(--header-bg)", color:"#fff", borderBottom:"1px solid var(--header-border)", padding:"14px 24px", display:"flex", alignItems:"center", gap:14, boxShadow:"0 4px 14px rgba(15,23,42,.18)", position:"sticky", top:0, zIndex:100 },
   titulo:      { color:"#fff", fontWeight:700, fontSize:"1.15rem", lineHeight:1.1 },
   sub:         { color:"rgba(255,255,255,.62)", fontSize:".72rem", marginTop:2 },
-  back:        { background:"#f5c318", border:"none", color:"#1a3a5c", borderRadius:8, padding:"8px 14px", cursor:"pointer", fontSize:".82rem", fontWeight:700, display:"inline-flex", alignItems:"center", gap:8, boxShadow:"0 1px 3px rgba(0,0,0,.1)" },
+  back:        { background:"#ffffff", border:"none", color:"var(--accent)", borderRadius:8, padding:"8px 14px", cursor:"pointer", fontSize:".82rem", fontWeight:700, display:"inline-flex", alignItems:"center", gap:8, boxShadow:"0 1px 3px rgba(0,0,0,.1)" },
   btnNovo:     { background:"rgba(255,255,255,.14)", border:"none", color:"#fff", borderRadius:8, padding:"8px 14px", cursor:"pointer", fontSize:".82rem", fontWeight:700, display:"inline-flex", alignItems:"center", gap:8, backdropFilter:"blur(4px)" },
   toolbar:     { padding:"14px 24px", display:"flex", gap:12, flexWrap:"wrap", alignItems:"center", background:"transparent" },
   busca:       { width:"100%", minWidth:200, padding:"10px 14px", borderRadius:10, border:"1px solid #e2e8f0", fontSize:".9rem", outline:"none", background:"#fff", boxShadow:"0 1px 3px rgba(15,23,42,.04)", color:"#1e293b", fontFamily:"inherit" },

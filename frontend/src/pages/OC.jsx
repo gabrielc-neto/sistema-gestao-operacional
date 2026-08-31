@@ -7,7 +7,7 @@ import { db } from "../firebase/config";
 import { list as dsList, insert as dsInsert, remove as dsRemove } from "../services/genericDataSource";
 import { listVeiculos } from "../services/frotaDataSource";
 import { useAuth } from "../contexts/AuthContext";
-import { Lock, Calendar, Clock } from "lucide-react";
+import { Lock, Calendar, Clock, Plus } from "lucide-react";
 import LogoPontual from "../components/LogoPontual";
 import ModuleHeader from "../components/ModuleHeader";
 import ExportBar from "../components/ExportBar";
@@ -71,7 +71,9 @@ export default function OC() {
   const [salvando,    setSalvando]    = useState(false);
   const [busca,       setBusca]       = useState("");
   const [filtroTempo, setFiltroTempo] = useState("todas");
+  const [filtroBase,  setFiltroBase]  = useState("");
   const [modalOC,     setModalOC]     = useState(null);
+  const [drawerAberto, setDrawerAberto] = useState(false);
   const [erro,        setErro]        = useState("");
 
   /* ── carrega dados ── */
@@ -224,98 +226,219 @@ export default function OC() {
       filtroTempo === "todas" ? true :
       filtroTempo === "hoje"  ? o.data === hoje :
       filtroTempo === "semana"? o.data >= semana : true;
-    return matchBusca && matchTempo;
+    const matchBase = !filtroBase || o.base === filtroBase;
+    return matchBusca && matchTempo && matchBase;
   });
+
+  /* fila de tickets agrupada por período (service desk) */
+  const totalHoje  = ordens.filter(o => o.data === hoje).length;
+  const totalSemana = ordens.filter(o => o.data >= semana).length;
+  const totalLitrosGeral = ordens.reduce((s, o) => s + (parseFloat(o.totalLitros) || 0), 0);
+  const basesPresentes = [...new Set(ordens.map(o => o.base).filter(Boolean))];
+
+  const secoes = [
+    { id: "hoje",   titulo: "Hoje",        icon: "yes",  itens: listaFiltrada.filter(o => o.data === hoje) },
+    { id: "semana", titulo: "Esta semana", icon: "__",   itens: listaFiltrada.filter(o => o.data >= semana && o.data !== hoje) },
+    { id: "antigas",titulo: "Anteriores",  icon: "_a",   itens: listaFiltrada.filter(o => o.data < semana) },
+  ].filter(sec => sec.itens.length > 0);
+
+  /* KPI clicáveis — filtro rápido */
+  const kpis = [
+    { chave: "todas",  label: "Total",            valor: ordens.length,                          ativo: filtroTempo === "todas" },
+    { chave: "hoje",   label: "Hoje",             valor: totalHoje,                              ativo: filtroTempo === "hoje" },
+    { chave: "semana", label: "Esta semana",      valor: totalSemana,                            ativo: filtroTempo === "semana" },
+    { chave: "litros", label: "Litros",           valor: totalLitrosGeral.toLocaleString("pt-BR") + " L", ativo: false },
+  ];
 
   /* ── render ── */
   const isAdmin = profile?.role === "admin" || profile?.role === "master";
 
+  const formState = {
+    num, data, hora, base, cavalo, motorista, resp, c1, t1, c2, t2, obs,
+    entregas, erro, salvando, veiculoBloqueado, veiculoSelecionado,
+    veiculos, motoristas, BASES, TIPOS, PRODUTOS,
+    setData, setHora, setBase, setCavalo, setMotorista, setResp,
+    setC1, setT1, setC2, setT2, setObs,
+    atualizarEntrega, adicionarEntrega, removerEntrega,
+    salvar, salvarEImprimir,
+  };
+
   return (
     <div style={s.wrap}>
       {/* HEADER */}
-      <ModuleHeader title="Ordens de Carregamento" />
+      <ModuleHeader
+        title="Ordens de Carregamento"
+        subtitle="Fila de despacho · service desk"
+        actions={
+          <button className="mod-hbtn" onClick={() => setDrawerAberto(true)}>
+            <PlusOC size={16} /> <span className="hide-mobile">Nova OC</span>
+          </button>
+        }
+      />
 
-      {/* CORPO: duas colunas */}
-      <div style={s.corpo} className="oc-corpo">
+      <style>{`
+        @media (max-width: 720px) {
+          .oc-kpis { grid-template-columns: repeat(2, 1fr) !important; padding: 12px 12px 2px !important; }
+        }
+        @media (max-width: 480px) {
+          .oc-drawer-overlay .oc-drawer { width: 100vw !important; }
+          .oc-fila { padding: 0 10px 24px !important; }
+        }
+        @media (max-width: 640px) {
+          .oc-fila .oc-toolbar { padding: 10px 12px !important; }
+        }
+      `}</style>
 
-        {/* LISTA — aparece primeiro no mobile (order via CSS) */}
-        <div style={s.colLista}>
-          <div style={s.painelHeader}>
-            <span style={s.painelTitulo}>OCs Registradas</span>
-            <span style={s.painelSub}>{listaFiltrada.length} resultado(s)</span>
-          </div>
+      {/* KPIs clicáveis — filtro rápido */}
+      <div style={s.kpisRow} className="oc-kpis">
+        {kpis.map(k => {
+          const Icon = k.chave === "litros" ? IcoLitros : k.chave === "hoje" ? IcoHoje : k.chave === "semana" ? IcoSemana : IcoTotal;
+          return (
+            <button
+              key={k.chave}
+              style={{ ...s.kpi, ...(k.ativo && k.chave !== "litros" ? s.kpiAtivo : {}) }}
+              onClick={() => { if (k.chave !== "litros") setFiltroTempo(k.chave); }}
+              disabled={k.chave === "litros"}
+              title={k.chave === "litros" ? "" : `Filtrar por ${k.label}`}
+            >
+              <span style={s.kpiTop}>
+                <span style={s.kpiIco}><Icon size={16} /></span>
+                <span style={s.kpiLabel}>{k.label}</span>
+              </span>
+              <span style={s.kpiValor}>{k.valor}</span>
+            </button>
+          );
+        })}
+      </div>
 
-          {/* toolbar lista */}
-          <div style={s.toolbarLista}>
-            <input
-              style={s.inputBusca}
-              placeholder="Buscar por número ou cavalo..."
-              value={busca}
-              onChange={e => setBusca(e.target.value)}
-            />
-            <div style={s.filtroTabs}>
-              {[["todas","Todas"],["hoje","Hoje"],["semana","Semana"]].map(([v,l]) => (
-                <button
-                  key={v}
-                  style={{ ...s.tab, ...(filtroTempo === v ? s.tabAtivo : {}) }}
-                  onClick={() => setFiltroTempo(v)}
-                >{l}</button>
+      {/* TOOLBAR */}
+      <div style={s.filaToolbar} className="oc-toolbar">
+        <input
+          style={s.inputBusca}
+          placeholder="Buscar por número, cavalo ou motorista..."
+          value={busca}
+          onChange={e => setBusca(e.target.value)}
+        />
+        <div style={s.filtroTabs}>
+          {[["todas","Todas"],["hoje","Hoje"],["semana","Semana"]].map(([v,l]) => (
+            <button
+              key={v}
+              style={{ ...s.tab, ...(filtroTempo === v ? s.tabAtivo : {}) }}
+              onClick={() => setFiltroTempo(v)}
+            >{l}</button>
+          ))}
+        </div>
+        {basesPresentes.length > 0 && (
+          <select
+            style={{ ...s.select, flexShrink:0 }}
+            value={filtroBase}
+            onChange={e => setFiltroBase(e.target.value)}
+          >
+            <option value="">Todas as bases</option>
+            {basesPresentes.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        )}
+      </div>
+
+      <div style={{ padding: "0 16px" }}>
+        <ExportBar
+          titulo="Ordens de Carregamento"
+          arquivo="ordens_carregamento"
+          subtitulo={() => `${listaFiltrada.length} OC(s)${filtroTempo !== "todas" ? ` · ${filtroTempo}` : ""}${busca ? ` · busca: "${busca}"` : ""}`}
+          dados={() => ({
+            colunas: ["Nº", "Data", "Base", "Cavalo", "Motorista", "Entregas"],
+            linhas: listaFiltrada.map((o) => [
+              o.num || "",
+              o.data ? String(o.data).slice(0, 10).split("-").reverse().join("/") : "",
+              o.base || "",
+              o.cavaloPlaca || "",
+              o.motoristaNome || "",
+              o.entregas?.length || 0,
+            ]),
+          })}
+        />
+      </div>
+
+      {/* FILA DE TICKETS agrupada por período */}
+      <main style={s.filaContainer} className="oc-fila">
+        {loadingDados && <p style={s.hint}>Carregando fila...</p>}
+        {!loadingDados && listaFiltrada.length === 0 && (
+          <p style={s.hint}>Nenhuma OC encontrada.</p>
+        )}
+        {!loadingDados && secoes.length === 0 && listaFiltrada.length > 0 && null}
+        {secoes.map(sec => (
+          <section key={sec.id} style={s.filaSecao}>
+            <div style={s.filaSecaoHeader}>
+              <span style={s.filaSecaoTitulo}>{sec.titulo}</span>
+              <span style={s.filaSecaoCount}>{sec.itens.length}</span>
+            </div>
+            <div style={s.filaGrid}>
+              {sec.itens.map(o => (
+                <CardOC
+                  key={o.id}
+                  oc={o}
+                  isAdmin={isAdmin}
+                  onExcluir={() => excluir(o.id)}
+                  onImprimir={() => setModalOC(o)}
+                />
               ))}
             </div>
-          </div>
+          </section>
+        ))}
+      </main>
 
-          <div style={{ padding: "0 12px" }}>
-            <ExportBar
-              titulo="Ordens de Carregamento"
-              arquivo="ordens_carregamento"
-              subtitulo={() => `${listaFiltrada.length} OC(s)${filtroTempo !== "todas" ? ` · ${filtroTempo}` : ""}${busca ? ` · busca: "${busca}"` : ""}`}
-              dados={() => ({
-                colunas: ["Nº", "Data", "Base", "Cavalo", "Motorista", "Entregas"],
-                linhas: listaFiltrada.map((o) => [
-                  o.num || "",
-                  o.data ? String(o.data).slice(0, 10).split("-").reverse().join("/") : "",
-                  o.base || "",
-                  o.cavaloPlaca || "",
-                  o.motoristaNome || "",
-                  o.entregas?.length || 0,
-                ]),
-              })}
-            />
-          </div>
+      {/* DRAWER — Nova OC (service desk) */}
+      {drawerAberto && (
+        <FormDrawer
+          {...formState}
+          fechar={() => setDrawerAberto(false)}
+        />
+      )}
 
-          {/* cards */}
-          <div style={s.listaScroll}>
-            {loadingDados && <p style={s.hint}>Carregando...</p>}
-            {!loadingDados && listaFiltrada.length === 0 && (
-              <p style={s.hint}>Nenhuma OC encontrada.</p>
-            )}
-            {listaFiltrada.map(o => (
-              <CardOC
-                key={o.id}
-                oc={o}
-                isAdmin={isAdmin}
-                onExcluir={() => excluir(o.id)}
-                onImprimir={() => setModalOC(o)}
-              />
-            ))}
+      {/* MODAL IMPRESSÃO */}
+      {modalOC && (
+        <ModalImpressao oc={modalOC} onFechar={() => setModalOC(null)} />
+      )}
+    </div>
+  );
+}
+
+/* ─── Ícones de apoio (KPI) ─────────────────────────────────────────────── */
+const PlusOC   = ({ size }) => <Plus size={size} />;
+const IcoTotal = ({ size }) => <Calendar size={size} />;
+const IcoHoje  = ({ size }) => <Clock size={size} />;
+const IcoSemana = ({ size }) => <Lock size={size} />;
+const IcoLitros = ({ size }) => <span style={{ width: size, height: size, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize: size * 0.7 }}>L</span>;
+
+/* ─── Drawer — Nova OC (formulário service desk) ────────────────────────── */
+function FormDrawer(props) {
+  const {
+    num, data, hora, base, cavalo, motorista, resp, c1, t1, c2, t2, obs,
+    entregas, erro, salvando, veiculoBloqueado, veiculoSelecionado,
+    veiculos, motoristas, BASES, TIPOS, PRODUTOS,
+    setData, setHora, setBase, setCavalo, setMotorista, setResp,
+    setC1, setT1, setC2, setT2, setObs,
+    atualizarEntrega, adicionarEntrega, removerEntrega,
+    salvar, salvarEImprimir, fechar,
+  } = props;
+
+  return (
+    <div style={ds.overlay} className="oc-drawer-overlay" onClick={fechar}>
+      <div style={ds.drawer} className="oc-drawer" onClick={e => e.stopPropagation()}>
+        <div style={ds.header}>
+          <div>
+            <div style={ds.titulo}>Nova OC</div>
+            <div style={{ fontSize: ".72rem", color: "var(--text-subtle)" }}>Despacho de carregamento</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={s.numOC}>{num}</span>
+            <button style={ds.close} onClick={fechar} aria-label="Fechar">×</button>
           </div>
         </div>
 
-        {/* FORMULÁRIO */}
-        <div style={s.colForm}>
-          <div style={s.painelHeader}>
-            <span style={s.painelTitulo}>Nova OC</span>
-            <span style={s.numOC}>{num}</span>
-          </div>
-
+        <div style={ds.body}>
           <form style={s.form} onSubmit={e => e.preventDefault()}>
-
-            {/* linha 1: N° OC (largura total) + Data/Hora (par de 2 colunas) */}
-            <div style={s.grupo}>
-              <label style={s.label}>N° OC</label>
-              <input style={{ ...s.input, background:"var(--surface-3)", color:"var(--text-muted)" }} value={num} readOnly />
-            </div>
-            <div style={s.row2}>
+            <div style={s.row2} className="grid-form-2">
               <div style={s.grupo}>
                 <label style={s.label}>Data</label>
                 <div style={s.inputIconWrap}>
@@ -332,7 +455,6 @@ export default function OC() {
               </div>
             </div>
 
-            {/* base */}
             <div style={s.grupo}>
               <label style={s.label}>Base</label>
               <select style={s.select} value={base} onChange={e => setBase(e.target.value)}>
@@ -340,7 +462,6 @@ export default function OC() {
               </select>
             </div>
 
-            {/* cavalo */}
             <div style={s.grupo}>
               <label style={s.label}>Cavalo (Trator)</label>
               <select style={{ ...s.select, borderColor: veiculoBloqueado ? "var(--danger)" : undefined }} value={cavalo} onChange={e => setCavalo(e.target.value)}>
@@ -370,7 +491,6 @@ export default function OC() {
               )}
             </div>
 
-            {/* motorista */}
             <div style={s.grupo}>
               <label style={s.label}>Motorista</label>
               <select style={s.select} value={motorista} onChange={e => setMotorista(e.target.value)}>
@@ -381,13 +501,11 @@ export default function OC() {
               </select>
             </div>
 
-            {/* responsável */}
             <div style={s.grupo}>
               <label style={s.label}>Responsável / Despachante</label>
               <input style={{ ...s.input, background:"var(--surface-3)", color:"var(--text-muted)", cursor:"default" }} value={resp} readOnly />
             </div>
 
-            {/* carretas */}
             <div style={s.row2} className="grid-form-2">
               <div style={s.grupo}>
                 <label style={s.label}>Placa Carreta 1</label>
@@ -426,7 +544,6 @@ export default function OC() {
               </div>
             </div>
 
-            {/* observações */}
             <div style={s.grupo}>
               <label style={s.label}>Observações</label>
               <textarea
@@ -511,15 +628,13 @@ export default function OC() {
               </div>
             </div>
 
-            {/* erro */}
             {erro && <p style={s.erroMsg}>{erro}</p>}
 
-            {/* botões ação */}
             <div style={s.acoes}>
               <button
                 type="button"
                 style={{ ...s.btnAcao, background:"var(--accent)", color:"#fff", opacity: veiculoBloqueado ? 0.4 : 1 }}
-                onClick={salvar}
+                onClick={async () => { const ok = await salvar(); if (ok) fechar(); }}
                 disabled={salvando || veiculoBloqueado}
                 title={veiculoBloqueado ? "Veículo bloqueado — libere antes de gerar OC" : ""}
               >
@@ -538,11 +653,6 @@ export default function OC() {
           </form>
         </div>
       </div>
-
-      {/* MODAL IMPRESSÃO */}
-      {modalOC && (
-        <ModalImpressao oc={modalOC} onFechar={() => setModalOC(null)} />
-      )}
     </div>
   );
 }
@@ -556,37 +666,41 @@ function CardOC({ oc, isAdmin, onExcluir, onImprimir }) {
   return (
     <div style={cs.card}>
       <div style={cs.cardTop}>
-        <span style={cs.numOC}>{oc.num}</span>
-        <span style={{ ...cs.badge, background: baseCor }}>{oc.base}</span>
+        <div style={cs.numWrap}>
+          <span style={cs.numOC}>{oc.num}</span>
+          <span style={{ ...cs.badge, background: baseCor }}>{oc.base}</span>
+        </div>
+        <span style={cs.data}>{fmtData(oc.data)} · {oc.hora}</span>
       </div>
 
-      <div style={cs.linha}>
-        <span style={cs.label}>Data:</span>
-        <span>{fmtData(oc.data)} {oc.hora}</span>
+      <div style={cs.metaRow}>
+        <div style={cs.metaCol}>
+          <span style={cs.label}>Cavalo</span>
+          <span style={cs.valor}>{oc.cavaloPlaca || "—"}</span>
+        </div>
+        <div style={cs.metaCol}>
+          <span style={cs.label}>Motorista</span>
+          <span style={cs.valor}>{oc.motoristaNome || "—"}</span>
+        </div>
       </div>
-      <div style={cs.linha}>
-        <span style={cs.label}>Cavalo:</span>
-        <span>{oc.cavaloPlaca || "—"}</span>
-      </div>
-      <div style={cs.linha}>
-        <span style={cs.label}>Motorista:</span>
-        <span>{oc.motoristaNome || "—"}</span>
-      </div>
+
       {oc.c1 && (
-        <div style={cs.linha}>
-          <span style={cs.label}>Carreta(s):</span>
-          <span>{oc.c1}{oc.c2 ? ` / ${oc.c2}` : ""}</span>
+        <div style={cs.carreta}>
+          <span style={cs.label}>Carreta(s)</span>
+          <span style={cs.valor}>{oc.c1}{oc.c2 ? ` / ${oc.c2}` : ""}</span>
         </div>
       )}
-      <div style={cs.resumo}>
-        {nClientes} cliente(s) · {totalL.toLocaleString("pt-BR")} L
-      </div>
 
-      <div style={cs.acoes}>
-        <button style={cs.btnImprimir} onClick={onImprimir}>Reimprimir</button>
-        {isAdmin && (
-          <button style={cs.btnExcluir} onClick={onExcluir}>Excluir</button>
-        )}
+      <div style={cs.footer}>
+        <span style={cs.resumo}>
+          {nClientes} cliente(s) · {totalL.toLocaleString("pt-BR")} L
+        </span>
+        <div style={cs.acoes}>
+          <button style={cs.btnImprimir} onClick={onImprimir} title="Reimprimir">Reproduzir</button>
+          {isAdmin && (
+            <button style={cs.btnExcluir} onClick={onExcluir} title="Excluir OC">Excluir</button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -762,6 +876,48 @@ const s = {
     display:"inline-flex", alignItems:"center", gap:6,
   },
 
+  /* linha de KPIs — filtro rápido (service desk) */
+  kpisRow: {
+    display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:12,
+    padding:"16px 20px 4px",
+  },
+  kpi: {
+    background:"var(--card-bg)", border:"1px solid var(--border)", borderRadius:12,
+    padding:"12px 14px", textAlign:"left", cursor:"pointer",
+    transition:"transform .15s, box-shadow .15s, border-color .15s",
+    fontFamily:"inherit", display:"flex", flexDirection:"column", gap:8,
+  },
+  kpiAtivo: {
+    borderColor:"var(--accent)", boxShadow:"0 0 0 2px var(--accent-soft), 0 4px 12px rgba(0,0,0,.06)",
+  },
+  kpiTop: { display:"flex", alignItems:"center", gap:8 },
+  kpiIco: {
+    width:26, height:26, borderRadius:8, display:"inline-flex",
+    alignItems:"center", justifyContent:"center",
+    background:"var(--accent-soft)", color:"var(--accent)", flexShrink:0,
+  },
+  kpiLabel: { fontSize:".72rem", fontWeight:600, color:"var(--text-muted)" },
+  kpiValor: { fontSize:"1.15rem", fontWeight:800, color:"var(--text)", lineHeight:1 },
+
+  /* toolbar da fila */
+  filaToolbar: {
+    display:"flex", alignItems:"center", gap:10, flexWrap:"wrap",
+    padding:"12px 20px",
+  },
+  filaContainer: { padding:"0 14px 32px", margin:"0 auto", maxWidth:1400 },
+  filaGrid: { display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:12 },
+  filaSecao: { marginBottom:20 },
+  filaSecaoHeader: {
+    display:"flex", alignItems:"center", gap:8,
+    padding:"8px 8px", marginBottom:8,
+  },
+  filaSecaoTitulo: { fontWeight:700, fontSize:".9rem", color:"var(--text)" },
+  filaSecaoCount: {
+    fontSize:".72rem", fontWeight:700, color:"var(--accent)",
+    background:"var(--accent-soft)", borderRadius:999,
+    padding:"1px 9px",
+  },
+
   /* layout duas colunas */
   corpo: {
     display:"flex",
@@ -880,35 +1036,71 @@ const s = {
   },
 };
 
+/* ─── estilos drawer (Nova OC) ──────────────────────────────────────────── */
+const ds = {
+  overlay: {
+    position:"fixed", inset:0, zIndex:1000,
+    background:"rgba(8,12,26,.55)", backdropFilter:"blur(3px)",
+    WebkitBackdropFilter:"blur(3px)",
+    display:"flex", justifyContent:"flex-end",
+  },
+  drawer: {
+    width:"min(520px, 100vw)", height:"100%",
+    background:"var(--bg)", boxShadow:"-12px 0 40px rgba(0,0,0,.25)",
+    display:"flex", flexDirection:"column",
+  },
+  header: {
+    display:"flex", alignItems:"center", justifyContent:"space-between",
+    padding:"16px 18px", background:"var(--card-bg)",
+    borderBottom:"1px solid var(--border)",
+  },
+  titulo: { fontWeight:800, fontSize:"1.05rem", color:"var(--text)" },
+  close: {
+    width:32, height:32, borderRadius:8, border:"none",
+    background:"var(--surface-2)", color:"var(--text-muted)",
+    fontSize:"1.2rem", lineHeight:1, cursor:"pointer",
+    display:"flex", alignItems:"center", justifyContent:"center",
+  },
+  body: { flex:1, overflowY:"auto", padding:"0 0 24px" },
+};
+
 /* ─── estilos card OC ────────────────────────────────────────────────────── */
 const cs = {
   card: {
-    background:"var(--card-bg)", borderRadius:10, border:"1px solid var(--border)",
-    padding:"12px 14px", display:"flex", flexDirection:"column", gap:6,
+    background:"var(--card-bg)", borderRadius:12, border:"1px solid var(--border)",
+    padding:"12px 14px", display:"flex", flexDirection:"column", gap:10,
     boxShadow:"0 1px 4px rgba(0,0,0,.06)",
+    transition:"transform .15s, box-shadow .15s, border-color .15s",
+    borderLeft:"3px solid var(--accent)",
   },
-  cardTop: { display:"flex", alignItems:"center", justifyContent:"space-between" },
-  numOC:   { fontWeight:800, color:"var(--accent)", fontSize:".95rem" },
+  cardTop: { display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, flexWrap:"wrap" },
+  numWrap: { display:"flex", alignItems:"center", gap:8 },
+  numOC:   { fontWeight:800, color:"var(--text)", fontSize:"1rem", letterSpacing:"-.01em" },
+  data:    { fontSize:".72rem", color:"var(--text-subtle)" },
   badge: {
     fontSize:".65rem", fontWeight:700, color:"#fff",
     padding:"2px 8px", borderRadius:4,
   },
-  linha: { display:"flex", gap:6, fontSize:".78rem", color:"var(--text-muted)" },
-  label: { fontWeight:600, color:"var(--text-subtle)", minWidth:66 },
+  metaRow: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 },
+  metaCol: { display:"flex", flexDirection:"column", gap:2, minWidth:0 },
+  carreta: { display:"flex", flexDirection:"column", gap:2 },
+  label: { fontSize:".68rem", fontWeight:700, color:"var(--text-subtle)", textTransform:"uppercase", letterSpacing:".03em" },
+  valor: { fontSize:".85rem", fontWeight:600, color:"var(--text)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" },
+  footer: { display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, flexWrap:"wrap", borderTop:"1px solid var(--border)", paddingTop:8 },
   resumo: {
-    marginTop:2, fontSize:".75rem", color:"var(--text-muted)",
-    background:"var(--surface-3)", borderRadius:5, padding:"3px 8px", alignSelf:"flex-start",
+    fontSize:".75rem", color:"var(--text-muted)",
+    background:"var(--surface-3)", borderRadius:5, padding:"3px 8px",
   },
-  acoes: { display:"flex", gap:8, marginTop:4 },
+  acoes: { display:"flex", gap:8 },
   btnImprimir: {
-    flex:1, padding:"5px", border:"1px solid var(--accent)", borderRadius:6,
-    background:"transparent", color:"var(--accent)", fontSize:".75rem",
-    fontWeight:600, cursor:"pointer",
+    padding:"5px 12px", border:"1px solid var(--accent)", borderRadius:6,
+    background:"transparent", color:"var(--accent)", fontSize:".72rem",
+    fontWeight:700, cursor:"pointer",
   },
   btnExcluir: {
-    flex:1, padding:"5px", border:"1px solid #dc2626", borderRadius:6,
-    background:"transparent", color:"var(--danger)", fontSize:".75rem",
-    fontWeight:600, cursor:"pointer",
+    padding:"5px 12px", border:"1px solid #dc2626", borderRadius:6,
+    background:"transparent", color:"var(--danger)", fontSize:".72rem",
+    fontWeight:700, cursor:"pointer",
   },
 };
 

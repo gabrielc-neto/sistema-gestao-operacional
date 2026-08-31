@@ -22,6 +22,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useRBAC } from "../rbac/RBACContext";
 import { useOdometrosSascar } from "../hooks/useOdometrosSascar";
 import LogoPontual from "../components/LogoPontual";
+import MenuNavegacao from "../components/MenuNavegacao";
 import PadAssinatura from "../components/PadAssinatura";
 import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
@@ -166,7 +167,7 @@ function maskMoeda(v) {
 
 const GRUPO_COLOR = {
   "Documentação": { bg:"#dbeafe", color:"#1d4ed8", border:"#93c5fd" },
-  "Motorista":    { bg:"#fef3c7", color:"#92400e", border:"#fcd34d" },
+  "Motorista":    { bg:"var(--warning-bg)", color:"#92400e", border:"#fcd34d" },
   "Mecânica":     { bg:"#d1fae5", color:"#065f46", border:"#6ee7b7" },
 };
 
@@ -219,11 +220,11 @@ function calcStatus(vencStrOuRec, ctx = {}) {
 const STATUS_ORDER = { vencido: 0, alerta: 1, agendado: 2, ok: 3, sem_data: 4 };
 
 const STATUS_META = {
-  vencido:  { label:"Vencido",      bg:"#fee2e2", color:"#dc2626", rowBg:"#fef2f2" },
-  alerta:   { label:"Alerta",       bg:"#fef9c3", color:"#a16207", rowBg:"#fffbeb" },
+  vencido:  { label:"Vencido",      bg:"var(--danger-bg)", color:"var(--danger)", rowBg:"var(--danger-bg)" },
+  alerta:   { label:"Alerta",       bg:"#fef9c3", color:"#a16207", rowBg:"var(--warning-bg)" },
   agendado: { label:"Agendado",     bg:"#dbeafe", color:"#1d4ed8", rowBg:"#eff6ff" },
-  ok:       { label:"OK",           bg:"#dcfce7", color:"#15803d", rowBg:"#f0fdf4" },
-  sem_data: { label:"Sem registro", bg:"#f1f5f9", color:"#94a3b8", rowBg:"#f8fafc" },
+  ok:       { label:"OK",           bg:"var(--success-bg)", color:"var(--success)", rowBg:"#f0fdf4" },
+  sem_data: { label:"Sem registro", bg:"var(--surface-2)", color:"var(--text-subtle)", rowBg:"var(--surface-2)" },
 };
 
 function fmtDate(str) {
@@ -252,14 +253,14 @@ function osCriadoEm(os) {
 // Retorna { dias, cor, bg, texto, urgencia }. urgencia: 'critico'|'atencao'|'normal'
 function osAging(os) {
   const base = osCriadoEm(os);
-  if (!base) return { dias: null, cor: "#94a3b8", bg: "#f1f5f9", texto: "—", urgencia: "normal" };
+  if (!base) return { dias: null, cor: "var(--text-subtle)", bg: "var(--surface-2)", texto: "—", urgencia: "normal" };
   const ms = typeof base === "object" && base.toMillis ? base.toMillis() : Date.parse(base);
-  if (!Number.isFinite(ms)) return { dias: null, cor: "#94a3b8", bg: "#f1f5f9", texto: "—", urgencia: "normal" };
+  if (!Number.isFinite(ms)) return { dias: null, cor: "var(--text-subtle)", bg: "var(--surface-2)", texto: "—", urgencia: "normal" };
   const dias = Math.floor((Date.now() - ms) / 86400000);
-  if (dias >= 14) return { dias, cor: "#b91c1c", bg: "#fee2e2", texto: `${dias}d`, urgencia: "critico" };
-  if (dias >= 7)  return { dias, cor: "#b45309", bg: "#fef3c7", texto: `${dias}d`, urgencia: "atencao" };
-  if (dias >= 1)  return { dias, cor: "#15803d", bg: "#dcfce7", texto: `${dias}d`, urgencia: "normal" };
-  return { dias, cor: "#15803d", bg: "#dcfce7", texto: `hoje`, urgencia: "normal" };
+  if (dias >= 14) return { dias, cor: "var(--danger)", bg: "var(--danger-bg)", texto: `${dias}d`, urgencia: "critico" };
+  if (dias >= 7)  return { dias, cor: "var(--warning)", bg: "var(--warning-bg)", texto: `${dias}d`, urgencia: "atencao" };
+  if (dias >= 1)  return { dias, cor: "var(--success)", bg: "var(--success-bg)", texto: `${dias}d`, urgencia: "normal" };
+  return { dias, cor: "var(--success)", bg: "var(--success-bg)", texto: `hoje`, urgencia: "normal" };
 }
 
 // OS só é editável enquanto aberta E dentro das 24h da abertura
@@ -412,22 +413,22 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
   }, [lancamentos, periodo, customIni, customFim]);
 
   return (
-    <div style={{ background: "#fff", borderRadius: 14, padding: "1rem 1.25rem", marginBottom: "1rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" }}>
+    <div style={{ background: "var(--card-bg)", borderRadius: 14, padding: "1rem 1.25rem", marginBottom: "1rem", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" }}>
       {/* Cabeçalho do dashboard */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
         <div>
-          <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: "1rem", fontWeight: 700 }} className="manut-display">Dashboard de custos</h2>
-          <p style={{ margin: "2px 0 0 0", fontSize: ".75rem", color: "#64748b" }}>
+          <h2 style={{ margin: 0, color: "var(--text)", fontSize: "1rem", fontWeight: 700 }} className="manut-display">Dashboard de custos</h2>
+          <p style={{ margin: "2px 0 0 0", fontSize: ".75rem", color: "var(--text-muted)" }}>
             {filtrados.length} lançamento{filtrados.length === 1 ? "" : "s"} no período selecionado
           </p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-          <div style={{ display: "flex", gap: 8, padding: 6, background: "#f1f5f9", borderRadius: 12, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, padding: 6, background: "var(--surface-2)", borderRadius: 12, flexWrap: "wrap" }}>
             {PERIODOS_LANC.map(p => (
               <button key={p.key} type="button" onClick={() => setPeriodo(p.key)}
                 style={{ padding: "7px 16px", borderRadius: 8, border: "none", fontSize: ".82rem", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-                  background: periodo === p.key ? "#1a3a5c" : "transparent",
-                  color: periodo === p.key ? "#fff" : "#64748b",
+                  background: periodo === p.key ? "var(--text)" : "transparent",
+                  color: periodo === p.key ? "#fff" : "var(--text-muted)",
                 }}>
                 {p.label}
               </button>
@@ -435,21 +436,21 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
           </div>
           {periodo === "custom" && (
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".74rem", fontWeight: 600, color: "#64748b" }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".74rem", fontWeight: 600, color: "var(--text-muted)" }}>
                 De:
                 <input type="date" value={customIni} onChange={e => setCustomIni(e.target.value)}
-                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: ".78rem", fontFamily: "inherit" }}
+                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", fontSize: ".78rem", fontFamily: "inherit" }}
                 />
               </label>
-              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".74rem", fontWeight: 600, color: "#64748b" }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".74rem", fontWeight: 600, color: "var(--text-muted)" }}>
                 Até:
                 <input type="date" value={customFim} onChange={e => setCustomFim(e.target.value)}
-                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: ".78rem", fontFamily: "inherit" }}
+                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", fontSize: ".78rem", fontFamily: "inherit" }}
                 />
               </label>
               {(customIni || customFim) && (
                 <button type="button" onClick={() => { setCustomIni(""); setCustomFim(""); }}
-                  style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #cbd5e1", background: "transparent", fontSize: ".72rem", color: "#64748b", cursor: "pointer", fontFamily: "inherit" }}>
+                  style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "transparent", fontSize: ".72rem", color: "var(--text-muted)", cursor: "pointer", fontFamily: "inherit" }}>
                   Limpar
                 </button>
               )}
@@ -469,20 +470,20 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
           <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0c4a6e", marginTop: 4, lineHeight: 1 }} className="manut-display">{ranking.length}</div>
         </div>
         <div style={{ padding: "14px 16px", borderRadius: 12, background: "#f0fdf4", border: "1px solid #86efac" }}>
-          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "#15803d", textTransform: "uppercase", letterSpacing: ".04em" }}>Média / mês</div>
+          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "var(--success)", textTransform: "uppercase", letterSpacing: ".04em" }}>Média / mês</div>
           <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#14532d", marginTop: 4, lineHeight: 1 }} className="manut-display">{fmtBRLcurto(mediaMes)}</div>
         </div>
-        <div style={{ padding: "14px 16px", borderRadius: 12, background: "#fffbeb", border: "1px solid #fcd34d" }}>
-          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "#b45309", textTransform: "uppercase", letterSpacing: ".04em" }}>Lançamentos</div>
+        <div style={{ padding: "14px 16px", borderRadius: 12, background: "var(--warning-bg)", border: "1px solid #fcd34d" }}>
+          <div style={{ fontSize: ".7rem", fontWeight: 700, color: "var(--warning)", textTransform: "uppercase", letterSpacing: ".04em" }}>Lançamentos</div>
           <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#78350f", marginTop: 4, lineHeight: 1 }} className="manut-display">{filtrados.length}</div>
         </div>
       </div>
 
       {/* Ranking por categoria — barras horizontais */}
       <div style={{ marginBottom: 18 }}>
-        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "#1e293b", textTransform: "uppercase", letterSpacing: ".04em" }}>Gastos por categoria</h3>
+        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "var(--text)", textTransform: "uppercase", letterSpacing: ".04em" }}>Gastos por categoria</h3>
         {ranking.length === 0 ? (
-          <p style={{ fontSize: ".82rem", color: "#94a3b8", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
+          <p style={{ fontSize: ".82rem", color: "var(--text-subtle)", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {ranking.map((r, i) => {
@@ -490,15 +491,15 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
               return (
                 <div key={r.nome} style={{ padding: "6px 8px", borderRadius: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, fontSize: ".82rem" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#1e293b" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "var(--text)" }}>
                       <span style={{ width: 10, height: 10, borderRadius: 3, background: cor }} />
                       {r.nome}
                     </span>
                     <span style={{ fontWeight: 700, color: cor }} className="manut-display">
-                      {fmtBRLfn(r.valor)} <span style={{ color: "#94a3b8", fontWeight: 600, fontSize: ".72rem" }}>· {r.pct.toFixed(1)}%</span>
+                      {fmtBRLfn(r.valor)} <span style={{ color: "var(--text-subtle)", fontWeight: 600, fontSize: ".72rem" }}>· {r.pct.toFixed(1)}%</span>
                     </span>
                   </div>
-                  <div style={{ height: 8, background: "#f1f5f9", borderRadius: 6, overflow: "hidden" }}>
+                  <div style={{ height: 8, background: "var(--surface-2)", borderRadius: 6, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${Math.max(2, r.pct)}%`, background: cor, transition: "width .3s ease" }} />
                   </div>
                 </div>
@@ -510,11 +511,11 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
 
       {/* Gráfico agrupado: meses no eixo X, categorias lado a lado dentro de cada mês */}
       <div style={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}>
-        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "#1e293b", textTransform: "uppercase", letterSpacing: ".04em" }}>
+        <h3 style={{ margin: "0 0 10px 0", fontSize: ".82rem", fontWeight: 700, color: "var(--text)", textTransform: "uppercase", letterSpacing: ".04em" }}>
           Evolução mês a mês — categorias lado a lado
         </h3>
         {seriesPorCategoria.length === 0 ? (
-          <p style={{ fontSize: ".82rem", color: "#94a3b8", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
+          <p style={{ fontSize: ".82rem", color: "var(--text-subtle)", padding: "1.5rem", textAlign: "center" }}>Nenhum lançamento no período.</p>
         ) : (
           <GraficoAgrupado series={seriesPorCategoria} fmtBRLfn={fmtBRLfn} />
         )}
@@ -552,13 +553,13 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
   const barW = Math.max(4, groupInner / nCats);
 
   return (
-    <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px", background: "#fff", boxShadow: "0 1px 3px rgba(15,23,42,.05)", width: "100%", maxWidth: cardMaxWidth, boxSizing: "border-box" }}>
+    <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px", background: "var(--card-bg)", boxShadow: "0 1px 3px rgba(15,23,42,.05)", width: "100%", maxWidth: cardMaxWidth, boxSizing: "border-box" }}>
       {/* Legenda — uma chip por categoria */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
         {series.map(cat => (
-          <div key={cat.nome} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 20, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+          <div key={cat.nome} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 20, background: "var(--surface-2)", border: "1px solid var(--border)" }}>
             <span style={{ width: 12, height: 12, borderRadius: 3, background: cat.cor }} />
-            <span style={{ fontSize: ".82rem", fontWeight: 700, color: "#1e293b" }}>{cat.nome}</span>
+            <span style={{ fontSize: ".82rem", fontWeight: 700, color: "var(--text)" }}>{cat.nome}</span>
             <span style={{ fontSize: ".78rem", color: cat.cor, fontWeight: 800 }} className="manut-display">{fmtBRLfn(cat.valor)}</span>
           </div>
         ))}
@@ -571,8 +572,8 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
             const y = padT + innerH * (1 - p);
             return (
               <g key={i}>
-                <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#e2e8f0" strokeWidth="1" />
-                <text x={padL - 6} y={y + 4} fontSize="12" fill="#94a3b8" textAnchor="end" fontFamily="Manrope, sans-serif">
+                <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="var(--border)" strokeWidth="1" />
+                <text x={padL - 6} y={y + 4} fontSize="12" fill="var(--text-subtle)" textAnchor="end" fontFamily="Manrope, sans-serif">
                   {fmtBRLcurto(maxVal * p).replace("R$ ", "")}
                 </text>
               </g>
@@ -596,17 +597,17 @@ function GraficoAgrupado({ series, fmtBRLfn }) {
                           <title>{`${cat.nome} · ${m.label}/${String(m.ano).slice(2)}: ${fmtBRLfn(valor)}`}</title>
                         </rect>
                       ) : (
-                        <rect x={x + 1} y={padT + innerH - 1} width={Math.max(2, barW - 2)} height={1} fill="#e2e8f0" />
+                        <rect x={x + 1} y={padT + innerH - 1} width={Math.max(2, barW - 2)} height={1} fill="var(--border)" />
                       )}
                     </g>
                   );
                 })}
                 {/* Rótulo do mês embaixo do grupo */}
-                <text x={groupX + (groupInner) / 2} y={padT + innerH + 16} fontSize="12" fill="#64748b" textAnchor="middle" fontWeight="600" fontFamily="Manrope, sans-serif">
+                <text x={groupX + (groupInner) / 2} y={padT + innerH + 16} fontSize="12" fill="var(--text-muted)" textAnchor="middle" fontWeight="600" fontFamily="Manrope, sans-serif">
                   {m.label.slice(0, 3)}
                 </text>
                 {(m.mesIdx === 0 || mi === 0) && (
-                  <text x={groupX + (groupInner) / 2} y={padT + innerH + 32} fontSize="11" fill="#94a3b8" textAnchor="middle" fontFamily="Manrope, sans-serif">
+                  <text x={groupX + (groupInner) / 2} y={padT + innerH + 32} fontSize="11" fill="var(--text-subtle)" textAnchor="middle" fontFamily="Manrope, sans-serif">
                     {m.ano}
                   </text>
                 )}
@@ -631,6 +632,7 @@ const Ico = {
   Search: (p) => <Sv {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></Sv>,
   Plus:   (p) => <Sv {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Sv>,
   Dash:   (p) => <Sv {...p}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></Sv>,
+  Menu:   (p) => <Sv {...p}><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></Sv>,
   Alert:  (p) => <Sv {...p}><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></Sv>,
   Clip:   (p) => <Sv {...p}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></Sv>,
   Settings:(p) => <Sv {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></Sv>,
@@ -677,21 +679,21 @@ function SearchSelect({ value, onChange, options, onAdd, placeholder }) {
             onClick={cadastrar}
             disabled={!podeCadastrar}
             title={existeExato ? "Já cadastrado" : (!v.trim() ? "Digite um nome" : "Cadastrar este nome")}
-            style={{ whiteSpace:"nowrap", padding:"8px 14px", border:"none", borderRadius:6, fontWeight:700, fontSize:".82rem", cursor: podeCadastrar ? "pointer" : "default", background: podeCadastrar ? "#dcfce7" : "#e2e8f0", color: podeCadastrar ? "#15803d" : "#94a3b8" }}
+            style={{ whiteSpace:"nowrap", padding:"8px 14px", border:"none", borderRadius:6, fontWeight:700, fontSize:".82rem", cursor: podeCadastrar ? "pointer" : "default", background: podeCadastrar ? "var(--success-bg)" : "var(--border)", color: podeCadastrar ? "var(--success)" : "var(--text-subtle)" }}
           >
             + Cadastrar
           </button>
         )}
       </div>
       {open && filtradas.length > 0 && (
-        <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:60, background:"#fff", border:"1px solid #cbd5e1", borderRadius:6, marginTop:2, maxHeight:220, overflowY:"auto", boxShadow:"0 6px 16px rgba(0,0,0,.14)" }}>
+        <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:60, background:"var(--card-bg)", border:"1px solid var(--border-strong)", borderRadius:6, marginTop:2, maxHeight:220, overflowY:"auto", boxShadow:"0 6px 16px rgba(0,0,0,.14)" }}>
           {filtradas.map(o => (
             <div
               key={o}
               onMouseDown={e => { e.preventDefault(); onChange(o); setOpen(false); }}
-              style={{ padding:"8px 12px", cursor:"pointer", fontSize:".88rem", color:"#334155" }}
-              onMouseEnter={e => (e.currentTarget.style.background = "#f1f5f9")}
-              onMouseLeave={e => (e.currentTarget.style.background = "#fff")}
+              style={{ padding:"8px 12px", cursor:"pointer", fontSize:".88rem", color:"var(--text-subtle)" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "var(--card-bg)")}
             >
               {o}
             </div>
@@ -820,8 +822,8 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
   const fmt = fmtBRLfn || ((n) => (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
 
   // ── Estilos base ──────────────────────────────────────────────
-  const cardStyle = { background: "#fff", borderRadius: 14, padding: "1rem 1.25rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" };
-  const chartTitle = { margin: "0 0 12px", color: "#1a3a5c", fontSize: "0.95rem", fontWeight: 700 };
+  const cardStyle = { background: "var(--card-bg)", borderRadius: 14, padding: "1rem 1.25rem", border: "1px solid var(--border)", boxShadow: "0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" };
+  const chartTitle = { margin: "0 0 12px", color: "var(--text)", fontSize: "0.95rem", fontWeight: 700 };
   const kpiValor = { fontSize: "1.35rem", fontWeight: 800, lineHeight: 1.1 };
   const kpiLabel = { fontSize: ".72rem", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600, opacity: 0.85, marginBottom: 6 };
 
@@ -830,18 +832,18 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
       {/* TOOLBAR DE PERÍODO */}
       <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
         <div>
-          <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: "1rem", fontWeight: 700 }}>Dashboard analytics</h2>
-          <p style={{ margin: "3px 0 0", fontSize: ".75rem", color: "#64748b" }}>
+          <h2 style={{ margin: 0, color: "var(--text)", fontSize: "1rem", fontWeight: 700 }}>Dashboard analytics</h2>
+          <p style={{ margin: "3px 0 0", fontSize: ".75rem", color: "var(--text-muted)" }}>
             {lancamentos.length} lançamento{lancamentos.length === 1 ? "" : "s"} no período selecionado
           </p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-          <div style={{ display: "flex", gap: 6, padding: 6, background: "#f1f5f9", borderRadius: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 6, padding: 6, background: "var(--surface-2)", borderRadius: 10, flexWrap: "wrap" }}>
             {PERIODOS_LANC.map(p => (
               <button key={p.key} type="button" onClick={() => setPeriodo(p.key)}
                 style={{ padding: "6px 14px", borderRadius: 7, border: "none", fontSize: ".8rem", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-                  background: periodo === p.key ? "#1a3a5c" : "transparent",
-                  color: periodo === p.key ? "#fff" : "#64748b",
+                  background: periodo === p.key ? "var(--text)" : "transparent",
+                  color: periodo === p.key ? "#fff" : "var(--text-muted)",
                 }}>
                 {p.label}
               </button>
@@ -849,17 +851,17 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
           </div>
           {periodo === "custom" && (
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".72rem", fontWeight: 600, color: "#64748b" }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".72rem", fontWeight: 600, color: "var(--text-muted)" }}>
                 De: <input type="date" value={customIni} onChange={e => setCustomIni(e.target.value)}
-                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: ".78rem", fontFamily: "inherit" }} />
+                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", fontSize: ".78rem", fontFamily: "inherit" }} />
               </label>
-              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".72rem", fontWeight: 600, color: "#64748b" }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: ".72rem", fontWeight: 600, color: "var(--text-muted)" }}>
                 Até: <input type="date" value={customFim} onChange={e => setCustomFim(e.target.value)}
-                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #cbd5e1", fontSize: ".78rem", fontFamily: "inherit" }} />
+                  style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", fontSize: ".78rem", fontFamily: "inherit" }} />
               </label>
               {(customIni || customFim) && (
                 <button type="button" onClick={() => { setCustomIni(""); setCustomFim(""); }}
-                  style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid #cbd5e1", background: "transparent", fontSize: ".7rem", color: "#64748b", cursor: "pointer", fontFamily: "inherit" }}>
+                  style={{ padding: "3px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "transparent", fontSize: ".7rem", color: "var(--text-muted)", cursor: "pointer", fontFamily: "inherit" }}>
                   Limpar
                 </button>
               )}
@@ -880,12 +882,12 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
           <div style={{ ...kpiValor, color: "#0c4a6e" }}>{fmt(mediaMes)}</div>
           <div style={{ fontSize: ".72rem", color: "#0369a1", marginTop: 4 }}>{new Date().getMonth() + 1} meses no ano</div>
         </div>
-        <div style={{ ...cardStyle, background: "#dcfce7" }}>
+        <div style={{ ...cardStyle, background: "var(--success-bg)" }}>
           <div style={{ ...kpiLabel, color: "#166534" }}>Veículos ativos</div>
           <div style={{ ...kpiValor, color: "#14532d" }}>{totalVeiculos}</div>
           <div style={{ fontSize: ".72rem", color: "#166534", marginTop: 4 }}>com lançamentos</div>
         </div>
-        <div style={{ ...cardStyle, background: "#fef3c7" }}>
+        <div style={{ ...cardStyle, background: "var(--warning-bg)" }}>
           <div style={{ ...kpiLabel, color: "#92400e" }}>Custo médio / veículo</div>
           <div style={{ ...kpiValor, color: "#78350f" }}>{fmt(mediaVeiculo)}</div>
           <div style={{ fontSize: ".72rem", color: "#92400e", marginTop: 4 }}>acumulado</div>
@@ -897,7 +899,7 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
         <div style={cardStyle}>
           <h3 style={chartTitle}>Distribuição por categoria</h3>
           {dadosPizzaCategoria.length === 0 ? (
-            <p style={{ color: "#94a3b8", fontSize: ".85rem", margin: "20px 0" }}>Sem lançamentos ainda.</p>
+            <p style={{ color: "var(--text-subtle)", fontSize: ".85rem", margin: "20px 0" }}>Sem lançamentos ainda.</p>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
@@ -915,9 +917,9 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
         </div>
 
         <div style={cardStyle}>
-          <h3 style={chartTitle}>Status da frota <span style={{ fontSize: ".72rem", color: "#94a3b8", fontWeight: 500 }}>· faixa de custo médio mensal</span></h3>
+          <h3 style={chartTitle}>Status da frota <span style={{ fontSize: ".72rem", color: "var(--text-subtle)", fontWeight: 500 }}>· faixa de custo médio mensal</span></h3>
           {dadosStatusFrota.length === 0 ? (
-            <p style={{ color: "#94a3b8", fontSize: ".85rem", margin: "20px 0" }}>Sem lançamentos ainda.</p>
+            <p style={{ color: "var(--text-subtle)", fontSize: ".85rem", margin: "20px 0" }}>Sem lançamentos ainda.</p>
           ) : (
             <>
               <ResponsiveContainer width="100%" height={230}>
@@ -930,7 +932,7 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
                   <Legend verticalAlign="bottom" height={30} iconSize={10} wrapperStyle={{ fontSize: ".78rem" }} />
                 </PieChart>
               </ResponsiveContainer>
-              <div style={{ display: "flex", justifyContent: "center", gap: 12, fontSize: ".68rem", color: "#64748b", marginTop: 4 }}>
+              <div style={{ display: "flex", justifyContent: "center", gap: 12, fontSize: ".68rem", color: "var(--text-muted)", marginTop: 4 }}>
                 <span>● Normal &lt; R$ 500/mês</span>
                 <span>● Atenção R$ 500-2k</span>
                 <span>● Crítico &gt; R$ 2k</span>
@@ -948,11 +950,11 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
         </div>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={dadosBarrasMensal} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
             <YAxis tickFormatter={(v) => fmtBRLcurto(v)} tick={{ fontSize: 12 }} width={80} />
             <Tooltip formatter={(v) => fmt(v)} />
-            <Bar dataKey="valor" fill="#1a3a5c" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="valor" fill="var(--text)" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -965,11 +967,11 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
         </div>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={dadosLinhaAcumulado} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
             <YAxis tickFormatter={(v) => fmtBRLcurto(v)} tick={{ fontSize: 12 }} width={80} />
             <Tooltip formatter={(v) => fmt(v)} />
-            <Line type="monotone" dataKey="valor" stroke="#16a34a" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="valor" stroke="var(--success)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -978,15 +980,15 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
       <div style={cardStyle}>
         <h3 style={chartTitle}>Top 10 veículos com maior custo</h3>
         {top10Veiculos.length === 0 ? (
-          <p style={{ color: "#94a3b8", fontSize: ".85rem", margin: "20px 0" }}>Sem lançamentos ainda.</p>
+          <p style={{ color: "var(--text-subtle)", fontSize: ".85rem", margin: "20px 0" }}>Sem lançamentos ainda.</p>
         ) : (
           <ResponsiveContainer width="100%" height={Math.max(220, top10Veiculos.length * 36)}>
             <BarChart data={top10Veiculos} layout="vertical" margin={{ top: 6, right: 30, left: 20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
               <XAxis type="number" tickFormatter={(v) => fmtBRLcurto(v)} tick={{ fontSize: 12 }} />
               <YAxis type="category" dataKey="placa" tick={{ fontSize: 12, fontWeight: 600 }} width={100} />
               <Tooltip formatter={(v) => fmt(v)} />
-              <Bar dataKey="valor" fill="#dc2626" radius={[0, 6, 6, 0]} />
+              <Bar dataKey="valor" fill="var(--danger)" radius={[0, 6, 6, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}
@@ -996,24 +998,23 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
 }
 
 function NavTab({ icon: Icon, label, active, onClick, accent, badge }) {
-  const base = {
-    padding: "8px 12px", border: "1px solid transparent", borderRadius: 10,
-    background: "transparent", cursor: "pointer", fontSize: ".82rem", fontWeight: 600,
-    color: "#475569", display: "inline-flex", alignItems: "center", gap: 8,
-    fontFamily: "inherit", whiteSpace: "nowrap", transition: "all .15s",
+  const style = {
+    display: "flex", width: "100%", alignItems: "center", gap: 10,
+    padding: "9px 12px", border: "none", background: "transparent",
+    cursor: "pointer", fontSize: ".84rem", fontWeight: active ? 700 : 600,
+    color: active ? "var(--accent)" : "var(--text-muted)",
+    fontFamily: "inherit", textAlign: "left", whiteSpace: "nowrap",
+    borderLeft: "3px solid " + (active ? "var(--accent)" : "transparent"),
+    transition: "background .15s, color .15s",
   };
-  const activeStyle = active
-    ? { background: accent || "#1a3a5c", color: "#fff", borderColor: accent || "#1a3a5c", boxShadow: `0 4px 12px ${accent || "#1a3a5c"}40` }
-    : {};
+  const iconColor = active ? "var(--accent)" : (accent || "var(--text-muted)");
   return (
-    <button type="button" style={{ ...base, ...activeStyle }} onClick={onClick}
-      onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = accent || "#1a3a5c"; } }}
-      onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#475569"; } }}>
-      {Icon && <Icon size={16} strokeWidth={2.2} />}
-      <span>{label}</span>
+    <button type="button" className="manut-snav-item" style={style} onClick={onClick}>
+      {Icon && <Icon size={17} strokeWidth={2.1} color={iconColor} style={{ flexShrink: 0 }} />}
+      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
       {badge && (
-        <span style={{ background: active ? "rgba(255,255,255,.25)" : badge.color, color: "#fff",
-          borderRadius: 20, fontSize: ".62rem", fontWeight: 800, padding: "1px 6px", minWidth: 16, textAlign: "center", lineHeight: 1.3 }}>
+        <span style={{ background: active ? "var(--accent)" : badge.color, color: "#fff",
+          borderRadius: 20, fontSize: ".62rem", fontWeight: 800, padding: "1px 7px", minWidth: 18, textAlign: "center" }}>
           {badge.text}
         </span>
       )}
@@ -1023,14 +1024,14 @@ function NavTab({ icon: Icon, label, active, onClick, accent, badge }) {
 
 function SeletorAno({ anos, valor, onChange }) {
   return (
-    <div style={{ display: "inline-flex", gap: 4, padding: 4, background: "#f1f5f9", borderRadius: 10 }}>
+    <div style={{ display: "inline-flex", gap: 4, padding: 4, background: "var(--surface-2)", borderRadius: 10 }}>
       {anos.map(a => (
         <button key={a} type="button" onClick={() => onChange(a)}
           style={{
             padding: "6px 14px", borderRadius: 6, border: "none", fontSize: ".78rem", fontWeight: 700,
             cursor: "pointer", fontFamily: "inherit",
-            background: valor === a ? "#1a3a5c" : "transparent",
-            color: valor === a ? "#fff" : "#64748b",
+            background: valor === a ? "var(--accent)" : "transparent",
+            color: valor === a ? "#fff" : "var(--text-muted)",
           }}>
           {a}
         </button>
@@ -2605,8 +2606,8 @@ export default function Manutencao() {
     }
   }
 
-  const thOS = { textAlign: "left", padding: "0.7rem 0.9rem", fontSize: ".72rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em" };
-  const tdOS = { padding: "0.7rem 0.9rem", verticalAlign: "top", color: "#334155" };
+  const thOS = { textAlign: "left", padding: "0.7rem 0.9rem", fontSize: ".72rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em" };
+  const tdOS = { padding: "0.7rem 0.9rem", verticalAlign: "top", color: "var(--text-subtle)" };
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
@@ -2617,6 +2618,27 @@ export default function Manutencao() {
         .manut-page-root .manut-display { font-family: "Space Grotesk", "Manrope", system-ui, sans-serif; letter-spacing: -.01em; }
         .manut-header-btn { transition: transform .15s, background .15s; display:inline-flex; align-items:center; gap:8px; }
         .manut-header-btn:hover { transform: translateY(-1px); }
+
+        /* item de navegação da sidebar */
+        .manut-snav-item:hover { background: var(--surface-2); }
+
+        /* cards KPI — faixa superior de acento + hover */
+        .manut-kpis > button:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(15,23,42,.22); border-color: var(--border-strong); }
+        .manut-kpis > button::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 14px 14px 0 0; }
+        .manut-kpis > button:nth-child(1)::before { background: var(--danger); }
+        .manut-kpis > button:nth-child(2)::before { background: var(--success); }
+        .manut-kpis > button:nth-child(3)::before { background: var(--accent); }
+        .manut-kpis > button:nth-child(4)::before { background: var(--chart-6); }
+
+        /* Responsivo: sidebar sempre visível, afina em telas menores */
+        @media (max-width: 1200px) {
+          .manut-sidebar { width: 218px !important; }
+          .manut-kpis { margin-left: 230px !important; }
+          .manut-page-root main { margin-left: 230px !important; }
+        }
+        @media (max-width: 720px) {
+          .manut-kpis { grid-template-columns: repeat(2, 1fr) !important; padding: 12px 12px 2px !important; }
+        }
       `}</style>
       {/* HEADER */}
       <header style={s.header} className="pg-header">
@@ -2634,11 +2656,14 @@ export default function Manutencao() {
             <Ico.Dash size={16} />
             <span className="hide-mobile">Dashboard</span>
           </button>
+          <MenuNavegacao />
         </div>
       </header>
 
-      {/* NAVBAR REFORMADA — ícones + agrupamento por função + guard RBAC */}
-      <div style={s.navGroups} className="manut-navgroups">
+      {/* NAVBAR LATERAL ESQUERDA — agrupada por função + guard RBAC */}
+      <aside className="manut-navgroups manut-sidebar" style={s.navGroups}>
+        <div style={s.sidebarTitle} className="manut-sidebar-title">Manutenção</div>
+
         {podeVerAba("dashboard") && (
           <div style={s.navGroup}>
             <span style={s.navGroupLabel}>Visão</span>
@@ -2719,6 +2744,38 @@ export default function Manutencao() {
               badge={itensCatalogo.length > 0 ? { text: itensCatalogo.length, color: "#64748b" } : null} />
           </div>
         )}
+      </aside>
+
+      {/* KPIs — resumo clicável (service desk) */}
+      <div style={s.kpisRow} className="manut-kpis">
+        <button type="button" style={s.kpi} onClick={() => podeVerAba("alertas") && setAba("alertas")} disabled={!podeVerAba("alertas")}>
+          <span style={s.kpiTop}>
+            <span style={{ ...s.kpiIco, background:"var(--danger-bg)", color:"var(--danger)" }}><AlertTriangle size={16} /></span>
+            <span style={s.kpiLabel}>Alertas pendentes</span>
+          </span>
+          <span style={s.kpiValor}>{alertaCount}</span>
+        </button>
+        <button type="button" style={s.kpi} onClick={() => podeVerAba("os_abertura") && setAba("os")} disabled={!podeVerAba("os_abertura")}>
+          <span style={s.kpiTop}>
+            <span style={{ ...s.kpiIco, background:"var(--success-bg)", color:"var(--success)" }}><FilePlus2 size={16} /></span>
+            <span style={s.kpiLabel}>OS abertas</span>
+          </span>
+          <span style={s.kpiValor}>{ordensServico.length}</span>
+        </button>
+        <button type="button" style={s.kpi} onClick={() => podeVerAba("dashboard") && setAba("dashboard")} disabled={!podeVerAba("dashboard")}>
+          <span style={s.kpiTop}>
+            <span style={{ ...s.kpiIco, background:"var(--accent-soft)", color:"var(--accent)" }}><Truck size={16} /></span>
+            <span style={s.kpiLabel}>Veículos</span>
+          </span>
+          <span style={s.kpiValor}>{veiculos.length}</span>
+        </button>
+        <button type="button" style={s.kpi} onClick={() => podeVerAba("nf") && setAba("lancamento")} disabled={!podeVerAba("nf")}>
+          <span style={s.kpiTop}>
+            <span style={{ ...s.kpiIco, background:"var(--info-bg)", color:"var(--info)" }}><Receipt size={16} /></span>
+            <span style={s.kpiLabel}>Lançamentos NF</span>
+          </span>
+          <span style={s.kpiValor}>{lancamentos.length}</span>
+        </button>
       </div>
 
       {/* ── ABA: DASHBOARD ANALYTICS ─────────────────────────────────── */}
@@ -2730,7 +2787,7 @@ export default function Manutencao() {
 
       {/* ── ABA: POR VEÍCULO ──────────────────────────────────────────── */}
       {aba === "veiculo" && podeVerAba("por_veiculo") && (
-        <main style={{ ...s.main, maxWidth: "none", margin: 0, padding: "16px 20px" }} className="pg-body">
+        <main style={{ ...s.main, maxWidth: "none", marginLeft: 262, padding: "16px 20px" }} className="pg-body">
           <div style={s.veiculoRow}>
             <label style={s.veiculoLabel}>Veículo</label>
             <select style={s.veiculoSelect} value={placa} onChange={e => setPlaca(e.target.value)}>
@@ -2749,10 +2806,10 @@ export default function Manutencao() {
             </select>
             {placa && (
                 <div style={s.resumoPills}>
-                  {summaryStatus.vencido > 0 && <span style={{ ...s.rPill, background:"#fee2e2", color:"#dc2626" }}>{summaryStatus.vencido} vencido{summaryStatus.vencido>1?"s":""}</span>}
+                  {summaryStatus.vencido > 0 && <span style={{ ...s.rPill, background:"var(--danger-bg)", color:"var(--danger)" }}>{summaryStatus.vencido} vencido{summaryStatus.vencido>1?"s":""}</span>}
                   {summaryStatus.alerta  > 0 && <span style={{ ...s.rPill, background:"#fef9c3", color:"#a16207" }}>{summaryStatus.alerta} alerta{summaryStatus.alerta>1?"s":""}</span>}
-                  {summaryStatus.ok      > 0 && <span style={{ ...s.rPill, background:"#dcfce7", color:"#15803d" }}>{summaryStatus.ok} ok</span>}
-                  {summaryStatus.semReg  > 0 && <span style={{ ...s.rPill, background:"#f1f5f9", color:"#94a3b8" }}>{summaryStatus.semReg} sem reg.</span>}
+                  {summaryStatus.ok      > 0 && <span style={{ ...s.rPill, background:"var(--success-bg)", color:"var(--success)" }}>{summaryStatus.ok} ok</span>}
+                  {summaryStatus.semReg  > 0 && <span style={{ ...s.rPill, background:"var(--surface-2)", color:"var(--text-subtle)" }}>{summaryStatus.semReg} sem reg.</span>}
                 </div>
             )}
             {placa && veiculoSelecionado && (
@@ -2760,11 +2817,11 @@ export default function Manutencao() {
                 type="button"
                 onClick={abrirModalDocs}
                 title={Array.isArray(veiculoSelecionado.documentosAplicaveis) ? "Editar quais documentos aplicam a essa placa" : "Personalizar quais documentos aplicam a essa placa"}
-                style={{ marginLeft:"auto", padding:"8px 14px", background:"#1a3a5c", color:"#fff", border:"none", borderRadius:8, fontSize:".82rem", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6, fontFamily:"inherit" }}
+                style={{ marginLeft:"auto", padding:"8px 14px", background:"var(--surface-2)", color:"var(--text)", border:"1px solid var(--border)", borderRadius:8, fontSize:".82rem", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:6, fontFamily:"inherit" }}
               >
                 ⚙ Documentos aplicáveis
                 {Array.isArray(veiculoSelecionado.documentosAplicaveis) && (
-                  <span style={{ background:"#f5c318", color:"#1a3a5c", borderRadius:20, fontSize:".7rem", fontWeight:800, padding:"2px 8px" }}>
+                  <span style={{ background:"var(--accent)", color:"#fff", borderRadius:20, fontSize:".7rem", fontWeight:800, padding:"2px 8px" }}>
                     customizado
                   </span>
                 )}
@@ -2792,7 +2849,7 @@ export default function Manutencao() {
                   <div style={{ width:280, flexShrink:0, background:"var(--card-bg)", border:"1px solid var(--border)", borderRadius:10, overflow:"auto", maxHeight:"70vh" }}>
                     {conjuntoComStatus.map(secao => (
                       <div key={secao.placa}>
-                        <div style={{ padding:"8px 12px", fontWeight:700, fontSize:".78rem", color:"#1a3a5c", background:"#f8fafc", borderBottom:"1px solid var(--border)", position:"sticky", top:0 }}>
+                        <div style={{ padding:"8px 12px", fontWeight:700, fontSize:".78rem", color:"var(--text)", background:"var(--surface-2)", borderBottom:"1px solid var(--border)", position:"sticky", top:0 }}>
                           {secao.label}
                         </div>
                         {Object.entries(secao.grupos).map(([grupo, tipos]) => (
@@ -2809,11 +2866,11 @@ export default function Manutencao() {
                                     padding:"10px 12px", borderBottom:"1px solid var(--border)",
                                     cursor:"pointer",
                                     background: ativo ? "#eef4ff" : "transparent",
-                                    borderLeft: ativo ? "3px solid #1a3a5c" : "3px solid transparent",
+                                    borderLeft: ativo ? "3px solid var(--text)" : "3px solid transparent",
                                     display:"flex", justifyContent:"space-between", alignItems:"center", gap:8,
                                   }}
                                 >
-                                  <span style={{ fontSize:".85rem", fontWeight: ativo ? 700 : 500, color:"#1a3a5c" }}>{t.label}</span>
+                                  <span style={{ fontSize:".85rem", fontWeight: ativo ? 700 : 500, color:"var(--text)" }}>{t.label}</span>
                                   <span style={{ ...s.sPill, background: sm.bg, color: sm.color, fontSize:".68rem" }}>{sm.label}</span>
                                 </div>
                               );
@@ -2832,18 +2889,18 @@ export default function Manutencao() {
                       <>
                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start", marginBottom:14, paddingBottom:14, borderBottom:"1px solid var(--border)" }}>
                           <div>
-                            <div style={{ fontSize:".75rem", color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>
+                            <div style={{ fontSize:".75rem", color:"var(--text-muted)", fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>
                               {sel.secaoLabel} · {sel.grupo}
                             </div>
-                            <div style={{ fontSize:"1.3rem", fontWeight:800, color:"#1a3a5c" }}>{sel.label}</div>
-                            <div style={{ fontSize:".85rem", color:"#64748b", marginTop:4 }}>{sel.desc}</div>
+                            <div style={{ fontSize:"1.3rem", fontWeight:800, color:"var(--text)" }}>{sel.label}</div>
+                            <div style={{ fontSize:".85rem", color:"var(--text-muted)", marginTop:4 }}>{sel.desc}</div>
                           </div>
                           <div style={{ display:"flex", flexDirection:"column", alignItems:"end", gap:8 }}>
                             <span style={{ ...s.sPill, background: STATUS_META[sel.status].bg, color: STATUS_META[sel.status].color, fontSize:".8rem", padding:"5px 12px" }}>
                               {STATUS_META[sel.status].label}
                             </span>
                             <button
-                              style={{ padding:"8px 16px", background:"#1a3a5c", color:"#fff", border:"none", borderRadius:8, fontSize:".85rem", fontWeight:700, cursor:"pointer" }}
+                              style={{ padding:"8px 16px", background:"var(--text)", color:"#fff", border:"none", borderRadius:8, fontSize:".85rem", fontWeight:700, cursor:"pointer" }}
                               onClick={() => abrirModal(sel.secaoPlaca, sel)}
                             >
                               {sel.record ? "Editar" : "Preencher"}
@@ -2883,31 +2940,31 @@ export default function Manutencao() {
                           <div style={{ marginTop:24, paddingTop:20, borderTop:"1px solid var(--border)" }}>
                             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
                               <div style={s.fieldLbl}>Anexos ({sel.record.anexos.length})</div>
-                              <span style={{ fontSize:".72rem", color:"#64748b" }}>Clique no anexo para abrir em tela cheia</span>
+                              <span style={{ fontSize:".72rem", color:"var(--text-muted)" }}>Clique no anexo para abrir em tela cheia</span>
                             </div>
                             <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
                               {sel.record.anexos.map((a, i) => {
                                 const isImg = /^image\//.test(a.tipo || "") || /\.(jpg|jpeg|png|webp|gif)$/i.test(a.nome || "");
                                 const isPdf = /pdf/i.test(a.tipo || "") || /\.pdf$/i.test(a.nome || "");
                                 return (
-                                  <div key={i} style={{ border:"1px solid var(--border)", borderRadius:10, overflow:"hidden", background:"#f8fafc" }}>
-                                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", background:"#fff", borderBottom:"1px solid var(--border)" }}>
-                                      <span style={{ fontSize:".9rem", color:"#1a3a5c", fontWeight:700, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }} title={a.nome}>
+                                  <div key={i} style={{ border:"1px solid var(--border)", borderRadius:10, overflow:"hidden", background:"var(--surface-2)" }}>
+                                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", background:"var(--card-bg)", borderBottom:"1px solid var(--border)" }}>
+                                      <span style={{ fontSize:".9rem", color:"var(--text)", fontWeight:700, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }} title={a.nome}>
                                         {a.nome || "arquivo"}
                                       </span>
                                       <a href={a.url} target="_blank" rel="noreferrer"
-                                         style={{ padding:"6px 12px", background:"#1a3a5c", color:"#fff", borderRadius:6, fontSize:".78rem", fontWeight:700, textDecoration:"none", flexShrink:0, marginLeft:12 }}>
+                                         style={{ padding:"6px 12px", background:"var(--text)", color:"#fff", borderRadius:6, fontSize:".78rem", fontWeight:700, textDecoration:"none", flexShrink:0, marginLeft:12 }}>
                                         Abrir em tela cheia
                                       </a>
                                     </div>
                                     {isImg ? (
                                       <a href={a.url} target="_blank" rel="noreferrer" style={{ display:"block" }}>
-                                        <img src={a.url} alt={a.nome} style={{ width:"100%", maxHeight:800, objectFit:"contain", display:"block", background:"#fff" }} />
+                                        <img src={a.url} alt={a.nome} style={{ width:"100%", maxHeight:800, objectFit:"contain", display:"block", background:"var(--card-bg)" }} />
                                       </a>
                                     ) : isPdf ? (
-                                      <iframe src={a.url} title={a.nome} style={{ width:"100%", height:700, border:"none", display:"block", background:"#fff" }} />
+                                      <iframe src={a.url} title={a.nome} style={{ width:"100%", height:700, border:"none", display:"block", background:"var(--card-bg)" }} />
                                     ) : (
-                                      <div style={{ padding:40, textAlign:"center", color:"#64748b", fontSize:".9rem" }}>
+                                      <div style={{ padding:40, textAlign:"center", color:"var(--text-muted)", fontSize:".9rem" }}>
                                         Arquivo não visualizável — clique em "Abrir em tela cheia"
                                       </div>
                                     )}
@@ -2957,7 +3014,7 @@ export default function Manutencao() {
             })}
             {/* Filtro de status */}
             <div style={{ display:"flex", alignItems:"center", gap:8, paddingTop:4, borderTop:"1px dashed var(--border)", flexWrap:"wrap" }}>
-              <span style={{ fontSize:".7rem", fontWeight:700, color:"#64748b", whiteSpace:"nowrap" }}>Status:</span>
+              <span style={{ fontSize:".7rem", fontWeight:700, color:"var(--text-muted)", whiteSpace:"nowrap" }}>Status:</span>
               {[
                 { val:"todos",    label:"Todos" },
                 { val:"vencido",  label:"Vencido" },
@@ -2973,7 +3030,7 @@ export default function Manutencao() {
                     key={val}
                     style={{
                       ...s.filtroBtn,
-                      ...(ativo ? { background: sm?.bg || "#1a3a5c", color: sm?.color || "#fff", borderColor: "transparent" } : {}),
+                      ...(ativo ? { background: sm?.bg || "var(--text)", color: sm?.color || "#fff", borderColor: "transparent" } : {}),
                       fontSize:".78rem",
                     }}
                     onClick={() => setFiltroStTipo(val)}
@@ -3006,9 +3063,9 @@ export default function Manutencao() {
                       const ident = r.placa || r.motorista || "—";
                       return (
                         <tr key={r.id} style={{ ...s.tr, background: sm.rowBg }}>
-                          <td style={{ ...s.td, fontWeight:700, color:"#1a3a5c" }}>
+                          <td style={{ ...s.td, fontWeight:700, color:"var(--text)" }}>
                             {r.placa && <div>{r.placa}</div>}
-                            {r.motorista && <div style={{ fontSize:".78rem", color:"#64748b", fontWeight:400 }}>{r.motorista}</div>}
+                            {r.motorista && <div style={{ fontSize:".78rem", color:"var(--text-muted)", fontWeight:400 }}>{r.motorista}</div>}
                             {!r.placa && !r.motorista && "—"}
                           </td>
                           <td style={s.td}>{fmtDate(r.data_realiz)}</td>
@@ -3037,7 +3094,7 @@ export default function Manutencao() {
         <>
           <div style={s.toolbar} className="pg-toolbar">
             <div style={{ position:"relative", flex:1, minWidth:160 }}>
-              <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color:"#94a3b8", display:"inline-flex", pointerEvents:"none" }}>
+              <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color:"var(--text-subtle)", display:"inline-flex", pointerEvents:"none" }}>
                 <Ico.Search size={16} />
               </span>
               <input
@@ -3079,10 +3136,10 @@ export default function Manutencao() {
                       const tipo = TIPOS_TODOS.find(t => t.id === r.tipo) || { id: r.tipo||"outro", label: r._label, desc:"", campos:["data_realiz","venc","local","resp","obs"] };
                       return (
                         <tr key={r.id} style={{ ...s.tr, background: sm.rowBg }}>
-                          <td style={{ ...s.td, fontWeight:700, color:"#1a3a5c" }}>{r.placa}</td>
+                          <td style={{ ...s.td, fontWeight:700, color:"var(--text)" }}>{r.placa}</td>
                           <td style={s.td}>
                             <div style={{ fontWeight:600 }}>{r._label}</div>
-                            {r.grupo && <div style={{ fontSize:".72rem", color:"#94a3b8", marginTop:2 }}>{r.grupo}</div>}
+                            {r.grupo && <div style={{ fontSize:".72rem", color:"var(--text-subtle)", marginTop:2 }}>{r.grupo}</div>}
                           </td>
                           <td style={s.td}>{fmtDate(r.data_realiz || r.ult)}</td>
                           <td style={{ ...s.td, fontWeight:600 }}>{fmtDate(r.venc)}</td>
@@ -3127,7 +3184,7 @@ export default function Manutencao() {
             tipoId="lavagem"
             titulo="Lavagem"
             subtitulo="Controle de lavagem dos veículos — intervalo padrão 35 dias, alerta 5 dias antes"
-            cor="#0891b2"
+            cor="var(--tech)"
             Icone={Droplet}
             veiculos={veiculos}
             registros={registros}
@@ -3163,7 +3220,7 @@ export default function Manutencao() {
             tipoId="calibragem"
             titulo="Calibragem de Pneus"
             subtitulo="Controle de calibragem — intervalo padrão 10 dias, alerta 2 dias antes"
-            cor="#dc2626"
+            cor="var(--danger)"
             Icone={Gauge}
             veiculos={veiculos}
             registros={registros}
@@ -3250,34 +3307,34 @@ export default function Manutencao() {
               <>
                 {/* KPIs topo */}
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:12, marginBottom:16 }}>
-                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
-                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Fornecedores ativos</div>
-                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{lista.length}</div>
+                  <div style={{ background:"var(--card-bg)", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"var(--text-muted)", fontWeight:600 }}>Fornecedores ativos</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"var(--text)" }}>{lista.length}</div>
                   </div>
-                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
-                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Total gasto histórico</div>
-                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{fmtBRL(totalGasto)}</div>
+                  <div style={{ background:"var(--card-bg)", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"var(--text-muted)", fontWeight:600 }}>Total gasto histórico</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"var(--text)" }}>{fmtBRL(totalGasto)}</div>
                   </div>
-                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
-                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Total de OS</div>
-                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{totalOS}</div>
+                  <div style={{ background:"var(--card-bg)", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"var(--text-muted)", fontWeight:600 }}>Total de OS</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"var(--text)" }}>{totalOS}</div>
                   </div>
-                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
-                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Ticket médio geral</div>
-                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{fmtBRL(mediaGeral)}</div>
+                  <div style={{ background:"var(--card-bg)", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"var(--text-muted)", fontWeight:600 }}>Ticket médio geral</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"var(--text)" }}>{fmtBRL(mediaGeral)}</div>
                   </div>
                 </div>
 
                 {/* Ranking geral por valor total gasto */}
-                <div style={{ background:"#fff", borderRadius:12, overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,.06)", marginBottom:16 }}>
-                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0" }}>
-                    <h2 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>Ranking de fornecedores por gasto</h2>
-                    <p style={{ margin:"4px 0 0 0", fontSize:".75rem", color:"#64748b" }}>Ordenado do maior pro menor · ticket médio destaca quem tá acima/abaixo da média geral</p>
+                <div style={{ background:"var(--card-bg)", borderRadius:12, overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,.06)", marginBottom:16 }}>
+                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid var(--border)" }}>
+                    <h2 style={{ margin:0, color:"var(--text)", fontSize:".98rem" }}>Ranking de fornecedores por gasto</h2>
+                    <p style={{ margin:"4px 0 0 0", fontSize:".75rem", color:"var(--text-muted)" }}>Ordenado do maior pro menor · ticket médio destaca quem tá acima/abaixo da média geral</p>
                   </div>
                   <div style={{ overflowX:"auto" }} className="table-wrap">
                     <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".88rem" }}>
                       <thead>
-                        <tr style={{ background:"#f8fafc", borderBottom:"1px solid #e2e8f0" }}>
+                        <tr style={{ background:"var(--surface-2)", borderBottom:"1px solid var(--border)" }}>
                           <th style={thOS}>#</th>
                           <th style={thOS}>Fornecedor</th>
                           <th style={thOS}>OS</th>
@@ -3291,21 +3348,21 @@ export default function Manutencao() {
                       </thead>
                       <tbody>
                         {lista.length === 0 ? (
-                          <tr><td colSpan={9} style={{ padding:"2rem", textAlign:"center", color:"#94a3b8" }}>Nenhuma OS finalizada com fornecedor cadastrado.</td></tr>
+                          <tr><td colSpan={9} style={{ padding:"2rem", textAlign:"center", color:"var(--text-subtle)" }}>Nenhuma OS finalizada com fornecedor cadastrado.</td></tr>
                         ) : lista.map((f, i) => {
                           const delta = mediaGeral > 0 ? ((f.ticketMedio - mediaGeral) / mediaGeral) * 100 : 0;
                           const acima = delta > 5;
                           const abaixo = delta < -5;
                           return (
-                            <tr key={f.fornecedor} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                            <tr key={f.fornecedor} style={{ borderBottom:"1px solid var(--surface-2)" }}>
                               <td style={tdOS}>{i+1}</td>
                               <td style={{ ...tdOS, fontWeight:600 }}>{f.fornecedor}</td>
                               <td style={tdOS}>{f.osCount}</td>
                               <td style={tdOS}>{f.placasCount}</td>
-                              <td style={{ ...tdOS, fontWeight:700, color:"#1a3a5c" }}>{fmtBRL(f.valorTotal)}</td>
+                              <td style={{ ...tdOS, fontWeight:700, color:"var(--text)" }}>{fmtBRL(f.valorTotal)}</td>
                               <td style={tdOS}>{fmtBRL(f.ticketMedio)}</td>
                               <td style={tdOS}>
-                                <span style={{ background: acima ? "#fee2e2" : abaixo ? "#dcfce7" : "#f1f5f9", color: acima ? "#b91c1c" : abaixo ? "#15803d" : "#64748b", fontSize:".78rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
+                                <span style={{ background: acima ? "var(--danger-bg)" : abaixo ? "var(--success-bg)" : "var(--surface-2)", color: acima ? "var(--danger)" : abaixo ? "var(--success)" : "var(--text-muted)", fontSize:".78rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
                                   {delta > 0 ? "+" : ""}{delta.toFixed(1)}%
                                 </span>
                               </td>
@@ -3320,15 +3377,15 @@ export default function Manutencao() {
                 </div>
 
                 {/* Comparativo por serviço — quem cobra mais barato pra cada tipo */}
-                <div style={{ background:"#fff", borderRadius:12, overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
-                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0" }}>
-                    <h2 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>Comparativo por serviço — quem cobra mais barato</h2>
-                    <p style={{ margin:"4px 0 0 0", fontSize:".75rem", color:"#64748b" }}>Só aparecem serviços com 2+ fornecedores. Ordenado pela maior diferença de preço.</p>
+                <div style={{ background:"var(--card-bg)", borderRadius:12, overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid var(--border)" }}>
+                    <h2 style={{ margin:0, color:"var(--text)", fontSize:".98rem" }}>Comparativo por serviço — quem cobra mais barato</h2>
+                    <p style={{ margin:"4px 0 0 0", fontSize:".75rem", color:"var(--text-muted)" }}>Só aparecem serviços com 2+ fornecedores. Ordenado pela maior diferença de preço.</p>
                   </div>
                   <div style={{ overflowX:"auto" }} className="table-wrap">
                     <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".88rem" }}>
                       <thead>
-                        <tr style={{ background:"#f8fafc", borderBottom:"1px solid #e2e8f0" }}>
+                        <tr style={{ background:"var(--surface-2)", borderBottom:"1px solid var(--border)" }}>
                           <th style={thOS}>Serviço</th>
                           <th style={thOS}>Mais barato</th>
                           <th style={thOS}>Ticket barato</th>
@@ -3340,28 +3397,28 @@ export default function Manutencao() {
                       </thead>
                       <tbody>
                         {rankingPorServico.length === 0 ? (
-                          <tr><td colSpan={7} style={{ padding:"2rem", textAlign:"center", color:"#94a3b8" }}>Sem serviço com 2+ fornecedores pra comparar.</td></tr>
+                          <tr><td colSpan={7} style={{ padding:"2rem", textAlign:"center", color:"var(--text-subtle)" }}>Sem serviço com 2+ fornecedores pra comparar.</td></tr>
                         ) : rankingPorServico.map(r => {
                           const diff = r.maisCaro.ticket - r.maisBarato.ticket;
                           const pctDiff = r.maisBarato.ticket > 0 ? (diff / r.maisBarato.ticket) * 100 : 0;
                           const economia = (r.maisCaro.ticket - r.maisBarato.ticket) * r.maisCaro.n;
                           return (
-                            <tr key={r.servico} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                            <tr key={r.servico} style={{ borderBottom:"1px solid var(--surface-2)" }}>
                               <td style={{ ...tdOS, fontWeight:600 }}>{r.servico}</td>
-                              <td style={{ ...tdOS, color:"#15803d", fontWeight:600 }}>
+                              <td style={{ ...tdOS, color:"var(--success)", fontWeight:600 }}>
                                 <span style={{ display:"inline-flex", alignItems:"center", gap:5 }}><Award size={13} /> {r.maisBarato.fornecedor}</span>
                               </td>
                               <td style={tdOS}>{fmtBRL(r.maisBarato.ticket)}</td>
-                              <td style={{ ...tdOS, color:"#b91c1c", fontWeight:600 }}>
+                              <td style={{ ...tdOS, color:"var(--danger)", fontWeight:600 }}>
                                 <span style={{ display:"inline-flex", alignItems:"center", gap:5 }}><TrendingUp size={13} /> {r.maisCaro.fornecedor}</span>
                               </td>
                               <td style={tdOS}>{fmtBRL(r.maisCaro.ticket)}</td>
                               <td style={tdOS}>
-                                <span style={{ background:"#fef3c7", color:"#b45309", fontSize:".78rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
+                                <span style={{ background:"var(--warning-bg)", color:"var(--warning)", fontSize:".78rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
                                   +{pctDiff.toFixed(0)}%
                                 </span>
                               </td>
-                              <td style={{ ...tdOS, fontWeight:700, color:"#15803d" }}>{fmtBRL(economia)}</td>
+                              <td style={{ ...tdOS, fontWeight:700, color:"var(--success)" }}>{fmtBRL(economia)}</td>
                             </tr>
                           );
                         })}
@@ -3488,15 +3545,15 @@ export default function Manutencao() {
             return (
               <>
                 {/* Sub-tabs — categoria do CPK */}
-                <div style={{ display:"flex", gap:4, background:"#f1f5f9", padding:4, borderRadius:10, marginBottom:16, alignSelf:"flex-start", flexWrap:"wrap" }}>
+                <div style={{ display:"flex", gap:4, background:"var(--surface-2)", padding:4, borderRadius:10, marginBottom:16, alignSelf:"flex-start", flexWrap:"wrap" }}>
                   {["total","pneu","manutencao","combustivel"].map(k => (
                     <button
                       key={k}
                       onClick={() => setSubCpk(k)}
                       style={{
                         padding:"8px 16px", borderRadius:8, border:"none",
-                        background: subCpk === k ? "#fff" : "transparent",
-                        color: subCpk === k ? SUB_COR[k] : "#475569",
+                        background: subCpk === k ? "var(--card-bg)" : "transparent",
+                        color: subCpk === k ? SUB_COR[k] : "var(--text-muted)",
                         boxShadow: subCpk === k ? "0 1px 3px rgba(15,23,42,.1)" : "none",
                         fontWeight:700, fontSize:".84rem", cursor:"pointer", fontFamily:"inherit",
                       }}
@@ -3508,33 +3565,33 @@ export default function Manutencao() {
 
                 {/* KPIs topo */}
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:12, marginBottom:16 }}>
-                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
-                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Média CPK {SUB_LABEL[subCpk].toLowerCase()}</div>
+                  <div style={{ background:"var(--card-bg)", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"var(--text-muted)", fontWeight:600 }}>Média CPK {SUB_LABEL[subCpk].toLowerCase()}</div>
                     <div style={{ fontSize:"1.7rem", fontWeight:800, color: SUB_COR[subCpk] }}>{mediaGeralCpk > 0 ? fmtBRL(mediaGeralCpk) + "/km" : "—"}</div>
                   </div>
-                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
-                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Total gasto 12m</div>
-                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{fmtBRL(totalGasto)}</div>
+                  <div style={{ background:"var(--card-bg)", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"var(--text-muted)", fontWeight:600 }}>Total gasto 12m</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"var(--text)" }}>{fmtBRL(totalGasto)}</div>
                   </div>
-                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
-                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Total km rodados</div>
-                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"#1a3a5c" }}>{totalKm.toLocaleString("pt-BR")}</div>
+                  <div style={{ background:"var(--card-bg)", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"var(--text-muted)", fontWeight:600 }}>Total km rodados</div>
+                    <div style={{ fontSize:"1.7rem", fontWeight:800, color:"var(--text)" }}>{totalKm.toLocaleString("pt-BR")}</div>
                   </div>
-                  <div style={{ background:"#fff", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
-                    <div style={{ fontSize:".72rem", color:"#64748b", fontWeight:600 }}>Mais caro / mais barato</div>
-                    <div style={{ fontSize:"1rem", fontWeight:800, color:"#1a3a5c" }}>
-                      <span style={{ color:"#b91c1c" }}>{fmtBRL(topCpk)}</span>
+                  <div style={{ background:"var(--card-bg)", borderRadius:12, padding:"14px 16px", boxShadow:"0 1px 3px rgba(0,0,0,.06)" }}>
+                    <div style={{ fontSize:".72rem", color:"var(--text-muted)", fontWeight:600 }}>Mais caro / mais barato</div>
+                    <div style={{ fontSize:"1rem", fontWeight:800, color:"var(--text)" }}>
+                      <span style={{ color:"var(--danger)" }}>{fmtBRL(topCpk)}</span>
                       {" / "}
-                      <span style={{ color:"#15803d" }}>{fmtBRL(bottomCpk)}</span>
+                      <span style={{ color:"var(--success)" }}>{fmtBRL(bottomCpk)}</span>
                     </div>
-                    <div style={{ fontSize:".7rem", color:"#94a3b8", marginTop:2 }}>Δ {topCpk && bottomCpk ? ((topCpk / bottomCpk - 1) * 100).toFixed(0) : 0}% de diferença</div>
+                    <div style={{ fontSize:".7rem", color:"var(--text-subtle)", marginTop:2 }}>Δ {topCpk && bottomCpk ? ((topCpk / bottomCpk - 1) * 100).toFixed(0) : 0}% de diferença</div>
                   </div>
                 </div>
 
-                <div style={{ background:"#fff", borderRadius:12, overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,.06)", marginBottom:16 }}>
-                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0" }}>
-                    <h2 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>CPK {SUB_LABEL[subCpk]} — últimos 12 meses</h2>
-                    <p style={{ margin:"4px 0 0 0", fontSize:".75rem", color:"#64748b" }}>
+                <div style={{ background:"var(--card-bg)", borderRadius:12, overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,.06)", marginBottom:16 }}>
+                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid var(--border)" }}>
+                    <h2 style={{ margin:0, color:"var(--text)", fontSize:".98rem" }}>CPK {SUB_LABEL[subCpk]} — últimos 12 meses</h2>
+                    <p style={{ margin:"4px 0 0 0", fontSize:".75rem", color:"var(--text-muted)" }}>
                       {subCpk === "pneu"        && "Gastos de OS/lançamentos com serviço contendo \"pneu\" no nome."}
                       {subCpk === "combustivel" && "Gastos vindos da coleção cta_abastecimentos (CTA Smart)."}
                       {subCpk === "manutencao"  && "OS e lançamentos que NÃO são de pneu. Cobre óleo, freio, revisão, embreagem, etc."}
@@ -3545,7 +3602,7 @@ export default function Manutencao() {
                   <div style={{ overflowX:"auto" }} className="table-wrap">
                     <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".88rem" }}>
                       <thead>
-                        <tr style={{ background:"#f8fafc", borderBottom:"1px solid #e2e8f0" }}>
+                        <tr style={{ background:"var(--surface-2)", borderBottom:"1px solid var(--border)" }}>
                           <th style={thOS}>#</th>
                           <th style={thOS}>Placa</th>
                           <th style={thOS}>Gastos 12m</th>
@@ -3559,13 +3616,13 @@ export default function Manutencao() {
                       </thead>
                       <tbody>
                         {linhasComGasto.length === 0 ? (
-                          <tr><td colSpan={9} style={{ padding:"2rem", textAlign:"center", color:"#94a3b8" }}>Sem dados de {SUB_LABEL[subCpk].toLowerCase()} nos últimos 12 meses.</td></tr>
+                          <tr><td colSpan={9} style={{ padding:"2rem", textAlign:"center", color:"var(--text-subtle)" }}>Sem dados de {SUB_LABEL[subCpk].toLowerCase()} nos últimos 12 meses.</td></tr>
                         ) : linhasComGasto.map((l, i) => {
                           const delta = mediaGeralCpk > 0 && l.cpk != null ? ((l.cpk - mediaGeralCpk) / mediaGeralCpk) * 100 : null;
                           const critico = delta != null && delta > 20;
                           const bom = delta != null && delta < -20;
                           return (
-                            <tr key={l.placa} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                            <tr key={l.placa} style={{ borderBottom:"1px solid var(--surface-2)" }}>
                               <td style={tdOS}>{i+1}</td>
                               <td style={{ ...tdOS, fontWeight:700 }}>{l.placa}</td>
                               <td style={{ ...tdOS, fontWeight:600 }}>{fmtBRL(l.gasto)}</td>
@@ -3573,12 +3630,12 @@ export default function Manutencao() {
                               <td style={tdOS}>{l.kmMax?.toLocaleString("pt-BR") ?? "—"}</td>
                               <td style={tdOS}>{l.kmRodado > 0 ? l.kmRodado.toLocaleString("pt-BR") : "—"}</td>
                               <td style={tdOS}>{l.entradas}</td>
-                              <td style={{ ...tdOS, fontWeight:700, color: critico ? "#b91c1c" : bom ? "#15803d" : "#1a3a5c" }}>
-                                {l.cpk != null ? fmtBRL(l.cpk) + "/km" : <span style={{ color:"#94a3b8" }}>sem KM</span>}
+                              <td style={{ ...tdOS, fontWeight:700, color: critico ? "var(--danger)" : bom ? "var(--success)" : "var(--text)" }}>
+                                {l.cpk != null ? fmtBRL(l.cpk) + "/km" : <span style={{ color:"var(--text-subtle)" }}>sem KM</span>}
                               </td>
                               <td style={tdOS}>
                                 {delta == null ? "—" : (
-                                  <span style={{ background: critico ? "#fee2e2" : bom ? "#dcfce7" : "#f1f5f9", color: critico ? "#b91c1c" : bom ? "#15803d" : "#64748b", fontSize:".78rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
+                                  <span style={{ background: critico ? "var(--danger-bg)" : bom ? "var(--success-bg)" : "var(--surface-2)", color: critico ? "var(--danger)" : bom ? "var(--success)" : "var(--text-muted)", fontSize:".78rem", fontWeight:700, padding:"3px 8px", borderRadius:999 }}>
                                     {delta > 0 ? "+" : ""}{delta.toFixed(1)}%
                                   </span>
                                 )}
@@ -3591,7 +3648,7 @@ export default function Manutencao() {
                   </div>
                 </div>
 
-                <div style={{ background:"#fef9c3", border:"1px solid #fde68a", borderRadius:8, padding:"12px 16px", fontSize:".82rem", color:"#78350f", display:"flex", alignItems:"flex-start", gap:10 }}>
+                <div style={{ background:"#fef9c3", border:"1px solid var(--warning-border)", borderRadius:8, padding:"12px 16px", fontSize:".82rem", color:"#78350f", display:"flex", alignItems:"flex-start", gap:10 }}>
                   <Lightbulb size={18} style={{ flexShrink:0, marginTop:2 }} />
                   <div>
                     <strong>Como interpretar:</strong> se um veículo aparece com "sem KM" é porque não tem hodômetro registrado em nenhuma entrada de custo (adicione KM nas OS/lançamentos). A qualidade do CPK melhora quando você registra o hodômetro em cada OS ou usa import de NF-e (que já vem com hodômetro se tiver na nota).
@@ -3624,8 +3681,8 @@ export default function Manutencao() {
             if (anteriores.length === 0) return null;
             const primeiro = anteriores[0];
             return (
-              <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 10, padding: "12px 16px", marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <AlertCircle size={20} color="#b91c1c" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ background: "var(--danger-bg)", border: "1px solid #fca5a5", borderRadius: 10, padding: "12px 16px", marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <AlertCircle size={20} color="var(--danger)" style={{ flexShrink: 0, marginTop: 2 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, color: "#991b1b", fontSize: ".9rem" }}>
                     Serviço ainda em garantia — cobre do fornecedor antes de gerar nova OS
@@ -3639,8 +3696,8 @@ export default function Manutencao() {
             );
           })()}
           {/* Formulário de nova OS */}
-          <div style={{ background: "#fff", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ margin: "0 0 0.75rem 0", color: "#1a3a5c", fontSize: "1.05rem" }}>Abrir ordem de serviço <span style={{ fontWeight:400, fontSize:".8rem", color:"#64748b" }}>— bloqueia o veículo</span></h2>
+          <div style={{ background: "var(--card-bg)", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            <h2 style={{ margin: "0 0 0.75rem 0", color: "var(--text)", fontSize: "1.05rem" }}>Abrir ordem de serviço <span style={{ fontWeight:400, fontSize:".8rem", color:"var(--text-muted)" }}>— bloqueia o veículo</span></h2>
             <form onSubmit={salvarOS} className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
               <label style={s.fieldLabel}>
                 Tipo de serviço
@@ -3756,7 +3813,7 @@ export default function Manutencao() {
                     onClick={() => puxarOdometroSascar("os")}
                     disabled={!formOS.placa || sascarLoading}
                     title="Puxar hodômetro atual da SASCAR"
-                    style={{ padding: "0 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: formOS.placa && !sascarLoading ? "#ea580c" : "#f1f5f9", color: formOS.placa && !sascarLoading ? "#fff" : "#94a3b8", fontWeight: 700, fontSize: ".78rem", cursor: formOS.placa && !sascarLoading ? "pointer" : "not-allowed", fontFamily: "inherit", whiteSpace: "nowrap" }}
+                    style={{ padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", background: formOS.placa && !sascarLoading ? "#ea580c" : "var(--surface-2)", color: formOS.placa && !sascarLoading ? "#fff" : "var(--text-subtle)", fontWeight: 700, fontSize: ".78rem", cursor: formOS.placa && !sascarLoading ? "pointer" : "not-allowed", fontFamily: "inherit", whiteSpace: "nowrap" }}
                   >
                     {sascarLoading ? "..." : "🛰 SASCAR"}
                   </button>
@@ -3765,7 +3822,7 @@ export default function Manutencao() {
                   const r = formOS.placa ? resolverKmSascar(formOS.placa) : null;
                   if (!r?.dados) return null;
                   return (
-                    <div style={{ fontSize: ".7rem", color: "#64748b", marginTop: 3 }}>
+                    <div style={{ fontSize: ".7rem", color: "var(--text-muted)", marginTop: 3 }}>
                       {r.fonte.startsWith("via") && <strong style={{ color: "#ea580c" }}>Carreta — km puxado {r.fonte} · </strong>}
                       Última posição: {r.dados.cidade || "—"}/{r.dados.uf || "--"} · {r.dados.dataPosicao ? new Date(r.dados.dataPosicao).toLocaleString("pt-BR") : "—"}
                     </div>
@@ -3774,11 +3831,11 @@ export default function Manutencao() {
               </label>
 
               <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 4 }}>
-                <div style={{ fontSize: ".75rem", color: "#64748b" }}>
-                  Data/hora: <strong style={{ color: "#1a3a5c" }}>preenchida automaticamente ao salvar</strong>
+                <div style={{ fontSize: ".75rem", color: "var(--text-muted)" }}>
+                  Data/hora: <strong style={{ color: "var(--text)" }}>preenchida automaticamente ao salvar</strong>
                 </div>
-                <div style={{ fontSize: ".75rem", color: "#64748b" }}>
-                  Próximo número: <strong style={{ color: "#1a3a5c" }}>{proximoNumeroOS()}</strong>
+                <div style={{ fontSize: ".75rem", color: "var(--text-muted)" }}>
+                  Próximo número: <strong style={{ color: "var(--text)" }}>{proximoNumeroOS()}</strong>
                 </div>
               </div>
 
@@ -3792,7 +3849,7 @@ export default function Manutencao() {
                 />
               </label>
 
-              <p style={{ gridColumn:"1 / -1", margin:0, fontSize:".75rem", color:"#b45309", background:"#fffbeb", border:"1px solid #fcd34d", borderRadius:8, padding:"8px 10px", lineHeight:1.5 }}>
+              <p style={{ gridColumn:"1 / -1", margin:0, fontSize:".75rem", color:"var(--warning)", background:"var(--warning-bg)", border:"1px solid #fcd34d", borderRadius:8, padding:"8px 10px", lineHeight:1.5 }}>
                 🔒 Ao abrir a OS, o veículo é <strong>bloqueado automaticamente</strong> no sistema (não gera OC) e só é liberado quando a OS for <strong>finalizada</strong>. Depois de aberta, a OS só pode ser editada por <strong>24h</strong>.
               </p>
 
@@ -3814,14 +3871,14 @@ export default function Manutencao() {
           </div>
 
           {/* Lista de OSs */}
-          <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between" }}>
-              <h3 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem" }}>Histórico de OS ({ordensServico.length})</h3>
+          <div style={{ background: "var(--card-bg)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between" }}>
+              <h3 style={{ margin: 0, color: "var(--text)", fontSize: ".98rem" }}>Histórico de OS ({ordensServico.length})</h3>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".88rem" }}>
                 <thead>
-                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                  <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
                     <th style={thOS}>OS</th>
                     <th style={thOS}>Data / hora</th>
                     <th style={thOS}>Tipo</th>
@@ -3834,43 +3891,43 @@ export default function Manutencao() {
                 </thead>
                 <tbody>
                   {ordensServico.length === 0 ? (
-                    <tr><td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Nenhuma OS criada ainda</td></tr>
+                    <tr><td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "var(--text-subtle)" }}>Nenhuma OS criada ainda</td></tr>
                   ) : ordensServico.map(os => {
                     const st        = osStatus(os);
                     const finalizada = st === "finalizada";
                     const editavel  = osEditavel(os);
                     const limite    = osLimiteEdicao(os);
                     return (
-                    <tr key={os.id} style={{ borderBottom: "1px solid #f1f5f9", background: finalizada ? "#f8fafc" : "#fff" }}>
-                      <td style={tdOS}><strong style={{ color: "#1a3a5c" }}>{os.numero}</strong></td>
+                    <tr key={os.id} style={{ borderBottom: "1px solid var(--surface-2)", background: finalizada ? "var(--surface-2)" : "var(--card-bg)" }}>
+                      <td style={tdOS}><strong style={{ color: "var(--text)" }}>{os.numero}</strong></td>
                       <td style={tdOS}>
                         {fmtDateTimeBR(os.dataHora)}
-                        {os.criadoPor && <div style={{ fontSize:".68rem", color:"#94a3b8", marginTop:3 }}>por {os.criadoPor}</div>}
+                        {os.criadoPor && <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:3 }}>por {os.criadoPor}</div>}
                       </td>
                       <td style={tdOS}>{os.tipoServico}</td>
                       <td style={tdOS}><strong>{os.placa}</strong></td>
                       <td style={tdOS}>{os.motoristaNome}</td>
                       <td style={tdOS}>
                         {finalizada ? (
-                          <span style={{ ...s.osBadge, background:"#dcfce7", color:"#15803d" }}>✓ Finalizada</span>
+                          <span style={{ ...s.osBadge, background:"var(--success-bg)", color:"var(--success)" }}>✓ Finalizada</span>
                         ) : (
                           <span style={{ ...s.osBadge, background:"#fef9c3", color:"#a16207" }}>🔧 Aberta</span>
                         )}
                         {finalizada && os.finalizadaEm && (
-                          <div style={{ fontSize:".68rem", color:"#94a3b8", marginTop:3 }}>{fmtDateTimeBR(os.finalizadaEm)}</div>
+                          <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:3 }}>{fmtDateTimeBR(os.finalizadaEm)}</div>
                         )}
                         {!finalizada && limite && (
-                          <div style={{ fontSize:".68rem", color: editavel ? "#64748b" : "#dc2626", marginTop:3 }}>
+                          <div style={{ fontSize:".68rem", color: editavel ? "var(--text-muted)" : "var(--danger)", marginTop:3 }}>
                             {editavel ? `edição até ${fmtDateTimeBR(limite)}` : "edição encerrada (24h)"}
                           </div>
                         )}
                       </td>
-                      <td style={{ ...tdOS, maxWidth: 360, whiteSpace: "normal", color: "#475569" }}>{os.obs || "—"}</td>
+                      <td style={{ ...tdOS, maxWidth: 360, whiteSpace: "normal", color: "var(--text-muted)" }}>{os.obs || "—"}</td>
                       <td style={tdOS}>
                         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                           <button
                             onClick={() => visualizarPdfOS(os)}
-                            style={{ background:"#f1f5f9", border:"none", color:"#334155", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:4 }}
+                            style={{ background:"var(--surface-2)", border:"none", color:"var(--text-subtle)", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:4 }}
                             title="Visualizar em nova aba"
                           >
                             <Eye size={12} /> Ver
@@ -3885,7 +3942,7 @@ export default function Manutencao() {
                           {editavel && (
                             <button
                               onClick={() => abrirEditOS(os)}
-                              style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}
+                              style={{ background:"var(--success-bg)", border:"none", color:"var(--success)", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}
                             >
                               Editar
                             </button>
@@ -3893,7 +3950,7 @@ export default function Manutencao() {
                           {canDelete && (
                             <button
                               onClick={() => excluirOS(os)}
-                              style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}
+                              style={{ background:"transparent", border:"none", color:"var(--danger)", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}
                             >
                               Excluir
                             </button>
@@ -3921,31 +3978,31 @@ export default function Manutencao() {
             const criticas = comAging.filter(x => x.aging.urgencia === "critico").length;
             const atencao  = comAging.filter(x => x.aging.urgencia === "atencao").length;
             return (
-              <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-                <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
-                  <h2 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+              <div style={{ background: "var(--card-bg)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+                <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid var(--border)" }}>
+                  <h2 style={{ margin: 0, color: "var(--text)", fontSize: ".98rem", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
                     OSs abertas — registrar conclusão ({abertas.length})
                     {criticas > 0 && (
-                      <span title={`${criticas} OS aberta(s) há 14 dias ou mais — investigar`} style={{ background:"#fee2e2", color:"#b91c1c", fontSize:".72rem", fontWeight:700, padding:"3px 8px", borderRadius:999, display:"inline-flex", alignItems:"center", gap:5 }}>
+                      <span title={`${criticas} OS aberta(s) há 14 dias ou mais — investigar`} style={{ background:"var(--danger-bg)", color:"var(--danger)", fontSize:".72rem", fontWeight:700, padding:"3px 8px", borderRadius:999, display:"inline-flex", alignItems:"center", gap:5 }}>
                         <AlertCircle size={12} />
                         {criticas} crítica{criticas > 1 ? "s" : ""} (≥14d)
                       </span>
                     )}
                     {atencao > 0 && (
-                      <span title={`${atencao} OS aberta(s) entre 7 e 13 dias`} style={{ background:"#fef3c7", color:"#b45309", fontSize:".72rem", fontWeight:700, padding:"3px 8px", borderRadius:999, display:"inline-flex", alignItems:"center", gap:5 }}>
+                      <span title={`${atencao} OS aberta(s) entre 7 e 13 dias`} style={{ background:"var(--warning-bg)", color:"var(--warning)", fontSize:".72rem", fontWeight:700, padding:"3px 8px", borderRadius:999, display:"inline-flex", alignItems:"center", gap:5 }}>
                         <AlertTriangle size={12} />
                         {atencao} em atenção (7-13d)
                       </span>
                     )}
                   </h2>
-                  <p style={{ margin: "4px 0 0 0", fontSize: ".75rem", color: "#64748b" }}>
+                  <p style={{ margin: "4px 0 0 0", fontSize: ".75rem", color: "var(--text-muted)" }}>
                     Concluir a OS registra KM de saída, mecânico, oficina e serviço executado, e libera o veículo. <strong>Ordenado por mais tempo aberta.</strong>
                   </p>
                 </div>
                 <div style={{ overflowX: "auto" }} className="table-wrap">
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".88rem" }}>
                     <thead>
-                      <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                      <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
                         <th style={thOS}>OS</th>
                         <th style={thOS}>Aberta há</th>
                         <th style={thOS}>Abertura</th>
@@ -3960,12 +4017,12 @@ export default function Manutencao() {
                     </thead>
                     <tbody>
                       {abertas.length === 0 ? (
-                        <tr><td colSpan={10} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>
+                        <tr><td colSpan={10} style={{ padding: "2rem", textAlign: "center", color: "var(--text-subtle)" }}>
                           Nenhuma OS aberta — todas finalizadas
                         </td></tr>
                       ) : comAging.map(({ os, aging }) => (
-                        <tr key={os.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          <td style={tdOS}><strong style={{ color: "#1a3a5c" }}>{os.numero}</strong></td>
+                        <tr key={os.id} style={{ borderBottom: "1px solid var(--surface-2)" }}>
+                          <td style={tdOS}><strong style={{ color: "var(--text)" }}>{os.numero}</strong></td>
                           <td style={tdOS}>
                             <span
                               title={aging.dias != null ? `${aging.dias} dia(s) desde a abertura` : "Sem data de abertura"}
@@ -3980,8 +4037,8 @@ export default function Manutencao() {
                           <td style={tdOS}>{os.tipoServico}</td>
                           <td style={tdOS}>{os.motoristaNome}</td>
                           <td style={tdOS}>{os.hodometro != null ? os.hodometro : "—"}</td>
-                          <td style={tdOS}>{os.fornecedor || <span style={{color:"#94a3b8"}}>—</span>}</td>
-                          <td style={{ ...tdOS, fontWeight: 700, color: os.valorTotal > 0 ? "#1a3a5c" : "#94a3b8" }}>
+                          <td style={tdOS}>{os.fornecedor || <span style={{color:"var(--text-subtle)"}}>—</span>}</td>
+                          <td style={{ ...tdOS, fontWeight: 700, color: os.valorTotal > 0 ? "var(--text)" : "var(--text-subtle)" }}>
                             {os.valorTotal > 0 ? fmtBRL(os.valorTotal) : "—"}
                           </td>
                           <td style={tdOS}>
@@ -3989,14 +4046,14 @@ export default function Manutencao() {
                               <button
                                 onClick={() => setFotosOsModal(os)}
                                 title={`${(os.fotos?.length || 0)} foto(s)`}
-                                style={{ background: (os.fotos?.length || 0) > 0 ? "#dbeafe" : "#f1f5f9", border:"none", color:(os.fotos?.length || 0) > 0 ? "#1d4ed8" : "#64748b", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 10px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:5 }}
+                                style={{ background: (os.fotos?.length || 0) > 0 ? "#dbeafe" : "var(--surface-2)", border:"none", color:(os.fotos?.length || 0) > 0 ? "#1d4ed8" : "var(--text-muted)", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 10px", borderRadius:5, display:"inline-flex", alignItems:"center", gap:5 }}
                               >
                                 <Camera size={13} />
                                 {os.fotos?.length || 0}
                               </button>
                               <button
                                 onClick={() => abrirConclusaoOS(os)}
-                                style={{ background:"#dcfce7", border:"none", color:"#15803d", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
+                                style={{ background:"var(--success-bg)", border:"none", color:"var(--success)", cursor:"pointer", fontSize:".78rem", fontWeight:700, padding:"5px 14px", borderRadius:5 }}
                               >
                                 Concluir
                               </button>
@@ -4020,14 +4077,14 @@ export default function Manutencao() {
           <DashboardCustos lancamentos={lancamentos} fmtBRLfn={fmtBRL} />
 
           {/* Formulário de novo lançamento */}
-          <div style={{ background: "#fff", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ margin: "0 0 0.25rem 0", color: "#1a3a5c", fontSize: "1.05rem" }}>Lançamento de NF</h2>
-            <p style={{ margin: "0 0 0.75rem 0", fontSize: ".78rem", color: "#64748b" }}>Registro de serviço e custo. <strong>Não bloqueia o veículo.</strong></p>
+          <div style={{ background: "var(--card-bg)", borderRadius: 12, padding: "1.25rem", marginBottom: "1rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            <h2 style={{ margin: "0 0 0.25rem 0", color: "var(--text)", fontSize: "1.05rem" }}>Lançamento de NF</h2>
+            <p style={{ margin: "0 0 0.75rem 0", fontSize: ".78rem", color: "var(--text-muted)" }}>Registro de serviço e custo. <strong>Não bloqueia o veículo.</strong></p>
             <form onSubmit={salvarLanc}>
               {/* Cabeçalho */}
               <div className="grid-form-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
                 <label style={{ ...s.fieldLabel, gridColumn: "1 / -1" }}>
-                  OS relacionada <span style={{ color: "#64748b", fontWeight: 400, fontSize: ".72rem" }}>(opcional — se selecionar, preenche placa/fornecedor/hodômetro)</span>
+                  OS relacionada <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: ".72rem" }}>(opcional — se selecionar, preenche placa/fornecedor/hodômetro)</span>
                   <select
                     style={s.fieldInput}
                     value={formLanc.osId}
@@ -4125,7 +4182,7 @@ export default function Manutencao() {
                       onClick={() => puxarOdometroSascar("lanc")}
                       disabled={!formLanc.placa || sascarLoading}
                       title="Puxar hodômetro atual da SASCAR"
-                      style={{ padding: "0 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: formLanc.placa && !sascarLoading ? "#ea580c" : "#f1f5f9", color: formLanc.placa && !sascarLoading ? "#fff" : "#94a3b8", fontWeight: 700, fontSize: ".78rem", cursor: formLanc.placa && !sascarLoading ? "pointer" : "not-allowed", fontFamily: "inherit", whiteSpace: "nowrap" }}
+                      style={{ padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", background: formLanc.placa && !sascarLoading ? "#ea580c" : "var(--surface-2)", color: formLanc.placa && !sascarLoading ? "#fff" : "var(--text-subtle)", fontWeight: 700, fontSize: ".78rem", cursor: formLanc.placa && !sascarLoading ? "pointer" : "not-allowed", fontFamily: "inherit", whiteSpace: "nowrap" }}
                     >
                       {sascarLoading ? "..." : "🛰 SASCAR"}
                     </button>
@@ -4134,7 +4191,7 @@ export default function Manutencao() {
                     const r = formLanc.placa ? resolverKmSascar(formLanc.placa) : null;
                     if (!r?.dados) return null;
                     return (
-                      <div style={{ fontSize: ".7rem", color: "#64748b", marginTop: 3 }}>
+                      <div style={{ fontSize: ".7rem", color: "var(--text-muted)", marginTop: 3 }}>
                         {r.fonte.startsWith("via") && <strong style={{ color: "#ea580c" }}>Carreta — km puxado {r.fonte} · </strong>}
                         Última posição: {r.dados.cidade || "—"}/{r.dados.uf || "--"} · {r.dados.dataPosicao ? new Date(r.dados.dataPosicao).toLocaleString("pt-BR") : "—"}
                       </div>
@@ -4144,8 +4201,8 @@ export default function Manutencao() {
               </div>
 
               {/* Itens (serviços/peças) */}
-              <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, padding: 12 }}>
-                <div style={{ fontWeight: 700, color: "#1a3a5c", fontSize: ".9rem", marginBottom: 8 }}>Serviços / Peças deste lançamento</div>
+              <div style={{ marginTop: 14, border: "1px solid var(--border)", borderRadius: 10, padding: 12 }}>
+                <div style={{ fontWeight: 700, color: "var(--text)", fontSize: ".9rem", marginBottom: 8 }}>Serviços / Peças deste lançamento</div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
                   <label style={{ ...s.fieldLabel, minWidth: 120 }}>
                     Tipo
@@ -4184,19 +4241,19 @@ export default function Manutencao() {
                   <div style={{ marginTop: 10, overflowX: "auto" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".85rem" }}>
                       <thead>
-                        <tr style={{ background: "#f8fafc" }}>
+                        <tr style={{ background: "var(--surface-2)" }}>
                           <th style={thOS}>Tipo</th><th style={thOS}>Item</th><th style={thOS}>Qtd</th><th style={thOS}>Unit.</th><th style={thOS}>Total</th><th style={thOS}></th>
                         </tr>
                       </thead>
                       <tbody>
                         {lancItens.map((it, idx) => (
-                          <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                            <td style={tdOS}><span style={{ ...s.osBadge, background: it.tipoItem === "peca" ? "#fef3c7" : "#dbeafe", color: it.tipoItem === "peca" ? "#92400e" : "#1d4ed8" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span></td>
+                          <tr key={idx} style={{ borderBottom: "1px solid var(--surface-2)" }}>
+                            <td style={tdOS}><span style={{ ...s.osBadge, background: it.tipoItem === "peca" ? "var(--warning-bg)" : "#dbeafe", color: it.tipoItem === "peca" ? "#92400e" : "#1d4ed8" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span></td>
                             <td style={tdOS}>{it.item}</td>
                             <td style={tdOS}>{it.quantidade}</td>
                             <td style={tdOS}>{fmtBRL(it.valorUnitario)}</td>
                             <td style={tdOS}><strong>{fmtBRL(it.valorTotal)}</strong></td>
-                            <td style={tdOS}><button type="button" onClick={() => removerItemLanc(idx)} title="Remover" style={{ background: "transparent", border: "none", color: "#dc2626", cursor: "pointer", fontWeight: 700, fontSize: ".9rem" }}>✕</button></td>
+                            <td style={tdOS}><button type="button" onClick={() => removerItemLanc(idx)} title="Remover" style={{ background: "transparent", border: "none", color: "var(--danger)", cursor: "pointer", fontWeight: 700, fontSize: ".9rem" }}>✕</button></td>
                           </tr>
                         ))}
                       </tbody>
@@ -4207,10 +4264,10 @@ export default function Manutencao() {
 
               {/* Total + meta */}
               <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                <div style={{ fontSize: ".75rem", color: "#64748b" }}>
-                  Data/hora automática · Lançado por <strong style={{ color: "#1a3a5c" }}>{quemSou()}</strong> · Nº <strong style={{ color: "#1a3a5c" }}>{proximoNumeroLanc()}</strong>
+                <div style={{ fontSize: ".75rem", color: "var(--text-muted)" }}>
+                  Data/hora automática · Lançado por <strong style={{ color: "var(--text)" }}>{quemSou()}</strong> · Nº <strong style={{ color: "var(--text)" }}>{proximoNumeroLanc()}</strong>
                 </div>
-                <div style={{ fontSize: ".95rem", color: "#1a3a5c", fontWeight: 700, background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: "8px 12px" }}>
+                <div style={{ fontSize: ".95rem", color: "var(--text)", fontWeight: 700, background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, padding: "8px 12px" }}>
                   Total do lançamento: <span style={{ fontSize: "1.1rem" }}>{fmtBRL(lancItens.reduce((sum, it) => sum + (Number(it.valorTotal) || 0), 0))}</span>
                 </div>
               </div>
@@ -4239,14 +4296,14 @@ export default function Manutencao() {
           </div>
 
           {/* Lista de lançamentos */}
-          <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid #e2e8f0" }}>
-              <h3 style={{ margin: 0, color: "#1a3a5c", fontSize: ".98rem" }}>Histórico de lançamentos ({lancamentos.length})</h3>
+          <div style={{ background: "var(--card-bg)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid var(--border)" }}>
+              <h3 style={{ margin: 0, color: "var(--text)", fontSize: ".98rem" }}>Histórico de lançamentos ({lancamentos.length})</h3>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".88rem" }}>
                 <thead>
-                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                  <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
                     <th style={thOS}>Nº</th>
                     <th style={thOS}>Data / hora</th>
                     <th style={thOS}>OS</th>
@@ -4260,52 +4317,52 @@ export default function Manutencao() {
                 </thead>
                 <tbody>
                   {lancamentos.length === 0 ? (
-                    <tr><td colSpan={9} style={{ padding: "2rem", textAlign: "center", color: "#94a3b8" }}>Nenhum lançamento ainda</td></tr>
+                    <tr><td colSpan={9} style={{ padding: "2rem", textAlign: "center", color: "var(--text-subtle)" }}>Nenhum lançamento ainda</td></tr>
                   ) : lancamentos.map(l => (
-                    <tr key={l.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                      <td style={tdOS}><strong style={{ color: "#1a3a5c" }}>{l.numero}</strong></td>
+                    <tr key={l.id} style={{ borderBottom: "1px solid var(--surface-2)" }}>
+                      <td style={tdOS}><strong style={{ color: "var(--text)" }}>{l.numero}</strong></td>
                       <td style={tdOS}>
                         {fmtDateTimeBR(l.dataHora)}
-                        {l.criadoPor && <div style={{ fontSize:".68rem", color:"#94a3b8", marginTop:3 }}>por {l.criadoPor}</div>}
+                        {l.criadoPor && <div style={{ fontSize:".68rem", color:"var(--text-subtle)", marginTop:3 }}>por {l.criadoPor}</div>}
                       </td>
                       <td style={tdOS}>
                         {l.osNumero || l.osId ? (
-                          <span style={{ ...s.osBadge, background:"#dcfce7", color:"#166534" }}>
+                          <span style={{ ...s.osBadge, background:"var(--success-bg)", color:"#166534" }}>
                             {l.osNumero || "OS vinculada"}
                           </span>
                         ) : (
-                          <span style={{ color:"#94a3b8", fontSize:".72rem" }}>—</span>
+                          <span style={{ color:"var(--text-subtle)", fontSize:".72rem" }}>—</span>
                         )}
                       </td>
                       <td style={tdOS}>
-                        {l.tipoLancamento && <span style={{ ...s.osBadge, background:"#e0e7ff", color:"#4338ca" }}>{l.tipoLancamento}</span>}
+                        {l.tipoLancamento && <span style={{ ...s.osBadge, background:"var(--info-bg)", color:"var(--info)" }}>{l.tipoLancamento}</span>}
                       </td>
                       <td style={{ ...tdOS, maxWidth: 340, whiteSpace: "normal" }}>
                         {Array.isArray(l.itens) && l.itens.length ? (
                           l.itens.map((it, i) => (
                             <div key={i} style={{ marginBottom: 3 }}>
-                              <span style={{ ...s.osBadge, marginRight: 5, background: it.tipoItem === "peca" ? "#fef3c7" : "#dbeafe", color: it.tipoItem === "peca" ? "#92400e" : "#1d4ed8" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span>
-                              <strong style={{ color: "#334155" }}>{it.item}</strong>
-                              <span style={{ color: "#94a3b8", fontSize: ".74rem" }}> &nbsp;{numOS(it.quantidade)}× {fmtBRL(it.valorUnitario)}</span>
+                              <span style={{ ...s.osBadge, marginRight: 5, background: it.tipoItem === "peca" ? "var(--warning-bg)" : "#dbeafe", color: it.tipoItem === "peca" ? "#92400e" : "#1d4ed8" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span>
+                              <strong style={{ color: "var(--text-subtle)" }}>{it.item}</strong>
+                              <span style={{ color: "var(--text-subtle)", fontSize: ".74rem" }}> &nbsp;{numOS(it.quantidade)}× {fmtBRL(it.valorUnitario)}</span>
                             </div>
                           ))
                         ) : (
-                          <strong style={{ color: "#334155" }}>{l.item || "—"}</strong>
+                          <strong style={{ color: "var(--text-subtle)" }}>{l.item || "—"}</strong>
                         )}
-                        {l.servicoFeito && <div style={{ fontSize: ".74rem", color: "#64748b", marginTop: 2 }}>{l.servicoFeito}</div>}
+                        {l.servicoFeito && <div style={{ fontSize: ".74rem", color: "var(--text-muted)", marginTop: 2 }}>{l.servicoFeito}</div>}
                       </td>
                       <td style={tdOS}>
                         <strong>{l.placa}</strong>
-                        {l.hodometro ? <div style={{ fontSize: ".68rem", color: "#94a3b8", marginTop: 2 }}>{Number(l.hodometro).toLocaleString("pt-BR")} km</div> : null}
+                        {l.hodometro ? <div style={{ fontSize: ".68rem", color: "var(--text-subtle)", marginTop: 2 }}>{Number(l.hodometro).toLocaleString("pt-BR")} km</div> : null}
                       </td>
                       <td style={tdOS}>{l.fornecedor || "—"}</td>
                       <td style={tdOS}>
-                        <strong style={{ color: "#1a3a5c" }}>{fmtBRL(l.valorTotal != null ? l.valorTotal : somaItens(l))}</strong>
+                        <strong style={{ color: "var(--text)" }}>{fmtBRL(l.valorTotal != null ? l.valorTotal : somaItens(l))}</strong>
                         {Array.isArray(l.itens) && l.itens.length > 0 && (
-                          <div style={{ fontSize: ".68rem", color: "#94a3b8", marginTop: 2 }}>{l.itens.length} {l.itens.length === 1 ? "item" : "itens"}</div>
+                          <div style={{ fontSize: ".68rem", color: "var(--text-subtle)", marginTop: 2 }}>{l.itens.length} {l.itens.length === 1 ? "item" : "itens"}</div>
                         )}
                         {Array.isArray(l.anexos) && l.anexos.length > 0 && (
-                          <div title={`${l.anexos.length} anexo(s)`} style={{ display:"inline-flex", alignItems:"center", gap:3, marginTop:4, fontSize:".68rem", fontWeight:700, color:"#4338ca", background:"#e0e7ff", padding:"2px 7px", borderRadius:10 }}>
+                          <div title={`${l.anexos.length} anexo(s)`} style={{ display:"inline-flex", alignItems:"center", gap:3, marginTop:4, fontSize:".68rem", fontWeight:700, color:"var(--info)", background:"var(--info-bg)", padding:"2px 7px", borderRadius:10 }}>
                             📎 {l.anexos.length}
                           </div>
                         )}
@@ -4321,7 +4378,7 @@ export default function Manutencao() {
                           {canDelete && (
                             <button
                               onClick={() => excluirLanc(l)}
-                              style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}
+                              style={{ background:"transparent", border:"none", color:"var(--danger)", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}
                             >
                               Excluir
                             </button>
@@ -4347,19 +4404,19 @@ export default function Manutencao() {
         <main style={s.main} className="pg-body">
           <div className="grid-auto-280 cadastros-grid">
             {[
-              { tipo:"tipo_lancamento", titulo:"Tipos de lançamento", singular:"tipo de lançamento", cor:"#4338ca", bg:"#e0e7ff" },
+              { tipo:"tipo_lancamento", titulo:"Tipos de lançamento", singular:"tipo de lançamento", cor:"var(--info)", bg:"var(--info-bg)" },
               { tipo:"servico",         titulo:"Serviços",            singular:"serviço",             cor:"#1d4ed8", bg:"#dbeafe" },
-              { tipo:"peca",            titulo:"Peças",               singular:"peça",                cor:"#92400e", bg:"#fef3c7" },
-              { tipo:"fornecedor",      titulo:"Fornecedores",        singular:"fornecedor",          cor:"#15803d", bg:"#dcfce7" },
+              { tipo:"peca",            titulo:"Peças",               singular:"peça",                cor:"#92400e", bg:"var(--warning-bg)" },
+              { tipo:"fornecedor",      titulo:"Fornecedores",        singular:"fornecedor",          cor:"var(--success)", bg:"var(--success-bg)" },
             ].map(sec => {
               const itens = itensCatalogo.filter(i => i.tipo === sec.tipo).sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
               return (
-                <div key={sec.tipo} className="cadastro-card" style={{ background:"#fff", borderRadius:12, boxShadow:"0 1px 3px rgba(0,0,0,0.06)", overflow:"hidden", display:"flex", flexDirection:"column", minWidth: 0 }}>
-                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0", display:"flex", alignItems:"center", gap:8 }}>
+                <div key={sec.tipo} className="cadastro-card" style={{ background:"var(--card-bg)", borderRadius:12, boxShadow:"0 1px 3px rgba(0,0,0,0.06)", overflow:"hidden", display:"flex", flexDirection:"column", minWidth: 0 }}>
+                  <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"center", gap:8 }}>
                     <span style={{ ...s.osBadge, background:sec.bg, color:sec.cor }}>{itens.length}</span>
-                    <h3 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>{sec.titulo}</h3>
+                    <h3 style={{ margin:0, color:"var(--text)", fontSize:".98rem" }}>{sec.titulo}</h3>
                   </div>
-                  <div style={{ padding:"0.85rem 1rem", display:"flex", flexDirection:"column", gap:8, borderBottom:"1px solid #f1f5f9" }}>
+                  <div style={{ padding:"0.85rem 1rem", display:"flex", flexDirection:"column", gap:8, borderBottom:"1px solid var(--surface-2)" }}>
                     <div className="cadastro-add-row">
                       <input
                         style={{ ...s.fieldInput }}
@@ -4382,9 +4439,9 @@ export default function Manutencao() {
                   </div>
                   <div style={{ padding:"0.4rem 0", maxHeight:380, overflowY:"auto" }}>
                     {itens.length === 0 ? (
-                      <p style={{ textAlign:"center", color:"#94a3b8", fontSize:".85rem", padding:"1rem" }}>Nenhum cadastrado</p>
+                      <p style={{ textAlign:"center", color:"var(--text-subtle)", fontSize:".85rem", padding:"1rem" }}>Nenhum cadastrado</p>
                     ) : itens.map(i => (
-                      <div key={i.id} className="cadastro-item" style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 1rem", borderBottom:"1px solid #f8fafc" }}>
+                      <div key={i.id} className="cadastro-item" style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 1rem", borderBottom:"1px solid var(--surface-2)" }}>
                         {editItemCat?.id === i.id ? (
                           <div style={{ flex:1, display:"flex", flexDirection:"column", gap:6 }}>
                             <input
@@ -4411,15 +4468,15 @@ export default function Manutencao() {
                         ) : (
                           <>
                             <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ color:"#334155", fontSize:".9rem", fontWeight: sec.tipo === "fornecedor" ? 600 : 400 }}>{i.nome}</div>
+                              <div style={{ color:"var(--text-subtle)", fontSize:".9rem", fontWeight: sec.tipo === "fornecedor" ? 600 : 400 }}>{i.nome}</div>
                               {sec.tipo === "fornecedor" && i.cnpj && (
-                                <div style={{ fontSize:".72rem", color:"#64748b", marginTop:2 }}>CNPJ: {i.cnpj}</div>
+                                <div style={{ fontSize:".72rem", color:"var(--text-muted)", marginTop:2 }}>CNPJ: {i.cnpj}</div>
                               )}
                             </div>
                             {canDelete && (
                               <>
                                 <button type="button" onClick={() => setEditItemCat({ id:i.id, nome:i.nome, cnpj: i.cnpj || "" })} style={{ background:"#dbeafe", border:"none", color:"#1d4ed8", cursor:"pointer", fontSize:".75rem", fontWeight:700, padding:"4px 10px", borderRadius:5 }}>Editar</button>
-                                <button type="button" onClick={() => excluirItemCat(i)} style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}>Excluir</button>
+                                <button type="button" onClick={() => excluirItemCat(i)} style={{ background:"transparent", border:"none", color:"var(--danger)", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}>Excluir</button>
                               </>
                             )}
                           </>
@@ -4432,21 +4489,21 @@ export default function Manutencao() {
             })}
           </div>
           {!canDelete && (
-            <p style={{ marginTop:12, fontSize:".78rem", color:"#64748b" }}>Você pode adicionar itens. Editar e excluir é restrito a administradores.</p>
+            <p style={{ marginTop:12, fontSize:".78rem", color:"var(--text-muted)" }}>Você pode adicionar itens. Editar e excluir é restrito a administradores.</p>
           )}
 
           {/* ── Tipos de Manutenção personalizados ─────────────────────── */}
-          <div style={{ marginTop: 28, background:"#fff", borderRadius:12, boxShadow:"0 1px 3px rgba(0,0,0,0.06)", overflow:"hidden" }}>
-            <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid #e2e8f0", display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ ...s.osBadge, background:"#fef3c7", color:"#92400e" }}>{tiposCustom.length}</span>
-              <h3 style={{ margin:0, color:"#1a3a5c", fontSize:".98rem" }}>Tipos de Manutenção personalizados</h3>
-              <span style={{ fontSize:".75rem", color:"#64748b", marginLeft:4 }}>
+          <div style={{ marginTop: 28, background:"var(--card-bg)", borderRadius:12, boxShadow:"0 1px 3px rgba(0,0,0,0.06)", overflow:"hidden" }}>
+            <div style={{ padding:"0.85rem 1rem", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ ...s.osBadge, background:"var(--warning-bg)", color:"#92400e" }}>{tiposCustom.length}</span>
+              <h3 style={{ margin:0, color:"var(--text)", fontSize:".98rem" }}>Tipos de Manutenção personalizados</h3>
+              <span style={{ fontSize:".75rem", color:"var(--text-muted)", marginLeft:4 }}>
                 — adicione itens que não estão no catálogo padrão (ex: mais serviços de Mecânica)
               </span>
             </div>
 
             {/* Form: novo tipo */}
-            <div style={{ padding:"14px 16px", borderBottom:"1px solid #f1f5f9", display:"grid", gap:10 }}>
+            <div style={{ padding:"14px 16px", borderBottom:"1px solid var(--surface-2)", display:"grid", gap:10 }}>
               <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
                 <label style={{ ...s.fieldLabel, flex:"2 1 240px", minWidth:200 }}>
                   Nome do tipo *
@@ -4482,7 +4539,7 @@ export default function Manutencao() {
                 <div style={{ fontSize:".82rem", fontWeight:600, color:"#374151", marginBottom:6 }}>Campos a preencher</div>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
                   {Object.entries(CAMPO_LABEL).map(([id, label]) => (
-                    <label key={id} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:".82rem", color:"#1e293b", padding:"4px 10px", border:"1px solid #cbd5e1", borderRadius:8, background: novoTipo.campos.includes(id) ? "#eff6ff" : "#fff", cursor:"pointer" }}>
+                    <label key={id} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:".82rem", color:"var(--text)", padding:"4px 10px", border:"1px solid var(--border-strong)", borderRadius:8, background: novoTipo.campos.includes(id) ? "#eff6ff" : "var(--card-bg)", cursor:"pointer" }}>
                       <input
                         type="checkbox"
                         checked={novoTipo.campos.includes(id)}
@@ -4508,11 +4565,11 @@ export default function Manutencao() {
             {/* Lista */}
             <div style={{ padding:"6px 0", maxHeight:420, overflowY:"auto" }}>
               {tiposCustom.length === 0 ? (
-                <p style={{ textAlign:"center", color:"#94a3b8", fontSize:".85rem", padding:"1rem" }}>
+                <p style={{ textAlign:"center", color:"var(--text-subtle)", fontSize:".85rem", padding:"1rem" }}>
                   Nenhum tipo personalizado cadastrado.
                 </p>
               ) : tiposCustom.map(t => (
-                <div key={t.id} style={{ padding:"10px 16px", borderBottom:"1px solid #f8fafc" }}>
+                <div key={t.id} style={{ padding:"10px 16px", borderBottom:"1px solid var(--surface-2)" }}>
                   {editTipo?.id === t.id ? (
                     <div style={{ display:"grid", gap:8 }}>
                       <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
@@ -4540,7 +4597,7 @@ export default function Manutencao() {
                       />
                       <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
                         {Object.entries(CAMPO_LABEL).map(([id, lbl]) => (
-                          <label key={id} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:".78rem", padding:"3px 8px", border:"1px solid #cbd5e1", borderRadius:6, background: (editTipo.campos||[]).includes(id) ? "#eff6ff" : "#fff", cursor:"pointer" }}>
+                          <label key={id} style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:".78rem", padding:"3px 8px", border:"1px solid var(--border-strong)", borderRadius:6, background: (editTipo.campos||[]).includes(id) ? "#eff6ff" : "var(--card-bg)", cursor:"pointer" }}>
                             <input
                               type="checkbox"
                               checked={(editTipo.campos||[]).includes(id)}
@@ -4561,11 +4618,11 @@ export default function Manutencao() {
                     <div style={{ display:"flex", alignItems:"flex-start", gap:10 }}>
                       <div style={{ flex:1 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                          <span style={{ fontWeight:700, color:"#1e293b", fontSize:".92rem" }}>{t.label}</span>
-                          <span style={{ ...s.osBadge, background: t.grupo === "Documentação" ? "#dbeafe" : "#dcfce7", color: t.grupo === "Documentação" ? "#1d4ed8" : "#15803d" }}>{t.grupo}</span>
+                          <span style={{ fontWeight:700, color:"var(--text)", fontSize:".92rem" }}>{t.label}</span>
+                          <span style={{ ...s.osBadge, background: t.grupo === "Documentação" ? "#dbeafe" : "var(--success-bg)", color: t.grupo === "Documentação" ? "#1d4ed8" : "var(--success)" }}>{t.grupo}</span>
                         </div>
-                        {t.desc && <div style={{ fontSize:".78rem", color:"#64748b", marginTop:2 }}>{t.desc}</div>}
-                        <div style={{ fontSize:".72rem", color:"#94a3b8", marginTop:4 }}>
+                        {t.desc && <div style={{ fontSize:".78rem", color:"var(--text-muted)", marginTop:2 }}>{t.desc}</div>}
+                        <div style={{ fontSize:".72rem", color:"var(--text-subtle)", marginTop:4 }}>
                           Campos: {(t.campos || []).map(c => CAMPO_LABEL[c] || c).join(" · ") || "—"}
                         </div>
                       </div>
@@ -4578,7 +4635,7 @@ export default function Manutencao() {
                           </button>
                           <button type="button"
                             onClick={() => excluirTipoCustom(t)}
-                            style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}>
+                            style={{ background:"transparent", border:"none", color:"var(--danger)", cursor:"pointer", fontSize:".75rem", fontWeight:600, padding:"4px 6px" }}>
                             Excluir
                           </button>
                         </div>
@@ -4595,17 +4652,17 @@ export default function Manutencao() {
       {/* ── MODAL: FOTOS DA OS (galeria + upload) ─────────────────────── */}
       {fotosOsModal && (
         <div onClick={() => { setFotosOsModal(null); setFotosErro(""); }} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.5)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:12, maxWidth:900, width:"100%", maxHeight:"90vh", overflow:"auto", padding:24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"var(--card-bg)", borderRadius:12, maxWidth:900, width:"100%", maxHeight:"90vh", overflow:"auto", padding:24 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
               <div>
-                <h2 style={{ margin:0, color:"#1a3a5c", fontSize:"1.1rem", display:"flex", alignItems:"center", gap:8 }}>
+                <h2 style={{ margin:0, color:"var(--text)", fontSize:"1.1rem", display:"flex", alignItems:"center", gap:8 }}>
                   <Camera size={20} /> Fotos da OS {fotosOsModal.numero}
                 </h2>
-                <p style={{ margin:"4px 0 0 0", fontSize:".8rem", color:"#64748b" }}>
+                <p style={{ margin:"4px 0 0 0", fontSize:".8rem", color:"var(--text-muted)" }}>
                   {fotosOsModal.placa} · {fotosOsModal.tipoServico} · {(fotosOsModal.fotos?.length || 0)} foto(s)
                 </p>
               </div>
-              <button onClick={() => { setFotosOsModal(null); setFotosErro(""); }} style={{ background:"none", border:"none", fontSize:"1.5rem", cursor:"pointer", color:"#64748b" }}>✕</button>
+              <button onClick={() => { setFotosOsModal(null); setFotosErro(""); }} style={{ background:"none", border:"none", fontSize:"1.5rem", cursor:"pointer", color:"var(--text-muted)" }}>✕</button>
             </div>
 
             <label style={{ display:"block", padding:"12px 16px", background:"#f0f9ff", border:"2px dashed #0ea5e9", borderRadius:8, textAlign:"center", cursor:"pointer", marginBottom:16 }}>
@@ -4621,35 +4678,35 @@ export default function Manutencao() {
               <span style={{ color:"#0369a1", fontWeight:600, fontSize:".9rem", display:"inline-flex", alignItems:"center", gap:6 }}>
                 {fotosUploading ? <><Circle size={12} className="anim-spin" /> Enviando...</> : <><Camera size={16} /> Adicionar fotos (câmera ou galeria)</>}
               </span>
-              <div style={{ fontSize:".72rem", color:"#64748b", marginTop:4 }}>
+              <div style={{ fontSize:".72rem", color:"var(--text-muted)", marginTop:4 }}>
                 Comprimido automaticamente pra 1600px · Firebase Storage grátis até 5GB
               </div>
             </label>
 
             {fotosErro && (
-              <div style={{ background:"#fee2e2", color:"#b91c1c", padding:"8px 12px", borderRadius:6, marginBottom:12, fontSize:".85rem" }}>
+              <div style={{ background:"var(--danger-bg)", color:"var(--danger)", padding:"8px 12px", borderRadius:6, marginBottom:12, fontSize:".85rem" }}>
                 {fotosErro}
               </div>
             )}
 
             {(fotosOsModal.fotos?.length || 0) === 0 ? (
-              <div style={{ textAlign:"center", padding:"40px 20px", color:"#94a3b8" }}>
+              <div style={{ textAlign:"center", padding:"40px 20px", color:"var(--text-subtle)" }}>
                 Nenhuma foto ainda. Registrar antes/durante/depois do serviço ajuda em garantia e auditoria.
               </div>
             ) : (
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:12 }}>
                 {fotosOsModal.fotos.map((foto, idx) => (
-                  <div key={foto.path} style={{ border:"1px solid #e2e8f0", borderRadius:8, overflow:"hidden", background:"#f8fafc", position:"relative" }}>
+                  <div key={foto.path} style={{ border:"1px solid var(--border)", borderRadius:8, overflow:"hidden", background:"var(--surface-2)", position:"relative" }}>
                     <a href={foto.url} target="_blank" rel="noopener noreferrer">
                       <img src={foto.url} alt={foto.nome} style={{ width:"100%", height:150, objectFit:"cover", display:"block" }} />
                     </a>
-                    <div style={{ padding:"6px 8px", fontSize:".72rem", color:"#64748b" }}>
+                    <div style={{ padding:"6px 8px", fontSize:".72rem", color:"var(--text-muted)" }}>
                       <div style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={foto.nome}>{foto.nome}</div>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:4 }}>
                         <span>{new Date(foto.criadoEm).toLocaleDateString("pt-BR")}</span>
                         <button
                           onClick={() => removerFotoOS(fotosOsModal, idx)}
-                          style={{ background:"none", border:"none", color:"#b91c1c", cursor:"pointer", padding:2, display:"inline-flex", alignItems:"center" }}
+                          style={{ background:"none", border:"none", color:"var(--danger)", cursor:"pointer", padding:2, display:"inline-flex", alignItems:"center" }}
                           title="Remover foto"
                         ><Trash2 size={14} /></button>
                       </div>
@@ -4715,7 +4772,7 @@ export default function Manutencao() {
                   const hojeIso = new Date().toISOString().slice(0, 10);
                   const vencido = form.venc && form.venc < hojeIso;
                   const preenchido = !!form.agendamento;
-                  const bg = vencido && !preenchido ? "#fef3c7" : preenchido ? "#dcfce7" : undefined;
+                  const bg = vencido && !preenchido ? "var(--warning-bg)" : preenchido ? "var(--success-bg)" : undefined;
                   const borda = vencido && !preenchido ? "#fbbf24" : preenchido ? "#86efac" : undefined;
                   return (
                     <label key={campo} style={{ ...s.fieldLabel, background: bg, border: borda ? `1px solid ${borda}` : undefined, padding: bg ? 10 : undefined, borderRadius: 6 }}>
@@ -4726,7 +4783,7 @@ export default function Manutencao() {
                         value={form[campo]}
                         onChange={e => setForm({ ...form, [campo]: e.target.value })}
                       />
-                      <span style={{ fontSize: ".72rem", color: vencido && !preenchido ? "#92400e" : preenchido ? "#166534" : "#64748b", marginTop: 4, display: "inline-flex", alignItems: "flex-start", gap: 5 }}>
+                      <span style={{ fontSize: ".72rem", color: vencido && !preenchido ? "#92400e" : preenchido ? "#166534" : "var(--text-muted)", marginTop: 4, display: "inline-flex", alignItems: "flex-start", gap: 5 }}>
                         {vencido && !preenchido && <AlertTriangle size={12} style={{ marginTop: 1, flexShrink: 0 }} />}
                         {preenchido && <CheckCircle2 size={12} style={{ marginTop: 1, flexShrink: 0 }} />}
                         <span>{vencido && !preenchido
@@ -4753,11 +4810,11 @@ export default function Manutencao() {
               })}
 
               {/* ── Anexos ───────────────────────────────────────────── */}
-              <div style={{ borderTop:"1px dashed #cbd5e1", paddingTop:14, marginTop:4 }}>
+              <div style={{ borderTop:"1px dashed var(--border-strong)", paddingTop:14, marginTop:4 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                  <span style={{ fontWeight:700, color:"#1a3a5c", fontSize:".9rem" }}>📎 Anexos</span>
-                  <span style={{ ...s.osBadge, background:"#e0e7ff", color:"#4338ca" }}>{anexos.length}</span>
-                  <span style={{ fontSize:".72rem", color:"#94a3b8", marginLeft:"auto" }}>
+                  <span style={{ fontWeight:700, color:"var(--text)", fontSize:".9rem" }}>📎 Anexos</span>
+                  <span style={{ ...s.osBadge, background:"var(--info-bg)", color:"var(--info)" }}>{anexos.length}</span>
+                  <span style={{ fontSize:".72rem", color:"var(--text-subtle)", marginLeft:"auto" }}>
                     PDF · JPG · PNG · WEBP — até 10 MB
                   </span>
                 </div>
@@ -4776,9 +4833,9 @@ export default function Manutencao() {
                   onDragOver={(e) => { e.preventDefault(); }}
                   onDrop={(e) => { e.preventDefault(); uploadAnexos(e.dataTransfer.files); }}
                   style={{
-                    border:"2px dashed #94a3b8", borderRadius:10, padding:"14px",
-                    textAlign:"center", color:"#475569", cursor: uploadando ? "wait" : "pointer",
-                    background: uploadando ? "#f1f5f9" : "#f8fafc", fontSize:".82rem",
+                    border:"2px dashed var(--border-strong)", borderRadius:10, padding:"14px",
+                    textAlign:"center", color:"var(--text-muted)", cursor: uploadando ? "wait" : "pointer",
+                    background: uploadando ? "var(--surface-2)" : "var(--surface-2)", fontSize:".82rem",
                     transition:"background .15s"
                   }}
                 >
@@ -4800,13 +4857,13 @@ export default function Manutencao() {
                     {anexos.map((a, i) => {
                       const isImg = (a.contentType || "").startsWith("image/");
                       return (
-                        <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 10px", border:"1px solid #e2e8f0", borderRadius:8, background:"#fff" }}>
+                        <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 10px", border:"1px solid var(--border)", borderRadius:8, background:"var(--card-bg)" }}>
                           {isImg ? (
                             <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ flexShrink:0 }}>
-                              <img src={a.url} alt={a.nome} style={{ width:42, height:42, objectFit:"cover", borderRadius:6, border:"1px solid #e2e8f0" }} />
+                              <img src={a.url} alt={a.nome} style={{ width:42, height:42, objectFit:"cover", borderRadius:6, border:"1px solid var(--border)" }} />
                             </a>
                           ) : (
-                            <div style={{ width:42, height:42, borderRadius:6, background:"#fee2e2", color:"#dc2626", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:".7rem", flexShrink:0 }}>
+                            <div style={{ width:42, height:42, borderRadius:6, background:"var(--danger-bg)", color:"var(--danger)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:".7rem", flexShrink:0 }}>
                               PDF
                             </div>
                           )}
@@ -4816,7 +4873,7 @@ export default function Manutencao() {
                               title={a.nome}>
                               {a.nome}
                             </a>
-                            <div style={{ fontSize:".7rem", color:"#94a3b8" }}>
+                            <div style={{ fontSize:".7rem", color:"var(--text-subtle)" }}>
                               {fmtTamanho(a.tamanho)}{a.criadoEm ? ` · ${fmtDate(a.criadoEm.slice(0,10))}` : ""}
                               {a.criadoPor ? ` · ${a.criadoPor}` : ""}
                             </div>
@@ -4828,16 +4885,16 @@ export default function Manutencao() {
                           </a>
                           <a href={a.url} download={a.nome}
                             title="Baixar pro seu PC"
-                            style={{ background:"#dcfce7", color:"#15803d", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4 }}>
+                            style={{ background:"var(--success-bg)", color:"var(--success)", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4 }}>
                             <FileDown size={12} /> Baixar
                           </a>
                           <button type="button" onClick={() => imprimirAnexo(a)}
                             title="Abrir e imprimir direto"
-                            style={{ background:"#e0e7ff", color:"#4338ca", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:4 }}>
+                            style={{ background:"var(--info-bg)", color:"var(--info)", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:4 }}>
                             <Printer size={12} /> Imprimir
                           </button>
                           <button type="button" onClick={() => removerAnexo(i)}
-                            style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", padding:2 }}
+                            style={{ background:"transparent", border:"none", color:"var(--danger)", cursor:"pointer", padding:2 }}
                             title="Excluir anexo">
                             <Trash2 size={14} />
                           </button>
@@ -4854,7 +4911,7 @@ export default function Manutencao() {
                 {modal.record && canDelete && (
                   <button
                     type="button"
-                    style={{ ...s.cancelBtn, color:"#dc2626", borderColor:"#fca5a5" }}
+                    style={{ ...s.cancelBtn, color:"var(--danger)", borderColor:"#fca5a5" }}
                     onClick={() => { excluir(modal.record.id, modal.tipo.label); fecharModal(); }}
                   >
                     Excluir
@@ -4914,7 +4971,7 @@ export default function Manutencao() {
                     }}
                     disabled={sascarLoading}
                     title="Atualizar KM pela SASCAR"
-                    style={{ padding: "0 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: sascarLoading ? "#f1f5f9" : "#ea580c", color: sascarLoading ? "#94a3b8" : "#fff", fontWeight: 700, fontSize: ".78rem", cursor: sascarLoading ? "not-allowed" : "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+                    style={{ padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", background: sascarLoading ? "var(--surface-2)" : "#ea580c", color: sascarLoading ? "var(--text-subtle)" : "#fff", fontWeight: 700, fontSize: ".78rem", cursor: sascarLoading ? "not-allowed" : "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
                   >
                     {sascarLoading ? "..." : "🛰"}
                   </button>
@@ -4965,7 +5022,7 @@ export default function Manutencao() {
                   onChange={e => setFormConclusao({ ...formConclusao, garantiaDias: e.target.value.replace(/\D/g, "") })}
                   placeholder="90"
                 />
-                <span style={{ fontSize: ".7rem", color: "#64748b", marginTop: 4 }}>
+                <span style={{ fontSize: ".7rem", color: "var(--text-muted)", marginTop: 4 }}>
                   Se abrir outra OS com mesma peça antes deste prazo, sistema alerta pra acionar garantia.
                 </span>
               </label>
@@ -4995,8 +5052,8 @@ export default function Manutencao() {
               </div>
 
               {/* BLOCO ITENS (serviços/peças com valor) */}
-              <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, marginTop: 4 }}>
-                <div style={{ fontSize: ".82rem", fontWeight: 700, color: "#1a3a5c", marginBottom: 8 }}>
+              <div style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 12, marginTop: 4 }}>
+                <div style={{ fontSize: ".82rem", fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>
                   Itens do serviço (peças e mão de obra)
                 </div>
 
@@ -5045,20 +5102,20 @@ export default function Manutencao() {
                     />
                   </label>
                   <button type="button" onClick={adicionarItemConclusao}
-                    style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: "#1a3a5c", color: "#fff", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: ".8rem" }}>
+                    style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: "var(--text)", color: "#fff", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: ".8rem" }}>
                     + Add
                   </button>
                 </div>
 
                 {/* Lista de itens já adicionados */}
                 {conclusaoItens.length === 0 ? (
-                  <p style={{ margin: 0, fontSize: ".75rem", color: "#94a3b8", textAlign: "center", padding: "10px 0" }}>
+                  <p style={{ margin: 0, fontSize: ".75rem", color: "var(--text-subtle)", textAlign: "center", padding: "10px 0" }}>
                     Nenhum item adicionado. Adicione peças e serviços com valores acima.
                   </p>
                 ) : (
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".82rem" }}>
                     <thead>
-                      <tr style={{ borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>
+                      <tr style={{ borderBottom: "1px solid var(--border)", color: "var(--text-muted)" }}>
                         <th style={{ padding: 5, textAlign: "left", fontSize: ".7rem", fontWeight: 700 }}>Tipo</th>
                         <th style={{ padding: 5, textAlign: "left", fontSize: ".7rem", fontWeight: 700 }}>Descrição</th>
                         <th style={{ padding: 5, textAlign: "right", fontSize: ".7rem", fontWeight: 700 }}>Qtd</th>
@@ -5069,21 +5126,21 @@ export default function Manutencao() {
                     </thead>
                     <tbody>
                       {conclusaoItens.map((it, i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          <td style={{ padding: 5, color: it.tipoItem === "peca" ? "#7c3aed" : "#0891b2", fontWeight: 600, textTransform: "capitalize" }}>{it.tipoItem}</td>
-                          <td style={{ padding: 5, color: "#0f172a" }}>{it.item}</td>
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: 5, color: it.tipoItem === "peca" ? "var(--chart-6)" : "var(--tech)", fontWeight: 600, textTransform: "capitalize" }}>{it.tipoItem}</td>
+                          <td style={{ padding: 5, color: "var(--text)" }}>{it.item}</td>
                           <td style={{ padding: 5, textAlign: "right" }}>{it.quantidade}</td>
                           <td style={{ padding: 5, textAlign: "right" }}>{fmtBRL(it.valorUnitario)}</td>
-                          <td style={{ padding: 5, textAlign: "right", fontWeight: 700, color: "#0f172a" }}>{fmtBRL(it.valorTotal)}</td>
+                          <td style={{ padding: 5, textAlign: "right", fontWeight: 700, color: "var(--text)" }}>{fmtBRL(it.valorTotal)}</td>
                           <td style={{ padding: 5 }}>
                             <button type="button" onClick={() => removerItemConclusao(i)}
-                              style={{ background: "transparent", border: "none", color: "#dc2626", cursor: "pointer", fontSize: ".95rem" }}>✕</button>
+                              style={{ background: "transparent", border: "none", color: "var(--danger)", cursor: "pointer", fontSize: ".95rem" }}>✕</button>
                           </td>
                         </tr>
                       ))}
                       <tr>
-                        <td colSpan={4} style={{ padding: 8, textAlign: "right", fontWeight: 700, color: "#1a3a5c" }}>Total geral:</td>
-                        <td style={{ padding: 8, textAlign: "right", fontWeight: 800, color: "#1a3a5c", fontSize: ".95rem" }}>
+                        <td colSpan={4} style={{ padding: 8, textAlign: "right", fontWeight: 700, color: "var(--text)" }}>Total geral:</td>
+                        <td style={{ padding: 8, textAlign: "right", fontWeight: 800, color: "var(--text)", fontSize: ".95rem" }}>
                           {fmtBRL(conclusaoItens.reduce((s, it) => s + it.valorTotal, 0))}
                         </td>
                         <td></td>
@@ -5094,7 +5151,7 @@ export default function Manutencao() {
               </div>
 
               {/* Assinatura digital do motorista — evita disputa ("recebi/não recebi") */}
-              <div style={{ borderTop: "1px dashed #cbd5e1", paddingTop: 14, marginTop: 8 }}>
+              <div style={{ borderTop: "1px dashed var(--border-strong)", paddingTop: 14, marginTop: 8 }}>
                 <PadAssinatura
                   label={`Assinatura do motorista (${concluindoOS?.motoristaNome || "—"})`}
                   value={formConclusao.assinaturaMotorista}
@@ -5206,7 +5263,7 @@ export default function Manutencao() {
                 />
               </label>
 
-              <p style={{ margin:0, fontSize:".72rem", color:"#64748b" }}>
+              <p style={{ margin:0, fontSize:".72rem", color:"var(--text-muted)" }}>
                 Trocar a placa transfere o bloqueio: libera o veículo anterior e bloqueia o novo.
               </p>
 
@@ -5325,8 +5382,8 @@ export default function Manutencao() {
               </label>
 
               {/* Itens */}
-              <div style={{ border:"1px solid #e2e8f0", borderRadius:10, padding:12 }}>
-                <div style={{ fontWeight:700, color:"#1a3a5c", fontSize:".9rem", marginBottom:8 }}>Serviços / Peças</div>
+              <div style={{ border:"1px solid var(--border)", borderRadius:10, padding:12 }}>
+                <div style={{ fontWeight:700, color:"var(--text)", fontSize:".9rem", marginBottom:8 }}>Serviços / Peças</div>
                 <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"flex-end" }}>
                   <label style={{ ...s.fieldLabel, minWidth:110 }}>
                     Tipo
@@ -5365,19 +5422,19 @@ export default function Manutencao() {
                   <div style={{ marginTop:10, overflowX:"auto" }}>
                     <table style={{ width:"100%", borderCollapse:"collapse", fontSize:".85rem" }}>
                       <thead>
-                        <tr style={{ background:"#f8fafc" }}>
+                        <tr style={{ background:"var(--surface-2)" }}>
                           <th style={thOS}>Tipo</th><th style={thOS}>Item</th><th style={thOS}>Qtd</th><th style={thOS}>Unit.</th><th style={thOS}>Total</th><th style={thOS}></th>
                         </tr>
                       </thead>
                       <tbody>
                         {lancItensEdit.map((it, idx) => (
-                          <tr key={idx} style={{ borderBottom:"1px solid #f1f5f9" }}>
-                            <td style={tdOS}><span style={{ ...s.osBadge, background: it.tipoItem === "peca" ? "#fef3c7" : "#dbeafe", color: it.tipoItem === "peca" ? "#92400e" : "#1d4ed8" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span></td>
+                          <tr key={idx} style={{ borderBottom:"1px solid var(--border)" }}>
+                            <td style={tdOS}><span style={{ ...s.osBadge, background: it.tipoItem === "peca" ? "var(--warning-bg)" : "#dbeafe", color: it.tipoItem === "peca" ? "#92400e" : "#1d4ed8" }}>{it.tipoItem === "peca" ? "Peça" : "Serviço"}</span></td>
                             <td style={tdOS}>{it.item}</td>
                             <td style={tdOS}>{it.quantidade}</td>
                             <td style={tdOS}>{fmtBRL(it.valorUnitario)}</td>
                             <td style={tdOS}><strong>{fmtBRL(it.valorTotal)}</strong></td>
-                            <td style={tdOS}><button type="button" onClick={() => removerItemEditLanc(idx)} title="Remover" style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", fontWeight:700, fontSize:".9rem" }}>✕</button></td>
+                            <td style={tdOS}><button type="button" onClick={() => removerItemEditLanc(idx)} title="Remover" style={{ background:"transparent", border:"none", color:"var(--danger)", cursor:"pointer", fontWeight:700, fontSize:".9rem" }}>✕</button></td>
                           </tr>
                         ))}
                       </tbody>
@@ -5386,7 +5443,7 @@ export default function Manutencao() {
                 )}
               </div>
 
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:8, fontSize:".95rem", color:"#1a3a5c", fontWeight:700, background:"#f0fdf4", border:"1px solid #86efac", borderRadius:8, padding:"8px 12px" }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:8, fontSize:".95rem", color:"var(--text)", fontWeight:700, background:"#f0fdf4", border:"1px solid #86efac", borderRadius:8, padding:"8px 12px" }}>
                 Total: <span style={{ fontSize:"1.1rem" }}>{fmtBRL(lancItensEdit.reduce((sum, it) => sum + (Number(it.valorTotal) || 0), 0))}</span>
               </div>
 
@@ -5400,11 +5457,11 @@ export default function Manutencao() {
               </label>
 
               {/* ── Anexos do Lançamento (NF, fotos, recibo) ─────── */}
-              <div style={{ borderTop:"1px dashed #cbd5e1", paddingTop:14, marginTop:4 }}>
+              <div style={{ borderTop:"1px dashed var(--border-strong)", paddingTop:14, marginTop:4 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                  <span style={{ fontWeight:700, color:"#1a3a5c", fontSize:".9rem" }}>📎 Anexos (NF, foto da peça, recibo)</span>
-                  <span style={{ ...s.osBadge, background:"#e0e7ff", color:"#4338ca" }}>{anexosLanc.length}</span>
-                  <span style={{ fontSize:".72rem", color:"#94a3b8", marginLeft:"auto" }}>
+                  <span style={{ fontWeight:700, color:"var(--text)", fontSize:".9rem" }}>📎 Anexos (NF, foto da peça, recibo)</span>
+                  <span style={{ ...s.osBadge, background:"var(--info-bg)", color:"var(--info)" }}>{anexosLanc.length}</span>
+                  <span style={{ fontSize:".72rem", color:"var(--text-subtle)", marginLeft:"auto" }}>
                     PDF · JPG · PNG · WEBP — até 10 MB
                   </span>
                 </div>
@@ -5423,9 +5480,9 @@ export default function Manutencao() {
                   onDragOver={(e) => { e.preventDefault(); }}
                   onDrop={(e) => { e.preventDefault(); uploadAnexosLanc(e.dataTransfer.files); }}
                   style={{
-                    border:"2px dashed #94a3b8", borderRadius:10, padding:"14px",
-                    textAlign:"center", color:"#475569", cursor: uploadandoLanc ? "wait" : "pointer",
-                    background: uploadandoLanc ? "#f1f5f9" : "#f8fafc", fontSize:".82rem",
+                    border:"2px dashed var(--border-strong)", borderRadius:10, padding:"14px",
+                    textAlign:"center", color:"var(--text-muted)", cursor: uploadandoLanc ? "wait" : "pointer",
+                    background: uploadandoLanc ? "var(--surface-2)" : "var(--surface-2)", fontSize:".82rem",
                   }}
                 >
                   {uploadandoLanc ? "Enviando arquivo(s)..." : "Clique para selecionar ou arraste arquivos aqui"}
@@ -5438,13 +5495,13 @@ export default function Manutencao() {
                     {anexosLanc.map((a, i) => {
                       const isImg = (a.contentType || "").startsWith("image/");
                       return (
-                        <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 10px", border:"1px solid #e2e8f0", borderRadius:8, background:"#fff" }}>
+                        <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 10px", border:"1px solid var(--border)", borderRadius:8, background:"var(--card-bg)" }}>
                           {isImg ? (
                             <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ flexShrink:0 }}>
-                              <img src={a.url} alt={a.nome} style={{ width:42, height:42, objectFit:"cover", borderRadius:6, border:"1px solid #e2e8f0" }} />
+                              <img src={a.url} alt={a.nome} style={{ width:42, height:42, objectFit:"cover", borderRadius:6, border:"1px solid var(--border)" }} />
                             </a>
                           ) : (
-                            <div style={{ width:42, height:42, borderRadius:6, background:"#fee2e2", color:"#dc2626", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:".7rem", flexShrink:0 }}>
+                            <div style={{ width:42, height:42, borderRadius:6, background:"var(--danger-bg)", color:"var(--danger)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:".7rem", flexShrink:0 }}>
                               PDF
                             </div>
                           )}
@@ -5454,7 +5511,7 @@ export default function Manutencao() {
                               title={a.nome}>
                               {a.nome}
                             </a>
-                            <div style={{ fontSize:".7rem", color:"#94a3b8" }}>
+                            <div style={{ fontSize:".7rem", color:"var(--text-subtle)" }}>
                               {fmtTamanho(a.tamanho)}{a.criadoEm ? ` · ${fmtDate(a.criadoEm.slice(0,10))}` : ""}
                               {a.criadoPor ? ` · ${a.criadoPor}` : ""}
                             </div>
@@ -5466,16 +5523,16 @@ export default function Manutencao() {
                           </a>
                           <a href={a.url} download={a.nome}
                             title="Baixar pro seu PC"
-                            style={{ background:"#dcfce7", color:"#15803d", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4 }}>
+                            style={{ background:"var(--success-bg)", color:"var(--success)", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, textDecoration:"none", display:"inline-flex", alignItems:"center", gap:4 }}>
                             <FileDown size={12} /> Baixar
                           </a>
                           <button type="button" onClick={() => imprimirAnexo(a)}
                             title="Abrir e imprimir direto"
-                            style={{ background:"#e0e7ff", color:"#4338ca", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:4 }}>
+                            style={{ background:"var(--info-bg)", color:"var(--info)", border:"none", borderRadius:5, padding:"5px 8px", fontSize:".75rem", fontWeight:700, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:4 }}>
                             <Printer size={12} /> Imprimir
                           </button>
                           <button type="button" onClick={() => removerAnexoLanc(i)}
-                            style={{ background:"transparent", border:"none", color:"#dc2626", cursor:"pointer", padding:2 }}
+                            style={{ background:"transparent", border:"none", color:"var(--danger)", cursor:"pointer", padding:2 }}
                             title="Excluir anexo">
                             <Trash2 size={14} />
                           </button>
@@ -5521,12 +5578,12 @@ export default function Manutencao() {
                   Marcar todos
                 </button>
                 <button type="button" onClick={restaurarPadraoDocs}
-                  style={{ padding:"6px 12px", background:"#f1f5f9", color:"#475569", border:"1px solid #cbd5e1", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".78rem" }}>
+                  style={{ padding:"6px 12px", background:"var(--surface-2)", color:"var(--text-muted)", border:"1px solid var(--border-strong)", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".78rem" }}>
                   Restaurar padrão da frota
                 </button>
                 <button type="button"
                   onClick={() => { fecharModalDocs(); setAba("cadastros"); }}
-                  style={{ padding:"6px 12px", background:"#fef3c7", color:"#92400e", border:"none", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".78rem", marginLeft:"auto" }}
+                  style={{ padding:"6px 12px", background:"var(--warning-bg)", color:"#92400e", border:"none", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".78rem", marginLeft:"auto" }}
                   title="Vai pra aba Cadastros pra criar um tipo novo">
                   + Cadastrar novo tipo
                 </button>
@@ -5540,7 +5597,7 @@ export default function Manutencao() {
               {["Documentação","Mecânica"].map(grupo => {
                 const tiposG = TIPOS_TODOS.filter(t => t.grupo === grupo);
                 if (tiposG.length === 0) return null;
-                const gc = GRUPO_COLOR[grupo] || { bg:"#f1f5f9", color:"#475569", border:"#cbd5e1" };
+                const gc = GRUPO_COLOR[grupo] || { bg:"var(--surface-2)", color:"var(--text-muted)", border:"var(--border-strong)" };
                 return (
                   <div key={grupo}>
                     <div style={{ ...s.grupoHeader, background: gc.bg, color: gc.color, borderColor: gc.border, marginBottom: 8 }}>
@@ -5559,10 +5616,10 @@ export default function Manutencao() {
                               onChange={() => toggleDocAplicavel(t.id)}
                               style={{ marginTop: 3 }}
                             />
-                            <span style={{ fontSize:".82rem", color:"#1e293b", lineHeight:1.3 }}>
+                            <span style={{ fontSize:".82rem", color:"var(--text)", lineHeight:1.3 }}>
                               <strong>{t.label}</strong>
                               <br />
-                              <span style={{ color:"#64748b", fontSize:".72rem" }}>{t.desc}</span>
+                              <span style={{ color:"var(--text-muted)", fontSize:".72rem" }}>{t.desc}</span>
                             </span>
                           </label>
                         );
@@ -5574,7 +5631,7 @@ export default function Manutencao() {
             </div>
 
             <div style={{ ...s.formFooter, padding:"16px 24px 20px" }}>
-              <div style={{ flex:1, fontSize:".78rem", color:"#64748b" }}>
+              <div style={{ flex:1, fontSize:".78rem", color:"var(--text-muted)" }}>
                 {modalDocs.restaurar
                   ? "Padrão da frota: documentos definidos pelas regras de tipo de veículo."
                   : `${modalDocs.selecionados.size} de ${TIPOS_TODOS.filter(t => t.grupo !== "Motorista").length} marcados`}
@@ -5593,83 +5650,75 @@ export default function Manutencao() {
 
 // ── Estilos ────────────────────────────────────────────────────────────────
 const s = {
-  wrap:        { minHeight:"100vh", background:"#f5f7fb" },
+  wrap:        { minHeight:"100vh", background:"var(--bg)" },
 
   // header
-  header:      { background:"linear-gradient(105deg, #1a3a5c, #234775)", color:"#fff", borderBottom:"4px solid transparent", borderImage:"linear-gradient(90deg,#3d6b47,#6aaa5e,#b5d947,#f5c318,#f0a500) 1", padding:"14px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 4px 14px rgba(15,23,42,.18)" },
+  header:      { background:"var(--header-bg)", color:"#fff", borderBottom:"1px solid var(--header-border)", padding:"14px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 4px 14px rgba(15,23,42,.18)", position:"sticky", top:0, zIndex:100 },
   headerTitle: { color:"#fff", fontSize:"1.15rem", fontWeight:700, margin:0, lineHeight:1.1 },
-  alertaBadge: { background:"#dc2626", color:"#fff", borderRadius:20, fontSize:".7rem", fontWeight:700, padding:"3px 10px", display:"inline-flex", alignItems:"center", gap:5 },
-  backBtn:     { padding:"8px 14px", background:"#f5c318", border:"none", borderRadius:8, fontSize:".82rem", cursor:"pointer", color:"#1a3a5c", fontWeight:700, whiteSpace:"nowrap", boxShadow:"0 1px 3px rgba(0,0,0,.1)" },
+  alertaBadge: { background:"var(--danger)", color:"#fff", borderRadius:20, fontSize:".7rem", fontWeight:700, padding:"3px 10px", display:"inline-flex", alignItems:"center", gap:5 },
+  backBtn:     { padding:"8px 14px", background:"var(--card-bg)", border:"none", borderRadius:8, fontSize:".82rem", cursor:"pointer", color:"var(--accent)", fontWeight:700, whiteSpace:"nowrap", boxShadow:"0 1px 3px rgba(0,0,0,.1)" },
 
-  // tabs
-  tabBar:      { display:"flex", gap:0, background:"#fff", borderBottom:"1px solid #e2e8f0", padding:"0 24px", boxShadow:"0 1px 3px rgba(15,23,42,.03)", overflowX:"auto" },
-  tab:         { padding:"14px 18px", border:"none", borderBottom:"3px solid transparent", background:"none", cursor:"pointer", fontSize:".86rem", fontWeight:700, color:"#64748b", display:"flex", alignItems:"center", gap:8, fontFamily:"inherit", whiteSpace:"nowrap", transition:"color .15s, border-color .15s" },
-  tabAtivo:    { color:"#1a3a5c", borderBottomColor:"#1a3a5c" },
-  tabBadge:    { background:"#dc2626", color:"#fff", borderRadius:20, fontSize:".64rem", fontWeight:800, padding:"2px 7px", minWidth:18, textAlign:"center", lineHeight:1.2 },
-  // Navbar reformada
-  navGroups:      { display:"flex", gap:8, background:"#fff", borderBottom:"1px solid #e2e8f0", padding:"10px 20px", boxShadow:"0 1px 3px rgba(15,23,42,.03)", overflowX:"auto", flexWrap:"nowrap", alignItems:"flex-end" },
-  navGroup:       { display:"flex", flexDirection:"column", gap:6, paddingRight:12, borderRight:"1px solid #e2e8f0", minWidth:"max-content" },
-  navGroupLabel:  { fontSize:".62rem", textTransform:"uppercase", letterSpacing:"0.06em", fontWeight:700, color:"#94a3b8", padding:"0 8px", marginBottom:2 },
-  navTab:         { padding:"8px 12px", border:"1px solid transparent", borderRadius:10, background:"transparent", cursor:"pointer", fontSize:".82rem", fontWeight:600, color:"#475569", display:"inline-flex", alignItems:"center", gap:8, fontFamily:"inherit", whiteSpace:"nowrap", transition:"all .15s" },
-  navTabActive:   { background:"#1a3a5c", color:"#fff", borderColor:"#1a3a5c", boxShadow:"0 4px 12px rgba(26,58,92,.25)" },
-  navTabBadge:    { color:"#fff", borderRadius:20, fontSize:".62rem", fontWeight:800, padding:"1px 6px", minWidth:16, textAlign:"center", lineHeight:1.3 },
+  // Navbar lateral esquerda (tema + sticky/fixo)
+  navGroups:      { display:"flex", flexDirection:"column", gap:0, background:"var(--card-bg)", borderRight:"1px solid var(--border)", padding:"12px 10px 24px", boxShadow:"0 1px 3px rgba(15,23,42,.04)", position:"fixed", left:0, top:64, bottom:0, width:250, overflowY:"auto", zIndex:200 },
+  sidebarTitle:   { fontWeight:800, fontSize:".9rem", color:"var(--text)", padding:"6px 10px 12px", borderBottom:"2px solid var(--accent)", marginBottom:4, letterSpacing:".02em" },
+  navGroup:       { display:"flex", flexDirection:"column", gap:2, padding:"12px 0", borderBottom:"1px solid var(--border)" },
+  navGroupLabel:  { fontSize:".68rem", textTransform:"uppercase", letterSpacing:".09em", fontWeight:800, color:"var(--text-subtle)", padding:"2px 12px 6px" },
+
+  // KPIs — resumo clicável (service desk)
+  kpisRow:        { display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:14, padding:"20px 20px 6px", marginLeft:262 },
+  kpi:            { position:"relative", background:"var(--card-bg)", border:"1px solid var(--border)", borderRadius:14, padding:"16px 18px", textAlign:"left", cursor:"pointer", fontFamily:"inherit", display:"flex", flexDirection:"column", gap:12, boxShadow:"0 1px 3px rgba(15,23,42,.04)", transition:"transform .15s, box-shadow .15s, border-color .15s", overflow:"hidden" },
+  kpiTop:         { display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 },
+  kpiIco:         { width:34, height:34, borderRadius:10, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
+  kpiLabel:       { fontSize:".74rem", fontWeight:600, color:"var(--text-muted)", letterSpacing:".02em" },
+  kpiValor:       { fontSize:"1.6rem", fontWeight:800, color:"var(--text)", lineHeight:1 },
 
   // seletor veículo
-  main:        { padding:"24px", maxWidth:1300, margin:"0 auto" },
+  main:        { padding:"24px", marginLeft:262, maxWidth:1200 },
   veiculoRow:  { display:"flex", alignItems:"center", gap:14, marginBottom:28, flexWrap:"wrap" },
   veiculoLabel:{ fontWeight:700, fontSize:".85rem", color:"var(--text)", whiteSpace:"nowrap" },
-  veiculoSelect:{ padding:"10px 14px", border:"1px solid #e2e8f0", borderRadius:10, fontSize:".9rem", fontWeight:700, background:"#fff", color:"#1e293b", cursor:"pointer", minWidth:200, boxShadow:"0 1px 3px rgba(15,23,42,.04)", fontFamily:"inherit" },
+  veiculoSelect:{ padding:"10px 14px", border:"1px solid var(--border)", borderRadius:10, fontSize:".9rem", fontWeight:700, background:"var(--card-bg)", color:"var(--text)", cursor:"pointer", minWidth:200, boxShadow:"0 1px 3px rgba(15,23,42,.04)", fontFamily:"inherit" },
   resumoPills: { display:"flex", gap:6, flexWrap:"wrap" },
   rPill:       { padding:"3px 10px", borderRadius:20, fontSize:".72rem", fontWeight:700 },
 
   // grupo / tipo grid
-  grupoSection:{ marginBottom:28 },
   grupoHeader: { display:"inline-block", padding:"4px 16px", borderRadius:20, fontSize:".78rem", fontWeight:700, marginBottom:12, border:"1px solid" },
-  tipoGrid:    { display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(270px, 1fr))", gap:14 },
-  tipoCard:    { background:"#fff", border:"1px solid", borderRadius:14, padding:"16px 18px", cursor:"pointer", display:"flex", flexDirection:"column", gap:6, transition:"transform .2s ease, box-shadow .2s ease", boxShadow:"0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" },
-  tipoCardTop: { display:"flex", justifyContent:"space-between", alignItems:"center", gap:8 },
-  tipoNome:    { fontWeight:700, fontSize:".92rem", color:"var(--text)" },
   sPill:       { padding:"2px 9px", borderRadius:20, fontSize:".68rem", fontWeight:700, whiteSpace:"nowrap" },
-  tipoDesc:    { fontSize:".75rem", color:"var(--text-muted)", lineHeight:1.4 },
-  tipoMeta:    { display:"flex", flexDirection:"column", gap:3, marginTop:4, fontSize:".75rem", color:"var(--text-muted)" },
-  tipoVazio:   { fontSize:".72rem", color:"#94a3b8", fontStyle:"italic", marginTop:2 },
 
   // split view (aba Por Veículo)
-  fieldLbl:    { fontSize:".72rem", color:"#64748b", fontWeight:700, textTransform:"uppercase", marginBottom:4, letterSpacing:".03em" },
-  fieldVal:    { fontSize:".92rem", color:"#1a3a5c" },
+  fieldLbl:    { fontSize:".72rem", color:"var(--text-muted)", fontWeight:700, textTransform:"uppercase", marginBottom:4, letterSpacing:".03em" },
+  fieldVal:    { fontSize:".92rem", color:"var(--text)" },
 
   // toolbar alertas
   toolbar:     { display:"flex", alignItems:"center", gap:12, padding:"14px 24px", background:"transparent", flexWrap:"wrap" },
-  inputBusca:  { flex:1, minWidth:160, padding:"10px 14px", border:"1px solid #e2e8f0", borderRadius:10, fontSize:".9rem", outline:"none", background:"#fff", color:"#1e293b", boxShadow:"0 1px 3px rgba(15,23,42,.04)", fontFamily:"inherit" },
-  filtros:     { display:"flex", gap:4, padding:4, background:"#fff", border:"1px solid #e2e8f0", borderRadius:12, boxShadow:"0 1px 3px rgba(15,23,42,.04)" },
-  filtroBtn:   { padding:"6px 14px", border:"none", borderRadius:8, background:"transparent", cursor:"pointer", fontSize:".8rem", color:"#64748b", fontWeight:700, fontFamily:"inherit" },
-  filtroBtnAtivo:{ background:"#1a3a5c", color:"#fff" },
+  inputBusca:  { flex:1, minWidth:160, padding:"10px 14px", border:"1px solid var(--border)", borderRadius:10, fontSize:".9rem", outline:"none", background:"var(--card-bg)", color:"var(--text)", boxShadow:"0 1px 3px rgba(15,23,42,.04)", fontFamily:"inherit" },
+  filtros:     { display:"flex", gap:4, padding:4, background:"var(--card-bg)", border:"1px solid var(--border)", borderRadius:12, boxShadow:"0 1px 3px rgba(15,23,42,.04)" },
+  filtroBtn:   { padding:"6px 14px", border:"none", borderRadius:8, background:"transparent", cursor:"pointer", fontSize:".8rem", color:"var(--text-muted)", fontWeight:700, fontFamily:"inherit" },
+  filtroBtnAtivo:{ background:"var(--accent)", color:"#fff" },
 
   // tabela
   info:        { color:"var(--text-muted)", textAlign:"center", marginTop:40 },
-  tableWrap:   { overflowX:"auto", background:"#fff", borderRadius:14, border:"1px solid #e2e8f0", boxShadow:"0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" },
+  tableWrap:   { overflowX:"auto", background:"var(--card-bg)", borderRadius:14, border:"1px solid var(--border)", boxShadow:"0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" },
   table:       { width:"100%", borderCollapse:"collapse", minWidth:780 },
-  theadRow:    { background:"#1a3a5c" },
+  theadRow:    { background:"var(--accent)" },
   th:          { padding:"13px 16px", textAlign:"left", color:"#fff", fontSize:".78rem", fontWeight:700, whiteSpace:"nowrap", textTransform:"uppercase", letterSpacing:".04em" },
-  tr:          { borderBottom:"1px solid #f1f5f9" },
-  td:          { padding:"12px 16px", fontSize:".88rem", color:"#1e293b", verticalAlign:"middle" },
+  tr:          { borderBottom:"1px solid var(--border)" },
+  td:          { padding:"12px 16px", fontSize:".88rem", color:"var(--text)", verticalAlign:"middle" },
   statusBadge: { padding:"2px 10px", borderRadius:20, fontSize:".72rem", fontWeight:700 },
   osBadge:     { display:"inline-block", padding:"2px 9px", borderRadius:20, fontSize:".7rem", fontWeight:700, whiteSpace:"nowrap" },
-  acoes:       { display:"flex", gap:6 },
-  editBtn:     { padding:"4px 12px", background:"#dbeafe", color:"#1d4ed8", border:"none", borderRadius:5, cursor:"pointer", fontWeight:600, fontSize:".78rem" },
+  editBtn:     { padding:"4px 12px", background:"var(--accent-soft)", color:"var(--accent)", border:"none", borderRadius:5, cursor:"pointer", fontWeight:700, fontSize:".78rem" },
 
   // modal
   overlay:     { position:"fixed", inset:0, background:"rgba(0,0,0,.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, padding:16 },
   modal:       { background:"var(--card-bg)", borderRadius:14, width:"100%", maxWidth:520, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,.25)" },
   modalHeader: { display:"flex", justifyContent:"space-between", alignItems:"flex-start", padding:"20px 24px 0", gap:12 },
-  modalTitulo: { fontSize:"1.05rem", fontWeight:700, color:"#1a3a5c", marginBottom:3 },
+  modalTitulo: { fontSize:"1.05rem", fontWeight:700, color:"var(--text)", marginBottom:3 },
   modalSubtitulo:{ fontSize:".78rem", color:"var(--text-muted)", lineHeight:1.4 },
   closeBtn:    { background:"none", border:"none", fontSize:"1.1rem", cursor:"pointer", color:"var(--text-muted)", padding:"0 4px" },
   form:        { padding:24, display:"flex", flexDirection:"column", gap:14 },
-  fieldLabel:  { display:"flex", flexDirection:"column", gap:5, fontSize:".85rem", fontWeight:600, color:"#374151" },
-  fieldInput:  { padding:"8px 10px", border:"1px solid #cbd5e1", borderRadius:6, fontSize:".9rem", outline:"none", fontFamily:"inherit", background:"var(--bg)", color:"var(--text)" },
-  erroMsg:     { color:"#dc2626", fontSize:".82rem", background:"#fee2e2", padding:"6px 10px", borderRadius:6 },
+  fieldLabel:  { display:"flex", flexDirection:"column", gap:5, fontSize:".85rem", fontWeight:600, color:"var(--text)" },
+  fieldInput:  { padding:"8px 10px", border:"1px solid var(--border)", borderRadius:6, fontSize:".9rem", outline:"none", fontFamily:"inherit", background:"var(--bg)", color:"var(--text)" },
+  erroMsg:     { color:"var(--danger)", fontSize:".82rem", background:"var(--danger-bg)", padding:"6px 10px", borderRadius:6 },
   formFooter:  { display:"flex", gap:10, alignItems:"center", paddingTop:4 },
-  cancelBtn:   { padding:"8px 20px", background:"#f1f5f9", border:"1px solid #cbd5e1", borderRadius:6, cursor:"pointer", fontWeight:600, fontSize:".85rem", color:"#475569" },
-  saveBtn:     { padding:"8px 24px", background:"#f5c318", border:"none", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".85rem", color:"#1a3a5c" },
+  cancelBtn:   { padding:"8px 20px", background:"var(--surface-2)", border:"1px solid var(--border)", borderRadius:6, cursor:"pointer", fontWeight:600, fontSize:".85rem", color:"var(--text-muted)" },
+  saveBtn:     { padding:"8px 24px", background:"var(--accent)", border:"none", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:".85rem", color:"#fff" },
 };

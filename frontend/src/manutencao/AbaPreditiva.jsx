@@ -110,19 +110,19 @@ export default function AbaPreditiva({ veiculos = [], ordensServico = [], odomet
   const S = {
     wrap: { padding: 20, display: "flex", flexDirection: "column", gap: 16 },
     kpiRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 },
-    kpiCard: (cor, bg) => ({ background: bg, borderRadius: 10, padding: "12px 14px", border: `1px solid ${cor}22` }),
+    kpiCard: (cor, bg) => ({ background: bg, borderRadius: 10, padding: "12px 14px", border: `1px solid ${cor}` }),
     kpiN: (cor) => ({ fontSize: "1.5rem", fontWeight: 800, color: cor }),
     kpiL: (cor) => ({ fontSize: ".72rem", fontWeight: 700, color: cor, textTransform: "uppercase" }),
-    input: { padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: ".88rem" },
-    table: { width: "100%", borderCollapse: "collapse", background: "#fff", fontSize: ".88rem", borderRadius: 10, overflow: "hidden" },
-    th: { padding: "9px 12px", fontSize: ".72rem", fontWeight: 600, color: "#64748b", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", textAlign: "left" },
-    td: { padding: "10px 12px", fontSize: ".85rem", borderBottom: "1px solid #f1f5f9" },
+    input: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface-2)", fontSize: ".88rem" },
+    table: { width: "100%", borderCollapse: "collapse", background: "var(--card-bg)", fontSize: ".88rem", borderRadius: 10, overflow: "hidden" },
+    th: { padding: "9px 12px", fontSize: ".72rem", fontWeight: 600, color: "var(--text-muted)", background: "var(--surface-2)", borderBottom: "1px solid var(--border)", textAlign: "left" },
+    td: { padding: "10px 12px", fontSize: ".85rem", borderBottom: "1px solid var(--surface-2)" },
   };
 
   return (
     <div style={S.wrap}>
       <div style={{ background: "#f3e8ff", border: "1px solid #d8b4fe", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 12 }}>
-        <Brain size={20} color="#7c3aed" style={{ flexShrink: 0, marginTop: 2 }} />
+        <Brain size={20} color="var(--chart-6)" style={{ flexShrink: 0, marginTop: 2 }} />
         <div style={{ fontSize: ".85rem", color: "#5b21b6" }}>
           <strong>Previsão baseada em histórico:</strong> pra cada tipo de manutenção com 2+ ocorrências,
           calcula o intervalo médio (dias e KM) entre trocas passadas e prevê a próxima.
@@ -131,19 +131,19 @@ export default function AbaPreditiva({ veiculos = [], ordensServico = [], odomet
       </div>
 
       <div style={S.kpiRow}>
-        <div style={S.kpiCard("#0f172a", "#f8fafc")}><div style={S.kpiN("#0f172a")}>{kpi.total}</div><div style={S.kpiL("#0f172a")}>Previsões geradas</div></div>
-        <div style={S.kpiCard("#b91c1c", "#fee2e2")}><div style={S.kpiN("#b91c1c")}>{kpi.vencidas}</div><div style={S.kpiL("#b91c1c")}>Já venceram</div></div>
-        <div style={S.kpiCard("#b45309", "#fef3c7")}><div style={S.kpiN("#b45309")}>{kpi.proxSemana}</div><div style={S.kpiL("#b45309")}>Próx. 7 dias</div></div>
-        <div style={S.kpiCard("#4338ca", "#e0e7ff")}><div style={S.kpiN("#4338ca")}>{fmtBRL(kpi.gastoPrevisto30d)}</div><div style={S.kpiL("#4338ca")}>Gasto previsto 30d</div></div>
+        <div style={S.kpiCard("var(--text)", "var(--surface-2)")}><div style={S.kpiN("var(--text)")}>{kpi.total}</div><div style={S.kpiL("var(--text)")}>Previsões geradas</div></div>
+        <div style={S.kpiCard("var(--danger)", "var(--danger-bg)")}><div style={S.kpiN("var(--danger)")}>{kpi.vencidas}</div><div style={S.kpiL("var(--danger)")}>Já venceram</div></div>
+        <div style={S.kpiCard("var(--warning)", "var(--warning-bg)")}><div style={S.kpiN("var(--warning)")}>{kpi.proxSemana}</div><div style={S.kpiL("var(--warning)")}>Próx. 7 dias</div></div>
+        <div style={S.kpiCard("var(--info)", "var(--info-bg)")}><div style={S.kpiN("var(--info)")}>{fmtBRL(kpi.gastoPrevisto30d)}</div><div style={S.kpiL("var(--info)")}>Gasto previsto 30d</div></div>
       </div>
 
-      <div style={{ display: "flex", gap: 10, alignItems: "center", background: "#fff", padding: 10, borderRadius: 10, border: "1px solid #e2e8f0" }}>
-        <Truck size={16} color="#64748b" />
+      <div style={{ display: "flex", gap: 10, alignItems: "center", background: "var(--card-bg)", padding: 10, borderRadius: 10, border: "1px solid var(--border)" }}>
+        <Truck size={16} color="var(--text-muted)" />
         <select style={S.input} value={placaFiltro} onChange={e => setPlacaFiltro(e.target.value)}>
           <option value="">Todas as placas</option>
           {veiculos.map(v => <option key={v.id} value={v.placa}>{v.placa}</option>)}
         </select>
-        <span style={{ fontSize: ".78rem", color: "#64748b", marginLeft: "auto" }}>{previsoes.length} previsão(ões)</span>
+        <span style={{ fontSize: ".78rem", color: "var(--text-muted)", marginLeft: "auto" }}>{previsoes.length} previsão(ões)</span>
       </div>
 
       <div style={{ overflowX: "auto" }}>
@@ -163,21 +163,21 @@ export default function AbaPreditiva({ veiculos = [], ordensServico = [], odomet
           </thead>
           <tbody>
             {previsoes.length === 0 ? (
-              <tr><td colSpan={9} style={{ ...S.td, textAlign: "center", color: "#94a3b8", padding: 30 }}>
+              <tr><td colSpan={9} style={{ ...S.td, textAlign: "center", color: "var(--text-subtle)", padding: 30 }}>
                 Nada previsível ainda. Precisa 2+ OS finalizadas do mesmo tipo na mesma placa.
               </td></tr>
             ) : previsoes.map((p, i) => {
               const vencida = p.diasAte < 0;
               const proxima = p.diasAte >= 0 && p.diasAte <= 7;
-              const cor = vencida ? "#b91c1c" : proxima ? "#b45309" : "#15803d";
-              const bg = vencida ? "#fee2e2" : proxima ? "#fef3c7" : "#dcfce7";
-              const confBg = { alta: "#dcfce7", "média": "#fef3c7", baixa: "#fee2e2" }[p.confianca];
-              const confColor = { alta: "#15803d", "média": "#b45309", baixa: "#b91c1c" }[p.confianca];
+              const cor = vencida ? "var(--danger)" : proxima ? "var(--warning)" : "var(--success)";
+              const bg = vencida ? "var(--danger-bg)" : proxima ? "var(--warning-bg)" : "var(--success-bg)";
+              const confBg = { alta: "var(--success-bg)", "média": "var(--warning-bg)", baixa: "var(--danger-bg)" }[p.confianca];
+              const confColor = { alta: "var(--success)", "média": "var(--warning)", baixa: "var(--danger)" }[p.confianca];
               return (
                 <tr key={i}>
                   <td style={{ ...S.td, fontWeight: 700 }}>{p.placa}</td>
                   <td style={S.td}>{p.tipo}</td>
-                  <td style={S.td}>{fmtDataBR(p.ultima)} <span style={{ color: "#94a3b8", fontSize: ".72rem" }}>({p.ocorrencias}×)</span></td>
+                  <td style={S.td}>{fmtDataBR(p.ultima)} <span style={{ color: "var(--text-subtle)", fontSize: ".72rem" }}>({p.ocorrencias}×)</span></td>
                   <td style={S.td}>{p.mediaGapDias}d</td>
                   <td style={S.td}>{p.mediaGapKm ? `${p.mediaGapKm.toLocaleString("pt-BR")} km` : "—"}</td>
                   <td style={S.td}>{fmtDataBR(p.proxima)}</td>
@@ -187,7 +187,7 @@ export default function AbaPreditiva({ veiculos = [], ordensServico = [], odomet
                       {vencida ? `${-p.diasAte}d vencido` : `${p.diasAte}d`}
                     </span>
                     {p.kmAte != null && (
-                      <div style={{ fontSize: ".7rem", color: "#64748b", marginTop: 2 }}>
+                      <div style={{ fontSize: ".7rem", color: "var(--text-muted)", marginTop: 2 }}>
                         ou {p.kmAte > 0 ? `${p.kmAte.toLocaleString("pt-BR")} km` : "KM já passou"}
                       </div>
                     )}
