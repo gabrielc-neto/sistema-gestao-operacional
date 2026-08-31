@@ -863,6 +863,7 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
     }
     const dadosPizzaCategoria = Object.entries(porCategoria)
       .map(([name, value]) => ({ name, value }))
+      .filter(d => d.value > 0)
       .sort((a, b) => b.value - a.value);
 
     // Evolução mensal do ano selecionado (barras)
@@ -1014,16 +1015,22 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
                 <Pie data={dadosPizzaCategoria} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} labelLine={false}
                   label={(props) => {
                     const { cx, cy, midAngle, outerRadius, percent } = props;
-                    if (percent < 0.05) return null;
+                    if (!percent || percent <= 0) return null;
                     const RADIAN = Math.PI / 180;
-                    const r = outerRadius * 0.62;
+                    // Fatia < 8% joga label pra fora (evita empilhar em fatia estreita)
+                    const foraFatia = percent < 0.08;
+                    const r = foraFatia ? outerRadius + 14 : outerRadius * 0.62;
                     const x = cx + r * Math.cos(-midAngle * RADIAN);
                     const y = cy + r * Math.sin(-midAngle * RADIAN);
+                    const pct = percent * 100;
+                    const txt = pct < 1 ? `${pct.toFixed(1)}%` : `${pct.toFixed(0)}%`;
                     return (
-                      <text x={x} y={y} fill="#fff" stroke="#000" strokeWidth={3}
+                      <text x={x} y={y}
+                        fill={foraFatia ? "#111827" : "#fff"}
+                        stroke={foraFatia ? "none" : "#000"} strokeWidth={3}
                         paintOrder="stroke" fontWeight={700} fontSize={13}
                         textAnchor="middle" dominantBaseline="central">
-                        {`${(percent * 100).toFixed(0)}%`}
+                        {txt}
                       </text>
                     );
                   }}>
