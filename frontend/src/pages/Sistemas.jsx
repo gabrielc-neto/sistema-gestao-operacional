@@ -276,7 +276,7 @@ export default function Sistemas() {
             Trocar sistema
           </button>
           <div className="login-logo-top"><LogoPontual height={40} /></div>
-          <h1 className="login-title">Gestão Operacional</h1>
+          <h1 className="login-title">Sistema de Gestão Logístico</h1>
           <p className="login-sub">Página de acesso — entre com seu e-mail e senha.</p>
 
           <form onSubmit={handleLogin}>

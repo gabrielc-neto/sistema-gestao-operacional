@@ -158,7 +158,7 @@ function construirRelatorioHtml({ titulo, subtitulo, colunas, linhas }) {
         <tbody>${tbody}</tbody>
       </table>
       <div class="rel-foot">
-        Documento gerado automaticamente pelo Sistema de Gestão Operacional — Pontual Logística.
+        Documento gerado automaticamente pelo Sistema de Gestão Logístico — Pontual Logística.
       </div>
     </div>`;
 }

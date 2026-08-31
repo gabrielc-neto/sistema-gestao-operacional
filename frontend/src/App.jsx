@@ -11,6 +11,8 @@ import InstallPWA from "./components/InstallPWA";
 // saída de /acesso.
 import Acesso from "./pages/Acesso";
 import Sistemas from "./pages/Sistemas";
+// Login direto do Sistema de Gestão Operacional (porta de entrada principal).
+import LoginSGO from "./pages/LoginSGO";
 
 const Dashboard   = lazy(() => import("./pages/Dashboard"));
 const Frota       = lazy(() => import("./pages/Frota"));
@@ -87,7 +89,9 @@ export default function App() {
                       num laço: voltar ao portal era interceptado e devolvido ao
                       /dashboard. Quem redireciona para o /dashboard depois de autenticar
                       é a própria Sistemas.jsx, na tela de login. */}
-                  <Route path="/"            element={<Navigate to="/acesso" replace />} />
+                  {/* Página inicial = login direto do Sistema de Gestão Operacional.
+                      O portal da intranet continua acessível em /acesso e /sistemas. */}
+                  <Route path="/"            element={<LoginSGO />} />
                   <Route path="/acesso"      element={<Acesso />} />
                   <Route path="/sistemas"    element={<Sistemas />} />
 

@@ -116,7 +116,7 @@ export default function Dashboard() {
   // Toggle: clicar de novo remove o filtro
   const toggleFiltro = (status) => setFiltroStatus(cur => cur === status ? null : status);
 
-  useEffect(() => { document.title = "Gestão Operacional - Pontual Brasil Petróleo"; }, []);
+  useEffect(() => { document.title = "Sistema de Gestão Logístico - Pontual Brasil Petróleo"; }, []);
 
   useEffect(() => {
     function fetchDados() {
@@ -203,7 +203,7 @@ export default function Dashboard() {
           <LogoPontual height={40} variant="white" />
           <div style={{ display:"flex", flexDirection:"column", gap:1 }} className="hide-mobile">
             <span style={{ color:"#fff", fontWeight:700, fontSize:"1rem", letterSpacing:"-0.01em" }}>Logística</span>
-            <span style={{ color:"rgba(255,255,255,.6)", fontSize:".72rem", fontWeight:500 }}>Gestão Operacional</span>
+            <span style={{ color:"rgba(255,255,255,.6)", fontSize:".72rem", fontWeight:500 }}>Sistema de Gestão Logístico</span>
           </div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:14, marginLeft:"auto" }} className="pg-header-actions">
