@@ -78,7 +78,9 @@ function Avatar({ motorista, size = 40, style = {} }) {
 // ── componente ──────────────────────────────────────────────────────────────
 export default function Motoristas() {
   const { profile } = useAuth();
-  const canDelete   = ["master", "admin"].includes(profile?.role);
+  // Backend VPS envia is_super_admin no perfil (não usa mais o campo legado 'role').
+  // Mantém fallback pro role legado (Firebase) caso algum usuário ainda esteja assim.
+  const canDelete = profile?.is_super_admin === true || ["master", "admin"].includes(profile?.role);
 
   const [motoristas, setMotoristas]   = useState([]);
   const [loading, setLoading]         = useState(true);
