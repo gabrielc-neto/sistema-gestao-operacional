@@ -924,9 +924,13 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
       { name: "Crítico", value: sC, cor: CORES_STATUS.critico },
     ].filter(x => x.value > 0);
 
-    // Custo anual acumulado (linhas) — soma cumulativa mês a mês
+    // Custo anual acumulado (linhas) — soma cumulativa mês a mês.
+    // Corta no último mês com lançamento p/ não plotar linha plana em meses
+    // futuros/sem dado (evita a impressão de "gastou X em setembro" quando
+    // o valor é só o acumulado herdado de agosto).
     let acc = 0;
-    const dadosLinhaAcumulado = Array.from({ length: 12 }, (_, i) => {
+    let ultimoMesComDado = -1;
+    const dadosLinhaAcumuladoFull = Array.from({ length: 12 }, (_, i) => {
       const valorMes = list.reduce((s, l) => {
         const ts = dataLanc(l);
         if (!Number.isFinite(ts)) return s;
@@ -934,9 +938,13 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
         if (t.getFullYear() !== anoLinhas || t.getMonth() !== i) return s;
         return s + (Number(l.valorTotal ?? l.valor_total) || 0);
       }, 0);
+      if (valorMes > 0) ultimoMesComDado = i;
       acc += valorMes;
       return { mes: nomeMes(i), valor: acc };
     });
+    const dadosLinhaAcumulado = ultimoMesComDado >= 0
+      ? dadosLinhaAcumuladoFull.slice(0, ultimoMesComDado + 1)
+      : [];
 
     const totalVeiculos = Object.keys(porPlaca).length;
     const mediaVeiculo = totalVeiculos > 0 ? totalGeral / totalVeiculos : 0;
