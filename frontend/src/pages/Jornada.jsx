@@ -572,8 +572,8 @@ export default function Jornada() {
                   <Th right>Dirigindo</Th>
                   <Th right>Refeição</Th>
                   <Th right>Pausa</Th>
-                  <Th right title="Extra 50% — semana: acima de 9h30 (limite +2h). Sábado: acima de 4h.">Extra 50%</Th>
-                  <Th right title="Extra 100% — semana: acima de 11h30 (infração). Domingo: TODO o tempo.">Extra 100%</Th>
+                  <Th right title="Extra 50% — semana: acima de 9h30 (todo excedente). Sábado: acima de 4h.">Extra 50%</Th>
+                  <Th right title="Extra 100% — apenas domingo (todo o tempo trabalhado).">Extra 100%</Th>
                   {!ehPeriodo && <Th right title="Direção contínua máxima sem pausa">Dir. contínua</Th>}
                   <Th>Status</Th>
                 </tr>
@@ -689,7 +689,7 @@ export default function Jornada() {
                       <><Cell value={j.extra50} min={j.extra50Min} warn={j.extra50Min > 0} highlight={j.extra50Min > 0} />
                         <Cell value={j.extra100} min={j.extra100Min} danger={j.extra100Min > 0} highlight={j.extra100Min > 0} /></>
                     )}
-                    {!ehPeriodo && <Cell value={j.direcaoContinuaMaxima} min={j.direcaoContinuaMaximaMin} danger={j.direcaoContinuaMaximaMin > 4 * 60} />}
+                    {!ehPeriodo && <Cell value={j.direcaoContinuaMaxima} min={j.direcaoContinuaMaximaMin} danger={j.direcaoContinuaMaximaMin > 5 * 60} />}
                     <td style={{ padding: "10px 8px", textAlign: "center", whiteSpace: "nowrap" }}>
                       {j.temInfracao ? (
                         <span title={j.infracoes.map(i => `${i.tipo}${i.data ? ' (' + formatDataBR(i.data) + ')' : ''}: ${i.descricao}`).join("\n")}
@@ -734,7 +734,7 @@ export default function Jornada() {
                                 <td style={{ padding: "4px 8px", textAlign: "center", fontFamily: "monospace" }}>{c.dirigindo}</td>
                                 <td style={{ padding: "4px 8px", textAlign: "center", fontFamily: "monospace" }}>{c.refeicao}</td>
                                 <td style={{ padding: "4px 8px", textAlign: "center", fontFamily: "monospace" }}>{c.pausa}</td>
-                                <td style={{ padding: "4px 8px", textAlign: "center", fontFamily: "monospace", color: c.direcaoContinuaMaximaMin > 4*60 ? "var(--danger)" : "var(--text)" }}>{c.direcaoContinuaMaxima}</td>
+                                <td style={{ padding: "4px 8px", textAlign: "center", fontFamily: "monospace", color: c.direcaoContinuaMaximaMin > 5*60 ? "var(--danger)" : "var(--text)" }}>{c.direcaoContinuaMaxima}</td>
                                 <td style={{ padding: "4px 8px" }}>
                                   {c.encerrou
                                     ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--success-bg)", color: "var(--success)", padding: "1px 6px", borderRadius: 4, fontSize: ".7rem", fontWeight: 700 }}><Check size={12} color="var(--success)" /> Encerrou</span>
@@ -811,7 +811,7 @@ export default function Jornada() {
         <div style={{ marginTop: 14, padding: 12, background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, fontSize: ".75rem", color: "var(--text-muted)", lineHeight: 1.6 }}>
           <div><strong style={{ color: "var(--text)" }}>Regra Pontual:</strong></div>
           <div style={{ marginTop: 4 }}>
-            <span style={pill("var(--accent-soft)", "var(--accent)")}>SEG–SEX</span> Jornada normal até <b>9h30</b> (8h trabalho + 1h almoço + 30min pausa). Acima: até +2h = <b>extra 50%</b>, restante = <b>extra 100% / infração</b>.
+            <span style={pill("var(--accent-soft)", "var(--accent)")}>SEG–SEX</span> Jornada normal até <b>9h30</b> (8h trabalho + 1h almoço + 30min pausa). Todo excedente é <b>extra 50%</b> (sem teto de infração).
           </div>
           <div style={{ marginTop: 2 }}>
             <span style={pill("var(--warning-bg)", "var(--warning)")}>SÁBADO</span> Jornada normal até <b>4h</b>. Acima = <b>extra 50%</b>.

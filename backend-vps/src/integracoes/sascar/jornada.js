@@ -3,19 +3,17 @@
 // Aplica regras Lei 13.103/2015 + CLT art. 58/59/71
 
 // Limites operacionais Pontual + legais
-// REGRA Pontual confirmada por Wesley (2026-05-19):
+// REGRA Pontual confirmada por Wesley (2026-05-19 · revisão 2026-09-01):
 //   Semana (seg-sex): jornada normal = 9h30 (8h trabalho + 1h almoço + 30min pausa)
-//                     Acima de 9h30 = extra 50% (até +2h). Acima disso = extra 100%/infração.
+//                     Acima de 9h30 = extra 50% (SEM teto de infração — extra é extra).
 //   Sábado:           jornada normal = 4h. Acima = extra 50%.
 //   Domingo:          TODO o tempo trabalhado é extra 100%.
-//   Direção contínua: máx 4h sem pausa de 30min (regra interna Pontual, mais restritiva que
-//                     Lei 13.103 art. 67-C que permite 5h30).
+//   Direção contínua: máx 5h sem pausa de 30min (Pontual — revisão 2026-09-01).
 export const LIMITES = {
   jornadaNormalSemana: 9 * 60 + 30,  // 9h30 — Pontual (inclui almoço + pausa)
   jornadaNormalSabado: 4 * 60,       // 4h — Pontual
-  extraSeguroSemana: 2 * 60,         // CLT art. 59 — até 2h extra (50%) na semana
   refeicaoMinima: 60,                // CLT art. 71 — mínimo 1h intrajornada
-  direcaoContinuaMax: 4 * 60,        // 4h — Pontual (mais restritivo que Lei 13.103 5h30)
+  direcaoContinuaMax: 5 * 60,        // 5h — Pontual (2026-09-01, era 4h)
   pausaMinima: 30,                   // Lei 13.103 — pausa mínima 30min
 };
 
@@ -185,28 +183,18 @@ export function calcularJornadas(eventos, dataReferenciaISO, classificacao = {})
       }
     } else {
       // Semana: normal até 9h30. TODO o excedente é extra 50% (regra Pontual: 100% só domingo).
-      // Acima de 11h30 ainda gera INFRAÇÃO (Lei 13.103 limite 2h extras/dia), mas pago como 50%.
+      // Revisão 2026-09-01 (Wesley): extras acima de 9h30 NÃO geram infração — só marca como extra.
       limiteNormal = LIMITES.jornadaNormalSemana;
       if (totalAtivo > limiteNormal) {
-        const excesso = totalAtivo - limiteNormal;
-        extra50 = excesso;   // tudo 50% na semana
-        extra100 = 0;        // 100% só no domingo
-        const acimaDoLimite = excesso - LIMITES.extraSeguroSemana;
-        if (acimaDoLimite > 0) {
-          infracoes.push({
-            tipo: 'EXTRA_EXCESSIVA',
-            base: 'Lei 13.103/2015 art. 235-C',
-            descricao: `${formatHHmm(acimaDoLimite)} além das 2h extras permitidas (jornada acima de ${formatHHmm(limiteNormal + LIMITES.extraSeguroSemana)}). Pago como extra 50%.`,
-            data: reg.eventos[reg.eventos.length - 1]?.dataInicio,
-          });
-        }
+        extra50 = totalAtivo - limiteNormal;  // tudo 50% na semana, sem teto de infração
+        extra100 = 0;                          // 100% só no domingo
       }
     }
 
     if (direcaoContinuaMaxima > LIMITES.direcaoContinuaMax) {
       infracoes.push({
         tipo: 'DIRECAO_CONTINUA_EXCESSIVA',
-        base: 'Regra interna Pontual (mais restritiva que Lei 13.103 art. 67-C)',
+        base: 'Regra interna Pontual',
         descricao: `Dirigiu ${formatHHmm(direcaoContinuaMaxima)} sem pausa de ${formatHHmm(LIMITES.pausaMinima)} (máx ${formatHHmm(LIMITES.direcaoContinuaMax)})`,
       });
     }
