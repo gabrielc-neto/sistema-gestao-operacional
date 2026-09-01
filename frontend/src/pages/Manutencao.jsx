@@ -3503,38 +3503,6 @@ export default function Manutencao() {
             )}
           </div>
 
-          {placa && custoDoVeiculo.qtd > 0 && (
-            <div style={{ display:"flex", gap:12, marginBottom:12, background:"var(--card-bg)", border:"1px solid var(--border)", borderRadius:10, padding:"12px 16px", alignItems:"center", flexWrap:"wrap" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, color:"#1a3a5c", fontWeight:700, fontSize:".82rem", textTransform:"uppercase", letterSpacing:".03em" }}>
-                <Receipt size={16} strokeWidth={2.2} />
-                Gastos deste veículo
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", minWidth:120 }}>
-                <span style={{ fontSize:".68rem", color:"#64748b", fontWeight:600, textTransform:"uppercase" }}>Total {new Date().getFullYear()}</span>
-                <span style={{ fontSize:"1.1rem", fontWeight:800, color:"#1a3a5c" }}>{fmtBRL(custoDoVeiculo.totalAno)}</span>
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", minWidth:120 }}>
-                <span style={{ fontSize:".68rem", color:"#64748b", fontWeight:600, textTransform:"uppercase" }}>Total geral</span>
-                <span style={{ fontSize:"1.1rem", fontWeight:800, color:"#1a3a5c" }}>{fmtBRL(custoDoVeiculo.totalGeral)}</span>
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", minWidth:110 }}>
-                <span style={{ fontSize:".68rem", color:"#64748b", fontWeight:600, textTransform:"uppercase" }}>Lançamentos</span>
-                <span style={{ fontSize:"1.1rem", fontWeight:800, color:"#1a3a5c" }}>{custoDoVeiculo.qtd}</span>
-              </div>
-              {custoDoVeiculo.ultimo && (
-                <div style={{ display:"flex", flexDirection:"column", minWidth:150, marginLeft:"auto" }}>
-                  <span style={{ fontSize:".68rem", color:"#64748b", fontWeight:600, textTransform:"uppercase" }}>Último lançamento</span>
-                  <span style={{ fontSize:".85rem", color:"#1a3a5c", fontWeight:600 }}>
-                    {custoDoVeiculo.ultimo.tipoLancamento || "—"} · {fmtBRL(Number(custoDoVeiculo.ultimo.valorTotal) || 0)}
-                  </span>
-                  <span style={{ fontSize:".7rem", color:"#94a3b8" }}>
-                    {fmtDateTimeBR(custoDoVeiculo.ultimo.criadoEm || custoDoVeiculo.ultimo.dataHora)}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
           {loading ? (
             <p style={s.info}>Carregando...</p>
           ) : (
