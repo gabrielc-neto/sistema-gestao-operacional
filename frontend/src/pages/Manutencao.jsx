@@ -987,51 +987,75 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
       return;
     }
 
-    // PDF: monta um HTML off-screen e passa pro html2pdf
+    // PDF: monta HTML off-screen com width fixo compatível com A4 landscape (277mm útil = 297 - 20 margens).
+    // Cada bloco de placa é uma unidade com page-break-inside:avoid; se a placa passar de 1 página,
+    // as linhas quebram individualmente sem cortar no meio (page-break-inside:avoid em cada <tr>).
     const container = document.createElement("div");
-    container.style.padding = "10mm";
+    container.style.width = "277mm";
+    container.style.padding = "0";
+    container.style.margin = "0";
     container.style.fontFamily = "Arial, sans-serif";
     container.style.fontSize = "10px";
     container.style.color = "#1a3a5c";
-    let html = `<h2 style="margin:0 0 4px;color:#1a3a5c;font-size:16px">Custo de manutenção — todas as placas</h2>`;
-    html += `<p style="margin:0 0 12px;color:#64748b;font-size:11px">Período: ${label} · ${lancamentos.length} lançamento(s) · Total geral: <b>${fmt(totalGeralExport)}</b></p>`;
+    container.style.boxSizing = "border-box";
+    // Precisa estar renderizado no DOM p/ html2canvas medir; posiciona fora da viewport.
+    container.style.position = "fixed";
+    container.style.left = "-10000px";
+    container.style.top = "0";
+    const trStyle = "page-break-inside:avoid;break-inside:avoid";
+    const tdBase = "padding:4px 6px;border-bottom:1px solid #e2e8f0;word-break:break-word;overflow-wrap:anywhere";
+    let html = `<div style="page-break-after:avoid">
+      <h2 style="margin:0 0 4px;color:#1a3a5c;font-size:16px">Custo de manutenção — todas as placas</h2>
+      <p style="margin:0 0 8px;color:#64748b;font-size:11px">Período: ${label} · ${lancamentos.length} lançamento(s) · Total geral: <b>${fmt(totalGeralExport)}</b></p>
+    </div>`;
     for (const placa of ordem) {
       const itens = (porPlaca[placa] || []).slice().sort((a, b) => String(b.data_emissao || b.criadoEm || "").localeCompare(String(a.data_emissao || a.criadoEm || "")));
       if (itens.length === 0) continue;
       const sub = itens.reduce((s, l) => s + (Number(l.valorTotal ?? l.valor_total) || 0), 0);
-      html += `<h3 style="margin:14px 0 4px;color:#1a3a5c;font-size:12px;border-bottom:1px solid #cbd5e1;padding-bottom:2px">${placa} — ${fmt(sub)}</h3>`;
-      html += `<table style="width:100%;border-collapse:collapse;font-size:10px"><thead><tr style="background:#f1f5f9">
-        <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">Data</th>
-        <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">Serviço</th>
-        <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">Fornecedor</th>
-        <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">OS</th>
-        <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">NF</th>
-        <th style="text-align:right;padding:4px 6px;border-bottom:1px solid #cbd5e1">Valor</th></tr></thead><tbody>`;
+      // Bloco por placa; se couber inteiro numa página, não quebra. Se não couber, header repete via <thead>.
+      html += `<div style="page-break-inside:avoid;break-inside:avoid;margin-top:10px">
+        <h3 style="margin:0 0 4px;color:#1a3a5c;font-size:12px;border-bottom:1px solid #cbd5e1;padding-bottom:2px;page-break-after:avoid">${placa} — ${fmt(sub)}</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed">
+          <colgroup>
+            <col style="width:9%"/><col style="width:32%"/><col style="width:24%"/>
+            <col style="width:10%"/><col style="width:10%"/><col style="width:15%"/>
+          </colgroup>
+          <thead><tr style="background:#f1f5f9;${trStyle}">
+            <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">Data</th>
+            <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">Serviço</th>
+            <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">Fornecedor</th>
+            <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">OS</th>
+            <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">NF</th>
+            <th style="text-align:right;padding:4px 6px;border-bottom:1px solid #cbd5e1">Valor</th>
+          </tr></thead><tbody>`;
       for (const l of itens) {
         const v = Number(l.valorTotal ?? l.valor_total) || 0;
-        html += `<tr>
-          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0;white-space:nowrap">${fmtData(l.data_emissao || l.dataHora || l.criadoEm || l.created_at)}</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0">${l.servico_feito || l.tipoLancamento || "—"}</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0">${l.fornecedor || "—"}</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0;color:#64748b">${l.os_numero || l.osNumero || "—"}</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0;color:#64748b">${l.nf_numero || l.nfNumero || "—"}</td>
-          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600">${fmt(v)}</td></tr>`;
+        html += `<tr style="${trStyle}">
+          <td style="${tdBase};white-space:nowrap">${fmtData(l.data_emissao || l.dataHora || l.criadoEm || l.created_at)}</td>
+          <td style="${tdBase}">${l.servico_feito || l.tipoLancamento || "—"}</td>
+          <td style="${tdBase}">${l.fornecedor || "—"}</td>
+          <td style="${tdBase};color:#64748b">${l.os_numero || l.osNumero || "—"}</td>
+          <td style="${tdBase};color:#64748b">${l.nf_numero || l.nfNumero || "—"}</td>
+          <td style="${tdBase};text-align:right;font-weight:600;white-space:nowrap">${fmt(v)}</td></tr>`;
       }
-      html += `</tbody></table>`;
+      html += `</tbody></table></div>`;
     }
-    html += `<p style="margin-top:14px;text-align:right;font-size:12px;font-weight:700;color:#1a3a5c">TOTAL GERAL: ${fmt(totalGeralExport)}</p>`;
+    html += `<p style="margin-top:14px;text-align:right;font-size:12px;font-weight:700;color:#1a3a5c;page-break-inside:avoid">TOTAL GERAL: ${fmt(totalGeralExport)}</p>`;
     container.innerHTML = html;
     document.body.appendChild(container);
-    const mod = await import("html2pdf.js");
-    const html2pdf = mod.default || mod;
-    await html2pdf().from(container).set({
-      margin: 8,
-      filename: `custo-todas-placas-${hoje}.pdf`,
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
-      pagebreak: { mode: ["css", "legacy"] },
-    }).save();
-    document.body.removeChild(container);
+    try {
+      const mod = await import("html2pdf.js");
+      const html2pdf = mod.default || mod;
+      await html2pdf().from(container).set({
+        margin: [10, 10, 12, 10], // top, left, bottom, right (mm)
+        filename: `custo-todas-placas-${hoje}.pdf`,
+        html2canvas: { scale: 2, useCORS: true, windowWidth: 1050 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "landscape", compress: true },
+        pagebreak: { mode: ["avoid-all", "css", "legacy"], avoid: "tr" },
+      }).save();
+    } finally {
+      document.body.removeChild(container);
+    }
   };
 
   // ── Estilos base ──────────────────────────────────────────────
