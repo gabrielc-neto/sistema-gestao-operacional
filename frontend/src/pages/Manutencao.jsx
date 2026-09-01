@@ -365,6 +365,19 @@ function nomeMes(m) {
   return ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][m];
 }
 
+// Data de referência de um lançamento p/ filtros/agrupamentos.
+// Prioriza data_emissao (competência real do serviço/NF, tipo DATE sem fuso).
+// Normaliza strings YYYY-MM-DD adicionando T12:00:00 p/ evitar shift de fuso
+// (new Date("2026-08-01") vira 21:00 do dia anterior em BRT).
+function dataLanc(l) {
+  const raw = l?.data_emissao || l?.dataHora || l?.criadoEm || l?.created_at;
+  if (!raw) return NaN;
+  if (typeof raw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return new Date(`${raw}T12:00:00`).getTime();
+  }
+  return new Date(raw).getTime();
+}
+
 function DashboardCustos({ lancamentos, fmtBRLfn }) {
   const [periodo, setPeriodo] = useState("ano");
   const [customIni, setCustomIni] = useState("");
@@ -376,7 +389,7 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
     const fim = fimPeriodo(periodo, agora, customFim);
 
     const filtrados = (lancamentos || []).filter(l => {
-      const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at).getTime();
+      const t = dataLanc(l);
       return Number.isFinite(t) && t >= ini && t <= fim;
     });
 
@@ -420,7 +433,7 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
     else if (periodo === "ano") mesesNoPeriodo = agora.getMonth() + 1;
     else if (filtrados.length === 0) mesesNoPeriodo = 1;
     else {
-      const ts = filtrados.map(l => new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at).getTime()).filter(Number.isFinite);
+      const ts = filtrados.map(l => dataLanc(l)).filter(Number.isFinite);
       const minT = Math.min(...ts);
       const dM = (agora.getTime() - minT) / (1000 * 60 * 60 * 24 * 30.4);
       mesesNoPeriodo = Math.max(1, Math.round(dM));
@@ -477,8 +490,10 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
     const mesesComDado = new Set();
     for (const arr of Object.values(porCategoriaAll)) {
       for (const l of arr) {
-        const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
-        if (Number.isFinite(t.getTime())) mesesComDado.add(`${t.getFullYear()}-${t.getMonth()}`);
+        const ts = dataLanc(l);
+        if (!Number.isFinite(ts)) continue;
+        const t = new Date(ts);
+        mesesComDado.add(`${t.getFullYear()}-${t.getMonth()}`);
       }
     }
     const monthsTemplateFiltrado = mesesComDado.size > 0
@@ -500,8 +515,9 @@ function DashboardCustos({ lancamentos, fmtBRLfn }) {
       const cor = corCategoria(r.nome, i);
       const mesesSerie = monthsTemplateFiltrado.map(m => ({ ...m, valor: 0 }));
       for (const l of (porCategoriaAll[r.nome] || [])) {
-        const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
-        if (!Number.isFinite(t.getTime())) continue;
+        const ts = dataLanc(l);
+        if (!Number.isFinite(ts)) continue;
+        const t = new Date(ts);
         const k = `${t.getFullYear()}-${t.getMonth()}`;
         const slot = mesesSerie.find(x => x.key === k);
         if (slot) slot.valor += (Number(l.__valorNoTipo ?? l.valorTotal ?? l.valor_total) || 0);
@@ -832,7 +848,7 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
     const ini = inicioPeriodo(periodo, agora, customIni);
     const fim = fimPeriodo(periodo, agora, customFim);
     return (lancamentosRaw || []).filter(l => {
-      const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at).getTime();
+      const t = dataLanc(l);
       return Number.isFinite(t) && t >= ini && t <= fim;
     });
   }, [lancamentosRaw, periodo, customIni, customFim]);
@@ -841,8 +857,8 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
   const anosDisponiveis = useMemo(() => {
     const set = new Set([agoraAno]);
     for (const l of (lancamentosRaw || [])) {
-      const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
-      if (Number.isFinite(t.getTime())) set.add(t.getFullYear());
+      const t = dataLanc(l);
+      if (Number.isFinite(t)) set.add(new Date(t).getFullYear());
     }
     return Array.from(set).sort((a, b) => b - a);
   }, [lancamentosRaw, agoraAno]);
@@ -874,8 +890,9 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
     // Evolução mensal do ano selecionado (barras)
     const mesesAnoBarras = Array.from({ length: 12 }, (_, i) => ({ mes: nomeMes(i), valor: 0 }));
     for (const l of list) {
-      const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
-      if (!Number.isFinite(t.getTime())) continue;
+      const ts = dataLanc(l);
+      if (!Number.isFinite(ts)) continue;
+      const t = new Date(ts);
       if (t.getFullYear() !== anoBarras) continue;
       mesesAnoBarras[t.getMonth()].valor += (Number(l.valorTotal ?? l.valor_total) || 0);
     }
@@ -911,8 +928,9 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
     let acc = 0;
     const dadosLinhaAcumulado = Array.from({ length: 12 }, (_, i) => {
       const valorMes = list.reduce((s, l) => {
-        const t = new Date(l.criadoEm || l.dataHora || l.data_emissao || l.created_at);
-        if (!Number.isFinite(t.getTime())) return s;
+        const ts = dataLanc(l);
+        if (!Number.isFinite(ts)) return s;
+        const t = new Date(ts);
         if (t.getFullYear() !== anoLinhas || t.getMonth() !== i) return s;
         return s + (Number(l.valorTotal ?? l.valor_total) || 0);
       }, 0);
