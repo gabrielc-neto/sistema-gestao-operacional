@@ -823,6 +823,10 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
   const [customIni, setCustomIni] = useState("");
   const [customFim, setCustomFim] = useState("");
 
+  // Detalhamento por placa (aberto com duplo-clique na barra)
+  const [placaDetalhe, setPlacaDetalhe] = useState(null);
+  const lastClickRef = useRef({ placa: null, ts: 0 });
+
   const lancamentos = useMemo(() => {
     const agora = new Date();
     const ini = inicioPeriodo(periodo, agora, customIni);
@@ -1136,13 +1140,177 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
               <XAxis type="number" tickFormatter={(v) => fmtBRLcurto(v)} tick={{ fontSize: 12 }} />
               <YAxis type="category" dataKey="placa" tick={{ fontSize: 12, fontWeight: 600 }} width={100} />
               <Tooltip formatter={(v) => fmt(v)} />
-              <Bar dataKey="valor" fill="#dc2626" radius={[0, 6, 6, 0]} />
+              <Bar
+                dataKey="valor"
+                fill="#dc2626"
+                radius={[0, 6, 6, 0]}
+                cursor="pointer"
+                onClick={(data) => {
+                  const placa = data?.placa;
+                  if (!placa) return;
+                  const agora = Date.now();
+                  const prev = lastClickRef.current;
+                  if (prev.placa === placa && agora - prev.ts < 350) {
+                    setPlacaDetalhe(placa);
+                    lastClickRef.current = { placa: null, ts: 0 };
+                  } else {
+                    lastClickRef.current = { placa, ts: agora };
+                  }
+                }}
+              />
             </BarChart>
           </ResponsiveContainer>
           );
         })()}
+        <p style={{ margin: "10px 0 0", fontSize: ".72rem", color: "#94a3b8" }}>
+          Dica: dê 2 cliques em uma barra para ver o detalhamento dos serviços daquela placa.
+        </p>
       </div>
+
+      {placaDetalhe && (
+        <DetalheCustoPlacaModal
+          placa={placaDetalhe}
+          lancamentos={lancamentos}
+          periodoLabel={periodoLabel(periodo, customIni, customFim)}
+          fmt={fmt}
+          onClose={() => setPlacaDetalhe(null)}
+        />
+      )}
     </div>
+  );
+}
+
+// ── Modal de detalhamento de custo por placa ─────────────────────────────
+function periodoLabel(periodo, customIni, customFim) {
+  if (periodo === "mes")     return "Mês atual";
+  if (periodo === "mes_ant") return "Mês anterior";
+  if (periodo === "ano")     return "Ano corrente";
+  if (periodo === "custom" && customIni && customFim) return `${customIni} até ${customFim}`;
+  return "Todo o histórico";
+}
+
+function DetalheCustoPlacaModal({ placa, lancamentos, periodoLabel, fmt, onClose }) {
+  const tableRef = useRef(null);
+
+  const linhas = useMemo(() => {
+    return (lancamentos || [])
+      .filter(l => (l.placa || "").trim() === placa)
+      .map(l => ({
+        id: l.id,
+        data: l.data_emissao || l.dataHora || l.criadoEm || l.created_at || "",
+        servico: l.servico_feito || l.tipoLancamento || "—",
+        fornecedor: l.fornecedor || "—",
+        os: l.os_numero || l.osNumero || "—",
+        nf: l.nf_numero || l.nfNumero || "—",
+        valor: Number(l.valorTotal ?? l.valor_total) || 0,
+      }))
+      .sort((a, b) => String(b.data).localeCompare(String(a.data)));
+  }, [lancamentos, placa]);
+
+  const total = linhas.reduce((s, l) => s + l.valor, 0);
+
+  function fmtData(iso) {
+    if (!iso) return "—";
+    const s = String(iso).slice(0, 10);
+    const [y, m, d] = s.split("-");
+    return d && m && y ? `${d}/${m}/${y}` : s;
+  }
+
+  function baixarCSV() {
+    const header = ["Data", "Serviço", "Fornecedor", "OS", "NF", "Valor"];
+    const linhasCsv = linhas.map(l => [
+      fmtData(l.data),
+      String(l.servico).replace(/"/g, '""'),
+      String(l.fornecedor).replace(/"/g, '""'),
+      l.os, l.nf,
+      l.valor.toFixed(2).replace(".", ","),
+    ]);
+    linhasCsv.push(["", "", "", "", "TOTAL", total.toFixed(2).replace(".", ",")]);
+    const csv = [header, ...linhasCsv].map(r => r.map(c => `"${c}"`).join(";")).join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `custo-${placa}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function baixarPDF() {
+    if (!tableRef.current) return;
+    const mod = await import("html2pdf.js");
+    const html2pdf = mod.default || mod;
+    html2pdf().from(tableRef.current).set({
+      margin: 10,
+      filename: `custo-${placa}-${new Date().toISOString().slice(0, 10)}.pdf`,
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
+    }).save();
+  }
+
+  return createPortal(
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ background: "#fff", borderRadius: 14, width: "min(1000px, 100%)", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 40px rgba(0,0,0,.25)" }}
+      >
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <h3 style={{ margin: 0, color: "#1a3a5c", fontSize: "1.05rem", fontWeight: 700 }}>Detalhamento de custo — {placa}</h3>
+            <p style={{ margin: "3px 0 0", fontSize: ".75rem", color: "#64748b" }}>Período: {periodoLabel} · {linhas.length} lançamento{linhas.length === 1 ? "" : "s"}</p>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" onClick={baixarCSV} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #16a34a", background: "#f0fdf4", color: "#166534", fontWeight: 700, cursor: "pointer", fontSize: ".82rem" }}>
+              Exportar Excel (CSV)
+            </button>
+            <button type="button" onClick={baixarPDF} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dc2626", background: "#fef2f2", color: "#991b1b", fontWeight: 700, cursor: "pointer", fontSize: ".82rem" }}>
+              Exportar PDF
+            </button>
+            <button type="button" onClick={onClose} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontWeight: 600, cursor: "pointer", fontSize: ".82rem" }}>
+              Fechar
+            </button>
+          </div>
+        </div>
+        <div style={{ overflow: "auto", padding: 20 }}>
+          {linhas.length === 0 ? (
+            <p style={{ color: "#94a3b8", fontSize: ".9rem", textAlign: "center", margin: "40px 0" }}>Nenhum lançamento para esta placa no período selecionado.</p>
+          ) : (
+            <div ref={tableRef}>
+              <h4 style={{ margin: "0 0 10px", color: "#1a3a5c", fontSize: ".95rem" }}>Custo de manutenção — {placa} — {periodoLabel}</h4>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".82rem" }}>
+                <thead>
+                  <tr style={{ background: "#f1f5f9" }}>
+                    {["Data", "Serviço feito", "Fornecedor", "OS", "NF", "Valor"].map(h => (
+                      <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: "#334155", borderBottom: "2px solid #cbd5e1" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {linhas.map((l, i) => (
+                    <tr key={l.id || i} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                      <td style={{ padding: "8px 10px", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>{fmtData(l.data)}</td>
+                      <td style={{ padding: "8px 10px", borderBottom: "1px solid #e2e8f0" }}>{l.servico}</td>
+                      <td style={{ padding: "8px 10px", borderBottom: "1px solid #e2e8f0" }}>{l.fornecedor}</td>
+                      <td style={{ padding: "8px 10px", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>{l.os}</td>
+                      <td style={{ padding: "8px 10px", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>{l.nf}</td>
+                      <td style={{ padding: "8px 10px", borderBottom: "1px solid #e2e8f0", textAlign: "right", fontWeight: 600 }}>{fmt(l.valor)}</td>
+                    </tr>
+                  ))}
+                  <tr style={{ background: "#1a3a5c", color: "#fff" }}>
+                    <td colSpan={5} style={{ padding: "10px", fontWeight: 700, textAlign: "right" }}>TOTAL</td>
+                    <td style={{ padding: "10px", fontWeight: 700, textAlign: "right" }}>{fmt(total)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
