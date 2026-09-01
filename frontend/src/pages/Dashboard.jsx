@@ -126,11 +126,14 @@ export default function Dashboard() {
       const marcarErro = () => setErro(falhas.oc && falhas.os);
 
       listVeiculos().then(veiculos => {
+        // Cavalo = veículo com tipo="cavalo" no PG. Registros com tipo vazio ficam fora
+        // (aparecem no cadastro pra classificação, não no widget de frota).
+        const isCavalo = (v) => String(v.tipo || "").trim().toLowerCase() === "cavalo";
         setFrota({
           // Disponíveis = ativos/disponivel E NÃO bloqueados (bloqueio via OS torna indisponível).
-          frotaAtiva: veiculos.filter(v => ["ativo","disponivel"].includes(v.status) && v.tipo !== "carreta" && !v.bloqueio?.ativo).length,
-          totalFrota: veiculos.filter(v => v.tipo !== "carreta").length,
-          bloqueados: veiculos.filter(v => v.bloqueio?.ativo && v.tipo !== "carreta").length,
+          frotaAtiva: veiculos.filter(v => isCavalo(v) && ["ativo","disponivel"].includes(v.status) && !v.bloqueio?.ativo).length,
+          totalFrota: veiculos.filter(v => isCavalo(v)).length,
+          bloqueados: veiculos.filter(v => isCavalo(v) && v.bloqueio?.ativo).length,
         });
       }).catch(() => { falhas.v = true; });
 
