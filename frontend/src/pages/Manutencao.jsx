@@ -934,6 +934,106 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
 
   const fmt = fmtBRLfn || ((n) => (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
 
+  // Exportação consolidada — todas as placas do período (agrupado, subtotal + total geral).
+  // Reusa `lancamentos` já filtrado por período (mesma fonte da barra → cálculo bate sempre).
+  const exportarTudo = async (formato) => {
+    const label = periodoLabel(periodo, customIni, customFim);
+    const fmtData = (iso) => {
+      if (!iso) return "—";
+      const s = String(iso).slice(0, 10);
+      const [y, m, d] = s.split("-");
+      return d && m && y ? `${d}/${m}/${y}` : s;
+    };
+    // Agrupa por placa preservando ordem de veiculosPorCusto (maior custo primeiro)
+    const porPlaca = {};
+    for (const l of lancamentos) {
+      const p = (l.placa || "Sem placa").trim() || "Sem placa";
+      (porPlaca[p] = porPlaca[p] || []).push(l);
+    }
+    const ordem = veiculosPorCusto.map(v => v.placa);
+    const totalGeralExport = lancamentos.reduce((s, l) => s + (Number(l.valorTotal ?? l.valor_total) || 0), 0);
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    if (formato === "csv") {
+      const header = ["Placa", "Data", "Serviço", "Fornecedor", "OS", "NF", "Valor"];
+      const linhas = [header];
+      for (const placa of ordem) {
+        const itens = (porPlaca[placa] || []).slice().sort((a, b) => String(b.data_emissao || b.criadoEm || "").localeCompare(String(a.data_emissao || a.criadoEm || "")));
+        let sub = 0;
+        for (const l of itens) {
+          const v = Number(l.valorTotal ?? l.valor_total) || 0;
+          sub += v;
+          linhas.push([
+            placa,
+            fmtData(l.data_emissao || l.dataHora || l.criadoEm || l.created_at),
+            String(l.servico_feito || l.tipoLancamento || "—").replace(/"/g, '""'),
+            String(l.fornecedor || "—").replace(/"/g, '""'),
+            l.os_numero || l.osNumero || "—",
+            l.nf_numero || l.nfNumero || "—",
+            v.toFixed(2).replace(".", ","),
+          ]);
+        }
+        linhas.push(["", "", "", "", "", `SUBTOTAL ${placa}`, sub.toFixed(2).replace(".", ",")]);
+      }
+      linhas.push(["", "", "", "", "", "TOTAL GERAL", totalGeralExport.toFixed(2).replace(".", ",")]);
+      const csv = linhas.map(r => r.map(c => `"${c}"`).join(";")).join("\r\n");
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `custo-todas-placas-${hoje}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    // PDF: monta um HTML off-screen e passa pro html2pdf
+    const container = document.createElement("div");
+    container.style.padding = "10mm";
+    container.style.fontFamily = "Arial, sans-serif";
+    container.style.fontSize = "10px";
+    container.style.color = "#1a3a5c";
+    let html = `<h2 style="margin:0 0 4px;color:#1a3a5c;font-size:16px">Custo de manutenção — todas as placas</h2>`;
+    html += `<p style="margin:0 0 12px;color:#64748b;font-size:11px">Período: ${label} · ${lancamentos.length} lançamento(s) · Total geral: <b>${fmt(totalGeralExport)}</b></p>`;
+    for (const placa of ordem) {
+      const itens = (porPlaca[placa] || []).slice().sort((a, b) => String(b.data_emissao || b.criadoEm || "").localeCompare(String(a.data_emissao || a.criadoEm || "")));
+      if (itens.length === 0) continue;
+      const sub = itens.reduce((s, l) => s + (Number(l.valorTotal ?? l.valor_total) || 0), 0);
+      html += `<h3 style="margin:14px 0 4px;color:#1a3a5c;font-size:12px;border-bottom:1px solid #cbd5e1;padding-bottom:2px">${placa} — ${fmt(sub)}</h3>`;
+      html += `<table style="width:100%;border-collapse:collapse;font-size:10px"><thead><tr style="background:#f1f5f9">
+        <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">Data</th>
+        <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">Serviço</th>
+        <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">Fornecedor</th>
+        <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">OS</th>
+        <th style="text-align:left;padding:4px 6px;border-bottom:1px solid #cbd5e1">NF</th>
+        <th style="text-align:right;padding:4px 6px;border-bottom:1px solid #cbd5e1">Valor</th></tr></thead><tbody>`;
+      for (const l of itens) {
+        const v = Number(l.valorTotal ?? l.valor_total) || 0;
+        html += `<tr>
+          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0;white-space:nowrap">${fmtData(l.data_emissao || l.dataHora || l.criadoEm || l.created_at)}</td>
+          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0">${l.servico_feito || l.tipoLancamento || "—"}</td>
+          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0">${l.fornecedor || "—"}</td>
+          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0;color:#64748b">${l.os_numero || l.osNumero || "—"}</td>
+          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0;color:#64748b">${l.nf_numero || l.nfNumero || "—"}</td>
+          <td style="padding:3px 6px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600">${fmt(v)}</td></tr>`;
+      }
+      html += `</tbody></table>`;
+    }
+    html += `<p style="margin-top:14px;text-align:right;font-size:12px;font-weight:700;color:#1a3a5c">TOTAL GERAL: ${fmt(totalGeralExport)}</p>`;
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    const mod = await import("html2pdf.js");
+    const html2pdf = mod.default || mod;
+    await html2pdf().from(container).set({
+      margin: 8,
+      filename: `custo-todas-placas-${hoje}.pdf`,
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
+      pagebreak: { mode: ["css", "legacy"] },
+    }).save();
+    document.body.removeChild(container);
+  };
+
   // ── Estilos base ──────────────────────────────────────────────
   const cardStyle = { background: "#fff", borderRadius: 14, padding: "1rem 1.25rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.10)" };
   const chartTitle = { margin: "0 0 12px", color: "#1a3a5c", fontSize: "0.95rem", fontWeight: 700 };
@@ -1115,19 +1215,41 @@ function DashboardAnalytics({ lancamentos: lancamentosRaw, fmtBRLfn }) {
           <h3 style={{ ...chartTitle, margin: 0 }}>
             {mostrarTodosVeiculos ? `Todos os veículos com maior custo (${veiculosPorCusto.length})` : "Top 10 veículos com maior custo"}
           </h3>
-          {veiculosPorCusto.length > 10 && (
-            <button
-              type="button"
-              onClick={() => setMostrarTodosVeiculos(v => !v)}
-              style={{
-                padding: "6px 12px", borderRadius: 8, border: "1px solid #cbd5e1",
-                background: "#fff", cursor: "pointer", fontSize: ".78rem", fontWeight: 600,
-                color: "#334155", fontFamily: "inherit",
-              }}
-            >
-              {mostrarTodosVeiculos ? "Ver Top 10" : `Ver todos (${veiculosPorCusto.length})`}
-            </button>
-          )}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {veiculosPorCusto.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => exportarTudo("csv")}
+                  title="Exportar todos os lançamentos do período (agrupado por placa)"
+                  style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #16a34a", background: "#f0fdf4", color: "#166534", cursor: "pointer", fontSize: ".78rem", fontWeight: 700, fontFamily: "inherit" }}
+                >
+                  Exportar tudo (Excel)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => exportarTudo("pdf")}
+                  title="Exportar todos os lançamentos do período em PDF"
+                  style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #dc2626", background: "#fef2f2", color: "#991b1b", cursor: "pointer", fontSize: ".78rem", fontWeight: 700, fontFamily: "inherit" }}
+                >
+                  Exportar tudo (PDF)
+                </button>
+              </>
+            )}
+            {veiculosPorCusto.length > 10 && (
+              <button
+                type="button"
+                onClick={() => setMostrarTodosVeiculos(v => !v)}
+                style={{
+                  padding: "6px 12px", borderRadius: 8, border: "1px solid #cbd5e1",
+                  background: "#fff", cursor: "pointer", fontSize: ".78rem", fontWeight: 600,
+                  color: "#334155", fontFamily: "inherit",
+                }}
+              >
+                {mostrarTodosVeiculos ? "Ver Top 10" : `Ver todos (${veiculosPorCusto.length})`}
+              </button>
+            )}
+          </div>
         </div>
         {veiculosPorCusto.length === 0 ? (
           <p style={{ color: "#94a3b8", fontSize: ".85rem", margin: "20px 0" }}>Sem lançamentos ainda.</p>
