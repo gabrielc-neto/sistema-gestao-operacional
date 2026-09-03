@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import LogoPontual from "../components/LogoPontual";
-import MenuNavegacao from "../components/MenuNavegacao";
+
 import MapaFrota from "../components/MapaFrota";
 import GraficoEvolucaoCustos from "../components/GraficoEvolucaoCustos";
 import { useSascarPosicoes } from "../hooks/useSascarPosicoes";
@@ -189,11 +189,16 @@ export default function Dashboard() {
   return (
     <div style={{ minHeight:"100vh", background:"var(--bg)", fontFamily:"var(--font)" }}>
 
-      {/* Mobile: mantém logo + menu na MESMA linha (evita quebra do pg-header-actions) */}
       <style>{`
         @media (max-width: 640px) {
-          .pg-header.dash-header { flex-wrap: nowrap !important; }
+          .pg-header.dash-header { flex-wrap: nowrap !important; padding: 10px 14px !important; }
           .dash-header .pg-header-actions { width: auto !important; margin-left: auto !important; justify-content: flex-end !important; }
+          .pg-body { padding: 16px 12px !important; }
+          .dash-kpi { gap: 8px !important; margin-bottom: 14px !important; }
+          .dash-grid-2 { gap: 10px !important; margin-bottom: 14px !important; }
+          .dash-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .dash-busca-mapa { max-width: 100% !important; flex: 1 1 100% !important; }
+          .dash-map-wrap { height: 300px !important; overflow: hidden; border-radius: 0 0 var(--r-lg) var(--r-lg); }
         }
       `}</style>
 
@@ -214,7 +219,6 @@ export default function Dashboard() {
               {dataFmt}
             </div>
           </div>
-          <MenuNavegacao />
         </div>
       </header>
 
@@ -310,7 +314,8 @@ export default function Dashboard() {
               <AlertTriangle size={16} color="var(--danger)" /> Falha ao carregar posições SASCAR.
             </div>
           ) : (
-            <MapaFrota
+            <div className="dash-map-wrap">
+              <MapaFrota
               posicoes={(() => {
                 let filtradas = posicoes;
                 if (filtroStatus) filtradas = filtradas.filter(p => p.statusTexto === filtroStatus);
@@ -327,6 +332,7 @@ export default function Dashboard() {
               focusPlaca={buscaMapa.trim().toUpperCase() || null}
               height={520}
             />
+            </div>
           )}
         </div>
 

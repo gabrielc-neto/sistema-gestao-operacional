@@ -22,7 +22,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useRBAC } from "../rbac/RBACContext";
 import { useOdometrosSascar } from "../hooks/useOdometrosSascar";
 import LogoPontual from "../components/LogoPontual";
-import MenuNavegacao from "../components/MenuNavegacao";
+
 import PadAssinatura from "../components/PadAssinatura";
 import { gerarPdfOS, visualizarPdfOS } from "../utils/pdfOS";
 import AbaConjuntoVencimentos from "../manutencao/AbaConjuntoVencimentos";
@@ -1082,8 +1082,8 @@ export default function Manutencao() {
     podeVerAba("cadastros")      ? "cadastros" : "veiculo"
   );
   const [aba,            setAba]            = useState(primeiraAba);
-  const [placa,          setPlaca]          = useState("");
-  const [busca,          setBusca]          = useState("");
+  const [sidebarOpen,    setSidebarOpen]    = useState(false);
+  const [placa,          setPlaca]          = useState("");  const [busca,          setBusca]          = useState("");
   const [filtroSt,       setFiltroSt]       = useState("todos");
   const [filtroTipo,     setFiltroTipo]     = useState("civ");
   const [filtroStTipo,   setFiltroStTipo]   = useState("todos");
@@ -1184,6 +1184,9 @@ export default function Manutencao() {
     if (!formOS.placa) return;
     refetchSascar();
   }, [formOS.placa]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fecha a sidebar (mobile) ao trocar de aba
+  useEffect(() => { setSidebarOpen(false); }, [aba]);
 
   // Ao abrir modal Concluir OS, força refetch SASCAR pra ter KM mais fresco possível
   useEffect(() => {
@@ -2639,6 +2642,15 @@ export default function Manutencao() {
         @media (max-width: 720px) {
           .manut-kpis { grid-template-columns: repeat(2, 1fr) !important; padding: 12px 12px 2px !important; }
         }
+        @media (max-width: 768px) {
+          .manut-sidebar-toggle { display: inline-flex !important; }
+          .manut-sidebar { transform: translateX(-100%) !important; transition: transform .25s ease !important; z-index: 99999 !important; }
+          .manut-sidebar.is-open { transform: translateX(0) !important; }
+          .manut-sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 99998; }
+          .manut-sidebar-overlay.is-open { display: block; }
+          .manut-kpis { margin-left: 0 !important; padding: 12px !important; }
+          .manut-page-root main { margin-left: 0 !important; padding: 12px !important; }
+        }
       `}</style>
       {/* HEADER */}
       <header style={s.header} className="pg-header">
@@ -2652,16 +2664,19 @@ export default function Manutencao() {
           )}
         </div>
         <div className="pg-header-actions">
+          <button className="manut-sidebar-toggle" onClick={() => setSidebarOpen(o => !o)} style={{ display:"none", width:36, height:36, border:"1px solid var(--border)", borderRadius:8, background:"var(--card-bg)", color:"var(--text)", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
           <button style={s.backBtn} className="manut-header-btn" onClick={() => navigate("/dashboard")}>
             <Ico.Dash size={16} />
             <span className="hide-mobile">Dashboard</span>
           </button>
-          <MenuNavegacao />
         </div>
       </header>
 
       {/* NAVBAR LATERAL ESQUERDA — agrupada por função + guard RBAC */}
-      <aside className="manut-navgroups manut-sidebar" style={s.navGroups}>
+      <div className={"manut-sidebar-overlay" + (sidebarOpen ? " is-open" : "")} onClick={() => setSidebarOpen(false)} />
+      <aside className={"manut-navgroups manut-sidebar" + (sidebarOpen ? " is-open" : "")} style={s.navGroups}>
         <div style={s.sidebarTitle} className="manut-sidebar-title">Manutenção</div>
 
         {podeVerAba("dashboard") && (

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { list as dsList, get as dsGet } from "../services/genericDataSource";
 import { listVeiculos } from "../services/frotaDataSource";
 import { useAuth } from "../contexts/AuthContext";
-import MenuNavegacao from "../components/MenuNavegacao";
+
 import LogoPontual from "../components/LogoPontual";
 import { ArrowLeft, Fuel, Truck, MapPin, Download, TrendingUp, AlertTriangle, DollarSign, BarChart3, Building2 } from "lucide-react";
 import { COLORS, SPACING, TYPO, RADIUS } from "../theme/tokens";
@@ -401,7 +401,6 @@ export default function Abastecimento() {
           <button style={{ padding: "8px 14px", borderRadius: 8, background: "#ffffff", border: "none", color: "var(--accent)", cursor: "pointer", fontWeight: 700, fontSize: ".82rem", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, boxShadow: "0 1px 3px rgba(0,0,0,.1)" }} onClick={() => navigate("/dashboard")}>
             <ArrowLeft size={14} /> Dashboard
           </button>
-          <MenuNavegacao />
         </div>
       </header>
 

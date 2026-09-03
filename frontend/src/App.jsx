@@ -5,6 +5,7 @@ import { PermissionsProvider } from "./contexts/PermissionsContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { RBACProvider } from "./rbac/RBACContext";
 import RotaProtegida from "./rbac/RotaProtegida";
+import Layout from "./components/Layout";
 import InstallPWA from "./components/InstallPWA";
 // Telas públicas da intranet: eager, como era a antiga Login. São a porta de
 // entrada, e o lazy inseriria o fallback do Suspense no meio da animação de
@@ -69,6 +70,25 @@ function Privada({ permissao, algumaDe, children }) {
   );
 }
 
+// Layout wrapper para rotas autenticadas — inclui sidebar + bottom nav
+function LayoutPrivado({ children }) {
+  return (
+    <PrivateRoute>
+      <Layout>{children}</Layout>
+    </PrivateRoute>
+  );
+}
+
+function LayoutPrivada({ permissao, algumaDe, children }) {
+  return (
+    <PrivateRoute>
+      <RotaProtegida permissao={permissao} algumaDe={algumaDe}>
+        <Layout>{children}</Layout>
+      </RotaProtegida>
+    </PrivateRoute>
+  );
+}
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -78,63 +98,40 @@ export default function App() {
             <BrowserRouter>
               <Suspense fallback={<Loading />}>
                 <Routes>
-                  {/* Intranet pública, em duas páginas: /acesso é a porta de entrada
-                      (splash + anel de ícones) e /sistemas lista os sistemas e trata o
-                      que vem depois deles. A raiz só encaminha para a porta de entrada.
-
-                      Estas rotas NÃO usam PublicRoute de propósito. O portal é o hub de
-                      13 sistemas, a maioria sem relação com o SGO — estar logado no SGO
-                      não pode impedir de voltar aqui para abrir o Service Desk ou o Canal
-                      de Integridade. Envolvê-las em PublicRoute prendia o usuário logado
-                      num laço: voltar ao portal era interceptado e devolvido ao
-                      /dashboard. Quem redireciona para o /dashboard depois de autenticar
-                      é a própria Sistemas.jsx, na tela de login. */}
-                  {/* Página inicial = login direto do Sistema de Gestão Operacional.
-                      O portal da intranet continua acessível em /acesso e /sistemas. */}
-                  <Route path="/"            element={<LoginSGO />} />
-                  <Route path="/acesso"      element={<Acesso />} />
-                  <Route path="/sistemas"    element={<Sistemas />} />
-
-                  {/* Convite público a UMA proposta (sem login, via token no link) */}
+                  {/* ─── Rotas públicas (SEM layout) ──────────────────────── */}
+                  <Route path="/"              element={<LoginSGO />} />
+                  <Route path="/acesso"        element={<Acesso />} />
+                  <Route path="/sistemas"      element={<Sistemas />} />
                   <Route path="/proposta-convite/:id" element={<PropostaConvite />} />
+                  <Route path="/certificado"           element={<Certificado />} />
+                  <Route path="/certificado/:codigo"   element={<Certificado />} />
+                  <Route path="/intranet"       element={<IntranetArea />} />
 
-                  {/* Certificados — a tela de validação é aberta a qualquer um, de
-                      fora da empresa inclusive; a emissão fica atrás do login de
-                      administrador, dentro da própria página. O link direto (QR
-                      impresso no documento) já consulta ao abrir. */}
-                  <Route path="/certificado"         element={<Certificado />} />
-                  <Route path="/certificado/:codigo" element={<Certificado />} />
-
-                  {/* Painel de Configurações da intranet — entra com usuário e senha de
-                      administrador, sem login Firebase. A própria página valida o token
-                      contra a API a cada carga. */}
-                  <Route path="/intranet" element={<IntranetArea />} />
-
-                  {/* Dashboard sempre acessível para usuário logado */}
-                  <Route path="/dashboard"   element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                  {/* ─── Rotas autenticadas (COM layout sidebar + bottom nav) ── */}
+                  <Route path="/dashboard"     element={<LayoutPrivado><Dashboard /></LayoutPrivado>} />
 
                   {/* Módulos operacionais */}
-                  <Route path="/frota"       element={<Privada permissao="frota.ver"><Frota /></Privada>} />
-                  <Route path="/motoristas"  element={<Privada permissao="motoristas.ver"><Motoristas /></Privada>} />
-                  <Route path="/atrelamento" element={<Privada permissao="atrelamento.ver"><Atrelamento /></Privada>} />
-                  <Route path="/oc"          element={<Privada permissao="oc.ver"><OC /></Privada>} />
-                  <Route path="/manutencao"  element={<Privada permissao="manutencao.ver"><Manutencao /></Privada>} />
-                  <Route path="/compras"     element={<Privada permissao="compras.ver"><Compras /></Privada>} />
-                  <Route path="/abastecimento" element={<PrivateRoute><Abastecimento /></PrivateRoute>} />
-                  <Route path="/pneus"       element={<Privada permissao="pneus.ver"><Pneus /></Privada>} />
-                  <Route path="/pneus/:id"   element={<Privada permissao="pneus.ver"><FichaPneu /></Privada>} />
-                  <Route path="/historico"   element={<Privada permissao="historico.ver"><Historico /></Privada>} />
-                  <Route path="/ferias"      element={<Privada permissao="ferias.ver"><Ferias /></Privada>} />
-                  <Route path="/rastreamento" element={<PrivateRoute><Rastreamento /></PrivateRoute>} />
-                  <Route path="/cercas"       element={<PrivateRoute><Cercas /></PrivateRoute>} />
-                  <Route path="/jornada"      element={<PrivateRoute><Jornada /></PrivateRoute>} />
+                  <Route path="/frota"         element={<LayoutPrivada permissao="frota.ver"><Frota /></LayoutPrivada>} />
+                  <Route path="/motoristas"    element={<LayoutPrivada permissao="motoristas.ver"><Motoristas /></LayoutPrivada>} />
+                  <Route path="/atrelamento"   element={<LayoutPrivada permissao="atrelamento.ver"><Atrelamento /></LayoutPrivada>} />
+                  <Route path="/oc"            element={<LayoutPrivada permissao="oc.ver"><OC /></LayoutPrivada>} />
+                  <Route path="/manutencao"    element={<LayoutPrivada permissao="manutencao.ver"><Manutencao /></LayoutPrivada>} />
+                  <Route path="/compras"       element={<LayoutPrivada permissao="compras.ver"><Compras /></LayoutPrivada>} />
+                  <Route path="/abastecimento" element={<LayoutPrivado><Abastecimento /></LayoutPrivado>} />
+                  <Route path="/pneus"         element={<LayoutPrivada permissao="pneus.ver"><Pneus /></LayoutPrivada>} />
+                  <Route path="/pneus/:id"     element={<LayoutPrivada permissao="pneus.ver"><FichaPneu /></LayoutPrivada>} />
+                  <Route path="/historico"     element={<LayoutPrivada permissao="historico.ver"><Historico /></LayoutPrivada>} />
+                  <Route path="/ferias"        element={<LayoutPrivada permissao="ferias.ver"><Ferias /></LayoutPrivada>} />
+                  <Route path="/rastreamento"  element={<LayoutPrivado><Rastreamento /></LayoutPrivado>} />
+                  <Route path="/cercas"        element={<LayoutPrivado><Cercas /></LayoutPrivado>} />
+                  <Route path="/jornada"       element={<LayoutPrivado><Jornada /></LayoutPrivado>} />
 
                   {/* Administração */}
-                  <Route path="/usuarios"        element={<Privada permissao="usuarios.ver"><Usuarios /></Privada>} />
-                  <Route path="/admin/setores"   element={<Privada permissao="setores.ver"><Setores /></Privada>} />
-                  <Route path="/admin/cargos"    element={<Privada permissao="cargos.ver"><Cargos /></Privada>} />
-                  <Route path="/permissoes"      element={<Privada permissao="permissoes.ver"><Permissoes /></Privada>} />
-                  <Route path="/import"          element={<PrivateRoute><ImportAdmin /></PrivateRoute>} />
+                  <Route path="/usuarios"      element={<LayoutPrivada permissao="usuarios.ver"><Usuarios /></LayoutPrivada>} />
+                  <Route path="/admin/setores" element={<LayoutPrivada permissao="setores.ver"><Setores /></LayoutPrivada>} />
+                  <Route path="/admin/cargos"  element={<LayoutPrivada permissao="cargos.ver"><Cargos /></LayoutPrivada>} />
+                  <Route path="/permissoes"    element={<LayoutPrivada permissao="permissoes.ver"><Permissoes /></LayoutPrivada>} />
+                  <Route path="/import"        element={<LayoutPrivado><ImportAdmin /></LayoutPrivado>} />
                 </Routes>
               </Suspense>
               <InstallPWA />

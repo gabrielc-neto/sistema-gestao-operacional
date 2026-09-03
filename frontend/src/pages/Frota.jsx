@@ -6,7 +6,7 @@ import { list as dsList, watch as dsWatch } from "../services/genericDataSource"
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import LogoPontual from "../components/LogoPontual";
-import MenuNavegacao from "../components/MenuNavegacao";
+
 import VeiculoQR from "../components/VeiculoQR";
 import { QrCode, Rows3, LayoutGrid, Columns2, Lock as LockIco, Unlock as UnlockIco, Edit3 } from "lucide-react";
 import { usuarioPontual } from "../utils/format";
@@ -407,6 +407,11 @@ export default function Frota() {
         .frota-page-root .frota-display { font-family: "Space Grotesk", "Manrope", system-ui, sans-serif; letter-spacing: -.01em; }
         .frota-header-btn { transition: transform .15s, background .15s, box-shadow .15s; }
         .frota-header-btn:hover { transform: translateY(-1px); }
+        @media (max-width: 640px) {
+          .frota-page-root .pg-header { padding: 10px 14px !important; gap: 8px !important; }
+          .frota-page-root .pg-toolbar { padding: 10px 12px !important; gap: 8px !important; }
+          .frota-page-root .pg-toolbar > div { min-width: 0 !important; }
+        }
       `}</style>
       <header style={s.header} className="pg-header">
         <div className="pg-logo"><LogoPontual height={36} variant="white" /></div>
@@ -425,7 +430,6 @@ export default function Frota() {
             <Ico.Dash size={16} />
             <span className="hide-mobile">Dashboard</span>
           </button>
-          <MenuNavegacao />
         </div>
       </header>
 
@@ -1100,7 +1104,7 @@ const s = {
   fabBadge:    { display:"inline-block", padding:"3px 9px", borderRadius:5, fontSize:".64rem", fontWeight:800, color:"#fff", alignSelf:"flex-start", letterSpacing:".06em", textTransform:"uppercase" },
   placa:       { fontWeight:700, fontSize:"1.5rem", color:"#1a3a5c", letterSpacing:".5px", marginTop:8, lineHeight:1.1 },
   // Stat cards (linha de estatística no topo)
-  statsRow:    { padding:"18px 24px 0", display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))", gap:12 },
+  statsRow:    { padding:"18px 24px 0", display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(150px, 1fr))", gap:12 },
   statCard:    { display:"flex", alignItems:"center", gap:12, padding:"14px 16px", borderRadius:14, background:"#fff", border:"1px solid #e2e8f0", boxShadow:"0 1px 3px rgba(15,23,42,.04), 0 6px 18px -10px rgba(15,23,42,.10)" },
   statIcon:    { width:44, height:44, borderRadius:11, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
   statValue:   { fontWeight:700, fontSize:"1.7rem", color:"#1a3a5c", lineHeight:1, letterSpacing:"-.02em" },

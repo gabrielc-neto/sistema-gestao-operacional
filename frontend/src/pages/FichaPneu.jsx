@@ -4,7 +4,7 @@ import { collection, getDocs, doc, getDoc, query, where } from "firebase/firesto
 import { db } from "../firebase/config";
 import { get as dsGet, list as dsList } from "../services/genericDataSource";
 import LogoPontual from "../components/LogoPontual";
-import MenuNavegacao from "../components/MenuNavegacao";
+
 import { ArrowLeft, Package, MapPin, RefreshCw, ClipboardCheck, Plus, Calendar } from "lucide-react";
 import { VIDAS, STATUS_PNEU } from "../pneus/esquemas";
 
@@ -212,7 +212,6 @@ export default function FichaPneu() {
         </div>
         <div className="pg-header-actions">
           <button style={s.backBtn} onClick={() => navigate("/pneus")}><ArrowLeft size={14} /> Voltar</button>
-          <MenuNavegacao />
         </div>
       </header>
 

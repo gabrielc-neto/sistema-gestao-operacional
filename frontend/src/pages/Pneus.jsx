@@ -6,7 +6,7 @@ import { db } from "../firebase/config";
 import { useAuth } from "../contexts/AuthContext";
 import { usuarioPontual } from "../utils/format";
 import LogoPontual from "../components/LogoPontual";
-import MenuNavegacao from "../components/MenuNavegacao";
+
 import { Package, MapPin, ClipboardCheck, RefreshCw, LayoutDashboard, ShoppingCart, History } from "lucide-react";
 import { STATUS_PNEU } from "../pneus/esquemas";
 import AbaEstoque from "../pneus/AbaEstoque";
@@ -137,7 +137,6 @@ export default function Pneus() {
         </div>
         <div style={s.headerRight} className="pg-header-actions">
           <button style={s.backBtn} onClick={() => navigate("/dashboard")}>← Dashboard</button>
-          <MenuNavegacao />
         </div>
       </header>
 

@@ -1,11 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { LayoutDashboard } from "lucide-react";
-import LogoPontual from "./LogoPontual";
-import MenuNavegacao from "./MenuNavegacao";
 
 /**
  * Navbar padrão de todos os módulos — base: Frota.
- * Uniformiza estética + responsividade do topo de cada página.
+ * Uniformiza estética do topo de cada página.
+ * O menu de navegação agora é fornecido pelo Layout (sidebar/bottom nav).
  *
  * Props:
  *  - title    (string)     nome do módulo (ex.: "FROTA")
@@ -50,12 +49,9 @@ export default function ModuleHeader({ title, subtitle, actions, onBack }) {
         .mod-hbtn-alt:hover { background: rgba(255,255,255,.22); }
       `}</style>
 
-      <div className="pg-logo" style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-        <LogoPontual height={36} variant="white" />
-        <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0 }}>
-          <span className="mod-title">{title}</span>
-          {subtitle && <span className="mod-sub hide-mobile">{subtitle}</span>}
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 0, minWidth: 0 }}>
+        <span className="mod-title">{title}</span>
+        {subtitle && <span className="mod-sub">{subtitle}</span>}
       </div>
 
       <div className="mod-header-btns pg-header-actions">
@@ -64,7 +60,6 @@ export default function ModuleHeader({ title, subtitle, actions, onBack }) {
           <LayoutDashboard size={16} />
           <span className="hide-mobile">Dashboard</span>
         </button>
-        <MenuNavegacao />
       </div>
     </header>
   );

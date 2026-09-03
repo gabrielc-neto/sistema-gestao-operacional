@@ -283,9 +283,11 @@ export default function OC() {
         @media (max-width: 480px) {
           .oc-drawer-overlay .oc-drawer { width: 100vw !important; }
           .oc-fila { padding: 0 10px 24px !important; }
+          .oc-kpis { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
         }
         @media (max-width: 640px) {
-          .oc-fila .oc-toolbar { padding: 10px 12px !important; }
+          .oc-fila .oc-toolbar { padding: 10px 12px !important; flex-direction: column !important; align-items: stretch !important; }
+          .oc-fila .oc-toolbar > * { width: 100% !important; }
         }
       `}</style>
 
