@@ -68,3 +68,4 @@ __pycache__/
 functions/scripts/email-config.json
 
 scripts/.env.vps
+.aider*
