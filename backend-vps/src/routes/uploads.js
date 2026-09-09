@@ -65,6 +65,7 @@ export function attachFileServer(app) {
     if (!existsSync(abs)) return res.status(404).json({ error: "not_found" });
     const st = statSync(abs);
     if (!st.isFile()) return res.status(404).json({ error: "not_found" });
+    res.type(extname(abs));
     res.setHeader("Content-Length", st.size);
     res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
     createReadStream(abs).pipe(res);
