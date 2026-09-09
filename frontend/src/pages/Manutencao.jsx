@@ -3658,7 +3658,11 @@ export default function Manutencao() {
                                         <img src={a.url} alt={a.nome} style={{ width:"100%", maxHeight:800, objectFit:"contain", display:"block", background:"#fff" }} />
                                       </a>
                                     ) : isPdf ? (
-                                      <iframe src={a.url} title={a.nome} style={{ width:"100%", height:700, border:"none", display:"block", background:"#fff" }} />
+                                      <object data={a.url} type="application/pdf" title={a.nome} style={{ width:"100%", height:700, border:"none", display:"block", background:"#fff" }}>
+                                        <div style={{ padding:40, textAlign:"center", color:"#64748b", fontSize:".9rem" }}>
+                                          Seu navegador não conseguiu exibir o PDF — clique em "Abrir em tela cheia"
+                                        </div>
+                                      </object>
                                     ) : (
                                       <div style={{ padding:40, textAlign:"center", color:"#64748b", fontSize:".9rem" }}>
                                         Arquivo não visualizável — clique em "Abrir em tela cheia"
