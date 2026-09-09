@@ -67,7 +67,7 @@ export function attachFileServer(app) {
     if (!st.isFile()) return res.status(404).json({ error: "not_found" });
     res.type(extname(abs));
     res.setHeader("Content-Length", st.size);
-    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.setHeader("Cache-Control", "public, max-age=3600, must-revalidate");
     createReadStream(abs).pipe(res);
   }));
 }
