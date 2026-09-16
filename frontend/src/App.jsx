@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { PermissionsProvider } from "./contexts/PermissionsContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { RBACProvider } from "./rbac/RBACContext";
+import { RBACProvider, useRBAC } from "./rbac/RBACContext";
 import RotaProtegida from "./rbac/RotaProtegida";
 import Login from "./pages/Login";
 import InstallPWA from "./components/InstallPWA";
@@ -56,6 +56,22 @@ function PublicRoute({ children }) {
   return user ? <Navigate to="/dashboard" replace /> : children;
 }
 
+// Se o usuário tem menu_restrito, o Dashboard redireciona para a primeira permissão .ver dele.
+// Usuários sem menu_restrito veem o Dashboard normal.
+function DashboardOrRedirect() {
+  const { menuRestrito, permissoes, loading } = useRBAC();
+  if (loading) return <Loading />;
+  if (menuRestrito) {
+    const primeiraVer = (permissoes || []).find(p => p.endsWith(".ver"));
+    if (primeiraVer) {
+      const rota = "/" + primeiraVer.replace(".ver", "");
+      return <Navigate to={rota} replace />;
+    }
+    return <Navigate to="/" replace />;
+  }
+  return <Dashboard />;
+}
+
 // Helper para condensar PrivateRoute + RotaProtegida.
 function Privada({ permissao, algumaDe, children }) {
   return (
@@ -80,8 +96,8 @@ export default function App() {
                   <Route path="/"            element={<PublicRoute><Login /></PublicRoute>} />
                   <Route path="/proposta-convite/:id" element={<PropostaConvite />} />
 
-                  {/* Dashboard sempre acessível para usuário logado */}
-                  <Route path="/dashboard"   element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                  {/* Dashboard: usuário com menu_restrito é redirecionado pra sua primeira permissão .ver */}
+                  <Route path="/dashboard"   element={<PrivateRoute><DashboardOrRedirect /></PrivateRoute>} />
 
                   {/* Módulos operacionais */}
                   <Route path="/frota"       element={<Privada permissao="frota.ver"><Frota /></Privada>} />
@@ -100,7 +116,7 @@ export default function App() {
                   <Route path="/pneus/:id"   element={<Privada permissao="pneus.ver"><FichaPneu /></Privada>} />
                   <Route path="/historico"   element={<Privada permissao="historico.ver"><Historico /></Privada>} />
                   <Route path="/ferias"      element={<Privada permissao="ferias.ver"><Ferias /></Privada>} />
-                  <Route path="/rastreamento" element={<PrivateRoute><Rastreamento /></PrivateRoute>} />
+                  <Route path="/rastreamento" element={<Privada permissao="rastreamento.ver"><Rastreamento /></Privada>} />
                   <Route path="/cercas"       element={<PrivateRoute><Cercas /></PrivateRoute>} />
                   <Route path="/jornada"      element={<PrivateRoute><Jornada /></PrivateRoute>} />
 

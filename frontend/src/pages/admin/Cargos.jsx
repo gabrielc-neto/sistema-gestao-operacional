@@ -19,7 +19,7 @@ import ModuleHeader from "../../components/ModuleHeader";
 import ExportBar from "../../components/ExportBar";
 import { Save, Pencil, Trash2, ShieldCheck, Plus, Building2, X } from "lucide-react";
 
-const VAZIO = { nome: "", setor_id: "", nivel: 1, descricao: "", status: "ativo", permissoes: [] };
+const VAZIO = { nome: "", setor_id: "", nivel: 1, descricao: "", status: "ativo", permissoes: [], menu_restrito: false };
 const SETOR_VAZIO = { nome: "", descricao: "", status: "ativo" };
 
 export default function Cargos() {
@@ -45,6 +45,7 @@ export default function Cargos() {
   // modal de permissões (do cargo selecionado)
   const [permCargo, setPermCargo]       = useState(null);
   const [permsLocal, setPermsLocal]     = useState([]);
+  const [menuRestritoLocal, setMenuRestritoLocal] = useState(false);
   const [salvandoPerms, setSalvandoPerms] = useState(false);
 
   async function carregar() {
@@ -87,6 +88,7 @@ export default function Cargos() {
       descricao: c.descricao || "",
       status: c.status || "ativo",
       permissoes: c.permissoes || [],
+      menu_restrito: !!c.menu_restrito,
     });
     setEditId(c.id); setErro(""); setModal(true);
   }
@@ -108,6 +110,7 @@ export default function Cargos() {
         nivel:     Number(form.nivel) || 1,
         descricao: form.descricao.trim(),
         status:    form.status,
+        menu_restrito: !!form.menu_restrito,
         permissoes: form.permissoes || [],
         updated_at: serverTimestamp(),
       };
@@ -165,8 +168,9 @@ export default function Cargos() {
   function abrirPerms(c) {
     setPermCargo(c);
     setPermsLocal(Array.isArray(c.permissoes) ? [...c.permissoes] : []);
+    setMenuRestritoLocal(!!c.menu_restrito);
   }
-  function fecharPerms() { setPermCargo(null); setPermsLocal([]); }
+  function fecharPerms() { setPermCargo(null); setPermsLocal([]); setMenuRestritoLocal(false); }
 
   function togglePerm(nome) {
     setPermsLocal(prev =>
@@ -189,6 +193,7 @@ export default function Cargos() {
     try {
       await dsPatch("cargos", permCargo.id, {
         permissoes: permsLocal,
+        menu_restrito: !!menuRestritoLocal,
         updated_at: new Date().toISOString(),
       });
       await carregar();
@@ -354,6 +359,12 @@ export default function Cargos() {
                 </select>
               </label>
 
+              <label style={{ ...s.mlbl, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <input type="checkbox" checked={!!form.menu_restrito}
+                  onChange={e => setForm({ ...form, menu_restrito: e.target.checked })} />
+                <span>Menu restrito às permissões marcadas <span style={{ opacity: 0.65, fontSize: 12 }}>(usuário só vê no menu os módulos com permissão explícita — esconde Dashboard, Abastecimento, Jornada e demais itens padrão)</span></span>
+              </label>
+
               {erro && <p style={s.erroMsg}>{erro}</p>}
 
               <div style={s.mfoot}>
@@ -427,6 +438,21 @@ export default function Cargos() {
             </div>
 
             <div style={s.permBody}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px", background: "#FFF7E6", border: "1px solid #F5C97A", borderRadius: 8, marginBottom: 12, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={!!menuRestritoLocal}
+                  onChange={e => setMenuRestritoLocal(e.target.checked)}
+                  disabled={!temPermissao("permissoes.editar")}
+                  style={{ marginTop: 3 }}
+                />
+                <span style={{ fontSize: 13, color: "#7A5A0F" }}>
+                  <strong>Menu restrito às permissões marcadas</strong>
+                  <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>
+                    Quando ativado, o usuário só vê no menu os módulos com permissão marcada abaixo. Esconde Dashboard, Abastecimento, Jornada e demais itens padrão. Use para usuários externos (ex: só rastreador).
+                  </div>
+                </span>
+              </label>
               <div style={s.permGrid}>
                 {PERMISSOES_POR_MODULO.map(grupo => (
                   <div key={grupo.modulo.id} style={s.permGrupo}>

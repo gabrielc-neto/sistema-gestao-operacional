@@ -23,6 +23,7 @@ const RBACContext = createContext({
   cargo: null,
   permissoes: [],
   isSuperAdmin: false,
+  menuRestrito: false,
   loading: true,
   temPermissao: () => false,
   temAlguma: () => false,
@@ -102,8 +103,10 @@ export function RBACProvider({ children }) {
     return lista.every(p => permissoes.includes(p));
   }
 
+  const menuRestrito = !isSuperAdmin && !!cargo?.menu_restrito;
+
   const value = {
-    setor, cargo, permissoes, isSuperAdmin, loading,
+    setor, cargo, permissoes, isSuperAdmin, menuRestrito, loading,
     temPermissao, temAlguma, temTodas,
   };
 

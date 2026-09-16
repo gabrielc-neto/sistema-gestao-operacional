@@ -29,9 +29,9 @@ const GRUPOS = [
       { Icon: Wrench,        label: "Manutenção",             link: "/manutencao",   module: "manutencao" },
       { Icon: CircleDot,     label: "Gestão de Pneus",        link: "/pneus",        module: "pneus" },
       { Icon: Fuel,          label: "Abastecimento",          link: "/abastecimento", sempre: true },
-      // Contratos + Viagens ocultos temporariamente (2026-08-10) — módulo em desenvolvimento
-      // { Icon: FileText,      label: "Contratos",              link: "/contratos",    perm: "contratos.ver" },
-      // { Icon: Truck,         label: "Viagens (Retiradas)",    link: "/viagens",      perm: "viagens.ver" },
+      // Contratos + Viagens — visíveis localmente pra teste (2026-09-11), NÃO commitar
+      { Icon: FileText,      label: "Contratos",              link: "/contratos",    perm: "contratos.ver" },
+      { Icon: Truck,         label: "Viagens (Retiradas)",    link: "/viagens",      perm: "viagens.ver" },
       { Icon: ShoppingCart,  label: "Compras",                link: "/compras",      perm: "compras.ver" },
       { Icon: History,       label: "Histórico",              link: "/historico",    module: "historico" },
       { Icon: Palmtree,      label: "Férias",                 link: "/ferias",       module: "ferias" },
@@ -40,7 +40,7 @@ const GRUPOS = [
   {
     titulo: "MONITORAMENTO",
     itens: [
-      { Icon: MapPin, label: "Rastreamento",     link: "/rastreamento", sempre: true },
+      { Icon: MapPin, label: "Rastreamento",     link: "/rastreamento", perm: "rastreamento.ver" },
       { Icon: Clock,  label: "Jornada & Extras", link: "/jornada",      sempre: true },
     ],
   },
@@ -76,7 +76,7 @@ export default function MenuNavegacao({ variante = "escuro" }) {
   const { profile, user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { canView, isAdmin } = usePermissions();
-  const { temPermissao } = useRBAC();
+  const { temPermissao, menuRestrito } = useRBAC();
 
   // Trava scroll do body + fecha no Escape + esconde controles do Leaflet + a legenda custom "Status"
   useEffect(() => {
@@ -102,6 +102,12 @@ export default function MenuNavegacao({ variante = "escuro" }) {
   }, [open]);
 
   const podeVer = (m) => {
+    // No modo "menu restrito", só passa quem tem permissão explícita — ignora `sempre: true`.
+    if (menuRestrito) {
+      if (m.perm)   return temPermissao(m.perm);
+      if (m.module) return canView(m.module);
+      return false;
+    }
     if (m.sempre) return true;
     if (m.perm)   return temPermissao(m.perm);
     if (m.module) return canView(m.module);

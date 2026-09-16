@@ -15,8 +15,8 @@ import { execSync } from "node:child_process";
 import { statSync } from "node:fs";
 
 const ROOT = "C:/Users/Logistica01/projetos/logistica-ia";
-const PROD_DIR = "/var/www/prod/intranet.pontualpetroleo.com.br";
-const PROD_URL = "https://intranet.pontualpetroleo.com.br/";
+const PROD_DIR = "/var/www/prod/logistica/front";
+const PROD_URL = "https://logistica.pontualpetroleo.com.br/";
 
 const args = process.argv.slice(2);
 const soBackend = args.includes("--backend");
@@ -41,17 +41,17 @@ async function deployFrontend() {
   step("[frontend] backup do prod atual");
   const iso = new Date().toISOString(); // 2026-08-10T18:38:05.123Z
   const stamp = `${iso.slice(0,10).replace(/-/g,"")}-${iso.slice(11,19).replace(/:/g,"")}`; // YYYYMMDD-HHMMSS
-  const backupPath = `/var/pontual/backup-prod-${stamp}.tar.gz`;
+  const backupPath = `/var/www/prod/logistica/backups/frontend-prod-${stamp}.tar.gz`;
   execSync(`node vps-ssh.mjs "tar -czf ${backupPath} -C ${PROD_DIR} . 2>/dev/null && ls -la ${backupPath}"`,
     { cwd: `${ROOT}/scripts`, env: { ...process.env, MSYS_NO_PATHCONV: "1" }, stdio: "inherit" });
   ok(`backup salvo em ${backupPath}`);
 
   step("[frontend] upload SFTP");
-  execSync(`node vps-scp.mjs "${ROOT}/frontend/_dist.tar.gz" /var/pontual/dist-prod.tar.gz`,
+  execSync(`node vps-scp.mjs "${ROOT}/frontend/_dist.tar.gz" /var/www/prod/logistica/dist-prod.tar.gz`,
     { cwd: `${ROOT}/scripts`, env: { ...process.env, MSYS_NO_PATHCONV: "1" }, stdio: "inherit" });
 
   step("[frontend] extract merge (não-destrutivo) em prod");
-  execSync(`node vps-ssh.mjs "cd ${PROD_DIR} && tar -xzf /var/pontual/dist-prod.tar.gz && rm /var/pontual/dist-prod.tar.gz"`,
+  execSync(`node vps-ssh.mjs "cd ${PROD_DIR} && tar -xzf /var/www/prod/logistica/dist-prod.tar.gz && rm /var/www/prod/logistica/dist-prod.tar.gz"`,
     { cwd: `${ROOT}/scripts`, env: { ...process.env, MSYS_NO_PATHCONV: "1" }, stdio: "inherit" });
 
   execSync(`rm ${ROOT}/frontend/_dist.tar.gz`, { shell: "bash" });

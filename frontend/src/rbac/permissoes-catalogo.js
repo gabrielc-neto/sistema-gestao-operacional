@@ -19,6 +19,7 @@ export const MODULOS = [
   { id: "intranet",    label: "Intranet / Gerenciamento de Sistemas" },
   { id: "ferias",      label: "Férias" },
   { id: "historico",   label: "Histórico" },
+  { id: "rastreamento", label: "Rastreamento" },
   { id: "relatorios",  label: "Relatórios" },
   { id: "financeiro",  label: "Financeiro" },
   { id: "usuarios",    label: "Usuários" },
