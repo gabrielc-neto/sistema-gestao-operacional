@@ -367,15 +367,19 @@ function nomeMes(m) {
 
 // Data de referência de um lançamento p/ filtros/agrupamentos.
 // Prioriza data_emissao (competência real do serviço/NF, tipo DATE sem fuso).
-// Normaliza strings YYYY-MM-DD adicionando T12:00:00 p/ evitar shift de fuso
-// (new Date("2026-08-01") vira 21:00 do dia anterior em BRT).
+// Bug corrigido 2026-09-16: o backend serializa DATE como ISO UTC completa
+// ("2026-08-01T00:00:00.000Z"), não como "2026-08-01". A regex antiga só batia
+// no formato curto e caía no fallback new Date(raw) — que interpreta UTC 00:00
+// como 21:00 BRT do dia anterior, jogando lançamentos do dia 1 pro mês passado.
+// Fix: extrai a parte YYYY-MM-DD via match() (funciona pra ambos formatos) e
+// normaliza pra meio-dia local — evita qualquer shift de fuso.
 function dataLanc(l) {
   const raw = l?.data_emissao || l?.dataHora || l?.criadoEm || l?.created_at;
   if (!raw) return NaN;
-  if (typeof raw === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-    return new Date(`${raw}T12:00:00`).getTime();
-  }
-  return new Date(raw).getTime();
+  const s = String(raw);
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (m) return new Date(`${m[1]}T12:00:00`).getTime();
+  return new Date(s).getTime();
 }
 
 function DashboardCustos({ lancamentos, fmtBRLfn }) {
