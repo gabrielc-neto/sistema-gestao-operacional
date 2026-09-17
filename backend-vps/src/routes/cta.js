@@ -1,6 +1,6 @@
 // Rota /api/cta/sincronizar — substitui Firebase Function equivalente.
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireMenuRestrito } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 import { sincronizarCtaAgora } from "../integracoes/cta/sincronizar-pg.js";
 
@@ -12,7 +12,7 @@ export async function sincronizarCta() {
   return await sincronizarCtaAgora({ token: TOKEN });
 }
 
-r.post("/sincronizar", requireAuth, asyncH(async (req, res) => {
+r.post("/sincronizar", requireAuth, requireMenuRestrito("abastecimento.ver"), asyncH(async (req, res) => {
   const out = await sincronizarCta();
   res.json(out);
 }));

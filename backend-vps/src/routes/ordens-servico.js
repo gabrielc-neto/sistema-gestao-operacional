@@ -5,11 +5,12 @@
 // Mapeamos nas duas pontas: aceita camelCase no body, retorna camelCase nas rows.
 import { Router } from "express";
 import { q, q1 } from "../db.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireMenuRestrito } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 
 const r = Router();
 r.use(requireAuth);
+r.use(requireMenuRestrito("manutencao.ver"));
 
 // snake_case (PG) → camelCase (frontend) para os aliases usados na app
 function toCamel(row) {

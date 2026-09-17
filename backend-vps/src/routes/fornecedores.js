@@ -3,11 +3,12 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
 import { q, q1 } from "../db.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireMenuRestrito } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 
 const r = Router();
 r.use(requireAuth);
+r.use(requireMenuRestrito("compras.ver", "manutencao.ver"));
 
 function toCamel(row) {
   if (!row) return row;

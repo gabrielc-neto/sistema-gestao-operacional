@@ -3,7 +3,7 @@
 // Chama-se via POST /api/sascar/posicoes.
 // Cronjob (src/cron.js) também chama automaticamente a cada 5 min.
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireMenuRestrito } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 import { q, q1 } from "../db.js";
 import { cached, getCache, setCache } from "../integracoes/cache.js";
@@ -203,7 +203,7 @@ export async function atualizarPosicoesSascar() {
 // POST /api/sascar/posicoes — SEMPRE serve cache do cron. Nunca chama SOAP daqui.
 // SOAP roda só no cron (src/cron.js) pra respeitar rate limit SASCAR (1req/60s).
 // Se cache vazio (primeiro boot), força 1 chamada e popula.
-r.post("/posicoes", requireAuth, asyncH(async (req, res) => {
+r.post("/posicoes", requireAuth, requireMenuRestrito("rastreamento.ver"), asyncH(async (req, res) => {
   const hit = getCache("sascar-posicoes");
   if (hit) {
     return res.json({ ...hit.data, cache: { age: hit.age, fresh: false, source: "cron" } });
@@ -215,7 +215,7 @@ r.post("/posicoes", requireAuth, asyncH(async (req, res) => {
 }));
 
 // GET /api/sascar/veiculos — só lista (sem persistir)
-r.get("/veiculos", requireAuth, asyncH(async (req, res) => {
+r.get("/veiculos", requireAuth, requireMenuRestrito("rastreamento.ver"), asyncH(async (req, res) => {
   if (!USUARIO || !SENHA) return res.status(503).json({ error: "SASCAR não configurado" });
   const veiculos = await obterVeiculos({ usuario: USUARIO, senha: SENHA, quantidade: 1000, idVeiculo: 0 });
   res.json({ veiculos, total: veiculos.length });

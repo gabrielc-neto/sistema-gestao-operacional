@@ -1,11 +1,12 @@
 // Rotas CRUD pra tabela `tipos_manutencao_custom` (tipos custom da usuária).
 import { Router } from "express";
 import { q, q1 } from "../db.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireMenuRestrito } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 
 const r = Router();
 r.use(requireAuth);
+r.use(requireMenuRestrito("manutencao.ver"));
 
 r.get("/", asyncH(async (req, res) => {
   const rows = await q(`SELECT * FROM tipos_manutencao_custom WHERE ativo = true ORDER BY grupo, label`);

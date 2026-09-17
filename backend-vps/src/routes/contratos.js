@@ -18,12 +18,13 @@ import multer from "multer";
 import fs from "fs/promises";
 import path from "path";
 import { q, q1 } from "../db.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireMenuRestrito } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 import { parseContratoPdf } from "../services/contrato-parser.js";
 
 const r = Router();
 r.use(requireAuth);
+r.use(requireMenuRestrito("contratos.ver"));
 
 const UPLOADS_ROOT = process.env.UPLOAD_DIR || process.env.UPLOADS_DIR || "/var/pontual/uploads";
 const CONTRATOS_DIR = path.join(UPLOADS_ROOT, "contratos");

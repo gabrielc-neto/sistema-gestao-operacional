@@ -10,12 +10,60 @@
 // Limite:   ?limit=100
 import { Router } from "express";
 import { q, q1, pool } from "../db.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireMenuRestrito } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 import { randomUUID } from "node:crypto";
 
 const r = Router();
 r.use(requireAuth);
+
+// Mapa collection → permissão necessária pra users com menu_restrito.
+// Users normais e super admins passam livre — este mapa só é consultado quando o cargo é restrito.
+const PERM_POR_COLECAO = {
+  motoristas: "motoristas.ver",
+  motoristas_classificacao: "motoristas.ver",
+  motoristas_desligados: "motoristas.ver",
+  veiculos: "frota.ver",
+  cargos: "cargos.ver",
+  setores: "setores.ver",
+  usuarios: "usuarios.ver",
+  permissoes_catalogo: "cargos.ver",
+  cercas_eletronicas: "rastreamento.ver",
+  cercas_eventos: "rastreamento.ver",
+  checklists_mensais: "manutencao.ver",
+  compras_setor: "compras.ver",
+  propostas_compra: "compras.ver",
+  requisicoes_compra: "compras.ver",
+  estoque_itens: "manutencao.ver",
+  estoque_movimentacoes: "manutencao.ver",
+  ferias: "ferias.ver",
+  itens_manutencao: "manutencao.ver",
+  multas: "historico.ver",
+  ordens_carregamento: "oc.ver",
+  atrelamentos: "atrelamento.ver",
+  pneus: "pneus.ver",
+  pneu_compras: "pneus.ver",
+  pneu_inspecoes: "pneus.ver",
+  pneu_recapagens: "pneus.ver",
+  pneu_movimentacoes: "pneus.ver",
+  sascar_posicoes: "rastreamento.ver",
+  cta_abastecimentos: "abastecimento.ver",
+  abastecimentos_cta: "abastecimento.ver",
+  vistorias: "manutencao.ver",
+  config: "cargos.ver",
+  system: "cargos.ver",
+  manutencoes: "manutencao.ver",
+  ordens_servico: "manutencao.ver",
+  lancamentos_os: "manutencao.ver",
+  tipos_manutencao_custom: "manutencao.ver",
+};
+
+// Guarda dinâmica: aplica requireMenuRestrito com a permissão do :nome da coleção.
+r.use("/:nome", (req, res, next) => {
+  const perm = PERM_POR_COLECAO[req.params.nome];
+  if (!perm) return next(); // coleção fora do mapa (root list, etc.) → deixa passar (super admin geralmente)
+  return requireMenuRestrito(perm)(req, res, next);
+});
 
 // Lista coleções permitidas (whitelist pra segurança)
 const COLECOES = new Set([

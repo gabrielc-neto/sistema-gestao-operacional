@@ -1,6 +1,6 @@
 // Rotas /api/jornada/dia e /api/jornada/periodo — substituem Firebase Functions jornadaDia/jornadaPeriodo.
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireMenuRestrito } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 import { q } from "../db.js";
 import { cached } from "../integracoes/cache.js";
@@ -26,7 +26,7 @@ function creds() {
 }
 
 // POST /api/jornada/dia  { data: "YYYY-MM-DD" }
-r.post("/dia", requireAuth, asyncH(async (req, res) => {
+r.post("/dia", requireAuth, requireMenuRestrito("jornada.ver"), asyncH(async (req, res) => {
   const data = String(req.body?.data || "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return res.status(400).json({ error: "data inválida (use YYYY-MM-DD)" });
 
@@ -106,7 +106,7 @@ r.post("/dia", requireAuth, asyncH(async (req, res) => {
 }));
 
 // POST /api/jornada/periodo  { dataInicio, dataFim }
-r.post("/periodo", requireAuth, asyncH(async (req, res) => {
+r.post("/periodo", requireAuth, requireMenuRestrito("jornada.ver"), asyncH(async (req, res) => {
   const dataInicio = String(req.body?.dataInicio || "").trim();
   const dataFim = String(req.body?.dataFim || "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dataInicio) || !/^\d{4}-\d{2}-\d{2}$/.test(dataFim)) {

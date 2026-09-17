@@ -83,6 +83,23 @@ function Privada({ permissao, algumaDe, children }) {
   );
 }
 
+// Rota "livre" pra users normais, mas exige permissão explícita quando o cargo tem menu_restrito=true.
+// Uso: rotas que hoje só têm PrivateRoute (não bloqueadas por Privada) mas precisam bloquear cargos restritos.
+function LivreOuPerm({ permissao, children }) {
+  const { menuRestrito, temPermissao, loading } = useRBAC();
+  if (loading) return <Loading />;
+  if (menuRestrito && permissao && !temPermissao(permissao)) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
+// Rota apenas pra Super Admin (ex: importar dados).
+function ApenasSuperAdmin({ children }) {
+  const { isSuperAdmin, loading } = useRBAC();
+  if (loading) return <Loading />;
+  if (!isSuperAdmin) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -111,14 +128,14 @@ export default function App() {
                   {/* <Route path="/contratos/:id" element={<Privada permissao="contratos.ver"><ContratoDetalhe /></Privada>} /> */}
                   {/* <Route path="/viagens"     element={<Privada permissao="viagens.ver"><Viagens /></Privada>} /> */}
                   <Route path="/intranet"    element={<Privada permissao="intranet.ver"><IntranetArea /></Privada>} />
-                  <Route path="/abastecimento" element={<PrivateRoute><Abastecimento /></PrivateRoute>} />
+                  <Route path="/abastecimento" element={<PrivateRoute><LivreOuPerm permissao="abastecimento.ver"><Abastecimento /></LivreOuPerm></PrivateRoute>} />
                   <Route path="/pneus"       element={<Privada permissao="pneus.ver"><Pneus /></Privada>} />
                   <Route path="/pneus/:id"   element={<Privada permissao="pneus.ver"><FichaPneu /></Privada>} />
                   <Route path="/historico"   element={<Privada permissao="historico.ver"><Historico /></Privada>} />
                   <Route path="/ferias"      element={<Privada permissao="ferias.ver"><Ferias /></Privada>} />
                   <Route path="/rastreamento" element={<Privada permissao="rastreamento.ver"><Rastreamento /></Privada>} />
-                  <Route path="/cercas"       element={<PrivateRoute><Cercas /></PrivateRoute>} />
-                  <Route path="/jornada"      element={<PrivateRoute><Jornada /></PrivateRoute>} />
+                  <Route path="/cercas"       element={<PrivateRoute><LivreOuPerm permissao="cercas.ver"><Cercas /></LivreOuPerm></PrivateRoute>} />
+                  <Route path="/jornada"      element={<PrivateRoute><LivreOuPerm permissao="jornada.ver"><Jornada /></LivreOuPerm></PrivateRoute>} />
 
                   {/* Administração */}
                   <Route path="/usuarios"        element={<Privada permissao="usuarios.ver"><Usuarios /></Privada>} />
@@ -126,7 +143,7 @@ export default function App() {
                   <Route path="/admin/cargos"    element={<Privada permissao="cargos.ver"><Cargos /></Privada>} />
                   <Route path="/admin/intranet"  element={<Privada permissao="intranet.configurar"><ConfiguracoesIntranet /></Privada>} />
                   <Route path="/permissoes"      element={<Privada permissao="permissoes.ver"><Permissoes /></Privada>} />
-                  <Route path="/import"          element={<PrivateRoute><ImportAdmin /></PrivateRoute>} />
+                  <Route path="/import"          element={<PrivateRoute><ApenasSuperAdmin><ImportAdmin /></ApenasSuperAdmin></PrivateRoute>} />
                 </Routes>
               </Suspense>
               <InstallPWA />

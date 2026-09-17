@@ -1,11 +1,12 @@
 // Rotas CRUD pra veículos (frota). Placa como identificador principal.
 import { Router } from "express";
 import { q, q1 } from "../db.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireMenuRestrito } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 
 const r = Router();
 r.use(requireAuth);
+r.use(requireMenuRestrito("frota.ver"));
 
 const CAMPOS = ["placa","empresa","tipo","marca","modelo","cor","ano_fab","ano_mod","chassi","renavam","tara",
                 "capacidade","eixos","combustivel","status","c1","c2","c3","motorista_id","motorista_nome",

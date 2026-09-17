@@ -11,7 +11,7 @@ import multer from "multer";
 import fs from "fs/promises";
 import path from "path";
 import { q, q1, tx } from "../db.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireMenuRestrito } from "../middleware/auth.js";
 import { asyncH } from "../middleware/error.js";
 import { gerarPdfAutorizacao } from "../services/pdf-autorizacao.js";
 
@@ -21,6 +21,7 @@ const uploadViagem = multer({ storage: multer.memoryStorage(), limits: { fileSiz
 
 const r = Router();
 r.use(requireAuth);
+r.use(requireMenuRestrito("viagens.ver"));
 
 function toCamel(row) {
   if (!row) return row;
