@@ -19,15 +19,16 @@ r.use(requireAuth);
 
 // Mapa collection → permissão necessária pra users com menu_restrito.
 // Users normais e super admins passam livre — este mapa só é consultado quando o cargo é restrito.
+//
+// IMPORTANTE: coleções `cargos`, `setores`, `permissoes_catalogo` NÃO entram aqui.
+// Todo usuário autenticado precisa poder ler o próprio cargo/setor pra saber suas permissões
+// (chicken-and-egg: se o cargo próprio está bloqueado, RBAC não carrega e o user aparece como "sem restrição").
 const PERM_POR_COLECAO = {
   motoristas: "motoristas.ver",
   motoristas_classificacao: "motoristas.ver",
   motoristas_desligados: "motoristas.ver",
   veiculos: "frota.ver",
-  cargos: "cargos.ver",
-  setores: "setores.ver",
   usuarios: "usuarios.ver",
-  permissoes_catalogo: "cargos.ver",
   cercas_eletronicas: "rastreamento.ver",
   cercas_eventos: "rastreamento.ver",
   checklists_mensais: "manutencao.ver",
@@ -50,8 +51,7 @@ const PERM_POR_COLECAO = {
   cta_abastecimentos: "abastecimento.ver",
   abastecimentos_cta: "abastecimento.ver",
   vistorias: "manutencao.ver",
-  config: "cargos.ver",
-  system: "cargos.ver",
+  // config/system: metadata compartilhada, deixa livre pra qualquer autenticado
   manutencoes: "manutencao.ver",
   ordens_servico: "manutencao.ver",
   lancamentos_os: "manutencao.ver",
