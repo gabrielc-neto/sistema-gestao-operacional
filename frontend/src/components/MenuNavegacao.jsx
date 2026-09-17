@@ -41,7 +41,7 @@ const GRUPOS = [
     titulo: "MONITORAMENTO",
     itens: [
       { Icon: MapPin, label: "Rastreamento",     link: "/rastreamento", perm: "rastreamento.ver" },
-      { Icon: Clock,  label: "Jornada & Extras", link: "/jornada",      sempre: true },
+      { Icon: Clock,  label: "Jornada & Extras", link: "/jornada",      sempre: true, restrictPerm: "jornada.ver" },
     ],
   },
   {
@@ -103,9 +103,11 @@ export default function MenuNavegacao({ variante = "escuro" }) {
 
   const podeVer = (m) => {
     // No modo "menu restrito", só passa quem tem permissão explícita — ignora `sempre: true`.
+    // Itens `sempre: true` podem opcionalmente declarar `restrictPerm` pra desbloquear em modo restrito.
     if (menuRestrito) {
-      if (m.perm)   return temPermissao(m.perm);
-      if (m.module) return canView(m.module);
+      if (m.perm)         return temPermissao(m.perm);
+      if (m.restrictPerm) return temPermissao(m.restrictPerm);
+      if (m.module)       return canView(m.module);
       return false;
     }
     if (m.sempre) return true;
